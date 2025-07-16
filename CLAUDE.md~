@@ -1,0 +1,73 @@
+# Spring AI Project Management
+
+This repository contains tooling for managing the Spring AI project using GitHub CLI.
+
+## Repository Context
+- Target Repository: https://github.com/spring-projects/spring-ai
+- Primary Tool: GitHub CLI (`gh`)
+- Purpose: Project management automation and workflow enhancement
+
+## Common Commands
+
+### GitHub CLI Setup
+```bash
+# Authenticate with GitHub
+gh auth login
+
+# Set default repository
+gh repo set-default spring-projects/spring-ai
+```
+
+### Issue Management
+```bash
+# List open issues
+gh issue list
+
+# View issue details
+gh issue view <issue-number>
+
+# Create new issue
+gh issue create --title "Title" --body "Description"
+
+# Close issue
+gh issue close <issue-number>
+```
+
+### Pull Request Management
+```bash
+# List pull requests
+gh pr list
+
+# View PR details
+gh pr view <pr-number>
+
+# Review PR
+gh pr review <pr-number>
+
+# Merge PR
+gh pr merge <pr-number>
+```
+
+### Project Management
+```bash
+# List projects
+gh project list
+
+# View project items
+gh project item-list <project-number>
+
+# Add item to project
+gh project item-add <project-number> --url <issue-or-pr-url>
+```
+
+## Automation Scripts
+
+Complex project management tasks may require bash scripts that combine multiple `gh` commands for efficient workflow automation.
+
+## Usage Notes
+
+- All GitHub operations should use the `gh` CLI tool
+- Scripts should be created in this repository for reusable automation
+- Focus on Spring AI project management workflows
+- Prefer direct `gh` commands for simple operations
+- Use bash scripts for complex multi-step operations

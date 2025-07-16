@@ -1,0 +1,99 @@
+We’re building a **multi-label classifier** for GitHub issues in the **Spring AI project**.
+
+You have access to:
+
+- `./issues/stratified_split/test_set.json`: a list of GitHub issues to classify
+- `github-labels-mapping-enhanced.json`: known labels and their descriptions, modules, packages, issue types, etc.
+- `claude-md-for-springai.md`: the CLAUDE.md file describing the Spring AI project structure
+
+Each issue may have **multiple labels**, but most should only have **1 to 3 highly relevant labels**. Classify conservatively and prioritize precision.
+
+---
+
+## Step 1
+
+Load all three files into memory and confirm when you're ready.
+
+---
+
+## Step 2: Classify a Batch
+
+Now that the files are loaded, begin classifying **just the first 5 issues** from `./issues/stratified_split/test_set.json` using only the `title` and `body` fields.
+
+Use the information in:
+
+- `github-labels-mapping-enhanced.json`: official GitHub labels with descriptions and metadata
+- `claude-md-for-springai.md`: describes the Spring AI project structure and purpose
+
+---
+
+## 🧠 Key Labeling Instructions
+
+- You may assign **multiple labels**, but only those **strongly supported** by the issue content.
+- **Do not include labels just because the label appears in a file name, class name, or module mentioned** — base labels on the **primary intent and content** of the issue.
+- Assign **no more than 5 labels**, unless absolutely necessary. Most issues should receive **1–3 maximum**.
+- Do not assign multiple labels that represent **overlapping technical scope** unless independently justified (e.g., don’t assign every vector store backend).
+
+---
+
+## ⛔ What Not to Do (based on real error)
+
+In a previous misclassification, an issue about “prompt-time filter expressions” received **14 labels**, including all vector store backends (`qdrant`, `mongo`, `opensearch`, `typesense`, etc.) even though the issue did not mention most of them.
+
+- This is incorrect.
+- You should **not infer label presence** by association or internal knowledge unless it is **explicit in the text**.
+
+---
+
+## 🔢 Output Format
+
+Return a list of JSON objects, one per issue:
+
+```json
+{
+  "issue_number": 1776,
+  "predicted_labels": [
+    {
+      "label": "metadata filters",
+      "confidence": 0.91
+    },
+    {
+      "label": "RAG",
+      "confidence": 0.88
+    }
+  ],
+  "explanation": "This issue proposes adding prompt-time filtering to the VectorStoreDocumentRetriever, which is part of the RAG infrastructure. Only labels directly supported by the text were included."
+}
+
+If no label exceeds 0.6 confidence:
+
+{
+  "issue_number": 124,
+  "predicted_labels": [
+    {
+      "label": "needs more info",
+      "confidence": 0.42
+    }
+  ],
+  "explanation": "The issue does not provide enough detail to confidently assign a specific label."
+}
+
+Confidence Calibration
+1.0 confidence should be used only when the label is explicitly stated and central to the issue.
+
+0.9–1.0 → Very confident: the label is the primary topic, clearly supported.
+
+0.6–0.8 → Moderately confident: label is relevant, but not dominant.
+
+< 0.6 → Uncertain or speculative; fallback to "needs more info".
+
+
+Avoid assigning high confidence scores mechanically — reflect the actual strength of evidence.
+
+# Output Rules
+Output only the JSON list.
+
+Save or name your output block as: classified-test-issues-part1.json
+
+Do not include any explanatory text or commentary.
+

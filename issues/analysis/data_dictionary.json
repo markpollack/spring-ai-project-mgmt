@@ -1,0 +1,24 @@
+{
+  "description": "Spring AI GitHub Issues Analysis Dataset",
+  "filtering": {
+    "no_labels_filtered": true,
+    "note": "Issues with no labels may be excluded if filtering was enabled"
+  },
+  "fields": {
+    "issue_number": "GitHub issue number",
+    "title": "Issue title",
+    "body": "Issue description",
+    "author": "Issue author username",
+    "state": "Issue state (CLOSED)",
+    "created_at": "Issue creation timestamp",
+    "closed_at": "Issue closure timestamp",
+    "days_open": "Days between creation and closure",
+    "labels": "Array of label names",
+    "assignees": "Array of assignee usernames",
+    "milestone": "Milestone title",
+    "comment_count": "Number of comments",
+    "comment_authors": "Unique usernames who commented",
+    "has_reactions": "Whether comments have reactions",
+    "metrics": "Additional calculated metrics"
+  }
+}

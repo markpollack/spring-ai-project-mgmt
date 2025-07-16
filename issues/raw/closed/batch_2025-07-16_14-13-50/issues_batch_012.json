@@ -1,0 +1,887 @@
+{
+  "batch_info": {
+    "batch_number": 12,
+    "issue_count": 14,
+    "timestamp": "2025-07-16_14-13-50",
+    "source": "graphql"
+  },
+  "issues": [
+    {
+      "number": 44,
+      "title": "Improve the Document API",
+      "body": "- Currently the Document mixes multiple concerns that should be isolated in dedicated classes.\r\n- Encapsulate the content formatting into a separate ContentFormatter abstraction.\r\n- Refactoring the document loading and indexing strategy. \r\n- Moves toward ETL processing model.\r\n- Add metadata enriching transformers as DocumentTranformer.",
+      "state": "CLOSED",
+      "createdAt": "2023-10-03T18:37:03Z",
+      "updatedAt": "2023-10-03T18:39:19Z",
+      "closedAt": "2023-10-03T18:39:19Z",
+      "url": "https://github.com/spring-projects/spring-ai/issues/44",
+      "author": {
+        "login": "tzolov",
+        "name": "Christian Tzolov"
+      },
+      "assignees": [],
+      "labels": [],
+      "milestone": null,
+      "comments": []
+    },
+    {
+      "number": 36,
+      "title": "Add Neo4j as a Vector Store",
+      "body": "Current Version of the Spring AI allows InMemoryVectorStore but  Neo4jVectorStore is expected along with it.\r\n\r\nExpected Behavior\r\n\r\nNeo4j should be able to use as VectorStore\r\n\r\nCurrent Behavior\r\n\r\nInMemoryVectorStore is supported.\r\n\r\nContext\r\n\r\nI am working on content writer suggestions use-case with azure openai embedding stored in Neo4j. So i request the team to implement Neo4j as Vector Store",
+      "state": "CLOSED",
+      "createdAt": "2023-09-28T05:00:00Z",
+      "updatedAt": "2023-09-29T13:09:16Z",
+      "closedAt": "2023-09-29T13:09:15Z",
+      "url": "https://github.com/spring-projects/spring-ai/issues/36",
+      "author": {
+        "login": "radhakrishna67",
+        "name": null
+      },
+      "assignees": [],
+      "labels": [],
+      "milestone": null,
+      "comments": [
+        {
+          "author": {
+            "login": "meistermeier",
+            "name": "Gerrit Meier"
+          },
+          "body": "We contributed a Neo4j module a few days ago and it got merged ~10 hours ago.\r\nhttps://github.com/spring-projects-experimental/spring-ai/issues/26",
+          "createdAt": "2023-09-28T06:33:17Z",
+          "reactions": {
+            "totalCount": 1
+          }
+        },
+        {
+          "author": {
+            "login": "tzolov",
+            "name": "Christian Tzolov"
+          },
+          "body": "@radhakrishna67\r\nin addition to the in-memory (and persistent) stores you you can already use one of the following vector store integrations as well:\r\n\r\n* [PGVector](https://github.com/spring-projects-experimental/spring-ai/tree/main/vector-stores/spring-ai-pgvector-store)\r\n* [Milvus](https://github.com/spring-projects-experimental/spring-ai/tree/main/vector-stores/spring-ai-milvus-store)\r\n* [Neo4j](https://github.com/spring-projects-experimental/spring-ai/tree/main/vector-stores/spring-ai-neo4j-store)\r\n\r\nThe `pinecone` integration is in progres. \r\n",
+          "createdAt": "2023-09-28T12:24:13Z",
+          "reactions": {
+            "totalCount": 0
+          }
+        },
+        {
+          "author": {
+            "login": "radhakrishna67",
+            "name": null
+          },
+          "body": "@meistermeier, thank you so much for your contribution with Neo4j.\r\n\r\n@tzolov, Spring AI is now supporting great set of Vector stores. Are there any chances of considering Chroma Vector store?",
+          "createdAt": "2023-09-28T12:42:15Z",
+          "reactions": {
+            "totalCount": 0
+          }
+        },
+        {
+          "author": {
+            "login": "tzolov",
+            "name": "Christian Tzolov"
+          },
+          "body": "Duplication. \r\nResolved with https://github.com/spring-projects-experimental/spring-ai/issues/26",
+          "createdAt": "2023-09-29T13:09:15Z",
+          "reactions": {
+            "totalCount": 0
+          }
+        }
+      ]
+    },
+    {
+      "number": 33,
+      "title": "Support PostgresML as an `EmbeddingClient`",
+      "body": "It would be nice to support PostgresML embeddings (https://postgresml.org/docs/guides/transformers/embeddings) as an `EmbeddingClient` that doesn't require OpenAI/Azure OpenAI account",
+      "state": "CLOSED",
+      "createdAt": "2023-09-27T12:36:10Z",
+      "updatedAt": "2023-10-05T10:15:07Z",
+      "closedAt": "2023-10-05T10:15:06Z",
+      "url": "https://github.com/spring-projects/spring-ai/issues/33",
+      "author": {
+        "login": "making",
+        "name": "Toshiaki Maki"
+      },
+      "assignees": [],
+      "labels": [],
+      "milestone": null,
+      "comments": [
+        {
+          "author": {
+            "login": "markpollack",
+            "name": "Mark Pollack"
+          },
+          "body": "Please follow the current packaging style and provide an integration test.",
+          "createdAt": "2023-09-27T21:18:41Z",
+          "reactions": {
+            "totalCount": 0
+          }
+        },
+        {
+          "author": {
+            "login": "markpollack",
+            "name": "Mark Pollack"
+          },
+          "body": "I love your dog!",
+          "createdAt": "2023-09-27T21:18:59Z",
+          "reactions": {
+            "totalCount": 0
+          }
+        }
+      ]
+    },
+    {
+      "number": 30,
+      "title": "Similarity search on PgStore might be wrong wrt threshold",
+      "body": "As far as I understood the JavaDoc of `VectorStore` threshold is a lower bound.\r\n\r\nThe Postgres store uses the threshold as an upper limit to the distance, though.\r\n\r\nIn addition, the cosine distance must be inverted, see https://github.com/pgvector/pgvector#distances\r\nI suggest fixing the comparison operator and also change the sql statement when using cosine.",
+      "state": "CLOSED",
+      "createdAt": "2023-09-21T13:23:22Z",
+      "updatedAt": "2023-09-22T16:56:17Z",
+      "closedAt": "2023-09-22T16:56:17Z",
+      "url": "https://github.com/spring-projects/spring-ai/issues/30",
+      "author": {
+        "login": "michael-simons",
+        "name": "Michael Simons"
+      },
+      "assignees": [
+        {
+          "login": "tzolov",
+          "name": "Christian Tzolov"
+        }
+      ],
+      "labels": [
+        {
+          "name": "bug",
+          "color": "d73a4a",
+          "description": "Something isn't working"
+        }
+      ],
+      "milestone": null,
+      "comments": [
+        {
+          "author": {
+            "login": "tzolov",
+            "name": "Christian Tzolov"
+          },
+          "body": "Thanks @michael-simons, I believe you have a point. \r\nThough still not very certain about `lower bound` definition I presume that it means `similarity` (e.g. they higher threshold the similar) as opposite of `distance` which I've presumed when implementing the pgvector store.\r\nAnd the `negative inner product` needs additional care as well. ",
+          "createdAt": "2023-09-22T15:16:29Z",
+          "reactions": {
+            "totalCount": 1
+          }
+        }
+      ]
+    },
+    {
+      "number": 28,
+      "title": "Retrieve embedding model dimensions",
+      "body": "**Expected Behavior**\r\n\r\nThe `EmbeddingClient` interface should expose a method to report the dimension size of the configured embedding model. \r\n\r\n**Current Behavior**\r\n\r\nCurrently the users must retrieve this information manually from the documentations of the used models. \r\n\r\n**Context**\r\n\r\nThe dimensions are need to configure VectorStores and at the moment has to be specified explicitly. \r\nInstead they could obtain this information directly from the provided EmbeddingClient instance.\r\n",
+      "state": "CLOSED",
+      "createdAt": "2023-09-21T12:21:15Z",
+      "updatedAt": "2023-09-27T17:06:51Z",
+      "closedAt": "2023-09-27T17:06:51Z",
+      "url": "https://github.com/spring-projects/spring-ai/issues/28",
+      "author": {
+        "login": "tzolov",
+        "name": "Christian Tzolov"
+      },
+      "assignees": [
+        {
+          "login": "tzolov",
+          "name": "Christian Tzolov"
+        }
+      ],
+      "labels": [
+        {
+          "name": "enhancement",
+          "color": "a2eeef",
+          "description": "New feature or request"
+        },
+        {
+          "name": "embedding",
+          "color": "bfdadc",
+          "description": ""
+        }
+      ],
+      "milestone": null,
+      "comments": []
+    },
+    {
+      "number": 27,
+      "title": "Provide prompt options on a call by call basis",
+      "body": "Our local OpenAI endpoint has a very small default max_tokens against the chat completion.\r\nWe like to make it adjustable\r\n\r\n**Expected Behavior**\r\n\r\n<!--- Tell us how it should work. Add a code example to explain what you think the feature should look like. This is optional, but it would help up understand your expectations. -->\r\n\r\nHoping this code.\r\n\r\nhttps://github.com/spring-projects-experimental/spring-ai/blob/main/spring-ai-openai/src/main/java/org/springframework/ai/openai/client/OpenAiClient.java\r\n\r\nLooks something like this\r\n\r\n```\r\n\tprivate ChatCompletionRequest getChatCompletionRequest(String text) {\r\n\t\tList<ChatMessage> chatMessages = List.of(new ChatMessage(\"user\", text));\r\n\t\tlogger.trace(\"ChatMessages: \", chatMessages);\r\n\t\tChatCompletionRequest chatCompletionRequest = ChatCompletionRequest.builder()\r\n\t\t\t.model(this.model)\r\n\t\t\t.temperature(this.temperature)\r\n\t\t\t.messages(List.of(new ChatMessage(\"user\", text)))\r\n                         .maxTokens(4000) /// ADD HERE\r\n \t\t\t.build();\r\n\t\tlogger.trace(\"ChatCompletionRequest: \", chatCompletionRequest);\r\n\t\treturn chatCompletionRequest;\r\n\t}\r\n```\r\n\r\n\r\n\r\n**Current Behavior**\r\n\r\n<!--- Explain the difference from current behavior and why do you need this feature (aka why it is not possible to implement the desired functionality with the current version) -->\r\n\r\nmax tokens not adjustable\r\n\r\n**Context**\r\n\r\n<!--- \r\nHow has this issue affected you?\r\nWhat are you trying to accomplish?\r\nWhat other alternatives have you considered?\r\nAre you aware of any workarounds?\r\n-->\r\n",
+      "state": "CLOSED",
+      "createdAt": "2023-09-21T06:03:19Z",
+      "updatedAt": "2024-02-19T17:28:43Z",
+      "closedAt": "2024-02-19T17:28:42Z",
+      "url": "https://github.com/spring-projects/spring-ai/issues/27",
+      "author": {
+        "login": "mhoshi-vm",
+        "name": null
+      },
+      "assignees": [
+        {
+          "login": "markpollack",
+          "name": "Mark Pollack"
+        }
+      ],
+      "labels": [],
+      "milestone": {
+        "title": "0.8.0",
+        "number": 1,
+        "state": "CLOSED",
+        "description": ""
+      },
+      "comments": [
+        {
+          "author": {
+            "login": "markpollack",
+            "name": "Mark Pollack"
+          },
+          "body": "Yes. This is a big gap.  I have a design idea and hope to implement this next week, after more docs are written.\r\n\r\nThanks for taking the time to create an issue.\r\n\r\nBTW - I changed the title of the issue to be more generic.",
+          "createdAt": "2023-09-27T21:24:11Z",
+          "reactions": {
+            "totalCount": 0
+          }
+        },
+        {
+          "author": {
+            "login": "devondragon",
+            "name": "Devon Hillard"
+          },
+          "body": "@markpollack I am working on another AiClient adapter, and very much want to support per call prompt options.  I can do this my own way of course, but I'd prefer to align with whatever you've got in the works.  Can you share your approach so I can align with it and hopefully have a smooth PR process later?",
+          "createdAt": "2023-10-12T14:16:40Z",
+          "reactions": {
+            "totalCount": 0
+          }
+        },
+        {
+          "author": {
+            "login": "markpollack",
+            "name": "Mark Pollack"
+          },
+          "body": "Hi,  A bit late, but we are working on this now.  https://github.com/spring-projects/spring-ai/commits/model-options-spike  has someting to look at but it isn't complete.\r\n\r\nThe basic design we are thinking of at the moment is to have a \"PromptOptions\" interface that acts as a marker interface.  Then we will determine which \"PromptOptions\" are portable across all the providers.  It is likely a short list, e.g. `model` and `temperature`.  A builder for these portable prompt options will be available.  For provider specific options, there will provider specific prompt options interfact that also implements the portable options interface.  There will also be a builder for those provider specific options.  The provider specific ChatClient implementation will first check for the prompt options properties that were passed at runtime and use those instead of the options that were created at bean instantiation time.",
+          "createdAt": "2024-01-03T21:17:17Z",
+          "reactions": {
+            "totalCount": 0
+          }
+        },
+        {
+          "author": {
+            "login": "markpollack",
+            "name": "Mark Pollack"
+          },
+          "body": "We note support this. See `ChatOptions` and then there is a specific subclass for each of the supported chat models, e.g `OpenAiChatOptions`, `AnthropicChatOptions` etc.\r\n\r\nIt hasn't had a great deal of exposure in the wild, so if you could give it a try, that would be appreciated.",
+          "createdAt": "2024-02-19T17:28:42Z",
+          "reactions": {
+            "totalCount": 0
+          }
+        }
+      ]
+    },
+    {
+      "number": 26,
+      "title": "We'd love to add Neo4j as a vector store to the project",
+      "body": "Neo4j added vector support in August 2023 based on HNSW, we'd like to add support for that to spring-ai\r\n\r\nJust wanted to open an issue first before sending in a PR, to see if there are any thoughts.",
+      "state": "CLOSED",
+      "createdAt": "2023-09-21T00:14:00Z",
+      "updatedAt": "2023-09-28T11:25:33Z",
+      "closedAt": "2023-09-27T20:05:44Z",
+      "url": "https://github.com/spring-projects/spring-ai/issues/26",
+      "author": {
+        "login": "jexp",
+        "name": "Michael Hunger"
+      },
+      "assignees": [],
+      "labels": [
+        {
+          "name": "enhancement",
+          "color": "a2eeef",
+          "description": "New feature or request"
+        },
+        {
+          "name": "vector store",
+          "color": "F5C590",
+          "description": ""
+        }
+      ],
+      "milestone": null,
+      "comments": [
+        {
+          "author": {
+            "login": "tzolov",
+            "name": "Christian Tzolov"
+          },
+          "body": "Hey @jexp , thanks for raising this issue. \r\nLooking forward for your PR!",
+          "createdAt": "2023-09-21T12:23:23Z",
+          "reactions": {
+            "totalCount": 0
+          }
+        },
+        {
+          "author": {
+            "login": "michael-simons",
+            "name": "Michael Simons"
+          },
+          "body": "We are working on it. ",
+          "createdAt": "2023-09-21T14:31:20Z",
+          "reactions": {
+            "totalCount": 1
+          }
+        },
+        {
+          "author": {
+            "login": "markpollack",
+            "name": "Mark Pollack"
+          },
+          "body": "PR was merged as a6fba7a3b6306b64c48cc881ecdc89096d3dd98f",
+          "createdAt": "2023-09-27T20:05:44Z",
+          "reactions": {
+            "totalCount": 1
+          }
+        },
+        {
+          "author": {
+            "login": "michael-simons",
+            "name": "Michael Simons"
+          },
+          "body": "Great news!!",
+          "createdAt": "2023-09-28T11:25:33Z",
+          "reactions": {
+            "totalCount": 0
+          }
+        }
+      ]
+    },
+    {
+      "number": 19,
+      "title": "milvus向量库",
+      "body": "为什么不用milvus作为向量数据库呢？",
+      "state": "CLOSED",
+      "createdAt": "2023-09-19T07:00:47Z",
+      "updatedAt": "2023-09-27T16:26:25Z",
+      "closedAt": "2023-09-27T16:26:24Z",
+      "url": "https://github.com/spring-projects/spring-ai/issues/19",
+      "author": {
+        "login": "Tomriy",
+        "name": "Tomiry"
+      },
+      "assignees": [
+        {
+          "login": "tzolov",
+          "name": "Christian Tzolov"
+        }
+      ],
+      "labels": [
+        {
+          "name": "enhancement",
+          "color": "a2eeef",
+          "description": "New feature or request"
+        },
+        {
+          "name": "vector store",
+          "color": "F5C590",
+          "description": ""
+        }
+      ],
+      "milestone": null,
+      "comments": [
+        {
+          "author": {
+            "login": "tzolov",
+            "name": "Christian Tzolov"
+          },
+          "body": "Hi @Tomriy,  can we use common English please ;)\r\nI'm guessing you are asking for Milvus Vector DB support? ",
+          "createdAt": "2023-09-19T12:11:48Z",
+          "reactions": {
+            "totalCount": 0
+          }
+        },
+        {
+          "author": {
+            "login": "tzolov",
+            "name": "Christian Tzolov"
+          },
+          "body": "@Tomriy, by coincidence, over the weekend I've put together a Milvus store prototype:  https://github.com/spring-projects-experimental/spring-ai/pull/20\r\nFeel free to review/test it. \r\nSuggestions are welcome. ",
+          "createdAt": "2023-09-19T12:17:56Z",
+          "reactions": {
+            "totalCount": 0
+          }
+        }
+      ]
+    },
+    {
+      "number": 14,
+      "title": "Integrate PGVector as a VectorStore",
+      "body": "Allow using Postgres+PGVector as VectorStore\r\n\r\n[PGVector](https://github.com/pgvector/pgvector) is Open-source vector similarity search for Postgres. \r\nIt comes with [pgvector-java](https://github.com/pgvector/pgvector-java) support.\r\n",
+      "state": "CLOSED",
+      "createdAt": "2023-09-15T20:33:53Z",
+      "updatedAt": "2023-09-19T12:09:44Z",
+      "closedAt": "2023-09-19T12:09:43Z",
+      "url": "https://github.com/spring-projects/spring-ai/issues/14",
+      "author": {
+        "login": "tzolov",
+        "name": "Christian Tzolov"
+      },
+      "assignees": [],
+      "labels": [],
+      "milestone": null,
+      "comments": [
+        {
+          "author": {
+            "login": "tzolov",
+            "name": "Christian Tzolov"
+          },
+          "body": "Resolved with #15",
+          "createdAt": "2023-09-19T12:09:43Z",
+          "reactions": {
+            "totalCount": 0
+          }
+        }
+      ]
+    },
+    {
+      "number": 12,
+      "title": "DocumentReader  for all kinds of documents",
+      "body": "Current Version of the Spring AI allows JsonReader and TextReader.\r\n\r\n**Expected Behavior**\r\n\r\nMore DocumentReader implementations should allow reading all kinds documents (PDF, word, html, ...)\r\n\r\n**Current Behavior**\r\n\r\nDocumentReader is implemented only for Json and Text content types.\r\n\r\n**Context**\r\n\r\nI am working on document querying use-case  with azure openai to load all the documents and create embeddings to store them in Redis. So i request the team to implement DocumentLoader.\r\n",
+      "state": "CLOSED",
+      "createdAt": "2023-09-11T13:10:15Z",
+      "updatedAt": "2023-12-29T05:20:51Z",
+      "closedAt": "2023-11-17T18:11:30Z",
+      "url": "https://github.com/spring-projects/spring-ai/issues/12",
+      "author": {
+        "login": "radhakrishna67",
+        "name": null
+      },
+      "assignees": [],
+      "labels": [],
+      "milestone": null,
+      "comments": [
+        {
+          "author": {
+            "login": "markpollack",
+            "name": "Mark Pollack"
+          },
+          "body": "Yep, we need more implementations.  I'll start a sort of 'priority' ordered list here\r\n\r\n- [x] PDF\r\n- [ ] markdown (GH)\r\n- [x] text\r\n\r\nAlso, note that we can make use of pandoc to convert from several formats into markdown, which can be a very effective way to get support for some formats, for example MediaWiki format (from wikipedia) is notoriously difficult to parse as there is no spec - the implementation is the spec!",
+          "createdAt": "2023-09-27T21:22:45Z",
+          "reactions": {
+            "totalCount": 0
+          }
+        },
+        {
+          "author": {
+            "login": "radhakrishna67",
+            "name": null
+          },
+          "body": "@markpollack, thanks for considering this. I hope it would extract Text, Images and Tabular data from PDF.",
+          "createdAt": "2023-09-28T12:58:40Z",
+          "reactions": {
+            "totalCount": 0
+          }
+        },
+        {
+          "author": {
+            "login": "markpollack",
+            "name": "Mark Pollack"
+          },
+          "body": "We have several document readers already available.  I will close this issue and open one specifically around Markdown.  There is also a companion issue related to restructuring the signature of the readers and writings to be functions an not suppliers/consumers.  See https://github.com/spring-projects-experimental/spring-ai/issues/105 and https://github.com/spring-projects-experimental/spring-ai/issues/106",
+          "createdAt": "2023-11-17T18:11:30Z",
+          "reactions": {
+            "totalCount": 0
+          }
+        },
+        {
+          "author": {
+            "login": "mzhafez",
+            "name": "Mort Hafez"
+          },
+          "body": "> Yep, we need more implementations. I'll start a sort of 'priority' ordered list here\r\n> \r\n> * [x]  PDF\r\n> * [ ]  markdown (GH)\r\n> * [x]  text\r\n> \r\n> Also, note that we can make use of pandoc to convert from several formats into markdown, which can be a very effective way to get support for some formats, for example MediaWiki format (from wikipedia) is notoriously difficult to parse as there is no spec - the implementation is the spec!\r\n\r\nMight be worth while supporting ADOC as well.",
+          "createdAt": "2023-12-29T05:20:50Z",
+          "reactions": {
+            "totalCount": 0
+          }
+        }
+      ]
+    },
+    {
+      "number": 11,
+      "title": "Add Redis as a Vector Store",
+      "body": "Current Version of the Spring AI allows InMemoryVectorStore but RedisVectorStore is expected along with.\r\n\r\n**Expected Behavior**\r\n\r\nRedis should be able to use as VectorStore \r\n\r\n**Current Behavior**\r\n\r\nInMemoryVectorStore  is supported.\r\n\r\n**Context**\r\n\r\nI am working on document querying use-case with azure openai embedding stored in Redis. So i request the team to implement Redis as Vector Store\r\n",
+      "state": "CLOSED",
+      "createdAt": "2023-09-11T13:06:19Z",
+      "updatedAt": "2023-12-18T16:59:14Z",
+      "closedAt": "2023-12-18T16:59:14Z",
+      "url": "https://github.com/spring-projects/spring-ai/issues/11",
+      "author": {
+        "login": "radhakrishna67",
+        "name": null
+      },
+      "assignees": [
+        {
+          "login": "jxblum",
+          "name": "John Blum"
+        }
+      ],
+      "labels": [
+        {
+          "name": "vector store",
+          "color": "F5C590",
+          "description": ""
+        }
+      ],
+      "milestone": {
+        "title": "backlog",
+        "number": 3,
+        "state": "OPEN",
+        "description": ""
+      },
+      "comments": [
+        {
+          "author": {
+            "login": "jxblum",
+            "name": "John Blum"
+          },
+          "body": "I am currently investigating using Redis as a `VectorStore` implementation in `spring-ai`.\r\n\r\nHere is some [relevant information](https://redis.io/docs/interact/search-and-query/search/vectors/) on the topic that I am currently reading.",
+          "createdAt": "2023-09-27T06:53:58Z",
+          "reactions": {
+            "totalCount": 0
+          }
+        },
+        {
+          "author": {
+            "login": "radhakrishna67",
+            "name": null
+          },
+          "body": "@jxblum , I am using Redis for GenAI app. Please let me know if we could connect on this.",
+          "createdAt": "2023-09-27T08:54:19Z",
+          "reactions": {
+            "totalCount": 0
+          }
+        },
+        {
+          "author": {
+            "login": "ankurkumarz",
+            "name": "Ankur Kumar"
+          },
+          "body": "I have used Redis as a vector store multiple times with LangChain and considering my Java experience, would like to contribute.\r\n\r\nCan it be assigned to me?",
+          "createdAt": "2023-10-02T17:02:47Z",
+          "reactions": {
+            "totalCount": 0
+          }
+        },
+        {
+          "author": {
+            "login": "radhakrishna67",
+            "name": null
+          },
+          "body": "@jxblum, any update on Redis VectorStore?",
+          "createdAt": "2023-10-05T17:56:00Z",
+          "reactions": {
+            "totalCount": 0
+          }
+        },
+        {
+          "author": {
+            "login": "jxblum",
+            "name": "John Blum"
+          },
+          "body": "Hi @radhakrishna67 - Thank you for reaching out. \r\n\r\nSorry for the lapse in communication. I have been juggling multiple responsibilities and haven't been fully allocated/dedicated to working Spring AI just yet. My primary responsibilities are on the Spring Data Team, as the Spring Data Redis technical lead. I have also been busy preparing for Spring Data releases [next week](https://calendar.spring.io/).\r\n\r\nI have started crafting a PR for this ticket and hope to have something relatively soon.\r\n\r\nOf course, anyone interested in this ticket is also free to experiment, contribute or simply share ideas. Nothing is stopping anyone from doing that.\r\n\r\nAnyway, I will report back again when I am ready for some review/feedback.\r\n\r\nCheers!",
+          "createdAt": "2023-10-05T19:38:39Z",
+          "reactions": {
+            "totalCount": 0
+          }
+        },
+        {
+          "author": {
+            "login": "radhakrishna67",
+            "name": null
+          },
+          "body": "@jxblum , Thanks for the response. \r\nI do understand the busy days. I will wait for it.",
+          "createdAt": "2023-10-10T07:16:21Z",
+          "reactions": {
+            "totalCount": 0
+          }
+        },
+        {
+          "author": {
+            "login": "omarmahamid",
+            "name": "Omar"
+          },
+          "body": "@jxblum \r\n\r\nI'm interested to do some experiment for redis,, \r\nIs the open ai key is free ? or need billing ?",
+          "createdAt": "2023-10-14T18:50:54Z",
+          "reactions": {
+            "totalCount": 0
+          }
+        },
+        {
+          "author": {
+            "login": "jxblum",
+            "name": "John Blum"
+          },
+          "body": "Hi @omarmahamid - Sorry for the delayed response.\r\n\r\n[Creating an OpenAI account](https://platform.openai.com/docs/quickstart/account-setup) at [OpenAI](https://openai.com) and [setting up an API Key](https://platform.openai.com/docs/quickstart/step-2-setup-your-api-key) is free. Once you have signed up and logged in, then you can even add additional keys and organizations to your account.\r\n\r\n> NOTE: I have not signed up for Azure OpenAI yet, so I am not familiar with their process.\r\n\r\nOf course, not everything is 100% free, and OpenAI will [rate limit](https://platform.openai.com/docs/guides/rate-limits/overview) your requests, naturally, unless you pay for higher request limits (see [Usage tiers](https://platform.openai.com/docs/guides/rate-limits/usage-tiers)).",
+          "createdAt": "2023-11-04T00:37:39Z",
+          "reactions": {
+            "totalCount": 0
+          }
+        }
+      ]
+    },
+    {
+      "number": 10,
+      "title": "Change `AzureOpenAiEmbeddingOptions` and `AzureOpenAiChatOptions` use of `setModel` to `setDeployentName` as that matches Azure OpenAI terminology.",
+      "body": "**Bug description**\r\nspring-ai-azure-openai-spring-boot-starter  reports issue about DeploymentNotFound ( it requires Azure model deployment name)\r\nwith properties included\r\n`spring.ai.azure.openai.api-key=\r\nspring.ai.azure.openai.endpoint=https://abc.openai.azure.com/\r\nspring.ai.azure.openai.embedding-model=text-embedding-ada-002`\r\n\r\n`com.azure.core.exception.ResourceNotFoundException: Status code 404, \"{\"error\":{\"code\":\"DeploymentNotFound\", \"message\":\"The API deployment for this resource does not exist. If you created the deployment within the last 5 minutes, please wait a moment and try again.\"}}\"\r\n\tat com.azure.core.implementation.http.rest.RestProxyBase.instantiateUnexpectedException(RestProxyBase.java:347) ~[azure-core-1.41.0.jar:1.41.0]\r\n\tat com.azure.core.implementation.http.rest.SyncRestProxy.ensureExpectedStatus(SyncRestProxy.java:130) ~[azure-core-1.41.0.jar:1.41.0]\r\n\tat com.azure.core.implementation.http.rest.SyncRestProxy.handleRestReturnType(SyncRestProxy.java:213) ~[azure-core-1.41.0.jar:1.41.0]\r\n\tat com.azure.core.implementation.http.rest.SyncRestProxy.invoke(SyncRestProxy.java:81) ~[azure-core-1.41.0.jar:1.41.0]\r\n\tat com.azure.core.implementation.http.rest.RestProxyBase.invoke(RestProxyBase.java:109) ~[azure-core-1.41.0.jar:1.41.0]\r\n\tat com.azure.core.http.rest.RestProxy.invoke(RestProxy.java:91) ~[azure-core-1.41.0.jar:1.41.0]\r\n\tat jdk.proxy2/jdk.proxy2.$Proxy75.getChatCompletionsSync(Unknown Source) ~[na:na]\r\n\tat com.azure.ai.openai.implementation.OpenAIClientImpl.getChatCompletionsWithResponse(OpenAIClientImpl.java:897) ~[azure-ai-openai-1.0.0-beta.3.jar:1.0.0-beta.3]\r\n\tat com.azure.ai.openai.OpenAIClient.getChatCompletionsWithResponse(OpenAIClient.java:294) ~[azure-ai-openai-1.0.0-beta.3.jar:1.0.0-beta.3]\r\n\tat com.azure.ai.openai.OpenAIClient.getChatCompletions(OpenAIClient.java:430) ~[azure-ai-openai-1.0.0-beta.3.jar:1.0.0-beta.3]\r\n\tat org.springframework.ai.azure.openai.client.AzureOpenAiClient.generate(AzureOpenAiClient.java:60) ~[spring-ai-azure-openai-0.2.0-20230908.193706-31.jar:0.2.0-SNAPSHOT]\r\n\tat org.springframework.ai.openai.samples.helloworld.simple.SimpleAiController.completion(SimpleAiController.java:21) ~[classes/:na]\r\n\tat java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method) ~[na:na]\r\n\tat java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77) ~[na:na]\r\n\tat java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43) ~[na:na]\r\n\tat java.base/java.lang.reflect.Method.invoke(Method.java:568) ~[na:na]\r\n\tat org.springframework.web.method.support.InvocableHandlerMethod.doInvoke(InvocableHandlerMethod.java:205) ~[spring-web-6.0.11.jar:6.0.11]\r\n\tat org.springframework.web.method.support.InvocableHandlerMethod.invokeForRequest(InvocableHandlerMethod.java:150) ~[spring-web-6.0.11.jar:6.0.11]\r\n\tat org.springframework.web.servlet.mvc.method.annotation.ServletInvocableHandlerMethod.invokeAndHandle(ServletInvocableHandlerMethod.java:118) ~[spring-webmvc-6.0.11.jar:6.0.11]\r\n\tat org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter.invokeHandlerMethod(RequestMappingHandlerAdapter.java:884) ~[spring-webmvc-6.0.11.jar:6.0.11]\r\n\tat org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter.handleInternal(RequestMappingHandlerAdapter.java:797) ~[spring-webmvc-6.0.11.jar:6.0.11]\r\n\tat org.springframework.web.servlet.mvc.method.AbstractHandlerMethodAdapter.handle(AbstractHandlerMethodAdapter.java:87) ~[spring-webmvc-6.0.11.jar:6.0.11]\r\n\tat org.springframework.web.servlet.DispatcherServlet.doDispatch(DispatcherServlet.java:1081) ~[spring-webmvc-6.0.11.jar:6.0.11]\r\n\tat org.springframework.web.servlet.DispatcherServlet.doService(DispatcherServlet.java:974) ~[spring-webmvc-6.0.11.jar:6.0.11]\r\n\tat org.springframework.web.servlet.FrameworkServlet.processRequest(FrameworkServlet.java:1011) ~[spring-webmvc-6.0.11.jar:6.0.11]\r\n\tat org.springframework.web.servlet.FrameworkServlet.doGet(FrameworkServlet.java:903) ~[spring-webmvc-6.0.11.jar:6.0.11]\r\n\tat jakarta.servlet.http.HttpServlet.service(HttpServlet.java:564) ~[tomcat-embed-core-10.1.11.jar:6.0]\r\n\tat org.springframework.web.servlet.FrameworkServlet.service(FrameworkServlet.java:885) ~[spring-webmvc-6.0.11.jar:6.0.11]\r\n\tat jakarta.servlet.http.HttpServlet.service(HttpServlet.java:658) ~[tomcat-embed-core-10.1.11.jar:6.0]\r\n\tat org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:205) ~[tomcat-embed-core-10.1.11.jar:10.1.11]\r\n\tat org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:149) ~[tomcat-embed-core-10.1.11.jar:10.1.11]\r\n\tat org.apache.tomcat.websocket.server.WsFilter.doFilter(WsFilter.java:51) ~[tomcat-embed-websocket-10.1.11.jar:10.1.11]\r\n\tat org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:174) ~[tomcat-embed-core-10.1.11.jar:10.1.11]\r\n\tat org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:149) ~[tomcat-embed-core-10.1.11.jar:10.1.11]\r\n\tat org.springframework.web.filter.RequestContextFilter.doFilterInternal(RequestContextFilter.java:100) ~[spring-web-6.0.11.jar:6.0.11]\r\n\tat org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116) ~[spring-web-6.0.11.jar:6.0.11]\r\n\tat org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:174) ~[tomcat-embed-core-10.1.11.jar:10.1.11]\r\n\tat org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:149) ~[tomcat-embed-core-10.1.11.jar:10.1.11]\r\n\tat org.springframework.web.filter.FormContentFilter.doFilterInternal(FormContentFilter.java:93) ~[spring-web-6.0.11.jar:6.0.11]\r\n\tat org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116) ~[spring-web-6.0.11.jar:6.0.11]\r\n\tat org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:174) ~[tomcat-embed-core-10.1.11.jar:10.1.11]\r\n\tat org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:149) ~[tomcat-embed-core-10.1.11.jar:10.1.11]\r\n\tat org.springframework.web.filter.ServerHttpObservationFilter.doFilterInternal(ServerHttpObservationFilter.java:109) ~[spring-web-6.0.11.jar:6.0.11]\r\n\tat org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116) ~[spring-web-6.0.11.jar:6.0.11]\r\n\tat org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:174) ~[tomcat-embed-core-10.1.11.jar:10.1.11]\r\n\tat org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:149) ~[tomcat-embed-core-10.1.11.jar:10.1.11]\r\n\tat org.springframework.web.filter.CharacterEncodingFilter.doFilterInternal(CharacterEncodingFilter.java:201) ~[spring-web-6.0.11.jar:6.0.11]\r\n\tat org.springframework.web.filter.OncePerRequestFilter.doFilter(OncePerRequestFilter.java:116) ~[spring-web-6.0.11.jar:6.0.11]\r\n\tat org.apache.catalina.core.ApplicationFilterChain.internalDoFilter(ApplicationFilterChain.java:174) ~[tomcat-embed-core-10.1.11.jar:10.1.11]\r\n\tat org.apache.catalina.core.ApplicationFilterChain.doFilter(ApplicationFilterChain.java:149) ~[tomcat-embed-core-10.1.11.jar:10.1.11]\r\n\tat org.apache.catalina.core.StandardWrapperValve.invoke(StandardWrapperValve.java:166) ~[tomcat-embed-core-10.1.11.jar:10.1.11]\r\n\tat org.apache.catalina.core.StandardContextValve.invoke(StandardContextValve.java:90) ~[tomcat-embed-core-10.1.11.jar:10.1.11]\r\n\tat org.apache.catalina.authenticator.AuthenticatorBase.invoke(AuthenticatorBase.java:482) ~[tomcat-embed-core-10.1.11.jar:10.1.11]\r\n\tat org.apache.catalina.core.StandardHostValve.invoke(StandardHostValve.java:115) ~[tomcat-embed-core-10.1.11.jar:10.1.11]\r\n\tat org.apache.catalina.valves.ErrorReportValve.invoke(ErrorReportValve.java:93) ~[tomcat-embed-core-10.1.11.jar:10.1.11]\r\n\tat org.apache.catalina.core.StandardEngineValve.invoke(StandardEngineValve.java:74) ~[tomcat-embed-core-10.1.11.jar:10.1.11]\r\n\tat org.apache.catalina.connector.CoyoteAdapter.service(CoyoteAdapter.java:341) ~[tomcat-embed-core-10.1.11.jar:10.1.11]\r\n\tat org.apache.coyote.http11.Http11Processor.service(Http11Processor.java:391) ~[tomcat-embed-core-10.1.11.jar:10.1.11]\r\n\tat org.apache.coyote.AbstractProcessorLight.process(AbstractProcessorLight.java:63) ~[tomcat-embed-core-10.1.11.jar:10.1.11]\r\n\tat org.apache.coyote.AbstractProtocol$ConnectionHandler.process(AbstractProtocol.java:894) ~[tomcat-embed-core-10.1.11.jar:10.1.11]\r\n\tat org.apache.tomcat.util.net.NioEndpoint$SocketProcessor.doRun(NioEndpoint.java:1740) ~[tomcat-embed-core-10.1.11.jar:10.1.11]\r\n\tat org.apache.tomcat.util.net.SocketProcessorBase.run(SocketProcessorBase.java:52) ~[tomcat-embed-core-10.1.11.jar:10.1.11]\r\n\tat org.apache.tomcat.util.threads.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1191) ~[tomcat-embed-core-10.1.11.jar:10.1.11]\r\n\tat org.apache.tomcat.util.threads.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:659) ~[tomcat-embed-core-10.1.11.jar:10.1.11]\r\n\tat org.apache.tomcat.util.threads.TaskThread$WrappingRunnable.run(TaskThread.java:61) ~[tomcat-embed-core-10.1.11.jar:10.1.11]\r\n\tat java.base/java.lang.Thread.run(Thread.java:833) ~[na:na]`\r\n\r\n**Environment**\r\nspring-ai-azure-openai-spring-boot-starter : 0.2.0-SNAPSHOT\r\nspring boot: 3.1.2\r\n\r\n**Steps to reproduce**\r\nJust run the application and access the endpoint /ai/sample\r\n\r\n\r\n**Expected behavior**\r\nIt has to connect to Azure OpenAI and get the response.\r\n\r\n**Minimal Complete Reproducible example**\r\nhttps://github.com/rd-1-2022/ai-azure-openai-helloworld.git\r\n",
+      "state": "CLOSED",
+      "createdAt": "2023-09-11T13:00:22Z",
+      "updatedAt": "2024-03-12T14:26:57Z",
+      "closedAt": "2024-03-12T14:26:57Z",
+      "url": "https://github.com/spring-projects/spring-ai/issues/10",
+      "author": {
+        "login": "radhakrishna67",
+        "name": null
+      },
+      "assignees": [
+        {
+          "login": "markpollack",
+          "name": "Mark Pollack"
+        }
+      ],
+      "labels": [],
+      "milestone": {
+        "title": "0.8.1",
+        "number": 5,
+        "state": "CLOSED",
+        "description": ""
+      },
+      "comments": [
+        {
+          "author": {
+            "login": "markpollack",
+            "name": "Mark Pollack"
+          },
+          "body": "Thanks for such a great issue, with a repo example",
+          "createdAt": "2023-09-27T21:20:18Z",
+          "reactions": {
+            "totalCount": 0
+          }
+        },
+        {
+          "author": {
+            "login": "berjanjonker",
+            "name": "Berjan Jonker"
+          },
+          "body": "For Azure the 'Deployment Name' should be used and not the 'Model Name'. As a workaround you can use:\r\n`((AzureOpenAiClient)aiClient).setModel(\"deployment-name\");`",
+          "createdAt": "2023-10-10T19:26:43Z",
+          "reactions": {
+            "totalCount": 0
+          }
+        },
+        {
+          "author": {
+            "login": "markpollack",
+            "name": "Mark Pollack"
+          },
+          "body": "We will look into it.  We want to be portable and I don't know yet what google/amazon are doing wrt to their client interfaces in terms of introducing a new concept of 'deployment name'.  ",
+          "createdAt": "2023-12-04T20:41:40Z",
+          "reactions": {
+            "totalCount": 0
+          }
+        },
+        {
+          "author": {
+            "login": "markpollack",
+            "name": "Mark Pollack"
+          },
+          "body": "We are getting back to this now.  Thanks for your patience!   What is planned to do to address this is to \r\n\r\n1. Change the @ConfigurationProperties for Azure OpenAI to include the property called 'deployment'.  This will set the Azure AI DeploymentName at application startup time for use with `ChatClient` to agree with how Azure AI exposes AI services in Azure AI Studio web site.\r\n2. To change the deployment name, there will be the ability to pass options at runtime via a class named `AzureOpenAIOptions`.  This will contain the property `DeploymentName` and will override the value set at application start time via @ConfigurationProperties.  This is part of a larger 'support runtime options' effort that will be done across the code base for all model providers.\r\n\r\n\r\n\r\nThe Azure Open AI API has a difficult tension in trying to support both OpenAI and Azure OpenAI, which makes for awkward usage in the OpenAI case.  For example, this javadoc comment shows the tension.\r\n\r\n```\r\n    public ChatCompletions getChatCompletions(String deploymentOrModelName,\r\n        ChatCompletionsOptions chatCompletionsOptions) {\r\n```\r\n\r\nwhere `deploymentOrModelName`is described as \r\n\r\n```\r\ndeploymentOrModelName – Specifies either the model deployment name (when using Azure OpenAI) or model name (when using non-Azure OpenAI) to use for this request. chatCompletionsOptions – The configuration information for a chat completions request. Completions support a wide variety of tasks and generate text that continues from or \"completes\" provided prompt data.\r\n```\r\n\r\nSimilar, in `ChatCompletionOptions`\r\n\r\n```\r\n    /**\r\n     * Set the model property: The model name to provide as part of this completions request.\r\n     * Not applicable to Azure OpenAI, where deployment information should be included in the Azure\r\n     * resource URI that's connected to.\r\n     *\r\n     * @param model the model value to set.\r\n     * @return the ChatCompletionsOptions object itself.\r\n     */\r\n    @Generated\r\n    public ChatCompletionsOptions setModel(String model) {\r\n```\r\n\r\n\r\nFor Spring AI, a user who wants to switch from Azure OpenAI to OpenAI we would suggest to change the dependency of the `ChatClient` to use and not to use the Azure OpenAI client so there isn't any mismatch in expectation or unclear API usage.\r\n\r\n\r\n",
+          "createdAt": "2024-01-10T16:09:23Z",
+          "reactions": {
+            "totalCount": 1
+          }
+        },
+        {
+          "author": {
+            "login": "markpollack",
+            "name": "Mark Pollack"
+          },
+          "body": "If this change is made, it also needs to be done in the AutoConfiguration Properties",
+          "createdAt": "2024-01-11T16:09:43Z",
+          "reactions": {
+            "totalCount": 0
+          }
+        },
+        {
+          "author": {
+            "login": "markpollack",
+            "name": "Mark Pollack"
+          },
+          "body": "Change `AzureOpenAiEmbeddingOptions` and `AzureOpenAiChatOptions` use of `setModel` to `setDeploymentName` as that matches Azure OpenAI terminology.",
+          "createdAt": "2024-02-05T21:46:18Z",
+          "reactions": {
+            "totalCount": 0
+          }
+        },
+        {
+          "author": {
+            "login": "markpollack",
+            "name": "Mark Pollack"
+          },
+          "body": "Moving this to 0.8.1 for now as I feel there may unintended side effects of this change and would like it not to hold up the 0.8.0 release.",
+          "createdAt": "2024-02-21T16:30:14Z",
+          "reactions": {
+            "totalCount": 1
+          }
+        }
+      ]
+    },
+    {
+      "number": 7,
+      "title": "Handle functions as an agent",
+      "body": "**Expected Behavior**\r\n\r\nI want to be able to provide Spring AI with one or more functions that could be used to provide additional information or functionality. (See https://platform.openai.com/docs/guides/gpt/function-calling). Moreover, when the response to a prompt indicates that a function should be called, I'd like it if that decision, the call to the function, and the reissuing of a new prompt were all handled internally by Spring AI. This behavior is what I believe is commonly referred to as an \"agent\".\r\n\r\nIn short, I'd like to be able to configure Spring AI with one or more functions (perhaps as lambdas or method references) that could be used later. Then, if I ask a question that the LLM needs more information to answer, Spring AI would call those functions for me and resubmit the prompt. I don't want to have to do what is shown as \"step 2\" in the example at https://platform.openai.com/docs/guides/gpt/function-calling. That decision making should be handled internally by Spring AI.\r\n\r\nMy primary desire is to have function support, but almost as importantly, I want to not have to deal with the back and forth interactions in my own code. I want Spring AI to handle that internally.\r\n\r\n**Current Behavior**\r\n\r\nSpring AI does not yet support functions, so at this point there's no need for agent behavior. Currently Spring AI only handles one-turn Q&A type interactions.\r\n\r\n**Context**\r\n\r\nAs an example (drawn from the aforementioned documentation), if I were to ask what the weather is in Boston, most/all LLMs wouldn't know that answer because they're not trained on real-time or even relatively current data. But if I provide a function that can lookup the weather in a city, then instead of the LLM responding that it doesn't know what the weather is, it could respond with an instruction to call the function. The application (or the agent on behalf of the application) would call that function as instructed, then submit a new prompt with weather data from which the LLM would be able to generate the desired answer.\r\n",
+      "state": "CLOSED",
+      "createdAt": "2023-09-01T13:24:57Z",
+      "updatedAt": "2024-02-29T16:18:10Z",
+      "closedAt": "2024-02-29T16:18:10Z",
+      "url": "https://github.com/spring-projects/spring-ai/issues/7",
+      "author": {
+        "login": "habuma",
+        "name": "Craig Walls"
+      },
+      "assignees": [],
+      "labels": [],
+      "milestone": {
+        "title": "backlog",
+        "number": 3,
+        "state": "OPEN",
+        "description": ""
+      },
+      "comments": [
+        {
+          "author": {
+            "login": "Kirbstomper",
+            "name": "Christopher Smith"
+          },
+          "body": "I was bored at work so I played around a little bit with this. I am by no means an expert but I thought it would be cool if we could somehow auto configure and mark functions in the same way that Spring Cloud Functions does. I think this is the idea for \"agents\" right?\r\n\r\nhttps://github.com/Kirbstomper/spring-ai/tree/function_playground \r\n\r\nI created a new annotation and the code that should auto populate that. While on the client side its a bit quick and dirty but I have a integration test that works for using a function with the latest version of `openai-java`",
+          "createdAt": "2023-09-06T22:49:27Z",
+          "reactions": {
+            "totalCount": 0
+          }
+        },
+        {
+          "author": {
+            "login": "markpollack",
+            "name": "Mark Pollack"
+          },
+          "body": "Yes, functions are on our roadmap @habuma   Sort of gathering thoughts together to make a road map and will be creating issues and such in the coming days.  \r\n\r\n@Kirbstomper Thanks so much for the contribution.  I do like the ideas of taking existing concepts from the Spring Ecosystem an applying them to Spring AI.  I will drive deeper but what you are doing is in the right direction from a quick look.\r\n\r\nI quite like the taxonomy/terminology in much of LangChain. Their definition of agent is\r\n\r\n\"Some applications will require not just a predetermined chain of calls to LLMs/other tools, but potentially an unknown chain that depends on the user's input. In these types of chains, there is a “agent” which has access to a suite of tools. Depending on the user input, the agent can then decide which, if any, of these tools to call.\"\r\n\r\nSo it is sort of the next step of chains.  I see us leveraging Spring Integration's `[IntegrationFlow](https://docs.spring.io/spring-integration/docs/current/reference/html/dsl.html)` DSL to help take us to the next level of Agents.  There are many classic EIP patterns that we can apply to AI usage cases.  Same applies with use cases such as Retrieval Augmented Generation where we can create batch jobs to load embedding into a vector database.\r\n\r\n\r\nBTW, the lowercase \"i\" in `AiClient` has been irking me a bit.  Thoughts on that?\r\n\r\n",
+          "createdAt": "2023-09-07T17:25:36Z",
+          "reactions": {
+            "totalCount": 1
+          }
+        },
+        {
+          "author": {
+            "login": "Kirbstomper",
+            "name": "Christopher Smith"
+          },
+          "body": "I'm all for capitalizing the i. `AIClient` does feel so much better than `AiClient` 😆 ",
+          "createdAt": "2023-09-08T13:14:39Z",
+          "reactions": {
+            "totalCount": 0
+          }
+        },
+        {
+          "author": {
+            "login": "markpollack",
+            "name": "Mark Pollack"
+          },
+          "body": "There is a PR that will be reviewed related to this topic  https://github.com/spring-projects-experimental/spring-ai/pull/16\r\n",
+          "createdAt": "2023-09-27T21:19:53Z",
+          "reactions": {
+            "totalCount": 0
+          }
+        },
+        {
+          "author": {
+            "login": "markpollack",
+            "name": "Mark Pollack"
+          },
+          "body": "Man, I really apologize for not getting to this yet.  I need to set aside some time for 'understanding functions' better.  It will be merged!",
+          "createdAt": "2023-10-03T23:01:40Z",
+          "reactions": {
+            "totalCount": 0
+          }
+        },
+        {
+          "author": {
+            "login": "markpollack",
+            "name": "Mark Pollack"
+          },
+          "body": "We are aiming for basic function support in 0.8.0.  high level interactions, e..g Chat with conversational memory and agents etc, or high level APIs around function invocations will be in a later release.  Not quite sure when.  Just wanted to keep the thread alive, it has not been forgotten.",
+          "createdAt": "2023-12-04T20:17:52Z",
+          "reactions": {
+            "totalCount": 0
+          }
+        },
+        {
+          "author": {
+            "login": "mxab",
+            "name": "Max Fröhlich"
+          },
+          "body": "Hi,\r\njust as another inspiration, I created a python function handler framework https://github.com/mxab/taifun where you can annotate function and it extracts the functions parameters as json schema and provides it to openai as functions to call.\r\n\r\nSomething similar in Spring would also work maybe nice. eg\r\n\r\n\r\n```java\r\nrecord Location(float lat, float lon)\r\nclass AiController {\r\n @AiFunction(\"retrieves the location of the requester\")\r\n public Location getLocation(){\r\n // get location\r\n }\r\n @AiFunction(\"returns the weather for a given location \")\r\n public String getWeather(@AiParam(\"the lat value....\") Location location){\r\n // get weather\r\n }\r\n}\r\n```\r\n\r\n\r\n```java\r\n\r\nAiFunctionsBean functions = generateFromAllAiControllers()\r\n\r\naiclient.generate(\"do i need an umbrella\", functions)\r\n\r\n```",
+          "createdAt": "2023-12-05T10:01:37Z",
+          "reactions": {
+            "totalCount": 1
+          }
+        },
+        {
+          "author": {
+            "login": "markpollack",
+            "name": "Mark Pollack"
+          },
+          "body": "[Function Calling support has been added](https://docs.spring.io/spring-ai/reference/api/functions.html).  It don't think function calling itself is equivalent to an agent, an agent likely has a persistent memory and additional files, more akin to the open ai assistants api.    Closing this issue now, but reopen if I've missed something.h",
+          "createdAt": "2024-02-29T16:18:10Z",
+          "reactions": {
+            "totalCount": 0
+          }
+        }
+      ]
+    },
+    {
+      "number": 2,
+      "title": "AI client library",
+      "body": "Apologies for creating an issue to only ask a question, but I don't see the discussions enabled for this repository.\r\n\r\nWhy don't you use [Azure client library](https://github.com/Azure/azure-sdk-for-java/tree/main/sdk/openai/azure-ai-openai) instead of theokanning client? Did you consider it?\r\n\r\nIt provides sync and async clients. And it's very easy to switch from Azure API to Open AI API",
+      "state": "CLOSED",
+      "createdAt": "2023-08-24T02:28:51Z",
+      "updatedAt": "2023-08-25T19:27:50Z",
+      "closedAt": "2023-08-25T03:11:51Z",
+      "url": "https://github.com/spring-projects/spring-ai/issues/2",
+      "author": {
+        "login": "ideaplugins",
+        "name": "Alejandro Gomez"
+      },
+      "assignees": [],
+      "labels": [],
+      "milestone": null,
+      "comments": [
+        {
+          "author": {
+            "login": "markpollack",
+            "name": "Mark Pollack"
+          },
+          "body": "No problem, I welcome questions here, not sure what is a better medium for that.  A discord server?  I needed two implementations to make sure the abstraction was correct, so this was one way to do it.  Also, I believe there are other features added into the Azure client that I didn't see in the Theo Kanning one, but I didn't dive into too much detail.  It can be something to consider, but having two implementations of a 'common' API was crucial.  I'll take some time to do a more careful comparison between the two offerings and think about this question more.  Thanks again.",
+          "createdAt": "2023-08-24T17:47:21Z",
+          "reactions": {
+            "totalCount": 2
+          }
+        },
+        {
+          "author": {
+            "login": "ideaplugins",
+            "name": "Alejandro Gomez"
+          },
+          "body": "I see, you use Theo Kanning's client for the openAi module, and the Azure client only in the azure module :+1: ",
+          "createdAt": "2023-08-25T19:27:49Z",
+          "reactions": {
+            "totalCount": 0
+          }
+        }
+      ]
+    }
+  ],
+  "individual_references": []
+}
