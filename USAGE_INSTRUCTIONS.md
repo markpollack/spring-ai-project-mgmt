@@ -22,6 +22,7 @@ python stratified_split.py
 
 **Data Collection:**
 - ✅ `collect_github_issues.sh` - Enhanced with GraphQL for fast collection
+- ✅ `scripts/CollectGithubIssues.java` - Java implementation with JBang (alternative)
 - ✅ `quick_analysis_extract.sh` - Working analysis script with validation
 - ✅ `stratified_split.py` - Creates train/test splits for ML tasks
 - ❌ `prepare_analysis_data.sh` - Deprecated (has hanging issue)
@@ -33,6 +34,8 @@ python stratified_split.py
 - `jq` - JSON processor
 - `zip` - for creating analysis packages
 - `python` - for stratified split functionality
+- `jbang` - for Java implementation (optional, if using Java version)
+- `java` 17+ - for Java implementation (optional, if using Java version)
 
 ### GitHub CLI Setup
 ```bash
@@ -50,8 +53,18 @@ gh repo set-default spring-projects/spring-ai
 
 ## Data Collection
 
+### Implementation Options
+
+You can choose between two implementations:
+
+1. **Bash Script** (Original): `./collect_github_issues.sh`
+2. **Java Implementation** (Alternative): `jbang scripts/CollectGithubIssues.java`
+
+Both implementations are fully compatible and produce identical output.
+
 ### Basic Usage
 
+#### Bash Implementation
 ```bash
 # Collect from current repository
 ./collect_github_issues.sh
@@ -66,8 +79,21 @@ gh repo set-default spring-projects/spring-ai
 ./collect_github_issues.sh --repo spring-projects/spring-ai --dry-run
 ```
 
+#### Java Implementation (Alternative)
+```bash
+# Collect from specific repository (recommended)
+jbang scripts/CollectGithubIssues.java --repo spring-projects/spring-ai
+
+# Clean previous collection and start fresh (recommended)
+jbang scripts/CollectGithubIssues.java --repo spring-projects/spring-ai --clean
+
+# Dry run to estimate time and data size
+jbang scripts/CollectGithubIssues.java --repo spring-projects/spring-ai --dry-run
+```
+
 ### Advanced Options
 
+#### Bash Implementation
 ```bash
 # Custom batch size (default: 100)
 ./collect_github_issues.sh --batch-size 200
@@ -82,16 +108,38 @@ gh repo set-default spring-projects/spring-ai
 ./collect_github_issues.sh --resume
 ```
 
+#### Java Implementation (Alternative)
+```bash
+# Custom batch size (default: 100)
+jbang scripts/CollectGithubIssues.java --batch-size 200
+
+# Verbose logging for debugging
+jbang scripts/CollectGithubIssues.java --verbose
+
+# Resume interrupted collection
+jbang scripts/CollectGithubIssues.java --resume
+
+# Incremental collection (only new issues)
+jbang scripts/CollectGithubIssues.java --incremental
+```
+
+**Note**: The Java implementation does not support compression (--compress), but includes enhanced features like better error handling, configuration management, and structured logging.
+
 ### Collection Performance
 
-**GraphQL-Enhanced Collection:**
+**GraphQL-Enhanced Collection (Both Implementations):**
 - Speed: 1,114 issues in ~2 minutes
 - Accuracy: Exact count using GraphQL API
 - Rich data: Includes all comments, reactions, and metadata in single call
 - Rate limit friendly: Fewer API calls, less chance of hitting limits
 
+**Implementation Comparison:**
+- **Bash**: Faster startup, lower memory usage, good for one-off tasks
+- **Java**: Better large-scale performance, enhanced error handling, configuration management, structured logging
+
 ### Configuration
 
+#### Bash Implementation
 You can customize collection behavior using environment variables:
 
 ```bash
@@ -108,9 +156,24 @@ export ISSUE_MAX_RETRIES=5
 ISSUE_BATCH_SIZE=50 ./collect_github_issues.sh
 ```
 
+#### Java Implementation (Alternative)
+The Java implementation uses a configuration file (`scripts/application.yaml`) and supports the same environment variables:
+
+```bash
+# Configuration is automatically loaded from scripts/application.yaml
+jbang scripts/CollectGithubIssues.java --repo spring-projects/spring-ai
+
+# Override configuration with environment variables
+export ISSUE_BATCH_SIZE=200
+jbang scripts/CollectGithubIssues.java --repo spring-projects/spring-ai
+
+# View current configuration
+jbang scripts/CollectGithubIssues.java --repo spring-projects/spring-ai --dry-run --verbose
+```
+
 ### Output Structure
 
-The collection script creates the following directory structure:
+Both implementations create the identical directory structure:
 
 ```
 issues/raw/closed/
@@ -123,6 +186,116 @@ issues/raw/closed/
 │   ├── issue_1234.json           # Individual issue files
 │   └── issue_5678.json
 └── collection.log                # Detailed collection log
+```
+
+## Java Implementation (Alternative)
+
+### Overview
+
+The Java implementation using JBang provides a modern alternative to the bash script with enhanced features while maintaining 100% compatibility with the original bash version.
+
+### Key Features
+
+- **100% Data Compatibility**: Produces identical JSON output to bash version
+- **Enhanced Error Handling**: Better error messages and recovery
+- **Configuration Management**: YAML-based configuration with Spring Boot
+- **Structured Logging**: Better logging with file rotation
+- **Rate Limiting**: Built-in rate limiting with exponential backoff
+- **Resume Capability**: Robust resume functionality
+- **Input Validation**: Comprehensive input validation
+
+### Prerequisites
+
+```bash
+# Install JBang (if not already installed)
+# macOS: brew install jbang  
+# Linux: curl -Ls https://sh.jbang.dev | bash -s - app setup
+# Or download from: https://github.com/jbangdev/jbang/releases
+
+# Verify installation
+jbang --version
+
+# Ensure Java 17+ is available
+java --version
+```
+
+### Quick Start
+
+```bash
+# Basic collection
+jbang scripts/CollectGithubIssues.java --repo spring-projects/spring-ai
+
+# With custom batch size
+jbang scripts/CollectGithubIssues.java --repo spring-projects/spring-ai --batch-size 50
+
+# Dry run to test
+jbang scripts/CollectGithubIssues.java --repo spring-projects/spring-ai --dry-run
+
+# Get help
+jbang scripts/CollectGithubIssues.java --help
+```
+
+### Configuration Options
+
+The Java implementation supports a configuration file at `scripts/application.yaml`:
+
+```yaml
+github:
+  issues:
+    batch-size: 100
+    max-retries: 3
+    retry-delay: 5
+    large-threshold: 50
+    size-threshold: 102400
+    
+logging:
+  level:
+    com.github.issues: INFO
+  file:
+    name: issues/raw/closed/collection.log
+    max-size: 10MB
+    max-history: 5
+```
+
+### Migration from Bash
+
+For detailed migration instructions, see `scripts/MIGRATION_GUIDE.md`.
+
+**Quick Migration:**
+1. Install JBang and Java 17+
+2. Test with `--dry-run` flag
+3. Replace bash commands with Java equivalents
+4. Enjoy enhanced features and better error handling
+
+### Performance Comparison
+
+| Feature | Bash | Java |
+|---------|------|------|
+| Startup Speed | ✅ Faster | ⚠️ Slower (JVM startup) |
+| Large Dataset Performance | ✅ Good | ✅ Better |
+| Memory Usage | ✅ Lower | ⚠️ Higher |
+| Error Handling | ✅ Basic | ✅ Enhanced |
+| Configuration | ✅ Environment vars | ✅ YAML + Environment vars |
+| Logging | ✅ Basic | ✅ Structured with rotation |
+
+**Recommendation**: Use Java for production/repeated use, bash for quick one-off tasks.
+
+### Validation and Testing
+
+Comprehensive validation scripts are available:
+
+```bash
+# Compare both implementations
+scripts/compare_implementations.sh
+
+# Verify data format compatibility
+scripts/verify_data_compatibility.sh
+
+# Performance benchmarking
+scripts/benchmark_performance.sh
+
+# Full validation suite
+scripts/final_validation.sh
 ```
 
 ## Data Preparation for Analysis
@@ -380,6 +553,7 @@ export ISSUE_SIZE_THRESHOLD=51200
 
 ### Complete Spring AI Analysis
 
+#### Using Bash Implementation
 ```bash
 # 1. Configure for large repository
 source issues_collection_config.env
@@ -397,16 +571,42 @@ python stratified_split.py
 # 5. Upload issues/analysis/github_issues_analysis.zip to ChatGPT
 ```
 
+#### Using Java Implementation (Alternative)
+```bash
+# 1. Configure for large repository
+export ISSUE_BATCH_SIZE=200
+
+# 2. Collect all data
+jbang scripts/CollectGithubIssues.java --repo spring-projects/spring-ai --clean
+
+# 3. Prepare for analysis
+./quick_analysis_extract.sh
+
+# 4. (Optional) Create train/test split for ML tasks
+python stratified_split.py
+
+# 5. Upload issues/analysis/github_issues_analysis.zip to ChatGPT
+```
+
 ### Quick Analysis
 
+#### Using Bash Implementation
 ```bash
 # Fast collection and analysis
 ./collect_github_issues.sh --repo spring-projects/spring-ai
 ./quick_analysis_extract.sh
 ```
 
+#### Using Java Implementation (Alternative)
+```bash
+# Fast collection and analysis
+jbang scripts/CollectGithubIssues.java --repo spring-projects/spring-ai
+./quick_analysis_extract.sh
+```
+
 ### Machine Learning Workflow
 
+#### Using Bash Implementation
 ```bash
 # Collection with filtering for ML tasks
 ./collect_github_issues.sh --repo spring-projects/spring-ai --clean
@@ -419,11 +619,33 @@ python stratified_split.py
 # - issues/stratified_split/test_set.json (for testing)
 ```
 
+#### Using Java Implementation (Alternative)
+```bash
+# Collection with filtering for ML tasks
+jbang scripts/CollectGithubIssues.java --repo spring-projects/spring-ai --clean
+./quick_analysis_extract.sh --filter-no-labels
+python stratified_split.py
+
+# Files created:
+# - issues/analysis/github_issues_analysis.zip (for ChatGPT)
+# - issues/stratified_split/train_set.json (for training)
+# - issues/stratified_split/test_set.json (for testing)
+```
+
 ### Incremental Updates
 
+#### Using Bash Implementation
 ```bash
 # Update existing collection with new issues
 ./collect_github_issues.sh --incremental
+./quick_analysis_extract.sh
+python stratified_split.py  # Update train/test split if needed
+```
+
+#### Using Java Implementation (Alternative)
+```bash
+# Update existing collection with new issues
+jbang scripts/CollectGithubIssues.java --incremental
 ./quick_analysis_extract.sh
 python stratified_split.py  # Update train/test split if needed
 ```

@@ -1,0 +1,38 @@
+github:
+  issues:
+    # Repository settings
+    default-repository: spring-projects/spring-ai
+    
+    # Batch configuration
+    batch-size: 100
+    max-batch-size-bytes: 1048576  # 1MB
+    
+    # Rate limiting
+    max-retries: 3
+    retry-delay: 5
+    rate-limit: 5000  # requests per hour
+    
+    # Large issue detection
+    large-issue-threshold: 50  # comments
+    size-threshold: 102400     # 100KB
+    
+    # File paths
+    base-output-dir: issues/raw/closed
+    resume-file: .resume_state.json
+    
+    # Logging
+    verbose: false
+    debug: false
+
+logging:
+  level:
+    com.github.issues: INFO
+    org.springframework: WARN
+    org.kohsuke: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/github-issues-collection.log
+    max-size: 10MB
+    max-history: 5
