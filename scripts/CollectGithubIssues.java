@@ -439,7 +439,7 @@ public class CollectGithubIssues implements CommandLineRunner {
     private void showHelp() {
         System.out.println("Usage: collect_github_issues.java [OPTIONS]");
         System.out.println();
-        System.out.println("Collect all closed GitHub issues from a repository using GitHub API.");
+        System.out.println("Collect GitHub issues from a repository with advanced filtering capabilities.");
         System.out.println();
         System.out.println("OPTIONS:");
         System.out.println("    -h, --help              Show this help message");
@@ -451,9 +451,12 @@ public class CollectGithubIssues implements CommandLineRunner {
         System.out.println("    -v, --verbose          Enable verbose logging");
         System.out.println("    --clean                Clean up previous collection data before starting");
         System.out.println("    --resume               Resume from last successful batch");
+        System.out.println();
+        System.out.println("FILTERING OPTIONS:");
         System.out.println("    -s, --state <state>     Issue state: open, closed, all (default: " + properties.getDefaultState() + ")");
         System.out.println("    -l, --labels <labels>   Comma-separated list of labels to filter by");
         System.out.println("    --label-mode <mode>     Label matching mode: any, all (default: " + properties.getDefaultLabelMode() + ")");
+        System.out.println("                           Note: 'any' mode uses first label only due to API limitations");
         System.out.println();
         System.out.println("CONFIGURATION:");
         System.out.println("    Configuration can be customized via application.yaml file");
@@ -464,9 +467,20 @@ public class CollectGithubIssues implements CommandLineRunner {
         System.out.println("    GITHUB_TOKEN           GitHub personal access token (required)");
         System.out.println();
         System.out.println("EXAMPLES:");
+        System.out.println("    # Basic usage");
         System.out.println("    ./collect_github_issues.java --repo spring-projects/spring-ai");
-        System.out.println("    ./collect_github_issues.java --batch-size 50 --incremental");
-        System.out.println("    ./collect_github_issues.java --dry-run --verbose");
+        System.out.println();
+        System.out.println("    # State filtering");
+        System.out.println("    ./collect_github_issues.java --state open --dry-run");
+        System.out.println("    ./collect_github_issues.java --state all --batch-size 50");
+        System.out.println();
+        System.out.println("    # Label filtering");
+        System.out.println("    ./collect_github_issues.java --labels bug --clean");
+        System.out.println("    ./collect_github_issues.java --labels \"bug,priority:high\" --label-mode all");
+        System.out.println();
+        System.out.println("    # Combined filtering");
+        System.out.println("    ./collect_github_issues.java --state open --labels bug --verbose");
+        System.out.println("    ./collect_github_issues.java --state closed --labels documentation,enhancement");
         System.out.println();
     }
 }
@@ -677,6 +691,7 @@ class GitHubGraphQLService {
         return result.path("data").path("repository").path("issues").path("totalCount").asInt(0);
     }
     
+    // Get issue count using GitHub Search API for filtered queries
     public int getSearchIssueCount(String searchQuery) {
         String query = """
             query($query: String!) {
@@ -1131,6 +1146,7 @@ class IssueCollectionService {
             """;
     }
     
+    // GraphQL query for search-based issue collection with filtering
     private String buildSearchIssuesQuery() {
         return """
             query($query: String!, $first: Int!, $after: String) {
@@ -1354,13 +1370,14 @@ class IssueCollectionService {
         }
     }
     
+    // Build GitHub search query with state and label filtering
     private String buildSearchQuery(String owner, String repo, String state, List<String> labels, String labelMode) {
         StringBuilder query = new StringBuilder();
         
         // Repository and type
         query.append("repo:").append(owner).append("/").append(repo).append(" is:issue");
         
-        // State filter
+        // State filter (open/closed/all)
         switch (state.toLowerCase()) {
             case "open":
                 query.append(" is:open");
@@ -1375,15 +1392,15 @@ class IssueCollectionService {
                 throw new IllegalArgumentException("Invalid state: " + state);
         }
         
-        // Label filters
+        // Label filters with AND/OR logic
         if (labels != null && !labels.isEmpty()) {
             if ("all".equals(labelMode.toLowerCase())) {
-                // All labels must match (AND logic)
+                // All labels must match (AND logic) - multiple label: terms
                 for (String label : labels) {
                     query.append(" label:\"").append(label.trim()).append("\"");
                 }
             } else {
-                // Any label can match (OR logic) - use multiple queries or search syntax
+                // Any label can match (OR logic) - GitHub Search API limitation
                 if (labels.size() == 1) {
                     query.append(" label:\"").append(labels.get(0).trim()).append("\"");
                 } else {
