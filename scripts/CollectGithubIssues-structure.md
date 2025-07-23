@@ -1,6 +1,6 @@
 # CollectGithubIssues.java - Code Structure Reference
 
-**File Length**: 1,515 lines (updated after clean-by-default implementation)  
+**File Length**: 1,563 lines (updated after --zip implementation)  
 **Last Updated**: 2025-07-23
 
 > **Important**: Always refer to this file before adding new code to CollectGithubIssues.java. Update this file after making changes.
@@ -18,6 +18,7 @@
 - **Lines 75-81**: Dependency injection fields
 - **Lines 95-107**: Configuration fields (original)
   - **Line 106**: `private boolean clean = true;` **UPDATED** - Now defaults to true
+  - **Line 108**: `private boolean zip = false;` **UPDATED** - Renamed from compress
 - **Lines 109-112**: **NEW** Issue filtering fields (added in Phase 1)
   - `issueState`, `labelFilters`, `labelMode`
 
@@ -31,7 +32,8 @@
 - **Lines 200-220**: `startCollection()`
 
 ### Argument Parsing (Lines 222-342)
-- **Lines 222-340**: `parseArguments()` - **UPDATED** in Phase 2 & clean-by-default
+- **Lines 222-340**: `parseArguments()` - **UPDATED** in Phase 2, clean-by-default & zip
+  - **Lines 271-274**: **UPDATED** `-z, --zip` flag (renamed from --compress)
   - **Lines 279-282**: `--clean` flag (sets clean = true)
   - **Lines 284-287**: **NEW** `--no-clean` and `--append` flags (sets clean = false)
   - **Lines 288-328**: **NEW** State and label filtering arguments
@@ -115,23 +117,24 @@
 - **Lines 1202-1257**: Issue conversion from JSON
 - **Lines 1259-1269**: DateTime parsing utility
 
-#### File Operations (Lines 1271-1356)
-- **Lines 1271-1287**: Metadata file creation
-- **Lines 1289-1307**: Resume state management
-- **Lines 1309-1323**: Resume state loading
-- **Lines 1325-1333**: Resume cleanup
-- **Lines 1335-1355**: Previous data cleanup
+#### File Operations (Lines 1271-1445)
+- **Lines 1271-1320**: Metadata file creation with zip integration
+- **Lines 1322-1359**: **NEW** `createCompressedArchive()` - zip creation functionality
+- **Lines 1361-1426**: **NEW** `addCommandLineArgsToZip()` - command line documentation
+- **Lines 1428-1433**: Filter suffix building for zip names
+- **Lines 1435-1439**: File size formatting utility
+- **Lines 1441-1445**: Previous data cleanup
 
-#### Search Integration (Lines 1357-1399)
-- **Lines 1357-1399**: **COMPLETED** `buildSearchQuery()` - search query builder with state and label filtering
+#### Search Integration (Lines 1447-1489)
+- **Lines 1447-1489**: **COMPLETED** `buildSearchQuery()` - search query builder with state and label filtering
 
-#### Internal Records (Lines 1401-1444)
-- **Lines 1401**: `BatchData` record
-- **Lines 1403**: `CollectionStats` record  
-- **Lines 1405-1443**: `ResumeState` record
+#### Internal Records (Lines 1491-1534)
+- **Lines 1491**: `BatchData` record
+- **Lines 1493**: `CollectionStats` record  
+- **Lines 1495-1533**: `ResumeState` record
 
-## Configuration Properties: CollectionProperties (Lines 1445-1490)
-- **Lines 1445-1490**: Application configuration class with getter/setter methods
+## Configuration Properties: CollectionProperties (Lines 1535-1563)
+- **Lines 1535-1563**: Application configuration class with getter/setter methods
 - **Configuration fields include:**
   - Default repository, batch settings, rate limiting
   - Large issue thresholds, file paths, logging settings
@@ -157,6 +160,14 @@
 2. **Lines 284-287**: Added `--no-clean` and `--append` flags
 3. **Lines 458-459**: Updated help text to reflect new defaults
 4. **Lines 485-486**: Added examples showing --no-clean usage
+
+### ✅ Zip Archive Enhancement:
+1. **Line 108**: `private boolean zip = false;` - Renamed from compress
+2. **Lines 271-274**: Changed to `-z, --zip` flag (was -c, --compress)
+3. **Lines 1322-1359**: Added `createCompressedArchive()` method
+4. **Lines 1361-1426**: Added `addCommandLineArgsToZip()` method for command line documentation
+5. **Lines 1428-1439**: Added utility methods for zip file naming and formatting
+6. **Updated Records**: Changed `compressed` to `zipped` in CollectionMetadata record
 
 ## Method Dependencies
 - `parseArguments()` → sets filtering fields → used by `collectIssues()`

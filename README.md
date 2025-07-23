@@ -16,10 +16,11 @@ A comprehensive JBang-based tool for collecting GitHub issues with advanced filt
 - Batch processing with resume support
 - GitHub API rate limit management
 - JSON output with comprehensive metadata
+- Zip archive output with command line documentation
 
 **Quick Start**:
 ```bash
 export GITHUB_TOKEN="your_token_here"
 cd scripts
-jbang CollectGithubIssues.java --repo spring-projects/spring-ai --state open --labels bug --dry-run
+jbang CollectGithubIssues.java --repo spring-projects/spring-ai --state open --labels bug --zip
 ```

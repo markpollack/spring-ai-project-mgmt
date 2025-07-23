@@ -47,6 +47,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.format.DateTimeFormatter;
 import java.time.ZonedDateTime;
+import java.util.zip.ZipOutputStream;
+import java.util.zip.ZipEntry;
+import java.io.FileOutputStream;
+import java.io.ByteArrayOutputStream;
 import java.util.stream.Stream;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -101,7 +105,7 @@ public class CollectGithubIssues implements CommandLineRunner {
     private int sizeThreshold;
     private boolean dryRun = false;
     private boolean incremental = false;
-    private boolean compress = false;
+    private boolean zip = false;
     private boolean verbose = false;
     private boolean clean = true;
     private boolean resume = false;
@@ -142,7 +146,7 @@ public class CollectGithubIssues implements CommandLineRunner {
         logger.info("  Batch Size: {}", batchSize);
         logger.info("  Dry Run: {}", dryRun);
         logger.info("  Incremental: {}", incremental);
-        logger.info("  Compress: {}", compress);
+        logger.info("  Zip: {}", zip);
         
         // Test GitHub API connectivity
         testGitHubConnectivity();
@@ -200,7 +204,7 @@ public class CollectGithubIssues implements CommandLineRunner {
     private void startCollection() {
         try {
             CollectionRequest request = new CollectionRequest(
-                repo, batchSize, dryRun, incremental, compress, clean, resume,
+                repo, batchSize, dryRun, incremental, zip, clean, resume,
                 issueState, labelFilters, labelMode
             );
             
@@ -264,9 +268,9 @@ public class CollectGithubIssues implements CommandLineRunner {
                     logger.debug("Incremental mode enabled");
                     break;
                     
-                case "-c", "--compress":
-                    compress = true;
-                    logger.debug("Compression enabled");
+                case "-z", "--zip":
+                    zip = true;
+                    logger.debug("Zip output enabled");
                     break;
                     
                 case "-v", "--verbose":
@@ -453,7 +457,7 @@ public class CollectGithubIssues implements CommandLineRunner {
         System.out.println("    -b, --batch-size SIZE   Issues per batch file (default: " + properties.getBatchSize() + ")");
         System.out.println("    -d, --dry-run          Show what would be collected without doing it");
         System.out.println("    -i, --incremental      Skip already collected issues");
-        System.out.println("    -c, --compress         Compress output files");
+        System.out.println("    -z, --zip              Create zip archive of collected data");
         System.out.println("    -v, --verbose          Enable verbose logging");
         System.out.println("    --clean                Clean up previous collection data before starting (default)");
         System.out.println("    --no-clean, --append  Keep previous collection data and append new data");
@@ -531,7 +535,7 @@ record CollectionMetadata(
     int totalIssues,
     int processedIssues,
     int batchSize,
-    boolean compressed
+    boolean zipped
 ) {}
 
 record CollectionRequest(
@@ -539,7 +543,7 @@ record CollectionRequest(
     int batchSize,
     boolean dryRun,
     boolean incremental,
-    boolean compress,
+    boolean zip,
     boolean clean,
     boolean resume,
     String issueState,
@@ -1301,13 +1305,138 @@ class IssueCollectionService {
             totalIssues,
             processedIssues,
             request.batchSize(),
-            request.compress()
+            request.zip()
         );
         
         Path metadataPath = outputPath.resolve("metadata.json");
         objectMapper.writeValue(metadataPath.toFile(), metadata);
         
         logger.info("Created metadata file: {}", metadataPath);
+        
+        // Create compressed archive if compression is enabled
+        if (request.zip()) {
+            createCompressedArchive(outputPath, request);
+        }
+    }
+    
+    private void createCompressedArchive(Path outputPath, CollectionRequest request) throws Exception {
+        // Create compressed output directory
+        Path compressedDir = Paths.get("issues-compressed");
+        Files.createDirectories(compressedDir);
+        
+        // Generate zip filename with timestamp and filters
+        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss"));
+        String repoName = request.repository().replace("/", "-");
+        String filters = buildFilterSuffix(request);
+        String zipFileName = String.format("%s_%s_%s%s.zip", repoName, request.issueState(), timestamp, filters);
+        Path zipPath = compressedDir.resolve(zipFileName);
+        
+        logger.info("Creating compressed archive: {}", zipPath);
+        
+        try (ZipOutputStream zipOut = new ZipOutputStream(new FileOutputStream(zipPath.toFile()))) {
+            // Add command line arguments file
+            addCommandLineArgsToZip(zipOut, request);
+            
+            // Add all batch files to zip
+            try (Stream<Path> paths = Files.walk(outputPath)) {
+                paths.filter(Files::isRegularFile)
+                     .filter(path -> path.getFileName().toString().endsWith(".json"))
+                     .forEach(path -> {
+                         try {
+                             String entryName = path.getFileName().toString();
+                             ZipEntry zipEntry = new ZipEntry(entryName);
+                             zipOut.putNextEntry(zipEntry);
+                             Files.copy(path, zipOut);
+                             zipOut.closeEntry();
+                         } catch (Exception e) {
+                             logger.error("Failed to add {} to zip: {}", path, e.getMessage());
+                         }
+                     });
+            }
+        }
+        
+        logger.info("Compressed archive created: {} ({})", zipPath, formatFileSize(Files.size(zipPath)));
+    }
+    
+    private void addCommandLineArgsToZip(ZipOutputStream zipOut, CollectionRequest request) throws Exception {
+        // Create command line arguments documentation
+        StringBuilder argsContent = new StringBuilder();
+        argsContent.append("# GitHub Issues Collection - Command Line Arguments\n");
+        argsContent.append("# Generated: ").append(LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)).append("\n\n");
+        
+        argsContent.append("## Original Command\n");
+        argsContent.append("```bash\n");
+        argsContent.append("jbang CollectGithubIssues.java");
+        
+        // Add repository
+        argsContent.append(" --repo ").append(request.repository());
+        
+        // Add state filter
+        if (!"closed".equals(request.issueState())) {
+            argsContent.append(" --state ").append(request.issueState());
+        }
+        
+        // Add label filters
+        if (request.labelFilters() != null && !request.labelFilters().isEmpty()) {
+            argsContent.append(" --labels ").append(String.join(",", request.labelFilters()));
+            if (!"any".equals(request.labelMode())) {
+                argsContent.append(" --label-mode ").append(request.labelMode());
+            }
+        }
+        
+        // Add batch size if not default
+        if (request.batchSize() != 100) {
+            argsContent.append(" --batch-size ").append(request.batchSize());
+        }
+        
+        // Add flags
+        if (request.dryRun()) argsContent.append(" --dry-run");
+        if (request.incremental()) argsContent.append(" --incremental");
+        if (request.zip()) argsContent.append(" --zip");
+        if (!request.clean()) argsContent.append(" --no-clean");
+        if (request.resume()) argsContent.append(" --resume");
+        
+        argsContent.append("\n```\n\n");
+        
+        // Add detailed parameters
+        argsContent.append("## Collection Parameters\n");
+        argsContent.append("- **Repository**: ").append(request.repository()).append("\n");
+        argsContent.append("- **Issue State**: ").append(request.issueState()).append("\n");
+        argsContent.append("- **Batch Size**: ").append(request.batchSize()).append("\n");
+        argsContent.append("- **Dry Run**: ").append(request.dryRun()).append("\n");
+        argsContent.append("- **Incremental**: ").append(request.incremental()).append("\n");
+        argsContent.append("- **Create Zip**: ").append(request.zip()).append("\n");
+        argsContent.append("- **Clean**: ").append(request.clean()).append("\n");
+        argsContent.append("- **Resume**: ").append(request.resume()).append("\n");
+        
+        if (request.labelFilters() != null && !request.labelFilters().isEmpty()) {
+            argsContent.append("- **Label Filters**: ").append(String.join(", ", request.labelFilters())).append("\n");
+            argsContent.append("- **Label Mode**: ").append(request.labelMode()).append("\n");
+        }
+        
+        argsContent.append("\n## Usage Notes\n");
+        argsContent.append("This zip archive contains all issues and metadata collected using the above parameters.\n");
+        argsContent.append("To reproduce this collection, run the command shown above.\n");
+        
+        // Add to zip
+        ZipEntry argsEntry = new ZipEntry("collection-info.md");
+        zipOut.putNextEntry(argsEntry);
+        zipOut.write(argsContent.toString().getBytes());
+        zipOut.closeEntry();
+    }
+    
+    private String buildFilterSuffix(CollectionRequest request) {
+        StringBuilder suffix = new StringBuilder();
+        if (request.labelFilters() != null && !request.labelFilters().isEmpty()) {
+            suffix.append("_labels-").append(String.join("-", request.labelFilters()));
+        }
+        return suffix.toString().replaceAll("[^a-zA-Z0-9_-]", "");
+    }
+    
+    private String formatFileSize(long bytes) {
+        if (bytes < 1024) return bytes + " B";
+        if (bytes < 1024 * 1024) return String.format("%.1f KB", bytes / 1024.0);
+        return String.format("%.1f MB", bytes / (1024.0 * 1024.0));
     }
     
     private void saveResumeState(Path outputPath, String cursor, int batchNumber, int processedIssues, List<String> completedBatches) {

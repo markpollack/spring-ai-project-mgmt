@@ -83,6 +83,7 @@ jbang CollectGithubIssues.java [OPTIONS]
 | `-d, --dry-run` | Show what would be collected | false |
 | `--clean` | Clean previous collection data (default) | true |
 | `--no-clean, --append` | Keep previous data, append new | false |
+| `-z, --zip` | Create zip archive of collected data | false |
 
 ### Quick Start Example
 ```bash
@@ -91,7 +92,7 @@ jbang CollectGithubIssues.java
 
 # Collect open bugs with dry-run first
 jbang CollectGithubIssues.java --state open --labels bug --dry-run
-jbang CollectGithubIssues.java --state open --labels bug
+jbang CollectGithubIssues.java --state open --labels bug --zip
 ```
 
 ## Filtering Options
@@ -167,9 +168,13 @@ jbang CollectGithubIssues.java --state open --labels bug
 jbang CollectGithubIssues.java --state open --labels bug --no-clean
 ```
 
-## Output Format
+## Output Formats
 
-### Directory Structure
+The tool supports two output formats:
+
+### 1. Standard JSON Output (Default)
+
+#### Directory Structure
 ```
 issues/
 └── raw/
@@ -230,9 +235,68 @@ issues/
   "totalIssues": 1122,
   "processedIssues": 1000,
   "batchSize": 3,
-  "compressed": false
+  "zipped": false
 }
 ```
+
+### 2. Zip Archive Output (`--zip`)
+
+When using the `--zip` flag, all output is packaged into a single compressed archive for easy sharing and uploading.
+
+#### Archive Structure
+```
+issues-compressed/
+└── spring-projects-spring-ai_open_2025-07-23_12-46-56_labels-design.zip
+    ├── collection-info.md      # Command line arguments and reproduction info
+    ├── issues_batch_001.json   # Collected issues data
+    ├── issues_batch_002.json   # Additional batches as needed
+    └── metadata.json           # Collection metadata
+```
+
+#### Archive Naming Convention
+```
+{repository}_{state}_{timestamp}_{filters}.zip
+```
+
+Examples:
+- `spring-projects-spring-ai_open_2025-07-23_12-46-56_labels-design.zip`
+- `kubernetes-kubernetes_closed_2025-07-23_14-30-15_labels-bug-priority-high.zip`
+- `microsoft-vscode_all_2025-07-23_16-20-42.zip`
+
+#### Collection Info File
+Each zip archive includes a `collection-info.md` file with:
+- **Original Command**: Exact command to reproduce the collection
+- **Collection Parameters**: All settings and filters used
+- **Usage Notes**: Instructions for reproduction
+
+Example `collection-info.md`:
+```markdown
+# GitHub Issues Collection - Command Line Arguments
+# Generated: 2025-07-23T12:46:56.988172944
+
+## Original Command
+```bash
+jbang CollectGithubIssues.java --repo spring-projects/spring-ai --state open --labels design --zip
+```
+
+## Collection Parameters
+- **Repository**: spring-projects/spring-ai
+- **Issue State**: open
+- **Label Filters**: design
+- **Label Mode**: any
+- **Batch Size**: 100
+- **Create Zip**: true
+
+## Usage Notes
+This zip archive contains all issues and metadata collected using the above parameters.
+To reproduce this collection, run the command shown above.
+```
+
+#### Benefits of Zip Output
+- **Single File**: Easy to upload, share, and manage
+- **Complete Provenance**: Full command line arguments for reproduction
+- **Compressed**: Reduced file size for efficient transfer
+- **Self-Documenting**: Includes all necessary information for understanding the dataset
 
 ## Configuration
 
@@ -248,7 +312,7 @@ issues/
 | `--batch-size SIZE` | `-b` | Issues per batch | 100 |
 | `--dry-run` | `-d` | Preview without collection | false |
 | `--incremental` | `-i` | Skip collected issues | false |
-| `--compress` | `-c` | Compress output files | false |
+| `--zip` | `-z` | Create zip archive of collected data | false |
 | `--verbose` | `-v` | Enable verbose logging | false |
 | `--clean` |  | Remove previous data (default) | true |
 | `--no-clean, --append` |  | Keep previous data, append new | false |
@@ -283,7 +347,7 @@ jbang CollectGithubIssues.java --repo myorg/myrepo --state open
 #### 2. Collect Bug Reports Only
 ```bash
 jbang CollectGithubIssues.java --labels bug --dry-run
-jbang CollectGithubIssues.java --labels bug
+jbang CollectGithubIssues.java --labels bug --zip
 ```
 
 #### 3. Collect High Priority Issues
@@ -299,7 +363,7 @@ jbang CollectGithubIssues.java \
 jbang CollectGithubIssues.java \
   --repo kubernetes/kubernetes \
   --batch-size 25 \
-  --compress \
+  --zip \
   --verbose
 ```
 

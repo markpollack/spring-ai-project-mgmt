@@ -26,3 +26,4 @@ replay_pid*
 # GitHub Issues Collector output files
 scripts/issues/
 scripts/logs/
+scripts/issues-compressed/
