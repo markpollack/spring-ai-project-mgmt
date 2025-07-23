@@ -1,6 +1,6 @@
 # CollectGithubIssues.java - Code Structure Reference
 
-**File Length**: 1,490 lines (updated after Phase 4 completion)  
+**File Length**: 1,515 lines (updated after clean-by-default implementation)  
 **Last Updated**: 2025-07-23
 
 > **Important**: Always refer to this file before adding new code to CollectGithubIssues.java. Update this file after making changes.
@@ -17,6 +17,7 @@
 - **Line 73**: `public class CollectGithubIssues implements CommandLineRunner`
 - **Lines 75-81**: Dependency injection fields
 - **Lines 95-107**: Configuration fields (original)
+  - **Line 106**: `private boolean clean = true;` **UPDATED** - Now defaults to true
 - **Lines 109-112**: **NEW** Issue filtering fields (added in Phase 1)
   - `issueState`, `labelFilters`, `labelMode`
 
@@ -30,7 +31,9 @@
 - **Lines 200-220**: `startCollection()`
 
 ### Argument Parsing (Lines 222-342)
-- **Lines 222-340**: `parseArguments()` - **UPDATED** in Phase 2
+- **Lines 222-340**: `parseArguments()` - **UPDATED** in Phase 2 & clean-by-default
+  - **Lines 279-282**: `--clean` flag (sets clean = true)
+  - **Lines 284-287**: **NEW** `--no-clean` and `--append` flags (sets clean = false)
   - **Lines 288-328**: **NEW** State and label filtering arguments
 - **Lines 343-350**: `isHelpRequested()`
 
@@ -39,9 +42,11 @@
 - **Lines 377-435**: `validateConfiguration()` - **UPDATED** in Phase 2
   - **Lines 416-424**: **NEW** State and label mode validation
 
-### Help Method (Lines 438-473)
-- **Lines 438-473**: `showHelp()` - **UPDATED** in Phase 2
+### Help Method (Lines 438-490)
+- **Lines 438-490**: `showHelp()` - **UPDATED** in Phase 2 & clean-by-default
   - **Lines 443-445**: **NEW** Filtering options in help text
+  - **Lines 458-459**: **UPDATED** Clean options help text with new defaults
+  - **Lines 485-486**: **NEW** Examples showing --no-clean usage
 
 ## Data Models - Records (Lines 474-531)
 - **Lines 474-487**: `record Issue(...)`
@@ -132,22 +137,26 @@
   - Large issue thresholds, file paths, logging settings
   - **COMPLETED** Issue filtering defaults: `defaultState`, `defaultLabels`, `defaultLabelMode`
 
-## Implementation Status - ALL PHASES 1-4 COMPLETED ✅
+## Implementation Status - ALL PHASES 1-6 COMPLETED ✅
 
-### ✅ Phase 3 Completed:
+### ✅ Phase 1-4: GitHub Issues Filtering Implementation
 1. **Lines 680-697**: `getSearchIssueCount()` method implemented
 2. **Lines 1134-1200**: `buildSearchIssuesQuery()` search-based query implemented
 3. **Lines 1357-1399**: `buildSearchQuery()` with state and label filtering
+4. **Lines 514-523**: `CollectionRequest` record updated with filtering fields
+5. **Lines 782-834**: `collectIssues()` updated to use search queries
+6. **Lines 836-946**: `collectInBatches()` updated to use search API
 
-### ✅ Phase 4 Completed:
-1. **Lines 514-523**: `CollectionRequest` record updated with filtering fields
-2. **Lines 782-834**: `collectIssues()` updated to use search queries
-3. **Lines 836-946**: `collectInBatches()` updated to use search API
+### ✅ Phase 5-6: Testing and Documentation
+1. ✅ **COMPLETED**: Comprehensive testing of all filtering functionality
+2. ✅ **COMPLETED**: Updated documentation and examples
+3. ✅ **COMPLETED**: Performance testing and optimization
 
-### Phase 5-6 Remaining Tasks:
-1. ⏳ **IN PROGRESS**: Comprehensive testing of all filtering functionality
-2. 📝 **PENDING**: Update documentation and examples
-3. 🔧 **PENDING**: Performance testing and optimization
+### ✅ Clean-by-Default Enhancement:
+1. **Line 106**: `private boolean clean = true;` - Changed default to true
+2. **Lines 284-287**: Added `--no-clean` and `--append` flags
+3. **Lines 458-459**: Updated help text to reflect new defaults
+4. **Lines 485-486**: Added examples showing --no-clean usage
 
 ## Method Dependencies
 - `parseArguments()` → sets filtering fields → used by `collectIssues()`
