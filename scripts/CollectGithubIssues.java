@@ -106,6 +106,11 @@ public class CollectGithubIssues implements CommandLineRunner {
     private boolean clean = false;
     private boolean resume = false;
     
+    // Issue filtering fields
+    private String issueState = "closed";
+    private List<String> labelFilters = new ArrayList<>();
+    private String labelMode = "any";
+    
     public static void main(String[] args) {
         SpringApplication app = new SpringApplication(CollectGithubIssues.class);
         app.setWebApplicationType(WebApplicationType.NONE);
@@ -156,7 +161,13 @@ public class CollectGithubIssues implements CommandLineRunner {
         sizeThreshold = properties.getSizeThreshold();
         verbose = properties.isVerbose();
         
+        // Initialize filtering options
+        issueState = properties.getDefaultState();
+        labelFilters = new ArrayList<>(properties.getDefaultLabels());
+        labelMode = properties.getDefaultLabelMode();
+        
         logger.debug("Initialized configuration from properties: repo={}, batchSize={}", repo, batchSize);
+        logger.debug("Initialized filtering: state={}, labels={}, mode={}", issueState, labelFilters, labelMode);
     }
     
     private void testGitHubConnectivity() {
@@ -274,6 +285,48 @@ public class CollectGithubIssues implements CommandLineRunner {
                     logger.debug("Resume mode enabled");
                     break;
                     
+                case "-s", "--state":
+                    if (i + 1 < args.length) {
+                        issueState = args[++i].toLowerCase();
+                        if (!List.of("open", "closed", "all").contains(issueState)) {
+                            logger.error("Invalid state '{}': must be 'open', 'closed', or 'all'", issueState);
+                            System.exit(1);
+                        }
+                        logger.debug("Parsed issue state: {}", issueState);
+                    } else {
+                        logger.error("Missing value for state option");
+                        System.exit(1);
+                    }
+                    break;
+                    
+                case "-l", "--labels":
+                    if (i + 1 < args.length) {
+                        String labelStr = args[++i];
+                        labelFilters = Arrays.stream(labelStr.split(","))
+                            .map(String::trim)
+                            .filter(s -> !s.isEmpty())
+                            .collect(ArrayList::new, ArrayList::add, ArrayList::addAll);
+                        logger.debug("Parsed labels: {}", labelFilters);
+                    } else {
+                        logger.error("Missing value for labels option");
+                        System.exit(1);
+                    }
+                    break;
+                    
+                case "--label-mode":
+                    if (i + 1 < args.length) {
+                        labelMode = args[++i].toLowerCase();
+                        if (!List.of("any", "all").contains(labelMode)) {
+                            logger.error("Invalid label mode '{}': must be 'any' or 'all'", labelMode);
+                            System.exit(1);
+                        }
+                        logger.debug("Parsed label mode: {}", labelMode);
+                    } else {
+                        logger.error("Missing value for label-mode option");
+                        System.exit(1);
+                    }
+                    break;
+                    
                 case "-h", "--help":
                     // Help is handled separately
                     break;
@@ -360,6 +413,16 @@ public class CollectGithubIssues implements CommandLineRunner {
             errors.add("Size threshold must be positive (got: " + sizeThreshold + ")");
         }
         
+        // Validate issue state
+        if (!List.of("open", "closed", "all").contains(issueState.toLowerCase())) {
+            errors.add("Invalid issue state: " + issueState + " (must be 'open', 'closed', or 'all')");
+        }
+        
+        // Validate label mode
+        if (!List.of("any", "all").contains(labelMode.toLowerCase())) {
+            errors.add("Invalid label mode: " + labelMode + " (must be 'any' or 'all')");
+        }
+        
         // Report validation errors
         if (!errors.isEmpty()) {
             logger.error("Configuration validation failed:");
@@ -387,6 +450,9 @@ public class CollectGithubIssues implements CommandLineRunner {
         System.out.println("    -v, --verbose          Enable verbose logging");
         System.out.println("    --clean                Clean up previous collection data before starting");
         System.out.println("    --resume               Resume from last successful batch");
+        System.out.println("    -s, --state <state>     Issue state: open, closed, all (default: " + properties.getDefaultState() + ")");
+        System.out.println("    -l, --labels <labels>   Comma-separated list of labels to filter by");
+        System.out.println("    --label-mode <mode>     Label matching mode: any, all (default: " + properties.getDefaultLabelMode() + ")");
         System.out.println();
         System.out.println("CONFIGURATION:");
         System.out.println("    Configuration can be customized via application.yaml file");
@@ -1240,6 +1306,11 @@ class CollectionProperties {
     private boolean verbose = false;
     private boolean debug = false;
     
+    // Issue filtering defaults
+    private String defaultState = "closed";
+    private List<String> defaultLabels = new ArrayList<>();
+    private String defaultLabelMode = "any";
+    
     // Getters and setters
     public String getDefaultRepository() { return defaultRepository; }
     public void setDefaultRepository(String defaultRepository) { this.defaultRepository = defaultRepository; }
@@ -1276,4 +1347,13 @@ class CollectionProperties {
     
     public boolean isDebug() { return debug; }
     public void setDebug(boolean debug) { this.debug = debug; }
+    
+    public String getDefaultState() { return defaultState; }
+    public void setDefaultState(String defaultState) { this.defaultState = defaultState; }
+    
+    public List<String> getDefaultLabels() { return defaultLabels; }
+    public void setDefaultLabels(List<String> defaultLabels) { this.defaultLabels = defaultLabels; }
+    
+    public String getDefaultLabelMode() { return defaultLabelMode; }
+    public void setDefaultLabelMode(String defaultLabelMode) { this.defaultLabelMode = defaultLabelMode; }
 }

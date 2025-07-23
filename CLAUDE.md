@@ -136,3 +136,33 @@ Your bash code must follow best practices and be maintainable. Use safe and stri
 - Support --help and --version flags
 - Document your code. Include inline comments and example usages. Output in markdown code blocks.
 
+## JBang Script Usage
+
+The repository includes JBang-based Java scripts for enhanced functionality. JBang is installed via SDKMAN but may not be in the PATH.
+
+### JBang Location
+JBang is located at: `/home/mark/.sdkman/candidates/jbang/current/bin/jbang`
+
+### Usage Examples
+```bash
+# Test help functionality
+/home/mark/.sdkman/candidates/jbang/current/bin/jbang CollectGithubIssues.java --help
+
+# Dry run with new filtering options
+/home/mark/.sdkman/candidates/jbang/current/bin/jbang CollectGithubIssues.java --repo spring-projects/spring-ai --state open --dry-run
+
+# Test label filtering
+/home/mark/.sdkman/candidates/jbang/current/bin/jbang CollectGithubIssues.java --repo spring-projects/spring-ai --labels bug --dry-run
+
+# Combined filtering
+/home/mark/.sdkman/candidates/jbang/current/bin/jbang CollectGithubIssues.java --repo spring-projects/spring-ai --state closed --labels bug,enhancement --label-mode any --dry-run
+```
+
+### Testing Protocol
+When implementing new functionality in JBang scripts:
+1. Use the full path to jbang for testing
+2. Always test with --dry-run first
+3. Verify help output for new options
+4. Test error handling with invalid inputs
+5. Confirm backward compatibility
+
