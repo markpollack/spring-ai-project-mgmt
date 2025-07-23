@@ -70,7 +70,41 @@ gh project item-add <project-number> --url <issue-or-pr-url>
 
 # List items in Spring AI project (project 38)
 gh project item-list 38 --owner spring-projects --format json
+
+# List all milestones
+gh api repos/spring-projects/spring-ai/milestones
 ```
+
+## Release Process
+
+Spring AI follows the standard Spring project release lifecycle with three main types of releases:
+
+### Milestone Releases (M1, M2, M3, etc.)
+- **Format**: `1.1.0.M1`, `1.1.0.M2`, `1.1.0.M3`
+- **Purpose**: Feature development and testing milestones
+- **Characteristics**: 
+  - New features and APIs may be added
+  - APIs may change between milestones
+  - Used for community feedback and testing
+  - Multiple milestones can exist for a single major/minor version
+
+### Release Candidate (RC)
+- **Format**: `1.1.0.RC1`
+- **Purpose**: Final pre-release validation
+- **Characteristics**:
+  - All APIs are stable and frozen
+  - Only bug fixes, documentation, and testing improvements allowed
+  - Typically only one RC release per version
+  - Usually one week from RC to GA release
+  - Prepares for General Availability release
+
+### General Availability (GA)
+- **Format**: `1.1.0` (no GA suffix)
+- **Purpose**: Production-ready stable release
+- **Characteristics**:
+  - Final stable release for public consumption
+  - All features complete and APIs stable
+  - Full documentation and testing coverage
 
 ## Automation Scripts
 
