@@ -103,7 +103,7 @@ public class CollectGithubIssues implements CommandLineRunner {
     private boolean incremental = false;
     private boolean compress = false;
     private boolean verbose = false;
-    private boolean clean = false;
+    private boolean clean = true;
     private boolean resume = false;
     
     // Issue filtering fields
@@ -281,6 +281,12 @@ public class CollectGithubIssues implements CommandLineRunner {
                     logger.debug("Clean mode enabled");
                     break;
                     
+                case "--no-clean":
+                case "--append":
+                    clean = false;
+                    logger.debug("Append mode enabled - keeping previous data");
+                    break;
+                    
                 case "--resume":
                     resume = true;
                     logger.debug("Resume mode enabled");
@@ -449,7 +455,8 @@ public class CollectGithubIssues implements CommandLineRunner {
         System.out.println("    -i, --incremental      Skip already collected issues");
         System.out.println("    -c, --compress         Compress output files");
         System.out.println("    -v, --verbose          Enable verbose logging");
-        System.out.println("    --clean                Clean up previous collection data before starting");
+        System.out.println("    --clean                Clean up previous collection data before starting (default)");
+        System.out.println("    --no-clean, --append  Keep previous collection data and append new data");
         System.out.println("    --resume               Resume from last successful batch");
         System.out.println();
         System.out.println("FILTERING OPTIONS:");
@@ -475,7 +482,8 @@ public class CollectGithubIssues implements CommandLineRunner {
         System.out.println("    ./collect_github_issues.java --state all --batch-size 50");
         System.out.println();
         System.out.println("    # Label filtering");
-        System.out.println("    ./collect_github_issues.java --labels bug --clean");
+        System.out.println("    ./collect_github_issues.java --labels bug");
+        System.out.println("    ./collect_github_issues.java --labels bug --no-clean  # Keep previous data");
         System.out.println("    ./collect_github_issues.java --labels \"bug,priority:high\" --label-mode all");
         System.out.println();
         System.out.println("    # Combined filtering");

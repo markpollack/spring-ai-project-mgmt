@@ -81,7 +81,8 @@ jbang CollectGithubIssues.java [OPTIONS]
 | `--label-mode MODE` | Label matching: any, all | any |
 | `-b, --batch-size SIZE` | Issues per batch file | 100 |
 | `-d, --dry-run` | Show what would be collected | false |
-| `--clean` | Clean previous collection data | false |
+| `--clean` | Clean previous collection data (default) | true |
+| `--no-clean, --append` | Keep previous data, append new | false |
 
 ### Quick Start Example
 ```bash
@@ -90,7 +91,7 @@ jbang CollectGithubIssues.java
 
 # Collect open bugs with dry-run first
 jbang CollectGithubIssues.java --state open --labels bug --dry-run
-jbang CollectGithubIssues.java --state open --labels bug --clean
+jbang CollectGithubIssues.java --state open --labels bug
 ```
 
 ## Filtering Options
@@ -141,6 +142,29 @@ jbang CollectGithubIssues.java --state open --labels bug
 
 # Closed issues with multiple labels
 jbang CollectGithubIssues.java --state closed --labels documentation,enhancement --label-mode all
+```
+
+## Default Behavior: Clean Start
+
+**By default, the tool cleans previous collection data before starting a new collection.** This ensures you always get fresh, current data for analysis.
+
+**Why clean by default?**
+- **Data freshness**: Each collection represents the current state of issues
+- **Analysis accuracy**: Prevents analysis of stale/mixed data  
+- **Simple workflow**: "Collect → Analyze" pattern works out of the box
+- **Prevents confusion**: No accidental analysis of old data
+
+**When to use `--no-clean` or `--append`:**
+- Building historical datasets over time
+- Incremental collection workflows  
+- When disk space for full re-collection is limited
+
+```bash
+# Default: Clean start (recommended for analysis)
+jbang CollectGithubIssues.java --state open --labels bug
+
+# Keep previous data and append new issues
+jbang CollectGithubIssues.java --state open --labels bug --no-clean
 ```
 
 ## Output Format
@@ -226,7 +250,8 @@ issues/
 | `--incremental` | `-i` | Skip collected issues | false |
 | `--compress` | `-c` | Compress output files | false |
 | `--verbose` | `-v` | Enable verbose logging | false |
-| `--clean` |  | Remove previous data | false |
+| `--clean` |  | Remove previous data (default) | true |
+| `--no-clean, --append` |  | Keep previous data, append new | false |
 | `--resume` |  | Resume interrupted collection | false |
 
 ### Configuration File
@@ -252,13 +277,13 @@ github:
 
 #### 1. Collect All Open Issues
 ```bash
-jbang CollectGithubIssues.java --repo myorg/myrepo --state open --clean
+jbang CollectGithubIssues.java --repo myorg/myrepo --state open
 ```
 
 #### 2. Collect Bug Reports Only
 ```bash
 jbang CollectGithubIssues.java --labels bug --dry-run
-jbang CollectGithubIssues.java --labels bug --clean
+jbang CollectGithubIssues.java --labels bug
 ```
 
 #### 3. Collect High Priority Issues
