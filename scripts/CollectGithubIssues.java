@@ -200,7 +200,8 @@ public class CollectGithubIssues implements CommandLineRunner {
     private void startCollection() {
         try {
             CollectionRequest request = new CollectionRequest(
-                repo, batchSize, dryRun, incremental, compress, clean, resume
+                repo, batchSize, dryRun, incremental, compress, clean, resume,
+                issueState, labelFilters, labelMode
             );
             
             CollectionResult result = collectionService.collectIssues(request);
@@ -518,7 +519,10 @@ record CollectionRequest(
     boolean incremental,
     boolean compress,
     boolean clean,
-    boolean resume
+    boolean resume,
+    String issueState,
+    List<String> labelFilters,
+    String labelMode
 ) {}
 
 record CollectionResult(
@@ -672,6 +676,21 @@ class GitHubGraphQLService {
         JsonNode result = executeQuery(query, variables);
         return result.path("data").path("repository").path("issues").path("totalCount").asInt(0);
     }
+    
+    public int getSearchIssueCount(String searchQuery) {
+        String query = """
+            query($query: String!) {
+                search(query: $query, type: ISSUE, first: 1) {
+                    issueCount
+                }
+            }
+            """;
+        
+        Object variables = Map.of("query", searchQuery);
+        
+        JsonNode result = executeQuery(query, variables);
+        return result.path("data").path("search").path("issueCount").asInt(0);
+    }
 }
 
 // Utility service for JsonNode navigation
@@ -765,9 +784,12 @@ class IssueCollectionService {
         String owner = repoParts[0];
         String repoName = repoParts[1];
         
-        // Get total issue count
-        int totalIssues = graphQLService.getTotalIssueCount(owner, repoName, "CLOSED");
-        logger.info("Total closed issues found: {}", totalIssues);
+        // Get total issue count using search query
+        String searchQuery = buildSearchQuery(owner, repoName, 
+            request.issueState(), request.labelFilters(), request.labelMode());
+        int totalIssues = graphQLService.getSearchIssueCount(searchQuery);
+        logger.info("Total issues found with filters: {}", totalIssues);
+        logger.info("Search query: {}", searchQuery);
         
         if (request.dryRun()) {
             logger.info("DRY RUN: Would collect {} issues in batches of {}", totalIssues, request.batchSize());
@@ -797,7 +819,7 @@ class IssueCollectionService {
         // Collect issues in batches with error handling
         CollectionStats stats;
         try {
-            stats = collectInBatches(owner, repoName, request.batchSize(), outputPath, timestamp);
+            stats = collectInBatches(owner, repoName, request.batchSize(), outputPath, timestamp, searchQuery);
         } catch (Exception e) {
             logger.error("Collection failed: {}", e.getMessage());
             // Save resume state on error so we can restart
@@ -811,7 +833,7 @@ class IssueCollectionService {
         return new CollectionResult(totalIssues, stats.processedIssues(), outputDir, stats.batchFiles());
     }
     
-    private CollectionStats collectInBatches(String owner, String repoName, int targetBatchSize, Path outputPath, String timestamp) throws Exception {
+    private CollectionStats collectInBatches(String owner, String repoName, int targetBatchSize, Path outputPath, String timestamp, String searchQuery) throws Exception {
         long startTime = System.currentTimeMillis();
         List<String> batchFiles = new ArrayList<>();
         String cursor = null;
@@ -839,14 +861,12 @@ class IssueCollectionService {
             if (pendingIssues.size() < targetBatchSize && hasMoreFromAPI) {
                 logger.info("Fetching issues from API (cursor: {})", cursor != null ? "present" : "null");
                 
-                // Build GraphQL query with pagination
-                String query = buildIssuesQuery();
+                // Build GraphQL search query with pagination
+                String query = buildSearchIssuesQuery();
                 Map<String, Object> variables = Map.of(
-                    "owner", owner,
-                    "repo", repoName,
+                    "query", searchQuery,
                     "first", fetchSize,
-                    "after", cursor != null ? cursor : "",
-                    "states", List.of("CLOSED")
+                    "after", cursor != null ? cursor : ""
                 );
                 
                 // Execute GraphQL query with retry and backoff
@@ -861,10 +881,10 @@ class IssueCollectionService {
                     return response;
                 });
                 
-                // Extract issues data
-                JsonNode issuesData = result.path("data").path("repository").path("issues");
-                JsonNode issues = issuesData.path("nodes");
-                JsonNode pageInfo = issuesData.path("pageInfo");
+                // Extract issues data from search results
+                JsonNode searchData = result.path("data").path("search");
+                JsonNode issues = searchData.path("nodes");
+                JsonNode pageInfo = searchData.path("pageInfo");
                 
                 // Convert to Issue records and add to pending
                 for (JsonNode issueNode : issues) {
@@ -1111,6 +1131,74 @@ class IssueCollectionService {
             """;
     }
     
+    private String buildSearchIssuesQuery() {
+        return """
+            query($query: String!, $first: Int!, $after: String) {
+                search(query: $query, type: ISSUE, first: $first, after: $after) {
+                    pageInfo {
+                        hasNextPage
+                        endCursor
+                    }
+                    issueCount
+                    nodes {
+                        ... on Issue {
+                            number
+                            title
+                            body
+                            state
+                            createdAt
+                            updatedAt
+                            closedAt
+                            url
+                            author {
+                                login
+                                ... on User {
+                                    name
+                                }
+                            }
+                            assignees(first: 10) {
+                                nodes {
+                                    login
+                                    ... on User {
+                                        name
+                                    }
+                                }
+                            }
+                            labels(first: 20) {
+                                nodes {
+                                    name
+                                    color
+                                    description
+                                }
+                            }
+                            milestone {
+                                title
+                                number
+                                state
+                                description
+                            }
+                            comments(first: 100) {
+                                nodes {
+                                    author {
+                                        login
+                                        ... on User {
+                                            name
+                                        }
+                                    }
+                                    body
+                                    createdAt
+                                    reactions {
+                                        totalCount
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            """;
+    }
+    
     private Issue convertToIssue(JsonNode issueNode) {
         try {
             int number = issueNode.path("number").asInt();
@@ -1264,6 +1352,50 @@ class IssueCollectionService {
         } catch (Exception e) {
             logger.warn("Failed to cleanup previous data: {}", e.getMessage());
         }
+    }
+    
+    private String buildSearchQuery(String owner, String repo, String state, List<String> labels, String labelMode) {
+        StringBuilder query = new StringBuilder();
+        
+        // Repository and type
+        query.append("repo:").append(owner).append("/").append(repo).append(" is:issue");
+        
+        // State filter
+        switch (state.toLowerCase()) {
+            case "open":
+                query.append(" is:open");
+                break;
+            case "closed":
+                query.append(" is:closed");
+                break;
+            case "all":
+                // No state filter for 'all'
+                break;
+            default:
+                throw new IllegalArgumentException("Invalid state: " + state);
+        }
+        
+        // Label filters
+        if (labels != null && !labels.isEmpty()) {
+            if ("all".equals(labelMode.toLowerCase())) {
+                // All labels must match (AND logic)
+                for (String label : labels) {
+                    query.append(" label:\"").append(label.trim()).append("\"");
+                }
+            } else {
+                // Any label can match (OR logic) - use multiple queries or search syntax
+                if (labels.size() == 1) {
+                    query.append(" label:\"").append(labels.get(0).trim()).append("\"");
+                } else {
+                    // For multiple labels with OR logic, we'll need to handle this in post-processing
+                    // or make multiple API calls. For now, we'll use the first label and warn.
+                    logger.warn("Multiple labels with 'any' mode not fully supported in search API. Using first label: {}", labels.get(0));
+                    query.append(" label:\"").append(labels.get(0).trim()).append("\"");
+                }
+            }
+        }
+        
+        return query.toString();
     }
     
     private record BatchData(int batchNumber, List<Issue> issues, String timestamp) {}

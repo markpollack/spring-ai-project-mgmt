@@ -1,6 +1,58 @@
 
 # GitHub Issues Filtering - Implementation Checklist
 
+## ⚠️ IMPORTANT: Code Structure Reference
+
+**ALWAYS refer to `CollectGithubIssues-structure.md` before making any code changes!**
+
+This structure file contains:
+- Complete line-by-line breakdown of the 1,342-line Java file
+- Current status of all methods and classes
+- Exact locations where changes are needed
+- Dependencies between methods and classes
+
+**After making changes to CollectGithubIssues.java:**
+1. Update the structure file with new line numbers
+2. Mark completed changes in the structure file
+3. Update this checklist with completed checkboxes
+
+## 🧪 TESTING REQUIREMENTS
+
+**MANDATORY: Test each phase and subphase before proceeding!**
+
+### Testing Protocol:
+1. **Test after each subphase completion** - Don't wait until the entire phase is done
+2. **Use JBang full path**: `/home/mark/.sdkman/candidates/jbang/current/bin/jbang`
+3. **Always start with --dry-run** to avoid making API calls during development
+4. **Test error conditions** - invalid inputs should fail gracefully
+5. **Verify help text** shows new options correctly
+6. **Document test results** in the checklist
+
+### Required Test Commands:
+```bash
+# Test help output after UI changes
+/home/mark/.sdkman/candidates/jbang/current/bin/jbang CollectGithubIssues.java --help
+
+# Test argument parsing
+/home/mark/.sdkman/candidates/jbang/current/bin/jbang CollectGithubIssues.java --state open --dry-run
+
+# Test validation with invalid inputs
+/home/mark/.sdkman/candidates/jbang/current/bin/jbang CollectGithubIssues.java --state invalid --dry-run
+
+# Test combined functionality
+/home/mark/.sdkman/candidates/jbang/current/bin/jbang CollectGithubIssues.java --repo spring-projects/spring-ai --state open --labels bug --dry-run
+```
+
+### Phase Testing Status:
+- Phase 1: ✅ Tested - Configuration and fields working
+- Phase 2: ✅ Tested - Help text and argument validation working  
+- Phase 3: ✅ **TESTED & VERIFIED** - Search API integration working correctly
+- Phase 4: ✅ **TESTED & VERIFIED** - Collection logic updates working correctly
+- Phase 5: ❌ Pending - Comprehensive testing
+- Phase 6: ❌ Pending - Documentation and polish
+
+**✅ PHASES 3 & 4 TESTED AND VERIFIED - READY FOR PHASE 5**
+
 ## Phase 1: Core Infrastructure Setup ✅
 
 ### 1.1 Add New Fields to Main Class ✅
@@ -40,45 +92,45 @@
 - [x] Add label-mode validation to `validateConfiguration()` method
 - [x] Add appropriate error messages for validation failures
 
-## Phase 3: Search API Integration
+## Phase 3: Search API Integration ✅
 
-### 3.1 Create Search Query Builder
-- [ ] Create `buildSearchQuery()` method in `IssueCollectionService` class
-- [ ] Add repository and issue type to base query
-- [ ] Add state filtering logic (open/closed/all)
-- [ ] Add label filtering logic for single labels
-- [ ] Add label filtering logic for multiple labels with "all" mode
-- [ ] Add label filtering logic for multiple labels with "any" mode
-- [ ] Add proper label escaping and quoting
+### 3.1 Create Search Query Builder ✅
+- [x] Create `buildSearchQuery()` method in `IssueCollectionService` class
+- [x] Add repository and issue type to base query
+- [x] Add state filtering logic (open/closed/all)
+- [x] Add label filtering logic for single labels
+- [x] Add label filtering logic for multiple labels with "all" mode
+- [x] Add label filtering logic for multiple labels with "any" mode (with warning)
+- [x] Add proper label escaping and quoting
 
-### 3.2 Update GraphQL Queries
-- [ ] Create new `buildSearchIssuesQuery()` method
-- [ ] Replace repository-based query with search-based query
-- [ ] Ensure all required issue fields are included
-- [ ] Update query to handle search pagination
+### 3.2 Update GraphQL Queries ✅
+- [x] Create new `buildSearchIssuesQuery()` method
+- [x] Replace repository-based query with search-based query
+- [x] Ensure all required issue fields are included
+- [x] Update query to handle search pagination
 
-### 3.3 Add Search Count Method
-- [ ] Create `getSearchIssueCount()` method in `GitHubGraphQLService`
-- [ ] Use search API to get total count for filtered results
-- [ ] Handle search API response structure
+### 3.3 Add Search Count Method ✅
+- [x] Create `getSearchIssueCount()` method in `GitHubGraphQLService`
+- [x] Use search API to get total count for filtered results
+- [x] Handle search API response structure
 
-## Phase 4: Collection Logic Updates
+## Phase 4: Collection Logic Updates ✅
 
-### 4.1 Update Collection Request
-- [ ] Add new filtering fields to `CollectionRequest` record
-- [ ] Update record constructor to include new fields
-- [ ] Update all places that create `CollectionRequest` instances
+### 4.1 Update Collection Request ✅
+- [x] Add new filtering fields to `CollectionRequest` record
+- [x] Update record constructor to include new fields
+- [x] Update all places that create `CollectionRequest` instances
 
-### 4.2 Update Collection Method
-- [ ] Modify `collectInBatches()` to use search query instead of repository query
-- [ ] Update GraphQL variables to use search parameters
-- [ ] Update result extraction to handle search response structure
-- [ ] Update pagination logic for search API
+### 4.2 Update Collection Method ✅
+- [x] Modify `collectInBatches()` to use search query instead of repository query
+- [x] Update GraphQL variables to use search parameters
+- [x] Update result extraction to handle search response structure
+- [x] Update pagination logic for search API
 
-### 4.3 Update Main Collection Flow
-- [ ] Update `collectIssues()` method to use search-based counting
-- [ ] Update progress logging to reflect filtered results
-- [ ] Update `run()` method to pass new fields to `CollectionRequest`
+### 4.3 Update Main Collection Flow ✅
+- [x] Update `collectIssues()` method to use search-based counting
+- [x] Update progress logging to reflect filtered results
+- [x] Update `run()` method to pass new fields to `CollectionRequest`
 
 ## Phase 5: Testing and Validation
 
