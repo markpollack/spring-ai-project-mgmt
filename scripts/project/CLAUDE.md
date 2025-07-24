@@ -1,0 +1,187 @@
+# GitHub Issues Collector - Claude Code Assistant Guide
+
+## Project Overview
+
+This is a Spring Boot Maven application for collecting GitHub issues with advanced filtering capabilities. The project has been refactored from a monolithic JBang script into a modular, testable Maven architecture.
+
+## Current Architecture
+
+### Core Modules
+
+1. **DataModels.java** - GitHub API data structures
+   - Record definitions: `Issue`, `Comment`, `Author`, `Label`
+   - Collection metadata: `CollectionMetadata`, `CollectionRequest`, `CollectionResult`
+   - Internal processing: `BatchData`, `CollectionStats`, `ResumeState`
+
+2. **ConfigurationSupport.java** - Spring configuration and properties
+   - `GitHubConfig`: Spring beans for GitHub API clients (GitHub, RestClient, GraphQL, ObjectMapper)
+   - `CollectionProperties`: @ConfigurationProperties with application defaults
+
+3. **CollectGithubIssues.java** - Main Spring Boot application with CommandLineRunner
+
+### Refactoring Status
+
+**Completed Phases:**
+- ✅ Phase 0: JBang to Maven conversion using `jbang export portable`
+- ✅ Phase 1: DataModels.java extraction 
+- ✅ Phase 2: ConfigurationSupport.java extraction
+
+**Remaining Phases:**
+- Phase 3: ArgumentParser.java extraction
+- Phase 4: GitHubServices.java extraction  
+- Phase 5: CollectionService.java extraction
+- Phase 6: Documentation completion
+- Phase 7: Integration testing and main class refactoring
+
+## Development Guidelines
+
+### Testing Strategy
+
+**CRITICAL: Avoid @SpringBootTest for Configuration Testing**
+- This application implements `CommandLineRunner` which automatically executes main application logic
+- Using `@SpringBootTest` triggers full Spring context including CommandLineRunner
+- This causes accidental production operations (real GitHub API calls, data collection)
+
+**Safe Testing Approaches:**
+```java
+// For data models - use plain JUnit
+@Nested
+@DisplayName("CollectionProperties Tests - Plain JUnit")
+class CollectionPropertiesPlainTest {
+    // No Spring context, safe for data validation
+}
+
+// For Spring beans - use minimal context
+@Nested
+@SpringJUnitConfig
+@Import({GitHubConfigTest.TestConfig.class})
+@TestPropertySource(properties = {"GITHUB_TOKEN=test-token"})
+static class GitHubConfigTest {
+    // Minimal Spring context, no CommandLineRunner execution
+}
+```
+
+### Build Commands
+
+**Recommended:** Use Maven Daemon for faster builds
+```bash
+# Fast compilation (skip tests and javadoc)
+mvnd clean compile -Dmaven.javadoc.skip=true -DskipTests
+
+# Run tests
+mvnd test
+
+# Run application
+mvnd spring-boot:run -Dspring-boot.run.arguments="--help"
+```
+
+### Safety Measures
+
+**Before Any Testing:**
+1. Verify `.gitignore` prevents data file commits (`issues/`, `logs/`, `batch_*`)
+2. Always use `--dry-run` flag when testing collection functionality
+3. Clean up any generated data before git commits
+
+**Repository Cleanup:**
+```bash
+# Remove accidental production data
+rm -rf issues/
+find . -name "batch_*" -type f -delete
+find . -name "logs" -type d -exec rm -rf {} + 2>/dev/null || true
+```
+
+## Common Modification Patterns
+
+### Adding New CLI Arguments
+1. Update `CollectionProperties` class with new property and default
+2. Modify argument parsing logic (currently in main class, will be extracted to ArgumentParser)
+3. Add comprehensive tests for new arguments
+4. Update help text and documentation
+
+### Adding New Configuration Properties
+1. Add property to `CollectionProperties` class with appropriate default
+2. Add getter/setter methods following existing patterns
+3. Add validation tests in `ConfigurationSupportTest`
+4. Document in README.md configuration section
+
+### Modifying GitHub API Integration
+1. Update relevant classes in `ConfigurationSupport.java` (GitHubConfig)
+2. Ensure proper bean configuration for new API clients
+3. Add integration tests with mocked responses
+4. Update error handling patterns
+
+## Module Dependencies
+
+```
+CollectGithubIssues.java (main)
+├── DataModels.java (records)
+├── ConfigurationSupport.java (Spring config)
+│   ├── GitHubConfig (beans)
+│   └── CollectionProperties (properties)
+└── [Future modules]
+    ├── ArgumentParser.java
+    ├── GitHubServices.java
+    └── CollectionService.java
+```
+
+## Testing Requirements
+
+### Unit Testing
+- All new classes must have comprehensive unit tests
+- Use plain JUnit for data models and validation logic
+- Use minimal Spring context only when testing actual Spring integration
+- Mock external dependencies (GitHub API, file system)
+
+### Integration Testing
+- End-to-end workflow testing with `--dry-run` flag
+- No real GitHub API calls in automated tests
+- Verify all CLI argument combinations work correctly
+
+### Safety Testing
+- Verify no production operations occur during test execution
+- Confirm proper cleanup of temporary files
+- Test error handling and recovery scenarios
+
+## Troubleshooting
+
+### Common Issues
+
+**Tests Trigger Production Operations:**
+- Problem: Using `@SpringBootTest` loads full Spring context including CommandLineRunner
+- Solution: Use `@SpringJUnitConfig` with minimal TestConfiguration instead
+
+**Maven Build Slow:**
+- Problem: Default Maven build includes tests and javadoc generation
+- Solution: Use `mvnd clean compile -Dmaven.javadoc.skip=true -DskipTests` for fast compilation
+
+**Accidental Data Generation:**
+- Problem: Test execution or development runs create `issues/`, `logs/`, `batch_*` files
+- Solution: Always use `--dry-run` flag and clean up before commits
+
+### Debug Commands
+
+```bash
+# Verify Spring context loads correctly
+mvnd spring-boot:run -Dspring-boot.run.arguments="--dry-run"
+
+# Check configuration properties
+mvnd spring-boot:run -Dspring-boot.run.arguments="--help"
+
+# Test specific functionality
+mvnd test -Dtest=ConfigurationSupportTest
+mvnd test -Dtest=DataModelsTest
+```
+
+## Phase-Specific Notes
+
+### Phase 2 Lessons Learned
+- Successfully implemented safe testing strategy avoiding @SpringBootTest
+- Applied clean migration approach from Phase 1 (create new files first, then remove from main)
+- Prevented namespace conflicts through proper sequencing
+- Established comprehensive cleanup procedures for production data
+
+### Future Phase Considerations
+- Continue applying clean migration approach for all extractions
+- Maintain strict separation between testing strategies
+- Always read previous lessons learned documents before starting new phases
+- Document all architectural decisions for future reference

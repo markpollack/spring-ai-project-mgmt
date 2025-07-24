@@ -26,6 +26,35 @@ The GitHub Issues Collector is a Spring Boot 3.x Maven application designed to e
 - **Rate Limiting**: Built-in GitHub API rate limit management
 - **Multiple Formats**: JSON output with optional compression
 
+## Architecture
+
+This application uses a modular Spring Boot architecture with the following components:
+
+### Core Modules
+
+- **DataModels.java**: Record definitions for GitHub API data structures (Issue, Comment, Author, Label, etc.)
+- **ConfigurationSupport.java**: Spring configuration classes and application properties
+  - `GitHubConfig`: Spring beans for GitHub API clients (GitHub, RestClient, GraphQL, ObjectMapper)
+  - `CollectionProperties`: Configuration properties with defaults for collection behavior
+- **CollectGithubIssues.java**: Main Spring Boot application class with CommandLineRunner
+
+### Configuration Properties
+
+The application uses Spring Boot's `@ConfigurationProperties` with the prefix `github.issues`:
+
+```yaml
+github:
+  issues:
+    defaultRepository: "spring-projects/spring-ai"
+    batchSize: 100
+    maxBatchSizeBytes: 1048576  # 1MB
+    maxRetries: 3
+    defaultState: "closed"
+    defaultLabelMode: "any"
+    verbose: false
+    debug: false
+```
+
 ## Prerequisites
 
 - **Java 17** or higher
