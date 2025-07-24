@@ -418,12 +418,19 @@ class PRWorkflow:
         # Check if PR branch already exists
         try:
             self.git.run_git(["show-ref", "--verify", "--quiet", f"refs/heads/{pr_branch}"])
-            if force:
-                Logger.warn(f"Branch {pr_branch} already exists, deleting due to --force flag")
-                self.git.run_git(["branch", "-D", pr_branch])
-            else:
-                Logger.error(f"Branch {pr_branch} already exists. Use --force to overwrite or delete manually.")
-                return False
+            # Branch exists - automatically clean it up for workflow runs
+            Logger.info(f"Branch {pr_branch} already exists, cleaning up automatically...")
+            
+            # Check if we're currently on that branch
+            current_branch = self.git.get_current_branch()
+            if current_branch == pr_branch:
+                Logger.info("Switching to main branch before cleanup...")
+                self.git.run_git(["checkout", self.config.main_branch])
+            
+            # Delete the existing branch
+            self.git.run_git(["branch", "-D", pr_branch])
+            Logger.info(f"Removed existing branch {pr_branch}")
+            
         except subprocess.CalledProcessError:
             # Branch doesn't exist, which is good
             pass
@@ -799,55 +806,43 @@ class PRWorkflow:
         return False
     
     def squash_commits(self, pr_number: str, skip_squash: bool = False, dry_run: bool = False) -> bool:
-        """Squash commits in the PR"""
+        """Squash commits using intelligent squash script"""
         if skip_squash:
             Logger.info("Skipping commit squashing as requested")
             return True
         
-        Logger.info("Squashing commits...")
+        Logger.info("Using intelligent squash script...")
         
-        if dry_run:
-            Logger.info("[DRY RUN] Would squash commits if there are multiple commits ahead of main")
-            return True
+        # Use the new intelligent squash script
+        squash_script = self.config.script_dir / "intelligent_squash.py"
         
-        # Count commits ahead of main
-        commits_ahead = self.git.get_commits_ahead(f"{self.config.upstream_remote}/{self.config.main_branch}")
+        if not squash_script.exists():
+            Logger.error(f"Intelligent squash script not found: {squash_script}")
+            return False
         
-        if commits_ahead <= 1:
-            Logger.info(f"Only {commits_ahead} commit(s) ahead of main, no squashing needed")
-            return True
-        
-        Logger.info(f"Found {commits_ahead} commits ahead of main, squashing automatically...")
-        
-        # Create automatic squash script
-        import tempfile
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.sh', delete=False) as f:
-            f.write('#!/bin/bash\n')
-            f.write("# Automatic squash: keep first as pick, change rest to squash\n")
-            f.write("sed -i '1!s/^pick/squash/' \"$1\"\n")
-            f.flush()
+        try:
+            cmd = ["python3", str(squash_script), pr_number]
+            if dry_run:
+                cmd.append("--dry-run")
             
-            os.chmod(f.name, 0o755)
+            Logger.info(f"Executing: {' '.join(cmd)}")
+            result = subprocess.run(
+                cmd,
+                cwd=self.config.script_dir,
+                capture_output=False,  # Let output show directly
+                text=True,
+                check=True
+            )
             
-            try:
-                # Perform automatic rebase with squashing
-                Logger.info("Performing automatic squash rebase...")
-                env = os.environ.copy()
-                env['GIT_SEQUENCE_EDITOR'] = f.name
-                
-                subprocess.run([
-                    "git", "rebase", "-i", f"HEAD~{commits_ahead}"
-                ], cwd=self.config.spring_ai_dir, env=env, check=True)
-                
-                Logger.success("Commits squashed successfully")
-                return True
-                
-            except subprocess.CalledProcessError:
-                Logger.warn("Squash rebase encountered conflicts")
-                # For now, we'll return False and let the caller handle conflicts
-                return False
-            finally:
-                os.unlink(f.name)
+            Logger.success("✅ Intelligent squash completed successfully")
+            return True
+            
+        except subprocess.CalledProcessError as e:
+            Logger.error(f"❌ Intelligent squash failed with exit code {e.returncode}")
+            return False
+        except Exception as e:
+            Logger.error(f"❌ Error running intelligent squash: {e}")
+            return False
     
     def rebase_against_upstream(self, pr_number: str, auto_resolve: bool = False, dry_run: bool = False) -> bool:
         """Rebase against upstream main"""
@@ -887,12 +882,43 @@ class PRWorkflow:
                 # Try to auto-resolve conflicts using the legacy shell logic
                 if self.attempt_auto_resolution(pr_number):
                     Logger.info("Some conflicts were auto-resolved, attempting to continue rebase...")
+                    
+                    # Ensure all resolved files are staged before continuing
                     try:
+                        Logger.info("Staging all resolved files...")
+                        self.git.run_git(["add", "."])
+                        
+                        Logger.info("Continuing rebase...")
                         self.git.run_git(["rebase", "--continue"])
                         Logger.success("Rebase completed successfully after auto-resolution")
                         return True
-                    except subprocess.CalledProcessError:
-                        Logger.warn("Auto-resolution helped but rebase still has issues")
+                    except subprocess.CalledProcessError as e:
+                        # Check if rebase is actually complete
+                        try:
+                            # Check if we're still in rebase state
+                            result = subprocess.run(
+                                ["git", "status", "--porcelain"],
+                                cwd=self.config.spring_ai_dir,
+                                capture_output=True,
+                                text=True
+                            )
+                            
+                            # If no uncommitted changes and not in rebase, we're done
+                            if not result.stdout.strip():
+                                rebase_status = subprocess.run(
+                                    ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+                                    cwd=self.config.spring_ai_dir,
+                                    capture_output=True,
+                                    text=True
+                                )
+                                if "HEAD" not in rebase_status.stdout:
+                                    Logger.success("Rebase completed successfully (all conflicts resolved)")
+                                    return True
+                            
+                            Logger.warn("Auto-resolution helped but rebase still has issues")
+                            Logger.warn(f"Git error: {e}")
+                        except Exception:
+                            Logger.warn("Auto-resolution helped but rebase still has issues")
                 else:
                     Logger.warn("Automatic conflict resolution was unsuccessful")
             
@@ -905,7 +931,7 @@ class PRWorkflow:
             return False
     
     def attempt_auto_resolution(self, pr_number: str) -> bool:
-        """Attempt automatic conflict resolution using smart strategies"""
+        """Attempt automatic conflict resolution using Claude Code AI only"""
         Logger.info("Analyzing conflicts for auto-resolution...")
         
         # Get conflicted files
@@ -920,39 +946,16 @@ class PRWorkflow:
             if not full_path.exists():
                 continue
                 
-            Logger.info(f"Attempting to resolve conflicts in: {file_path}")
+            Logger.info(f"🤖 Attempting Claude Code AI resolution for: {file_path}")
             
             try:
-                # Read the conflicted file
-                with open(full_path, 'r', encoding='utf-8') as f:
-                    content = f.read()
-                
-                # Try different resolution strategies
-                resolved_content = None
-                
-                # Strategy 1: Simple author attribution conflicts
-                if self.resolve_author_conflicts(content, file_path):
-                    resolved_content = self.resolve_author_conflicts(content, file_path)
-                
-                # Strategy 2: Version/Docker image conflicts  
-                elif self.resolve_version_conflicts(content, file_path):
-                    resolved_content = self.resolve_version_conflicts(content, file_path)
-                
-                # Strategy 3: Simple property/config conflicts
-                elif self.resolve_simple_conflicts(content, file_path):
-                    resolved_content = self.resolve_simple_conflicts(content, file_path)
-                
-                if resolved_content:
-                    # Write resolved content back
-                    with open(full_path, 'w', encoding='utf-8') as f:
-                        f.write(resolved_content)
-                    
+                if self.resolve_with_claude_code(full_path):
                     # Stage the resolved file
                     self.git.run_git(["add", file_path])
                     resolved_count += 1
-                    Logger.success(f"Auto-resolved conflicts in: {file_path}")
+                    Logger.success(f"✅ Claude Code AI resolved conflicts in: {file_path}")
                 else:
-                    Logger.warn(f"Could not auto-resolve conflicts in: {file_path}")
+                    Logger.warn(f"❌ Could not auto-resolve conflicts in: {file_path}")
                     
             except Exception as e:
                 Logger.warn(f"Error processing {file_path}: {e}")
@@ -971,119 +974,108 @@ class PRWorkflow:
             Logger.warn("No conflicts could be auto-resolved")
             return False
     
-    def resolve_author_conflicts(self, content: str, file_path: str) -> str:
-        """Resolve simple author attribution conflicts"""
-        if not ('<<<<<<< HEAD' in content and '>>>>>>> ' in content):
-            return None
+    def resolve_with_claude_code(self, file_path: Path) -> bool:
+        """Resolve merge conflicts using Claude Code AI"""
+        import subprocess
+        import tempfile
+        import os
         
-        # Check if this looks like an author conflict
-        if '@author' not in content:
-            return None
-        
-        # Strategy: Keep both authors, merge them
-        lines = content.split('\n')
-        resolved_lines = []
-        in_conflict = False
-        conflict_lines = []
-        
-        for line in lines:
-            if line.startswith('<<<<<<< HEAD'):
-                in_conflict = True
-                conflict_lines = []
-            elif line.startswith('>>>>>>> '):
-                in_conflict = False
-                # Process the collected conflict lines
-                authors = []
-                other_lines = []
+        try:
+            # Check if Claude Code CLI is available
+            try:
+                subprocess.run(['claude', '--version'], capture_output=True, check=True, timeout=5)
+            except (subprocess.CalledProcessError, subprocess.TimeoutExpired, FileNotFoundError):
+                Logger.warn("Claude Code CLI not available for AI conflict resolution")
+                return False
+            
+            # Check if file actually has conflicts
+            with open(file_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            
+            if not any(marker in content for marker in ['<<<<<<<', '>>>>>>>', '=======']):
+                return False  # No conflicts to resolve
+            
+            Logger.info(f"🤖 Using Claude Code AI to resolve conflicts in: {file_path.name}")
+            
+            # Create prompt for Claude Code
+            claude_prompt = """Please resolve this Git merge conflict intelligently.
+
+IMPORTANT: Output ONLY the clean file content - no explanations, no markdown code blocks, no comments.
+
+The file contains Git conflict markers (<<<<<<< HEAD, =======, >>>>>>> branch).
+Analyze the conflicting changes and resolve them appropriately:
+- If both changes are compatible, merge them
+- If they conflict, choose the better/newer version
+- Remove all conflict markers
+
+File content with conflicts:"""
+            
+            # Create temporary files
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False) as input_file:
+                input_file.write(claude_prompt + '\n\n')
+                input_file.write(content)
+                input_file_path = input_file.name
+            
+            try:
+                # Call Claude Code to resolve conflicts
+                with open(input_file_path, 'r') as stdin:
+                    result = subprocess.run(
+                        ['claude', '--print'],
+                        stdin=stdin,
+                        capture_output=True,
+                        text=True,
+                        timeout=300,  # 5 minute timeout
+                        check=False
+                    )
                 
-                for conflict_line in conflict_lines:
-                    if conflict_line.strip().startswith('* @author'):
-                        author = conflict_line.strip()
-                        if author not in authors:
-                            authors.append(author)
-                    elif conflict_line.strip() != '=======' and conflict_line.strip():
-                        other_lines.append(conflict_line)
-                
-                # Add all unique authors
-                resolved_lines.extend(authors)
-                resolved_lines.extend(other_lines)
-                
-            elif line.startswith('======='):
-                continue  # Skip conflict separator
-            elif in_conflict:
-                conflict_lines.append(line)
-            else:
-                resolved_lines.append(line)
-        
-        return '\n'.join(resolved_lines)
-    
-    def resolve_version_conflicts(self, content: str, file_path: str) -> str:
-        """Resolve version number and Docker image conflicts"""
-        if not ('<<<<<<< HEAD' in content and '>>>>>>> ' in content):
-            return None
-        
-        # Check if this looks like a version conflict
-        if not any(keyword in content for keyword in ['version', 'VERSION', 'parse(', 'docker', 'image']):
-            return None
-        
-        # Strategy: Take the newer/higher version
-        lines = content.split('\n')
-        resolved_lines = []
-        in_conflict = False
-        head_lines = []
-        branch_lines = []
-        
-        for line in lines:
-            if line.startswith('<<<<<<< HEAD'):
-                in_conflict = True
-                head_lines = []
-                branch_lines = []
-                in_head_section = True
-            elif line.startswith('======='):
-                in_head_section = False
-            elif line.startswith('>>>>>>> '):
-                in_conflict = False
-                
-                # Choose the better version (prefer branch changes for newer versions)
-                chosen_lines = branch_lines if branch_lines else head_lines
-                resolved_lines.extend(chosen_lines)
-                
-            elif in_conflict:
-                if hasattr(locals(), 'in_head_section') and locals().get('in_head_section', True):
-                    head_lines.append(line)
+                if result.returncode == 0 and result.stdout.strip():
+                    resolved_content = result.stdout.strip()
+                    
+                    # Strip markdown code fences if present
+                    lines = resolved_content.split('\n')
+                    if lines and lines[0].startswith('```'):
+                        lines = lines[1:]
+                    if lines and lines[-1].startswith('```'):
+                        lines = lines[:-1]
+                    resolved_content = '\n'.join(lines)
+                    
+                    # Verify the result doesn't still have conflict markers
+                    if not any(marker in resolved_content for marker in ['<<<<<<<', '>>>>>>>', '=======']):
+                        # Verify the file is not empty and seems reasonable
+                        original_lines = len(content.split('\n'))
+                        resolved_lines = len(resolved_content.split('\n'))
+                        
+                        if resolved_content.strip() and resolved_lines > original_lines // 2:
+                            # Write resolved content back to original file
+                            with open(file_path, 'w', encoding='utf-8') as f:
+                                f.write(resolved_content)
+                            
+                            Logger.success(f"✅ Claude Code successfully resolved conflicts in: {file_path.name}")
+                            return True
+                        else:
+                            Logger.warn(f"⚠️  Claude Code resolution resulted in suspicious output for: {file_path.name}")
+                    else:
+                        Logger.warn(f"⚠️  Claude Code output still contains conflict markers for: {file_path.name}")
                 else:
-                    branch_lines.append(line)
-            else:
-                resolved_lines.append(line)
-        
-        return '\n'.join(resolved_lines)
+                    Logger.warn(f"⚠️  Claude Code failed to process: {file_path.name}")
+                    if result.stderr:
+                        Logger.warn(f"Claude Code error: {result.stderr.strip()}")
+                
+            finally:
+                # Clean up temporary files
+                try:
+                    os.unlink(input_file_path)
+                except OSError:
+                    pass
+            
+            return False
+            
+        except Exception as e:
+            Logger.warn(f"⚠️  Claude Code resolution failed for {file_path.name}: {e}")
+            return False
     
-    def resolve_simple_conflicts(self, content: str, file_path: str) -> str:
-        """Resolve other simple conflicts by taking branch version"""
-        if not ('<<<<<<< HEAD' in content and '>>>>>>> ' in content):
-            return None
-        
-        # For simple conflicts, prefer the branch version (incoming changes)
-        lines = content.split('\n')
-        resolved_lines = []
-        in_conflict = False
-        in_head_section = True
-        
-        for line in lines:
-            if line.startswith('<<<<<<< HEAD'):
-                in_conflict = True
-                in_head_section = True
-            elif line.startswith('======='):
-                in_head_section = False
-            elif line.startswith('>>>>>>> '):
-                in_conflict = False
-            elif in_conflict and not in_head_section:
-                # Take the branch version (after =======)
-                resolved_lines.append(line)
-            elif not in_conflict:
-                resolved_lines.append(line)
-        
-        return '\n'.join(resolved_lines)
+    
+    
     
     def run_complete_workflow(self, pr_number: str, skip_squash: bool = False, skip_compile: bool = False, 
                             auto_resolve: bool = False, force: bool = False, generate_report: bool = True, dry_run: bool = False) -> bool:
@@ -1108,9 +1100,10 @@ class PRWorkflow:
             Logger.error("❌ Build check failed")
             return False
         
-        # Phase 4: Squash commits
+        # Phase 4: Squash commits (mandatory for multi-commit PRs)
         if not self.squash_commits(pr_number, skip_squash, dry_run):
-            Logger.warn("⚠️  Squash encountered issues, continuing...")
+            Logger.error("❌ Squash commits failed - cannot proceed with multi-commit rebase")
+            return False
         
         # Phase 5: Rebase against upstream
         if not self.rebase_against_upstream(pr_number, auto_resolve, dry_run):
@@ -1202,12 +1195,14 @@ class PRWorkflow:
         
         return success
     
-    def get_changed_test_files(self) -> List[str]:
-        """Get list of changed test files from the PR"""
+    def get_changed_test_files(self, pr_number: str) -> List[str]:
+        """Get list of changed test files from the original PR (not post-rebase diff)"""
         try:
-            result = self.git.run_git([
-                "diff", "--name-only", f"{self.config.upstream_remote}/{self.config.main_branch}"
-            ], capture_output=True)
+            # Get original files from the PR using GitHub CLI
+            result = subprocess.run([
+                "gh", "pr", "view", pr_number, "--repo", self.config.spring_ai_repo,
+                "--json", "files", "--jq", ".files[].path"
+            ], cwd=self.config.spring_ai_dir, capture_output=True, text=True, check=True)
             
             changed_files = result.stdout.strip().split('\n')
             test_files = []
@@ -1216,11 +1211,31 @@ class PRWorkflow:
                 if file and self._is_test_file(file):
                     test_files.append(file)
             
+            Logger.info(f"Original PR files: {len(changed_files)} total, {len(test_files)} test files")
             return test_files
             
         except subprocess.CalledProcessError as e:
-            Logger.error(f"Failed to get changed test files: {e}")
-            return []
+            Logger.error(f"Failed to get original PR test files: {e}")
+            Logger.warn("Falling back to git diff method...")
+            
+            # Fallback to original method
+            try:
+                result = self.git.run_git([
+                    "diff", "--name-only", f"{self.config.upstream_remote}/{self.config.main_branch}"
+                ], capture_output=True)
+                
+                changed_files = result.stdout.strip().split('\n')
+                test_files = []
+                
+                for file in changed_files:
+                    if file and self._is_test_file(file):
+                        test_files.append(file)
+                
+                return test_files
+                
+            except subprocess.CalledProcessError as e2:
+                Logger.error(f"Failed to get changed test files: {e2}")
+                return []
     
     def _is_test_file(self, filepath: str) -> bool:
         """Check if a file is a test file"""
@@ -1271,7 +1286,7 @@ class PRWorkflow:
         """Run tests for files that changed in the PR"""
         Logger.info("🧪 Running tests for changed test files...")
         
-        test_files = self.get_changed_test_files()
+        test_files = self.get_changed_test_files(pr_number)
         if not test_files:
             Logger.info("✅ No test files changed in this PR")
             return True
