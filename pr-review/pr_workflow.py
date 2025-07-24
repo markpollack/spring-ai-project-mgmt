@@ -641,6 +641,95 @@ class PRWorkflow:
         
         return "\n".join(f"- {issue}" for issue in issues)
     
+    def cleanup_pr_workspace(self, pr_number: str, dry_run: bool = False) -> bool:
+        """Clean up PR workspace and generated files"""
+        Logger.info(f"🧹 Cleaning up PR #{pr_number} workspace...")
+        
+        cleanup_items = [
+            # Git branches
+            f"pr-{pr_number}",
+            # Build cache files
+            self.config.script_dir / f".build_cache_pr_{pr_number}",
+            # Generated reports
+            self.config.reports_dir / f"review-pr-{pr_number}.md",
+            self.config.reports_dir / f"test-logs-pr-{pr_number}",
+            # Generated plans
+            self.config.plans_dir / f"plan-pr-{pr_number}.md",
+            self.config.plans_dir / f"enhanced-plan-pr-{pr_number}.md",
+        ]
+        
+        success = True
+        cleaned_count = 0
+        
+        if dry_run:
+            Logger.info("[DRY RUN] Would clean the following items:")
+            for item in cleanup_items:
+                if isinstance(item, str):
+                    Logger.info(f"[DRY RUN]   - Git branch: {item}")
+                else:
+                    Logger.info(f"[DRY RUN]   - File/Directory: {item}")
+            return True
+        
+        # Clean up git branch
+        branch_name = f"pr-{pr_number}"
+        try:
+            # Check if branch exists
+            result = self.git.run_git(["show-ref", "--verify", "--quiet", f"refs/heads/{branch_name}"], capture_output=True)
+            # Branch exists, delete it
+            current_branch = self.git.run_git(["rev-parse", "--abbrev-ref", "HEAD"], capture_output=True).stdout.strip()
+            
+            if current_branch == branch_name:
+                # Switch to main branch first
+                Logger.info(f"Switching from {branch_name} to main branch...")
+                self.git.run_git(["checkout", self.config.main_branch])
+            
+            Logger.info(f"Deleting git branch: {branch_name}")
+            self.git.run_git(["branch", "-D", branch_name])
+            cleaned_count += 1
+            
+        except subprocess.CalledProcessError:
+            # Branch doesn't exist, which is fine
+            Logger.info(f"Git branch {branch_name} does not exist (already clean)")
+        except Exception as e:
+            Logger.warn(f"Error cleaning git branch {branch_name}: {e}")
+            success = False
+        
+        # Clean up files and directories
+        for item in cleanup_items[1:]:  # Skip the branch name
+            try:
+                if item.exists():
+                    if item.is_file():
+                        Logger.info(f"Removing file: {item}")
+                        item.unlink()
+                    elif item.is_dir():
+                        Logger.info(f"Removing directory: {item}")
+                        shutil.rmtree(item)
+                    cleaned_count += 1
+                else:
+                    Logger.debug(f"Item does not exist (already clean): {item}")
+                    
+            except Exception as e:
+                Logger.warn(f"Error cleaning {item}: {e}")
+                success = False
+        
+        # Clean up Python cache files
+        try:
+            cache_dir = self.config.script_dir / "__pycache__"
+            if cache_dir.exists():
+                Logger.info("Removing Python cache files...")
+                shutil.rmtree(cache_dir)
+                cleaned_count += 1
+        except Exception as e:
+            Logger.warn(f"Error cleaning Python cache: {e}")
+        
+        if success:
+            Logger.success(f"✅ Cleaned {cleaned_count} items for PR #{pr_number}")
+            Logger.info("🧹 Workspace is now clean and ready for fresh testing")
+        else:
+            Logger.warn(f"⚠️  Partially cleaned workspace - some items couldn't be removed")
+        
+        return success
+    
     def run_build_check(self, pr_number: str, skip_compile: bool = False, dry_run: bool = False) -> bool:
         """Run compilation check with caching"""
         if skip_compile:
@@ -1353,13 +1442,14 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  python3 pr_workflow.py 3386                      # Full workflow for PR #3386
-  python3 pr_workflow.py --auto-resolve 3386       # Include automatic conflict resolution
+  python3 pr_workflow.py 3386                      # Full workflow for PR #3386 (with auto-resolve)
+  python3 pr_workflow.py --no-auto-resolve 3386    # Disable automatic conflict resolution
   python3 pr_workflow.py --skip-squash 3386        # Skip commit squashing
   python3 pr_workflow.py --skip-report 3386        # Skip report generation (prep only)
   python3 pr_workflow.py --report-only 3386        # Generate only the analysis report
   python3 pr_workflow.py --test-only 3386          # Run only the changed tests
   python3 pr_workflow.py --plan-only 3386          # Generate enhanced workflow plan
+  python3 pr_workflow.py --cleanup 3386            # Clean up PR workspace and files
   python3 pr_workflow.py --dry-run 3386            # Preview the workflow
         """
     )
@@ -1367,12 +1457,13 @@ Examples:
     parser.add_argument('pr_number', help='GitHub PR number to process')
     parser.add_argument('--skip-squash', action='store_true', help='Skip commit squashing')
     parser.add_argument('--skip-compile', action='store_true', help='Skip compilation check')
-    parser.add_argument('--auto-resolve', action='store_true', help='Attempt automatic conflict resolution')
+    parser.add_argument('--no-auto-resolve', action='store_true', help='Disable automatic conflict resolution (auto-resolve is enabled by default)')
     parser.add_argument('--force', action='store_true', help='Force operations (overwrite existing branches)')
     parser.add_argument('--skip-report', action='store_true', help='Skip PR analysis report generation')
     parser.add_argument('--report-only', action='store_true', help='Generate only the analysis report (assumes PR already prepared)')
     parser.add_argument('--test-only', action='store_true', help='Run only the changed tests (assumes PR already prepared)')
     parser.add_argument('--plan-only', action='store_true', help='Generate enhanced workflow plan with progress tracking')
+    parser.add_argument('--cleanup', action='store_true', help='Clean up PR workspace and generated files')
     parser.add_argument('--dry-run', action='store_true', help='Show what would be done without executing')
     
     args = parser.parse_args()
@@ -1390,9 +1481,9 @@ Examples:
     workflow = PRWorkflow(config)
     
     # Check for mutually exclusive options
-    exclusive_options = [args.skip_report, args.report_only, args.test_only, args.plan_only]
+    exclusive_options = [args.skip_report, args.report_only, args.test_only, args.plan_only, args.cleanup]
     if sum(exclusive_options) > 1:
-        Logger.error("Cannot use multiple exclusive options: --skip-report, --report-only, --test-only, --plan-only")
+        Logger.error("Cannot use multiple exclusive options: --skip-report, --report-only, --test-only, --plan-only, --cleanup")
         sys.exit(1)
     
     # Run the appropriate workflow
@@ -1413,12 +1504,18 @@ Examples:
             Logger.success(f"📋 Enhanced plan generated successfully: {plan_file}")
         else:
             Logger.error("❌ Failed to generate enhanced plan")
+    elif args.cleanup:
+        success = workflow.cleanup_pr_workspace(args.pr_number, dry_run=args.dry_run)
+        if success:
+            Logger.success(f"🧹 PR #{args.pr_number} workspace cleaned successfully")
+        else:
+            Logger.error("❌ Failed to clean up PR workspace")
     else:
         success = workflow.run_complete_workflow(
             pr_number=args.pr_number,
             skip_squash=args.skip_squash,
             skip_compile=args.skip_compile,
-            auto_resolve=args.auto_resolve,
+            auto_resolve=not args.no_auto_resolve,  # Auto-resolve by default unless disabled
             force=args.force,
             generate_report=not args.skip_report,
             dry_run=args.dry_run
