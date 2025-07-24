@@ -646,7 +646,7 @@ class PRWorkflow:
         Logger.info(f"🧹 Cleaning up PR #{pr_number} workspace...")
         
         cleanup_items = [
-            # Git branches
+            # Git branches (handled separately)
             f"pr-{pr_number}",
             # Build cache files
             self.config.script_dir / f".build_cache_pr_{pr_number}",
@@ -656,6 +656,8 @@ class PRWorkflow:
             # Generated plans
             self.config.plans_dir / f"plan-pr-{pr_number}.md",
             self.config.plans_dir / f"enhanced-plan-pr-{pr_number}.md",
+            # Spring AI repository (for complete fresh start)
+            self.config.spring_ai_dir,
         ]
         
         success = True
@@ -670,29 +672,35 @@ class PRWorkflow:
                     Logger.info(f"[DRY RUN]   - File/Directory: {item}")
             return True
         
-        # Clean up git branch
-        branch_name = f"pr-{pr_number}"
-        try:
-            # Check if branch exists
-            result = self.git.run_git(["show-ref", "--verify", "--quiet", f"refs/heads/{branch_name}"], capture_output=True)
-            # Branch exists, delete it
-            current_branch = self.git.run_git(["rev-parse", "--abbrev-ref", "HEAD"], capture_output=True).stdout.strip()
-            
-            if current_branch == branch_name:
-                # Switch to main branch first
-                Logger.info(f"Switching from {branch_name} to main branch...")
-                self.git.run_git(["checkout", self.config.main_branch])
-            
-            Logger.info(f"Deleting git branch: {branch_name}")
-            self.git.run_git(["branch", "-D", branch_name])
-            cleaned_count += 1
-            
-        except subprocess.CalledProcessError:
-            # Branch doesn't exist, which is fine
-            Logger.info(f"Git branch {branch_name} does not exist (already clean)")
-        except Exception as e:
-            Logger.warn(f"Error cleaning git branch {branch_name}: {e}")
-            success = False
+        # Clean up git branch - skip if spring-ai directory will be removed
+        if not (self.config.spring_ai_dir in cleanup_items[1:]):
+            branch_name = f"pr-{pr_number}"
+            try:
+                # Check if spring-ai directory exists first
+                if self.config.spring_ai_dir.exists():
+                    # Check if branch exists
+                    result = self.git.run_git(["show-ref", "--verify", "--quiet", f"refs/heads/{branch_name}"], capture_output=True)
+                    # Branch exists, delete it
+                    current_branch = self.git.run_git(["rev-parse", "--abbrev-ref", "HEAD"], capture_output=True).stdout.strip()
+                    
+                    if current_branch == branch_name:
+                        # Switch to main branch first
+                        Logger.info(f"Switching from {branch_name} to main branch...")
+                        self.git.run_git(["checkout", self.config.main_branch])
+                    
+                    Logger.info(f"Deleting git branch: {branch_name}")
+                    self.git.run_git(["branch", "-D", branch_name])
+                    cleaned_count += 1
+                else:
+                    Logger.info("Spring AI directory doesn't exist (already clean)")
+                    
+            except subprocess.CalledProcessError:
+                # Branch doesn't exist, which is fine
+                Logger.info(f"Git branch {branch_name} does not exist (already clean)")
+            except Exception as e:
+                Logger.warn(f"Error cleaning git branch {branch_name}: {e}")
+                # Don't fail cleanup just because of git branch issues
+                pass
         
         # Clean up files and directories
         for item in cleanup_items[1:]:  # Skip the branch name
@@ -706,7 +714,8 @@ class PRWorkflow:
                         shutil.rmtree(item)
                     cleaned_count += 1
                 else:
-                    Logger.debug(f"Item does not exist (already clean): {item}")
+                    # Item doesn't exist, which is fine (already clean)
+                    pass
                     
             except Exception as e:
                 Logger.warn(f"Error cleaning {item}: {e}")
