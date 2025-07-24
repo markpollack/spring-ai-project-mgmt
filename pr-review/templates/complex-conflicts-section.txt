@@ -1,0 +1,15 @@
+### Step 2: Get AI Assistance for Complex Conflicts
+```bash
+# Call Claude Code for intelligent conflict resolution
+./pr-prepare.sh --call-claude {{PR_NUMBER}}
+
+# Or manually review each conflict:
+{{JAVA_CONFLICTS}}
+```
+
+### Step 3: Complete Rebase
+After resolving conflicts:
+```bash
+git add .
+git rebase --continue
+```

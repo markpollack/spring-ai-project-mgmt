@@ -1,0 +1,17 @@
+I have merge conflicts in Spring AI PR #{{PR_NUMBER}} that need resolution.
+
+Conflicted files:
+{{CONFLICTED_FILES}}
+
+Context:
+- This is a Spring AI project using Java and Spring Boot
+- Conflicts occurred during rebase against upstream main
+- Need to preserve functionality from both branches when possible
+- Follow Spring Boot coding patterns and best practices
+
+Please analyze each conflicted file and provide specific resolution recommendations. For each file, show:
+1. The nature of the conflict
+2. Recommended resolution strategy
+3. Specific commands or edits to make
+
+Plan file created at: {{PLAN_FILE}}

@@ -1,0 +1,32 @@
+# Conflict Resolution Plan for PR #{{PR_NUMBER}}
+
+Generated: {{DATE}}
+Repository: {{REPO_DIR}}
+Branch: {{BRANCH}}
+
+## Conflict Summary
+
+- 🟡 Simple conflicts: {{SIMPLE_COUNT}} (can potentially auto-resolve)
+- 🔴 Complex conflicts: {{COMPLEX_COUNT}} (need manual review)
+- 📁 Total conflicted files: {{TOTAL_COUNT}}
+
+## Conflicted Files
+
+{{CONFLICTS_INFO}}
+
+## Resolution Strategy
+
+### Automatic Resolution (Simple Conflicts)
+For simple conflicts in documentation and config files, common strategies:
+- **Markdown files**: Usually take newer version or merge content logically
+- **Properties files**: Take newer values unless they conflict with PR intent
+- **Version files**: Take newer version numbers
+
+### Manual Resolution Required (Complex Conflicts)
+For Java source files and complex conflicts:
+1. Understand the intent of both changes
+2. Preserve functionality from both branches when possible
+3. Follow Spring Boot/AI coding patterns
+4. Ensure backward compatibility
+
+## Recommended Actions

@@ -1,0 +1,5 @@
+### Step 1: Auto-resolve Simple Conflicts
+```bash
+# Run the script with auto-resolve flag
+./pr-prepare.sh --auto-resolve {{PR_NUMBER}}
+```

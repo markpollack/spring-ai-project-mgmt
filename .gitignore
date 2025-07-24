@@ -27,3 +27,6 @@ replay_pid*
 scripts/issues/
 scripts/logs/
 scripts/issues-compressed/
+
+# PR Review workflow - cloned repositories
+pr-review/spring-ai/
