@@ -1,0 +1,101 @@
+{
+  "groups": [
+    {
+      "name": "github.issues",
+      "type": "org.springaicommunity.github.ai.collection.CollectionProperties",
+      "sourceType": "org.springaicommunity.github.ai.collection.CollectionProperties"
+    }
+  ],
+  "properties": [
+    {
+      "name": "github.issues.base-output-dir",
+      "type": "java.lang.String",
+      "sourceType": "org.springaicommunity.github.ai.collection.CollectionProperties",
+      "defaultValue": "issues\/raw\/closed"
+    },
+    {
+      "name": "github.issues.batch-size",
+      "type": "java.lang.Integer",
+      "sourceType": "org.springaicommunity.github.ai.collection.CollectionProperties",
+      "defaultValue": 100
+    },
+    {
+      "name": "github.issues.debug",
+      "type": "java.lang.Boolean",
+      "sourceType": "org.springaicommunity.github.ai.collection.CollectionProperties",
+      "defaultValue": false
+    },
+    {
+      "name": "github.issues.default-label-mode",
+      "type": "java.lang.String",
+      "sourceType": "org.springaicommunity.github.ai.collection.CollectionProperties",
+      "defaultValue": "any"
+    },
+    {
+      "name": "github.issues.default-labels",
+      "type": "java.util.List<java.lang.String>",
+      "sourceType": "org.springaicommunity.github.ai.collection.CollectionProperties"
+    },
+    {
+      "name": "github.issues.default-repository",
+      "type": "java.lang.String",
+      "sourceType": "org.springaicommunity.github.ai.collection.CollectionProperties",
+      "defaultValue": "spring-projects\/spring-ai"
+    },
+    {
+      "name": "github.issues.default-state",
+      "type": "java.lang.String",
+      "sourceType": "org.springaicommunity.github.ai.collection.CollectionProperties",
+      "defaultValue": "closed"
+    },
+    {
+      "name": "github.issues.large-issue-threshold",
+      "type": "java.lang.Integer",
+      "sourceType": "org.springaicommunity.github.ai.collection.CollectionProperties",
+      "defaultValue": 50
+    },
+    {
+      "name": "github.issues.max-batch-size-bytes",
+      "type": "java.lang.Integer",
+      "sourceType": "org.springaicommunity.github.ai.collection.CollectionProperties",
+      "defaultValue": 1048576
+    },
+    {
+      "name": "github.issues.max-retries",
+      "type": "java.lang.Integer",
+      "sourceType": "org.springaicommunity.github.ai.collection.CollectionProperties",
+      "defaultValue": 3
+    },
+    {
+      "name": "github.issues.rate-limit",
+      "type": "java.lang.Integer",
+      "sourceType": "org.springaicommunity.github.ai.collection.CollectionProperties",
+      "defaultValue": 5000
+    },
+    {
+      "name": "github.issues.resume-file",
+      "type": "java.lang.String",
+      "sourceType": "org.springaicommunity.github.ai.collection.CollectionProperties",
+      "defaultValue": ".resume_state.json"
+    },
+    {
+      "name": "github.issues.retry-delay",
+      "type": "java.lang.Integer",
+      "sourceType": "org.springaicommunity.github.ai.collection.CollectionProperties",
+      "defaultValue": 5
+    },
+    {
+      "name": "github.issues.size-threshold",
+      "type": "java.lang.Integer",
+      "sourceType": "org.springaicommunity.github.ai.collection.CollectionProperties",
+      "defaultValue": 102400
+    },
+    {
+      "name": "github.issues.verbose",
+      "type": "java.lang.Boolean",
+      "sourceType": "org.springaicommunity.github.ai.collection.CollectionProperties",
+      "defaultValue": false
+    }
+  ],
+  "hints": []
+}
