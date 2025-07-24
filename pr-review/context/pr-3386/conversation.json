@@ -1,0 +1,162 @@
+[
+  {
+    "type": "issue_comment",
+    "author": "sunyuhan1998",
+    "created_at": "2025-05-30T01:43:26Z",
+    "body": "Hi @Dudu0831 Can you please provide the URL of the document in the picture?I can't seem to find it in the ollama repository.",
+    "url": "https://github.com/spring-projects/spring-ai/issues/3383#issuecomment-2920996475",
+    "metadata": {
+      "issue_number": 3383
+    }
+  },
+  {
+    "type": "issue_comment",
+    "author": "Dudu0831",
+    "created_at": "2025-05-30T01:46:49Z",
+    "body": "Here's the URL, and the version is 0.9.0.\n\nhttps://github.com/ollama/ollama/releases",
+    "url": "https://github.com/spring-projects/spring-ai/issues/3383#issuecomment-2921002137",
+    "metadata": {
+      "issue_number": 3383
+    }
+  },
+  {
+    "type": "issue_comment",
+    "author": "sunyuhan1998",
+    "created_at": "2025-05-30T01:47:57Z",
+    "body": "> https://github.com/ollama/ollama/releases\n\nThank you very much!I will check out this URL!",
+    "url": "https://github.com/spring-projects/spring-ai/issues/3383#issuecomment-2921003447",
+    "metadata": {
+      "issue_number": 3383
+    }
+  },
+  {
+    "type": "issue_comment",
+    "author": "Dudu0831",
+    "created_at": "2025-05-30T01:52:11Z",
+    "body": "@sunyuhan1998 麻烦你了。",
+    "url": "https://github.com/spring-projects/spring-ai/issues/3383#issuecomment-2921008106",
+    "metadata": {
+      "issue_number": 3383
+    }
+  },
+  {
+    "type": "issue_comment",
+    "author": "Dudu0831",
+    "created_at": "2025-05-30T03:35:53Z",
+    "body": "@sunyuhan1998 你好，我发现了一个新的问题，不知道是不是ollama升级的原因。我升级到了0.8.0。\n只有调用工具时会出现以下情况\n1.报空指针异常错误。\n报错阶段发生在模型调用完工具后进行回答时，如下图\n![Image](https://github.com/user-attachments/assets/474f85f6-9217-43ee-bbe5-78954bb36fc6)\n当我恢复程序时发生如下错误\n![Image](https://github.com/user-attachments/assets/2bd263fb-7305-4bc5-8f29-867f3261bca8)\n",
+    "url": "https://github.com/spring-projects/spring-ai/issues/3383#issuecomment-2921136558",
+    "metadata": {
+      "issue_number": 3383
+    }
+  },
+  {
+    "type": "issue_comment",
+    "author": "sunyuhan1998",
+    "created_at": "2025-05-30T03:39:15Z",
+    "body": "> [@sunyuhan1998](https://github.com/sunyuhan1998) 你好，我发现了一个新的问题，不知道是不是ollama升级的原因。我升级到了0.8.0。 只有调用工具时会出现以下情况 1.报空指针异常错误。 \n\nThis is the same issue as https://github.com/spring-projects/spring-ai/issues/3369, I've pushed a PR to fix the issue, which should be due to an interface tweak in ollama.\n\n",
+    "url": "https://github.com/spring-projects/spring-ai/issues/3383#issuecomment-2921139936",
+    "metadata": {
+      "issue_number": 3383
+    }
+  },
+  {
+    "type": "issue_comment",
+    "author": "Dudu0831",
+    "created_at": "2025-05-30T03:42:07Z",
+    "body": "@sunyuhan1998 Alright, thanks a lot for your explanation.",
+    "url": "https://github.com/spring-projects/spring-ai/issues/3383#issuecomment-2921143002",
+    "metadata": {
+      "issue_number": 3383
+    }
+  },
+  {
+    "type": "pr_comment",
+    "author": "sunyuhan1998",
+    "created_at": "2025-05-30T03:58:06Z",
+    "body": "@tzolov @ilayaperumalg @markpollack Could you please help review this PR? Thank you.",
+    "url": "https://github.com/spring-projects/spring-ai/pull/3386#issuecomment-2921158891",
+    "metadata": {
+      "pr_number": 3386
+    }
+  },
+  {
+    "type": "issue_comment",
+    "author": "sunyuhan1998",
+    "created_at": "2025-05-30T04:01:05Z",
+    "body": "> [@sunyuhan1998](https://github.com/sunyuhan1998) Alright, thanks a lot for your explanation.\n\nBy the way, regarding the new version of Ollama that now supports the `think` field, since this is a recent update, Spring AI hasn't supported it yet. I've already submitted a PR to try to add support for it: https://github.com/spring-projects/spring-ai/pull/3386.",
+    "url": "https://github.com/spring-projects/spring-ai/issues/3383#issuecomment-2921161670",
+    "metadata": {
+      "issue_number": 3383
+    }
+  },
+  {
+    "type": "pr_comment",
+    "author": "markpollack",
+    "created_at": "2025-05-30T14:50:45Z",
+    "body": "Yes, we will review. Thanks",
+    "url": "https://github.com/spring-projects/spring-ai/pull/3386#issuecomment-2922609956",
+    "metadata": {
+      "pr_number": 3386
+    }
+  },
+  {
+    "type": "pr_comment",
+    "author": "TonyReggae",
+    "created_at": "2025-06-21T09:05:21Z",
+    "body": "可以考虑加一个可自由扩展参数的字段，可以灵活应对兼容参数并避免延迟于ollama的更新。",
+    "url": "https://github.com/spring-projects/spring-ai/pull/3386#issuecomment-2993474706",
+    "metadata": {
+      "pr_number": 3386
+    }
+  },
+  {
+    "type": "pr_comment",
+    "author": "sunyuhan1998",
+    "created_at": "2025-06-24T01:47:24Z",
+    "body": "Hi @markpollack , I hope you're doing well!\r\n\r\nI just wanted to check in and see if there are any further changes needed for this PR. Let me know if there's anything else I should address — happy to make adjustments if needed!\r\n\r\nThanks again for your time and review!",
+    "url": "https://github.com/spring-projects/spring-ai/pull/3386#issuecomment-2998492464",
+    "metadata": {
+      "pr_number": 3386
+    }
+  },
+  {
+    "type": "pr_comment",
+    "author": "hbsjz-swl",
+    "created_at": "2025-06-24T02:38:29Z",
+    "body": "I would like to ask: If this PR is merged, will this feature be included in the snapshot version library? Then how can developers who are currently using the GA version use this feature?",
+    "url": "https://github.com/spring-projects/spring-ai/pull/3386#issuecomment-2998575669",
+    "metadata": {
+      "pr_number": 3386
+    }
+  },
+  {
+    "type": "pr_comment",
+    "author": "sunyuhan1998",
+    "created_at": "2025-06-24T02:59:43Z",
+    "body": "> I would like to ask: If this PR is merged, will this feature be included in the snapshot version library? Then how can developers who are currently using the GA version use this feature?\r\n\r\nIt seems to me that this feature should be included in 1.1.x, as well as being backport to 1.0.x. By the time the 1.0.x version is officially released, users currently using the 1.0.0 GA version will be able to use it by upgrading to the 1.0.x version",
+    "url": "https://github.com/spring-projects/spring-ai/pull/3386#issuecomment-2998623419",
+    "metadata": {
+      "pr_number": 3386
+    }
+  },
+  {
+    "type": "pr_comment",
+    "author": "markpollack",
+    "created_at": "2025-07-17T17:11:47Z",
+    "body": "yes, I will backport it.  Sorry about the delay.  Only now getting my project mgmt hat on full time @sunyuhan1998 ",
+    "url": "https://github.com/spring-projects/spring-ai/pull/3386#issuecomment-3084820242",
+    "metadata": {
+      "pr_number": 3386
+    }
+  },
+  {
+    "type": "pr_comment",
+    "author": "sunyuhan1998",
+    "created_at": "2025-07-18T01:05:38Z",
+    "body": "> yes, I will backport it. Sorry about the delay. Only now getting my project mgmt hat on full time @sunyuhan1998\r\n\r\nno problem at all! Please feel free to let me know if any changes are needed.",
+    "url": "https://github.com/spring-projects/spring-ai/pull/3386#issuecomment-3086202358",
+    "metadata": {
+      "pr_number": 3386
+    }
+  }
+]

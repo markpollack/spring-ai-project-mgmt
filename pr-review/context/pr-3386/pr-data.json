@@ -1,0 +1,479 @@
+{
+  "number": 3386,
+  "title": "Added support for the \"think\" for Ollama",
+  "body": "Fixes #3383 \r\nAs mentioned in issue: https://github.com/spring-projects/spring-ai/issues/3383 , Ollama added support for \"think\" in its latest 0.9.0 version: \r\nhttps://github.com/ollama/ollama/releases\r\nhttps://github.com/ollama/ollama/blob/main/docs/api.md#generate-a-chat-completion. \r\n\r\nThis PR implements support for that attribute and includes the following key changes: \r\n1. Added the `think` field to Ollama's `ChatRequest`\r\n2. Added the `thinking` field to Ollama's `Message`\r\n3. Added the `think` property to `OllamaOptions`, allowing users to specify whether to enable or disable thinking\r\n\r\nActually, there is currently another issue: \r\n\r\nAs stated in Ollama's API documentation [here](https://github.com/ollama/ollama/blob/main/docs/api.md#generate-a-chat-completion), during requests to Ollama, the `message` field supports sending the model's own reasoning (thoughts) back to it. However, `AssistantMessage` does not currently support transmitting this field, which means the model will not be aware of its previous thoughts. \r\n\r\nTherefore, perhaps we need to add a specialized `Message` implementation for Ollama, such as `OllamaAssistantMessage`. I'm not sure whether this would be considered a significant change.",
+  "state": "OPEN",
+  "draft": false,
+  "labels": [
+    "ollama",
+    "for: backport-to-1.0.x"
+  ],
+  "assignees": [
+    "markpollack"
+  ],
+  "reviewers": [],
+  "created_at": "2025-05-30T03:28:17Z",
+  "updated_at": "2025-07-18T01:05:38Z",
+  "author": "sunyuhan1998",
+  "url": "https://github.com/spring-projects/spring-ai/pull/3386",
+  "base_branch": "main",
+  "head_branch": "feat-support-ollama-thinking",
+  "commits_count": 7,
+  "changed_files": 15,
+  "additions": 341,
+  "deletions": 16,
+  "linked_issues": [
+    3383
+  ],
+  "comments": [
+    {
+      "id": "IC_kwDOJ02wfs6uHVjr",
+      "author": {
+        "login": "sunyuhan1998"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "@tzolov @ilayaperumalg @markpollack Could you please help review this PR? Thank you.",
+      "createdAt": "2025-05-30T03:58:06Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/spring-projects/spring-ai/pull/3386#issuecomment-2921158891",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOJ02wfs6uM30k",
+      "author": {
+        "login": "markpollack"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "Yes, we will review. Thanks",
+      "createdAt": "2025-05-30T14:50:45Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [
+        {
+          "content": "THUMBS_UP",
+          "users": {
+            "totalCount": 2
+          }
+        }
+      ],
+      "url": "https://github.com/spring-projects/spring-ai/pull/3386#issuecomment-2922609956",
+      "viewerDidAuthor": true
+    },
+    {
+      "id": "IC_kwDOJ02wfs6ybMyS",
+      "author": {
+        "login": "TonyReggae"
+      },
+      "authorAssociation": "NONE",
+      "body": "可以考虑加一个可自由扩展参数的字段，可以灵活应对兼容参数并避免延迟于ollama的更新。",
+      "createdAt": "2025-06-21T09:05:21Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/spring-projects/spring-ai/pull/3386#issuecomment-2993474706",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOJ02wfs6yuV0w",
+      "author": {
+        "login": "sunyuhan1998"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "Hi @markpollack , I hope you're doing well!\r\n\r\nI just wanted to check in and see if there are any further changes needed for this PR. Let me know if there's anything else I should address — happy to make adjustments if needed!\r\n\r\nThanks again for your time and review!",
+      "createdAt": "2025-06-24T01:47:24Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/spring-projects/spring-ai/pull/3386#issuecomment-2998492464",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOJ02wfs6yuqI1",
+      "author": {
+        "login": "hbsjz-swl"
+      },
+      "authorAssociation": "NONE",
+      "body": "I would like to ask: If this PR is merged, will this feature be included in the snapshot version library? Then how can developers who are currently using the GA version use this feature?",
+      "createdAt": "2025-06-24T02:38:29Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/spring-projects/spring-ai/pull/3386#issuecomment-2998575669",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOJ02wfs6yu1y7",
+      "author": {
+        "login": "sunyuhan1998"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "> I would like to ask: If this PR is merged, will this feature be included in the snapshot version library? Then how can developers who are currently using the GA version use this feature?\r\n\r\nIt seems to me that this feature should be included in 1.1.x, as well as being backport to 1.0.x. By the time the 1.0.x version is officially released, users currently using the 1.0.0 GA version will be able to use it by upgrading to the 1.0.x version",
+      "createdAt": "2025-06-24T02:59:43Z",
+      "includesCreatedEdit": true,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/spring-projects/spring-ai/pull/3386#issuecomment-2998623419",
+      "viewerDidAuthor": false
+    },
+    {
+      "id": "IC_kwDOJ02wfs633p8S",
+      "author": {
+        "login": "markpollack"
+      },
+      "authorAssociation": "MEMBER",
+      "body": "yes, I will backport it.  Sorry about the delay.  Only now getting my project mgmt hat on full time @sunyuhan1998 ",
+      "createdAt": "2025-07-17T17:11:47Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/spring-projects/spring-ai/pull/3386#issuecomment-3084820242",
+      "viewerDidAuthor": true
+    },
+    {
+      "id": "IC_kwDOJ02wfs6387X2",
+      "author": {
+        "login": "sunyuhan1998"
+      },
+      "authorAssociation": "CONTRIBUTOR",
+      "body": "> yes, I will backport it. Sorry about the delay. Only now getting my project mgmt hat on full time @sunyuhan1998\r\n\r\nno problem at all! Please feel free to let me know if any changes are needed.",
+      "createdAt": "2025-07-18T01:05:38Z",
+      "includesCreatedEdit": false,
+      "isMinimized": false,
+      "minimizedReason": "",
+      "reactionGroups": [],
+      "url": "https://github.com/spring-projects/spring-ai/pull/3386#issuecomment-3086202358",
+      "viewerDidAuthor": false
+    }
+  ],
+  "reviews": [
+    {
+      "id": 2918538677,
+      "node_id": "PRR_kwDOJ02wfs6t9V21",
+      "user": {
+        "login": "markpollack",
+        "id": 247466,
+        "node_id": "MDQ6VXNlcjI0NzQ2Ng==",
+        "avatar_url": "https://avatars.githubusercontent.com/u/247466?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/markpollack",
+        "html_url": "https://github.com/markpollack",
+        "followers_url": "https://api.github.com/users/markpollack/followers",
+        "following_url": "https://api.github.com/users/markpollack/following{/other_user}",
+        "gists_url": "https://api.github.com/users/markpollack/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/markpollack/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/markpollack/subscriptions",
+        "organizations_url": "https://api.github.com/users/markpollack/orgs",
+        "repos_url": "https://api.github.com/users/markpollack/repos",
+        "events_url": "https://api.github.com/users/markpollack/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/markpollack/received_events",
+        "type": "User",
+        "user_view_type": "public",
+        "site_admin": false
+      },
+      "body": "",
+      "state": "COMMENTED",
+      "html_url": "https://github.com/spring-projects/spring-ai/pull/3386#pullrequestreview-2918538677",
+      "pull_request_url": "https://api.github.com/repos/spring-projects/spring-ai/pulls/3386",
+      "author_association": "MEMBER",
+      "_links": {
+        "html": {
+          "href": "https://github.com/spring-projects/spring-ai/pull/3386#pullrequestreview-2918538677"
+        },
+        "pull_request": {
+          "href": "https://api.github.com/repos/spring-projects/spring-ai/pulls/3386"
+        }
+      },
+      "submitted_at": "2025-06-11T20:12:44Z",
+      "commit_id": "f77e08a69a3afe1bd90750c28f96a89f48151987"
+    },
+    {
+      "id": 2918561002,
+      "node_id": "PRR_kwDOJ02wfs6t9bTq",
+      "user": {
+        "login": "markpollack",
+        "id": 247466,
+        "node_id": "MDQ6VXNlcjI0NzQ2Ng==",
+        "avatar_url": "https://avatars.githubusercontent.com/u/247466?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/markpollack",
+        "html_url": "https://github.com/markpollack",
+        "followers_url": "https://api.github.com/users/markpollack/followers",
+        "following_url": "https://api.github.com/users/markpollack/following{/other_user}",
+        "gists_url": "https://api.github.com/users/markpollack/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/markpollack/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/markpollack/subscriptions",
+        "organizations_url": "https://api.github.com/users/markpollack/orgs",
+        "repos_url": "https://api.github.com/users/markpollack/repos",
+        "events_url": "https://api.github.com/users/markpollack/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/markpollack/received_events",
+        "type": "User",
+        "user_view_type": "public",
+        "site_admin": false
+      },
+      "body": "",
+      "state": "COMMENTED",
+      "html_url": "https://github.com/spring-projects/spring-ai/pull/3386#pullrequestreview-2918561002",
+      "pull_request_url": "https://api.github.com/repos/spring-projects/spring-ai/pulls/3386",
+      "author_association": "MEMBER",
+      "_links": {
+        "html": {
+          "href": "https://github.com/spring-projects/spring-ai/pull/3386#pullrequestreview-2918561002"
+        },
+        "pull_request": {
+          "href": "https://api.github.com/repos/spring-projects/spring-ai/pulls/3386"
+        }
+      },
+      "submitted_at": "2025-06-11T20:20:12Z",
+      "commit_id": "f77e08a69a3afe1bd90750c28f96a89f48151987"
+    },
+    {
+      "id": 2918570796,
+      "node_id": "PRR_kwDOJ02wfs6t9dss",
+      "user": {
+        "login": "markpollack",
+        "id": 247466,
+        "node_id": "MDQ6VXNlcjI0NzQ2Ng==",
+        "avatar_url": "https://avatars.githubusercontent.com/u/247466?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/markpollack",
+        "html_url": "https://github.com/markpollack",
+        "followers_url": "https://api.github.com/users/markpollack/followers",
+        "following_url": "https://api.github.com/users/markpollack/following{/other_user}",
+        "gists_url": "https://api.github.com/users/markpollack/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/markpollack/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/markpollack/subscriptions",
+        "organizations_url": "https://api.github.com/users/markpollack/orgs",
+        "repos_url": "https://api.github.com/users/markpollack/repos",
+        "events_url": "https://api.github.com/users/markpollack/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/markpollack/received_events",
+        "type": "User",
+        "user_view_type": "public",
+        "site_admin": false
+      },
+      "body": "",
+      "state": "COMMENTED",
+      "html_url": "https://github.com/spring-projects/spring-ai/pull/3386#pullrequestreview-2918570796",
+      "pull_request_url": "https://api.github.com/repos/spring-projects/spring-ai/pulls/3386",
+      "author_association": "MEMBER",
+      "_links": {
+        "html": {
+          "href": "https://github.com/spring-projects/spring-ai/pull/3386#pullrequestreview-2918570796"
+        },
+        "pull_request": {
+          "href": "https://api.github.com/repos/spring-projects/spring-ai/pulls/3386"
+        }
+      },
+      "submitted_at": "2025-06-11T20:24:24Z",
+      "commit_id": "f77e08a69a3afe1bd90750c28f96a89f48151987"
+    },
+    {
+      "id": 2918578324,
+      "node_id": "PRR_kwDOJ02wfs6t9fiU",
+      "user": {
+        "login": "markpollack",
+        "id": 247466,
+        "node_id": "MDQ6VXNlcjI0NzQ2Ng==",
+        "avatar_url": "https://avatars.githubusercontent.com/u/247466?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/markpollack",
+        "html_url": "https://github.com/markpollack",
+        "followers_url": "https://api.github.com/users/markpollack/followers",
+        "following_url": "https://api.github.com/users/markpollack/following{/other_user}",
+        "gists_url": "https://api.github.com/users/markpollack/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/markpollack/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/markpollack/subscriptions",
+        "organizations_url": "https://api.github.com/users/markpollack/orgs",
+        "repos_url": "https://api.github.com/users/markpollack/repos",
+        "events_url": "https://api.github.com/users/markpollack/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/markpollack/received_events",
+        "type": "User",
+        "user_view_type": "public",
+        "site_admin": false
+      },
+      "body": "",
+      "state": "COMMENTED",
+      "html_url": "https://github.com/spring-projects/spring-ai/pull/3386#pullrequestreview-2918578324",
+      "pull_request_url": "https://api.github.com/repos/spring-projects/spring-ai/pulls/3386",
+      "author_association": "MEMBER",
+      "_links": {
+        "html": {
+          "href": "https://github.com/spring-projects/spring-ai/pull/3386#pullrequestreview-2918578324"
+        },
+        "pull_request": {
+          "href": "https://api.github.com/repos/spring-projects/spring-ai/pulls/3386"
+        }
+      },
+      "submitted_at": "2025-06-11T20:27:25Z",
+      "commit_id": "f77e08a69a3afe1bd90750c28f96a89f48151987"
+    },
+    {
+      "id": 2920932878,
+      "node_id": "PRR_kwDOJ02wfs6uGeYO",
+      "user": {
+        "login": "sunyuhan1998",
+        "id": 20242118,
+        "node_id": "MDQ6VXNlcjIwMjQyMTE4",
+        "avatar_url": "https://avatars.githubusercontent.com/u/20242118?u=159274b4f3302db4f25317289f0fa3459e32a381&v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/sunyuhan1998",
+        "html_url": "https://github.com/sunyuhan1998",
+        "followers_url": "https://api.github.com/users/sunyuhan1998/followers",
+        "following_url": "https://api.github.com/users/sunyuhan1998/following{/other_user}",
+        "gists_url": "https://api.github.com/users/sunyuhan1998/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/sunyuhan1998/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/sunyuhan1998/subscriptions",
+        "organizations_url": "https://api.github.com/users/sunyuhan1998/orgs",
+        "repos_url": "https://api.github.com/users/sunyuhan1998/repos",
+        "events_url": "https://api.github.com/users/sunyuhan1998/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/sunyuhan1998/received_events",
+        "type": "User",
+        "user_view_type": "public",
+        "site_admin": false
+      },
+      "body": "",
+      "state": "COMMENTED",
+      "html_url": "https://github.com/spring-projects/spring-ai/pull/3386#pullrequestreview-2920932878",
+      "pull_request_url": "https://api.github.com/repos/spring-projects/spring-ai/pulls/3386",
+      "author_association": "CONTRIBUTOR",
+      "_links": {
+        "html": {
+          "href": "https://github.com/spring-projects/spring-ai/pull/3386#pullrequestreview-2920932878"
+        },
+        "pull_request": {
+          "href": "https://api.github.com/repos/spring-projects/spring-ai/pulls/3386"
+        }
+      },
+      "submitted_at": "2025-06-12T12:26:27Z",
+      "commit_id": "f77e08a69a3afe1bd90750c28f96a89f48151987"
+    },
+    {
+      "id": 2920973206,
+      "node_id": "PRR_kwDOJ02wfs6uGoOW",
+      "user": {
+        "login": "sunyuhan1998",
+        "id": 20242118,
+        "node_id": "MDQ6VXNlcjIwMjQyMTE4",
+        "avatar_url": "https://avatars.githubusercontent.com/u/20242118?u=159274b4f3302db4f25317289f0fa3459e32a381&v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/sunyuhan1998",
+        "html_url": "https://github.com/sunyuhan1998",
+        "followers_url": "https://api.github.com/users/sunyuhan1998/followers",
+        "following_url": "https://api.github.com/users/sunyuhan1998/following{/other_user}",
+        "gists_url": "https://api.github.com/users/sunyuhan1998/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/sunyuhan1998/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/sunyuhan1998/subscriptions",
+        "organizations_url": "https://api.github.com/users/sunyuhan1998/orgs",
+        "repos_url": "https://api.github.com/users/sunyuhan1998/repos",
+        "events_url": "https://api.github.com/users/sunyuhan1998/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/sunyuhan1998/received_events",
+        "type": "User",
+        "user_view_type": "public",
+        "site_admin": false
+      },
+      "body": "",
+      "state": "COMMENTED",
+      "html_url": "https://github.com/spring-projects/spring-ai/pull/3386#pullrequestreview-2920973206",
+      "pull_request_url": "https://api.github.com/repos/spring-projects/spring-ai/pulls/3386",
+      "author_association": "CONTRIBUTOR",
+      "_links": {
+        "html": {
+          "href": "https://github.com/spring-projects/spring-ai/pull/3386#pullrequestreview-2920973206"
+        },
+        "pull_request": {
+          "href": "https://api.github.com/repos/spring-projects/spring-ai/pulls/3386"
+        }
+      },
+      "submitted_at": "2025-06-12T12:36:27Z",
+      "commit_id": "f77e08a69a3afe1bd90750c28f96a89f48151987"
+    },
+    {
+      "id": 2923509427,
+      "node_id": "PRR_kwDOJ02wfs6uQTaz",
+      "user": {
+        "login": "sunyuhan1998",
+        "id": 20242118,
+        "node_id": "MDQ6VXNlcjIwMjQyMTE4",
+        "avatar_url": "https://avatars.githubusercontent.com/u/20242118?u=159274b4f3302db4f25317289f0fa3459e32a381&v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/sunyuhan1998",
+        "html_url": "https://github.com/sunyuhan1998",
+        "followers_url": "https://api.github.com/users/sunyuhan1998/followers",
+        "following_url": "https://api.github.com/users/sunyuhan1998/following{/other_user}",
+        "gists_url": "https://api.github.com/users/sunyuhan1998/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/sunyuhan1998/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/sunyuhan1998/subscriptions",
+        "organizations_url": "https://api.github.com/users/sunyuhan1998/orgs",
+        "repos_url": "https://api.github.com/users/sunyuhan1998/repos",
+        "events_url": "https://api.github.com/users/sunyuhan1998/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/sunyuhan1998/received_events",
+        "type": "User",
+        "user_view_type": "public",
+        "site_admin": false
+      },
+      "body": "",
+      "state": "COMMENTED",
+      "html_url": "https://github.com/spring-projects/spring-ai/pull/3386#pullrequestreview-2923509427",
+      "pull_request_url": "https://api.github.com/repos/spring-projects/spring-ai/pulls/3386",
+      "author_association": "CONTRIBUTOR",
+      "_links": {
+        "html": {
+          "href": "https://github.com/spring-projects/spring-ai/pull/3386#pullrequestreview-2923509427"
+        },
+        "pull_request": {
+          "href": "https://api.github.com/repos/spring-projects/spring-ai/pulls/3386"
+        }
+      },
+      "submitted_at": "2025-06-13T06:02:02Z",
+      "commit_id": "f77e08a69a3afe1bd90750c28f96a89f48151987"
+    },
+    {
+      "id": 2930501292,
+      "node_id": "PRR_kwDOJ02wfs6uq-as",
+      "user": {
+        "login": "sunyuhan1998",
+        "id": 20242118,
+        "node_id": "MDQ6VXNlcjIwMjQyMTE4",
+        "avatar_url": "https://avatars.githubusercontent.com/u/20242118?u=159274b4f3302db4f25317289f0fa3459e32a381&v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/sunyuhan1998",
+        "html_url": "https://github.com/sunyuhan1998",
+        "followers_url": "https://api.github.com/users/sunyuhan1998/followers",
+        "following_url": "https://api.github.com/users/sunyuhan1998/following{/other_user}",
+        "gists_url": "https://api.github.com/users/sunyuhan1998/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/sunyuhan1998/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/sunyuhan1998/subscriptions",
+        "organizations_url": "https://api.github.com/users/sunyuhan1998/orgs",
+        "repos_url": "https://api.github.com/users/sunyuhan1998/repos",
+        "events_url": "https://api.github.com/users/sunyuhan1998/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/sunyuhan1998/received_events",
+        "type": "User",
+        "user_view_type": "public",
+        "site_admin": false
+      },
+      "body": "",
+      "state": "COMMENTED",
+      "html_url": "https://github.com/spring-projects/spring-ai/pull/3386#pullrequestreview-2930501292",
+      "pull_request_url": "https://api.github.com/repos/spring-projects/spring-ai/pulls/3386",
+      "author_association": "CONTRIBUTOR",
+      "_links": {
+        "html": {
+          "href": "https://github.com/spring-projects/spring-ai/pull/3386#pullrequestreview-2930501292"
+        },
+        "pull_request": {
+          "href": "https://api.github.com/repos/spring-projects/spring-ai/pulls/3386"
+        }
+      },
+      "submitted_at": "2025-06-16T02:44:16Z",
+      "commit_id": "f77e08a69a3afe1bd90750c28f96a89f48151987"
+    }
+  ]
+}
