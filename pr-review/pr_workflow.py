@@ -659,6 +659,7 @@ class PRWorkflow:
             self.config.script_dir / f".build_cache_pr_{pr_number}",
             # Generated reports
             self.config.reports_dir / f"review-pr-{pr_number}.md",
+            self.config.reports_dir / f"enhanced-review-pr-{pr_number}.md",
             self.config.reports_dir / f"test-logs-pr-{pr_number}",
             # Generated plans
             self.config.plans_dir / f"plan-pr-{pr_number}.md",
@@ -1159,11 +1160,34 @@ File content with conflicts:"""
             Logger.warn(f"Current branch is '{current_branch}', expected '{expected_branch}'")
             Logger.warn("You may be generating a report for the wrong PR")
         
-        # Generate the report
+        # Generate the basic report
         report_file = self.pr_analyzer.generate_report(pr_number, dry_run)
         
+        # Generate the enhanced report
+        enhanced_report_file = None
+        if not dry_run:
+            try:
+                Logger.info("🤖 Generating enhanced AI-powered analysis report...")
+                enhanced_result = subprocess.run([
+                    sys.executable, "enhanced_report_generator.py", pr_number
+                ], capture_output=True, text=True, cwd=self.config.script_dir)
+                
+                if enhanced_result.returncode == 0:
+                    enhanced_report_file = self.config.reports_dir / f"enhanced-review-pr-{pr_number}.md"
+                    if enhanced_report_file.exists():
+                        Logger.success(f"🤖 Enhanced analysis report generated: {enhanced_report_file}")
+                    else:
+                        Logger.warn("Enhanced report generator completed but file not found")
+                else:
+                    Logger.warn(f"Enhanced report generation failed: {enhanced_result.stderr.strip()}")
+            except Exception as e:
+                Logger.warn(f"Error generating enhanced report: {e}")
+        
         if report_file:
-            Logger.success(f"📋 PR analysis report generated: {report_file}")
+            success_msg = f"📋 PR analysis report generated: {report_file}"
+            if enhanced_report_file and enhanced_report_file.exists():
+                success_msg += f"\n📋 Enhanced analysis report generated: {enhanced_report_file}"
+            Logger.success(success_msg)
             return True
         else:
             Logger.error("❌ Report generation failed")
@@ -1282,9 +1306,58 @@ File content with conflicts:"""
         
         return None
     
+    def _ensure_clean_compilation(self) -> bool:
+        """Ensure clean compilation, fixing compilation errors if needed"""
+        Logger.info("🔧 Checking for compilation errors...")
+        
+        # Try to compile first
+        try:
+            os.chdir(self.config.spring_ai_dir)
+            result = subprocess.run([
+                "mvnd", "compile", "-q", "-Dmaven.javadoc.skip=true"
+            ], capture_output=True, text=True, timeout=300)
+            
+            if result.returncode == 0:
+                Logger.success("✅ Clean compilation achieved")
+                return True
+                
+            Logger.warn("❌ Compilation errors detected, attempting to fix...")
+            
+            # Use Claude Code to fix compilation errors
+            resolver = CompilationErrorResolver()
+            max_iterations = 3
+            
+            for iteration in range(max_iterations):
+                Logger.info(f"🔄 Compilation fix attempt {iteration + 1}/{max_iterations}")
+                
+                if resolver.resolve_compilation_errors(str(self.config.spring_ai_dir)):
+                    # Try compiling again
+                    result = subprocess.run([
+                        "mvnd", "compile", "-q", "-Dmaven.javadoc.skip=true"
+                    ], capture_output=True, text=True, timeout=300)
+                    
+                    if result.returncode == 0:
+                        Logger.success(f"✅ Compilation fixed after {iteration + 1} iteration(s)")
+                        return True
+                else:
+                    Logger.warn(f"Failed to resolve compilation errors in iteration {iteration + 1}")
+                    
+            Logger.error("❌ Unable to fix compilation errors after maximum iterations")
+            return False
+            
+        except Exception as e:
+            Logger.error(f"❌ Error during compilation check: {e}")
+            return False
+    
     def run_changed_tests(self, pr_number: str) -> bool:
         """Run tests for files that changed in the PR"""
         Logger.info("🧪 Running tests for changed test files...")
+        
+        # First ensure clean compilation before running tests
+        Logger.info("🔧 Ensuring clean compilation before running tests...")
+        if not self._ensure_clean_compilation():
+            Logger.error("❌ Failed to achieve clean compilation - cannot run tests")
+            return False
         
         test_files = self.get_changed_test_files(pr_number)
         if not test_files:
