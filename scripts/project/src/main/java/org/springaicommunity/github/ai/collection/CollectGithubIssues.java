@@ -37,6 +37,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Arrays;
+
+import static org.springaicommunity.github.ai.collection.DataModels.*;
 import java.util.Optional;
 import java.util.Map;
 import java.util.ArrayList;
@@ -495,67 +497,6 @@ public class CollectGithubIssues implements CommandLineRunner {
         System.out.println();
     }
 }
-
-// Core domain records for type safety
-record Issue(
-    int number,
-    String title,
-    String body,
-    String state,
-    LocalDateTime createdAt,
-    LocalDateTime updatedAt,
-    LocalDateTime closedAt,
-    String url,
-    Author author,
-    List<Comment> comments,
-    List<Label> labels
-) {}
-
-record Comment(
-    Author author,
-    String body,
-    LocalDateTime createdAt
-) {}
-
-record Author(
-    String login,
-    String name
-) {}
-
-record Label(
-    String name,
-    String color,
-    String description
-) {}
-
-record CollectionMetadata(
-    String timestamp,
-    String repository,
-    int totalIssues,
-    int processedIssues,
-    int batchSize,
-    boolean zipped
-) {}
-
-record CollectionRequest(
-    String repository,
-    int batchSize,
-    boolean dryRun,
-    boolean incremental,
-    boolean zip,
-    boolean clean,
-    boolean resume,
-    String issueState,
-    List<String> labelFilters,
-    String labelMode
-) {}
-
-record CollectionResult(
-    int totalIssues,
-    int processedIssues,
-    String outputDirectory,
-    List<String> batchFiles
-) {}
 
 // Configuration for GitHub API clients
 @Configuration
@@ -1551,17 +1492,6 @@ class IssueCollectionService {
         return query.toString();
     }
     
-    private record BatchData(int batchNumber, List<Issue> issues, String timestamp) {}
-    
-    private record CollectionStats(List<String> batchFiles, int processedIssues) {}
-    
-    private record ResumeState(
-        String cursor,
-        int batchNumber,
-        int processedIssues,
-        String timestamp,
-        List<String> completedBatches
-    ) {}
 }
 
 @ConfigurationProperties(prefix = "github.issues")
