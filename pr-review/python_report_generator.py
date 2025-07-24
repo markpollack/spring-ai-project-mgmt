@@ -274,20 +274,22 @@ class PythonPRAnalyzer:
     def _categorize_files(self, files: List[FileAnalysis]) -> Dict[str, List[str]]:
         """Categorize files by type/purpose"""
         categories = {
-            'Core Implementation': [],
-            'API/Configuration': [],
+            'Implementation Files': [],
             'Tests': [],
+            'Configuration': [],
             'Documentation/Other': []
         }
         
         for file in files:
             if file.is_test:
                 categories['Tests'].append(file.filename)
-            elif file.is_critical:
-                categories['Core Implementation'].append(file.filename)
-            elif file.is_config or file.filename.endswith('.xml'):
-                categories['API/Configuration'].append(file.filename)
+            elif file.filename.endswith('.java'):
+                # All Java files that aren't tests are implementation files
+                categories['Implementation Files'].append(file.filename)
+            elif file.is_config or file.filename.endswith(('.xml', '.yml', '.yaml', '.properties')):
+                categories['Configuration'].append(file.filename)
             else:
+                # Everything else: markdown, text files, scripts, etc.
                 categories['Documentation/Other'].append(file.filename)
         
         return categories
