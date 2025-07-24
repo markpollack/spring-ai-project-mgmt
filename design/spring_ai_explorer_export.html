@@ -1,0 +1,1413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spring AI 2.0 Design Explorer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            margin-bottom: 20px;
+        }
+
+        .stats-bar {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            background: rgba(255,255,255,0.15);
+            padding: 15px 25px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            text-align: center;
+            color: white;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            display: block;
+        }
+
+        .controls {
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(255,255,255,0.3);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        }
+
+        .control-row {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .search-container {
+            flex: 1;
+            min-width: 300px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px 20px;
+            border: 2px solid #e1e5e9;
+            border-radius: 25px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .filter-section {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .filter-label {
+            font-weight: 600;
+            color: #555;
+            margin-right: 10px;
+        }
+
+        .tag-filter {
+            padding: 8px 16px;
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+            user-select: none;
+        }
+
+        .tag-filter:hover {
+            background: #e9ecef;
+            transform: translateY(-1px);
+        }
+
+        .tag-filter.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .clear-filters {
+            padding: 8px 16px;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .clear-filters:hover {
+            background: #c82333;
+            transform: translateY(-1px);
+        }
+
+        .issues-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .issue-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            border: 1px solid rgba(0,0,0,0.05);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .issue-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+        }
+
+        .issue-number {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: #667eea;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .issue-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #2c3e50;
+            line-height: 1.4;
+            padding-right: 60px;
+        }
+
+        .issue-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 15px;
+        }
+
+        .issue-tag {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .issue-metadata {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .metadata-badge {
+            padding: 4px 8px;
+            border-radius: 8px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .priority-high {
+            background: #dc3545;
+            color: white;
+        }
+
+        .priority-medium {
+            background: #ffc107;
+            color: #212529;
+        }
+
+        .priority-low {
+            background: #28a745;
+            color: white;
+        }
+
+        .impact-high {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .impact-medium {
+            background: #f39c12;
+            color: white;
+        }
+
+        .impact-low {
+            background: #2ecc71;
+            color: white;
+        }
+
+        .category-badge {
+            background: #6c757d;
+            color: white;
+        }
+
+        .issue-summary {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 15px;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .issue-summary.expanded {
+            -webkit-line-clamp: unset;
+            overflow: visible;
+        }
+        
+        .issue-details {
+            margin-top: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            display: none;
+        }
+        
+        .issue-details.expanded {
+            display: block;
+        }
+        
+        .detail-section {
+            margin-bottom: 12px;
+        }
+        
+        .detail-label {
+            font-weight: 600;
+            color: #495057;
+            display: inline-block;
+            min-width: 140px;
+        }
+        
+        .detail-value {
+            color: #666;
+        }
+
+        .issue-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .expand-btn, .github-link {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .expand-btn {
+            background: #f8f9fa;
+            color: #495057;
+        }
+
+        .expand-btn:hover {
+            background: #e9ecef;
+        }
+
+        .github-link {
+            background: #24292e;
+            color: white;
+        }
+
+        .github-link:hover {
+            background: #1a1e22;
+            transform: translateY(-1px);
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 60px 20px;
+            color: white;
+            font-size: 1.2rem;
+        }
+
+        .theme-overview {
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(255,255,255,0.3);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        }
+
+        .theme-sections {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+            margin-top: 20px;
+        }
+
+        .theme-section {
+            border-bottom: 1px solid #e9ecef;
+            padding-bottom: 20px;
+        }
+
+        .theme-section:last-child {
+            border-bottom: none;
+        }
+
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .theme-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .theme-card {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            padding: 15px;
+            border-radius: 12px;
+            text-align: center;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .theme-card:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+        }
+
+        .theme-card.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: #667eea;
+        }
+
+        .theme-icon {
+            font-size: 1.8rem;
+            margin-bottom: 10px;
+        }
+
+        .theme-title {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #495057;
+            font-size: 0.9rem;
+        }
+
+        .theme-count {
+            color: #667eea;
+            font-weight: bold;
+            font-size: 1rem;
+        }
+
+        .theme-card.active .theme-title {
+            color: white;
+        }
+
+        .theme-card.active .theme-count {
+            color: rgba(255,255,255,0.9);
+        }
+
+        .other-themes {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .mini-theme-tag {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            user-select: none;
+        }
+
+        .mini-theme-tag:hover {
+            background: #e9ecef;
+            transform: translateY(-1px);
+        }
+
+        .mini-theme-tag.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        @media (max-width: 768px) {
+            .issues-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .control-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .stats-bar {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Spring AI 2.0 Design Explorer</h1>
+            <div class="subtitle">Interactive exploration of 30 design issues shaping the future of Spring AI</div>
+        </div>
+        
+        <div class="stats-bar">
+            <div class="stat-item">
+                <span class="stat-number" id="totalIssues">30</span>
+                <span>Total Issues</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number" id="visibleIssues">30</span>
+                <span>Visible</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-number" id="activeFilters">0</span>
+                <span>Active Filters</span>
+            </div>
+        </div>
+
+        <div class="theme-overview">
+            <h2>🎯 Design Themes Overview</h2>
+            <div class="theme-sections" id="themeGrid">
+                <!-- Themes will be populated by JavaScript -->
+            </div>
+        </div>
+
+        <div class="controls">
+            <div class="control-row">
+                <div class="search-container">
+                    <input type="text" class="search-input" id="searchInput" placeholder="🔍 Search issues by title, summary, or content...">
+                </div>
+            </div>
+            
+            <div class="control-row">
+                <span class="filter-label">Filter by Theme:</span>
+                <div class="filter-section" id="filterSection">
+                    <!-- Filters will be populated by JavaScript -->
+                </div>
+            </div>
+            
+            <div class="control-row">
+                <span class="filter-label">Filter by Priority:</span>
+                <div class="filter-section" id="priorityFilterSection">
+                    <!-- Priority filters will be populated by JavaScript -->
+                </div>
+                <button class="clear-filters" id="clearFilters">Clear All</button>
+            </div>
+        </div>
+
+        <div class="issues-grid" id="issuesGrid">
+            <!-- Issues will be populated by JavaScript -->
+        </div>
+
+        <div class="no-results" id="noResults" style="display: none;">
+            <div>🔍 No issues match your current filters</div>
+            <div style="font-size: 1rem; margin-top: 10px; opacity: 0.8;">Try adjusting your search terms or clearing filters</div>
+        </div>
+    </div>
+
+    <script>
+        // Spring AI Design Issues Data
+        const issues = [
+            {
+                number: 3103,
+                title: "Add Model Captability class",
+                category: "API Redesign, Configuration Model Evolution",
+                impact: "High",
+                priority: "High Priority",
+                currentDesign: "Capabilities handled ad hoc via prompt or logic",
+                proposedChange: "Introduce centralized ModelCapability class",
+                justification: "Avoid brittle logic, enable proactive client behavior",
+                complexity: "Medium",
+                migrationPath: "Additive at first",
+                dependencies: "Prompt composition, tools",
+                summary: "Both #2787 and #2863 would benefit from having a Model Capability class that describes what functionality the model supports. For the case of the reasoning models, this capability would enable one to copy the current systemMessage into a 'developerMessage' (as required by the `o` series of openai models) and for structured output one can switch to use the JSON mode vs. the current strategy of adding to the prompt the 'please convert my json` message. There is a wide range of features that fall under this umbrella, so a good design is need. Multimodality is another one, we can proactively know that a request with Media would not be supported by a given model.",
+                url: "https://github.com/spring-projects/spring-ai/issues/3103",
+                tags: ["API Design", "Multimodality", "Model Management"]
+            },
+            {
+                number: 2104,
+                title: "Add an opportunity to choose a model in vector store",
+                category: "Interface Segregation, Configuration Model Evolution",
+                impact: "Medium",
+                priority: "Medium Priority",
+                currentDesign: "No model override per operation",
+                proposedChange: "Add overloads for model/EmbeddingOptions",
+                justification: "Avoid decorator hacks",
+                complexity: "Low to Medium",
+                migrationPath: "Additive overloads",
+                dependencies: "Vector store refactors",
+                summary: "Currently there is no opportunity to send requests providing different models. But in chatClient it is possible. Currently I use a weird decorator in order to support different models for different clients, which includes a lot of boilerplate code to make it compatible with my specific vector store. I've seen some issues about redesigning of the vector store to separate logic of calling embedding model and saving documents.",
+                url: "https://github.com/spring-projects/spring-ai/issues/2104",
+                tags: ["Vector Store", "Model Management", "API Design"]
+            },
+            {
+                number: 1838,
+                title: "Are `Document` objects supposed to be immutable?",
+                category: "Stronger Type Safety, API Redesign",
+                impact: "High",
+                priority: "High Priority",
+                currentDesign: "Document is semi-immutable with mutable collections",
+                proposedChange: "Make Document fully immutable",
+                justification: "Safety and clarity, especially with concurrency",
+                complexity: "High",
+                migrationPath: "Breaking, requires adaptation",
+                dependencies: "All vector store impls",
+                summary: "The `Document` class contains only final fields (except 'embeddings' which is about to be removed). However, the `media` (collection) and `metadata` (map) are mutable. All vector store implementations, at least, rely on the `metadata` field to be mutable because they add new metadata. #1794 introduced a `mutate()` method to build new instances of `Document` objects. This issue is to discuss whether `Document` should be immutable.",
+                url: "https://github.com/spring-projects/spring-ai/issues/1838",
+                tags: ["API Design", "Breaking Change", "Immutability"]
+            },
+            {
+                number: 1815,
+                title: "About Chat Memory's message management strategy and other storage implementations",
+                category: "Configuration Model Evolution",
+                impact: "Medium",
+                priority: "Medium Priority",
+                currentDesign: "Limited storage and windowing strategy",
+                proposedChange: "Add plug-in windowing/persistence strategy",
+                justification: "Extensibility, production readiness",
+                complexity: "Medium",
+                migrationPath: "Additive",
+                dependencies: "ChatMemory, MessageStore",
+                summary: "I would like to ask, regarding Chat Memory, is the community ready to implement some other storage methods, such as Mysql, redis, etc. Is there any message management strategy similar to Langchain4j's TokenWindow and TimeWindow for Message?",
+                url: "https://github.com/spring-projects/spring-ai/issues/1815",
+                tags: ["Chat Memory", "Storage", "Configuration"]
+            },
+            {
+                number: 1775,
+                title: "milvus vectorstore SearchRequest Cannot specify database",
+                category: "Configuration Model Evolution",
+                impact: "Low",
+                priority: "Low Priority",
+                currentDesign: "No way to pass DB/collection in SearchRequest",
+                proposedChange: "Add support to specify DB/collection",
+                justification: "Improves multi-tenant support",
+                complexity: "Low",
+                migrationPath: "Non-breaking",
+                dependencies: "Milvus module",
+                summary: "Milvus vectorstore SearchRequest cannot specify database functionality.",
+                url: "https://github.com/spring-projects/spring-ai/issues/1775",
+                tags: ["Vector Store", "Database", "Configuration"]
+            },
+            {
+                number: 1758,
+                title: "Improve Spring AI Bedrock Converse API Integration",
+                category: "API Enhancement, Provider Integration",
+                impact: "Medium",
+                priority: "Medium Priority",
+                currentDesign: "Basic Bedrock Converse integration",
+                proposedChange: "Add support for advanced features and metrics",
+                justification: "Enable full feature parity and observability",
+                complexity: "Medium",
+                migrationPath: "Additive enhancements",
+                dependencies: "Bedrock SDK",
+                summary: "Extend the Spring AI Bedrock Converse integration with support for additionalModelRequestFields, ConverseMetrics and ConverseStreamMetrics, Guardrail configuration, and better control over built-in API retry configuration capabilities.",
+                url: "https://github.com/spring-projects/spring-ai/issues/1758",
+                tags: ["Bedrock", "API Enhancement", "Observability"]
+            },
+            {
+                number: 1704,
+                title: "Provider Exception Failure Analysis abstraction to provide better error messages to users",
+                category: "Developer Experience, Error Handling",
+                impact: "High",
+                priority: "High Priority",
+                currentDesign: "Generic exceptions without context",
+                proposedChange: "Add failure analyzer abstraction for better error messages",
+                justification: "Improve developer debugging experience",
+                complexity: "Medium",
+                migrationPath: "Additive",
+                dependencies: "Core abstractions",
+                summary: "Since Spring AI integrates with numerous vector stores and models Exceptions are going to happen and users will struggle to figure out why the exception is occurring. Spring Boot has the concept of Exception failure analyzer by introducing a failure analyzer abstraction into the spring-ai core we can enable model providers, vector store providers and advisor implementers the ability to offer more friendly error messages.",
+                url: "https://github.com/spring-projects/spring-ai/issues/1704",
+                tags: ["Error Handling", "Developer Experience", "Diagnostics"]
+            },
+            {
+                number: 1629,
+                title: "Support dynamic API keys / platform based workload identity systems",
+                category: "Security, Authentication",
+                impact: "High",
+                priority: "High Priority",
+                currentDesign: "Static API key configuration",
+                proposedChange: "Support dynamic keys and workload identity",
+                justification: "Enable enterprise security patterns",
+                complexity: "High",
+                migrationPath: "Additive with configuration changes",
+                dependencies: "All provider integrations",
+                summary: "Epic to track issues related to using spring-ai against providers that issue short lived api keys, or offer platform based identity frameworks that enable keyless authentication.",
+                url: "https://github.com/spring-projects/spring-ai/issues/1629",
+                tags: ["Security", "Configuration", "Authentication"]
+            },
+            {
+                number: 1611,
+                title: "Health indicators for vector stores (and any other external APIs)",
+                category: "Observability, Monitoring",
+                impact: "Medium",
+                priority: "Medium Priority",
+                currentDesign: "No health check integration",
+                proposedChange: "Add Spring Boot Actuator health indicators",
+                justification: "Production readiness and monitoring",
+                complexity: "Low",
+                migrationPath: "Additive",
+                dependencies: "Spring Boot Actuator",
+                summary: "Given that vector stores are databases that are external to the application, which could go down or otherwise become unavailable, and as such contribute to the health (or lack thereof) of a Spring AI application... It would be great if Spring AI provided health indicators for the vector stores that contribute to Actuator's health endpoint.",
+                url: "https://github.com/spring-projects/spring-ai/issues/1611",
+                tags: ["Observability", "Health Checks", "Vector Store"]
+            },
+            {
+                number: 1600,
+                title: "VectorStore improvements",
+                category: "API Enhancement, Interface Design",
+                impact: "High",
+                priority: "High Priority",
+                currentDesign: "Limited to similarity search only",
+                proposedChange: "Add support for multiple search types and admin operations",
+                justification: "Complete vector store functionality",
+                complexity: "High",
+                migrationPath: "Breaking interface changes",
+                dependencies: "All vector store implementations",
+                summary: "Current vectorstore interface is lacking in two important areas: Does not support other types of search other than similarity search, Does not support full api coverage for admin cases, e.g. delete, update operations",
+                url: "https://github.com/spring-projects/spring-ai/issues/1600",
+                tags: ["Vector Store", "API Enhancement", "Search"]
+            },
+            {
+                number: 1594,
+                title: "Consider using a builder class for creating Messages",
+                category: "API Design, Usability",
+                impact: "Medium",
+                priority: "Medium Priority",
+                currentDesign: "Direct Message constructors",
+                proposedChange: "Add Builder pattern for Message creation",
+                justification: "Improve API usability and flexibility",
+                complexity: "Low",
+                migrationPath: "Additive",
+                dependencies: "Message classes",
+                summary: "Consider using a builder class for creating Messages to improve API usability and flexibility.",
+                url: "https://github.com/spring-projects/spring-ai/issues/1594",
+                tags: ["API Design", "Builder Pattern", "Usability"]
+            },
+            {
+                number: 1582,
+                title: "Enhancing the architecture of the ETL pipeline's transformers",
+                category: "Architecture, ETL Pipeline",
+                impact: "Medium",
+                priority: "Medium Priority",
+                currentDesign: "Linear transformer chains with function calls",
+                proposedChange: "Advisor-like pattern for transformers",
+                justification: "Reduce complexity and improve maintainability",
+                complexity: "High",
+                migrationPath: "Breaking architectural change",
+                dependencies: "ETL pipeline framework",
+                summary: "When building an ETL pipeline, transformers may need to perform multiple actions, which can result in layers of function calls that are hard to maintain. Is it possible to design them like advisor? The following actions include chunking, keyword, and summarization. If more transformations are required in the future, additional layers will need to be added.",
+                url: "https://github.com/spring-projects/spring-ai/issues/1582",
+                tags: ["ETL Pipeline", "Architecture", "Transformers"]
+            },
+            {
+                number: 1563,
+                title: "Support multimodality in chat completion output",
+                category: "Multimodality, API Design",
+                impact: "High",
+                priority: "High Priority",
+                currentDesign: "Audio output only at low-level API",
+                proposedChange: "Add audio support to ChatResponse abstractions",
+                justification: "Complete multimodal experience",
+                complexity: "Medium",
+                migrationPath: "Additive API changes",
+                dependencies: "ChatResponse API, Media abstractions",
+                summary: "OpenAI has recently introduced audio multimodality support, both for input and output. The input audio modality support is introduced in #1560 all the way up to the Spring AI abstractions. The output audio modality is only supported at the lower level (`OpenAIApi`). It would be nice to start identifying what type of abstractions are needed in the `ChatResponse` API to include audio response data.",
+                url: "https://github.com/spring-projects/spring-ai/issues/1563",
+                tags: ["Multimodality", "Audio", "API Design"]
+            },
+            {
+                number: 1562,
+                title: "Review the Media APIs for multimodality",
+                category: "API Design, Multimodality",
+                impact: "Medium",
+                priority: "Medium Priority",
+                currentDesign: "Generic Media API without type differentiation",
+                proposedChange: "Add media type filtering and audio MIME types",
+                justification: "Better type safety and media handling",
+                complexity: "Low",
+                migrationPath: "Additive with possible deprecations",
+                dependencies: "Spring Framework MimeTypeUtils",
+                summary: "The current `Media` API provides a generic way of adding multimedia content to a prompt when calling models with multimodality support. So far, the `Media` API has been used for images. Starting with #1560, it's also used for audio files. It's working correctly, but there are two points that might be improved: The `MimeTypeUtils` from Spring Framework doesn't include any audio-related mime types, and when the media content is extracted there's no immediate way to filter the media content based on whether it's image or audio content.",
+                url: "https://github.com/spring-projects/spring-ai/issues/1562",
+                tags: ["Multimodality", "Media API", "Audio"]
+            },
+            {
+                number: 1478,
+                title: "Introduce TranscriptionModel interface",
+                category: "Interface Design, API Unification",
+                impact: "Medium",
+                priority: "Medium Priority",
+                currentDesign: "Separate transcription model types per provider",
+                proposedChange: "Common TranscriptionModel interface",
+                justification: "Consistent API pattern like ChatModel",
+                complexity: "Low",
+                migrationPath: "Additive interface introduction",
+                dependencies: "OpenAI and Azure OpenAI modules",
+                summary: "Even though only OpenAI and Azure OpenAI current offer transcription support, they are each represented by distinct transcription model types. There is no common interface between these two, which means that you have to explicitly inject the one you are working with rather than inject a common interface. Similar to `ChatModel`, there may be opportunity for some additional default convenience methods, as well.",
+                url: "https://github.com/spring-projects/spring-ai/issues/1478",
+                tags: ["API Design", "Transcription", "Interface Design"]
+            },
+            {
+                number: 1439,
+                title: "Optimized aggregation advisors for streaming scenarios",
+                category: "Performance, Architecture",
+                impact: "Medium",
+                priority: "Medium Priority",
+                currentDesign: "Separate advisors with potential duplication",
+                proposedChange: "StreamAggregationAdvisor interface for efficiency",
+                justification: "Reduce memory and time overhead in streaming",
+                complexity: "Medium",
+                migrationPath: "Additive interface",
+                dependencies: "Advisor framework",
+                summary: "In the latest round of architectural changes of Advisors in #1422 there now are two types of advisors: `CallAroundAdvisor` and `StreamAroundAdvisor`. In the case of streaming, if multiple advisors perform the same type of aggregation it is inefficient in terms of both time and memory. Having that, I propose a new interface, `StreamAggregationAdvisor`. Instances of this type would be fed with an aggregation of the original stream of chunks coming back from the model.",
+                url: "https://github.com/spring-projects/spring-ai/issues/1439",
+                tags: ["Streaming", "Advisors", "Performance"]
+            },
+            {
+                number: 1291,
+                title: "Use @NonNull annotations for parameters and return types",
+                category: "Developer Experience, Type Safety",
+                impact: "Medium",
+                priority: "Medium Priority",
+                currentDesign: "No null-safety annotations",
+                proposedChange: "Add @NonNull annotations consistently",
+                justification: "Better Kotlin interop and code clarity",
+                complexity: "Low",
+                migrationPath: "Additive annotations",
+                dependencies: "Spring Framework annotations",
+                summary: "Using Spring AI from Kotlin, it's noticeable that unlike Spring Framework, it doesn't use `@NonNull` annotations, which are appropriate for most parameters and return types. Doing this would not only make Spring AI nicer to use from Kotlin, but make the Java code clearer and more consistent with other Spring projects.",
+                url: "https://github.com/spring-projects/spring-ai/issues/1291",
+                tags: ["Kotlin Support", "Annotations", "Developer Experience"]
+            },
+            {
+                number: 1257,
+                title: "Investigate supporting the use case of retrieving multi-modal documents",
+                category: "Multimodality, Vector Store",
+                impact: "High",
+                priority: "High Priority",
+                currentDesign: "Media objects lost during vector store operations",
+                proposedChange: "Preserve and retrieve media associated with documents",
+                justification: "Complete multimodal document support",
+                complexity: "High",
+                migrationPath: "Vector store interface changes",
+                dependencies: "All vector store implementations",
+                summary: "When creating Document objects with embedded Media objects, after querying through vectorStore.similaritySearch, the returned document's Media Collection is empty. The VectorStore interface doesn't provide other methods to obtain the Media collection associated with Documents.",
+                url: "https://github.com/spring-projects/spring-ai/issues/1257",
+                tags: ["Multimodality", "Vector Store", "Media Retrieval"]
+            },
+            {
+                number: 1193,
+                title: "Add proper retry implementation for OpenAiChatModel streaming",
+                category: "Error Handling, Streaming",
+                impact: "Medium",
+                priority: "Medium Priority",
+                currentDesign: "No retry for streaming operations",
+                proposedChange: "Add RetryTemplate equivalent for streaming",
+                justification: "Consistency with blocking operations",
+                complexity: "Medium",
+                migrationPath: "Additive",
+                dependencies: "Spring Retry, streaming infrastructure",
+                summary: "Blocking calls use RetryTemplate, however there isn't equivalent functionality for the streaming use cases.",
+                url: "https://github.com/spring-projects/spring-ai/issues/1193",
+                tags: ["Streaming", "Retry Logic", "Error Handling"]
+            },
+            {
+                number: 982,
+                title: "milvus multiple vector fields in the same collection",
+                category: "Vector Store Enhancement",
+                impact: "Medium",
+                priority: "Medium Priority",
+                currentDesign: "Single vector field per collection",
+                proposedChange: "Support multiple vector fields and hybrid search",
+                justification: "Advanced Milvus capabilities",
+                complexity: "High",
+                migrationPath: "Breaking change for Milvus integration",
+                dependencies: "Milvus client library",
+                summary: "Support milvus multiple vector fields in the same collection and hybrid search",
+                url: "https://github.com/spring-projects/spring-ai/issues/982",
+                tags: ["Vector Store", "Milvus", "Hybrid Search"]
+            },
+            {
+                number: 557,
+                title: "Feature Request: Consider making the ImageOptions properties such as N, Quality, dimensions etc to be an enum",
+                category: "Type Safety, API Design",
+                impact: "Low",
+                priority: "Low Priority",
+                currentDesign: "String-based ImageOptions properties",
+                proposedChange: "Use enums for well-known property values",
+                justification: "Prevent invalid values and improve developer experience",
+                complexity: "Low",
+                migrationPath: "Backwards compatible with deprecation",
+                dependencies: "Image generation modules",
+                summary: "Consider making the ImageOptions properties such as N, Quality, dimensions etc to be an enum. For example, OpenAiImageOptions quality could be of two types, standard & hd. So if the well known property values are made as enum, it would help the devs and avoid them making wrong calls. With this kind of use case, please do consider making these kind of properties to be enum while retaining the current string type support.",
+                url: "https://github.com/spring-projects/spring-ai/issues/557",
+                tags: ["Image Generation", "API Design", "Type Safety"]
+            },
+            {
+                number: 517,
+                title: "Add advanced RAG (Hybrid Search and Semantic Hybrid Search) with Azure AI Search",
+                category: "RAG Enhancement, Search",
+                impact: "High",
+                priority: "High Priority",
+                currentDesign: "Basic vector similarity search only",
+                proposedChange: "Add hybrid and semantic hybrid search capabilities",
+                justification: "Competitive feature parity with other frameworks",
+                complexity: "Medium",
+                migrationPath: "Additive search methods",
+                dependencies: "Azure AI Search integration",
+                summary: "Azure AI Search has the following feature along with Vector Similarity Search (which is already present in Spring AI): Hybrid Search (Vector Search + Text Search), Semantic Hybrid Search (Hybrid search + re-ranking). In the JavaScript Langchain project they basically have the 3 search models in 3 functions next to each other. I see something similar was recently introduced in the Langchain4j project too. Would be good to have this feature in Spring AI as well.",
+                url: "https://github.com/spring-projects/spring-ai/issues/517",
+                tags: ["RAG", "Hybrid Search", "Azure AI Search"]
+            },
+            {
+                number: 512,
+                title: "HTTP Client configuration for models and vector stores",
+                category: "Configuration, Infrastructure",
+                impact: "High",
+                priority: "High Priority",
+                currentDesign: "Limited HTTP client configuration",
+                proposedChange: "Comprehensive HTTP client configuration options",
+                justification: "Enterprise networking requirements",
+                complexity: "Medium",
+                migrationPath: "Additive configuration properties",
+                dependencies: "All provider integrations",
+                summary: "Each model integration is composed of two aspects: an `*Api` class calling the model provider over HTTP, and a `*Client` class encapsulating the LLM specific aspects. It would be nice to provide similar flexibility for each `*Api` class as well. In particular, it would be useful to be able to configure options related to the HTTP Client including logging, timeouts, SSL bundles, proxy configuration, retry strategy, and fallback logic.",
+                url: "https://github.com/spring-projects/spring-ai/issues/512",
+                tags: ["HTTP Client", "Configuration", "Networking"]
+            },
+            {
+                number: 468,
+                title: "Support Vector Databases Multiple indexes or collections",
+                category: "Vector Store Enhancement",
+                impact: "High",
+                priority: "High Priority",
+                currentDesign: "Single index/collection per vector store",
+                proposedChange: "Support multiple collections with dynamic selection",
+                justification: "Multi-tenancy and data organization requirements",
+                complexity: "High",
+                migrationPath: "Breaking interface changes",
+                dependencies: "All vector store implementations",
+                summary: "I would like to be able to support multiple indexes or collections for vector data instead of being limited to configuring just one index. For example, in Redis or Qdrant implementations, it would be beneficial to have the ability to add vectors to different collections or indexes based on the business requirements. An example method signature could be: `void add(List<Document> documents, String collectionName);`",
+                url: "https://github.com/spring-projects/spring-ai/issues/468",
+                tags: ["Vector Store", "Multiple Collections", "API Enhancement"]
+            },
+            {
+                number: 431,
+                title: "Add the low-level message ID and finishReason to SpringAI's Message properties",
+                category: "API Enhancement, Metadata",
+                impact: "Low",
+                priority: "Low Priority",
+                currentDesign: "Missing message-level metadata",
+                proposedChange: "Add ID and finishReason to Message properties",
+                justification: "Better traceability and debugging capabilities",
+                complexity: "Low",
+                migrationPath: "Additive properties",
+                dependencies: "Message classes",
+                summary: "For example the Generation currently contains the finishReason but doesn't propagate ID to the Message.",
+                url: "https://github.com/spring-projects/spring-ai/issues/431",
+                tags: ["API Design", "Message Properties", "Metadata"]
+            },
+            {
+                number: 372,
+                title: "'JsonEOFException: Unexpected end-of-input' when making synchronous openAiChatClient.call",
+                category: "Bug Fix, Error Handling",
+                impact: "High",
+                priority: "High Priority",
+                currentDesign: "JSON parsing failure on valid responses",
+                proposedChange: "Fix JSON parsing logic",
+                justification: "Critical functionality broken",
+                complexity: "Low",
+                migrationPath: "Bug fix",
+                dependencies: "OpenAI integration",
+                summary: "When making a basic synchronous openAiChatClient.call(prompt) with a single UserMessage, a JsonEOFException is thrown. The OpenAI API is returning a correct JSON response according to network inspection.",
+                url: "https://github.com/spring-projects/spring-ai/issues/372",
+                tags: ["Error Handling", "JSON Parsing", "OpenAI"]
+            },
+            {
+                number: 328,
+                title: "Add 'like' operator in FilterExpressionBuilder",
+                category: "Query Enhancement, API Completeness",
+                impact: "Medium",
+                priority: "Medium Priority",
+                currentDesign: "Limited filter operators",
+                proposedChange: "Add 'like' operator for pattern matching",
+                justification: "Complete Hibernate-like query syntax",
+                complexity: "Low",
+                migrationPath: "Additive operator",
+                dependencies: "Filter expression framework",
+                summary: "The document of FilterExpressionBuilder says 'This builder DSL mimics the common Hibernate Criteria queries syntax.' I'd expect all common hibernate operators supported, but the 'like' operator is not supported here. Many times the similarity search can't return the desired results as the algorithm does not work like the traditional deterministic comparison, in that case we could combine the traditional search against metadata to improve the results.",
+                url: "https://github.com/spring-projects/spring-ai/issues/328",
+                tags: ["Filtering", "Query DSL", "Search Enhancement"]
+            },
+            {
+                number: 326,
+                title: "Review API design of org.springframework.ai.image",
+                category: "API Design, Usability",
+                impact: "Medium",
+                priority: "Medium Priority",
+                currentDesign: "Basic ImageResponse with limited helpers",
+                proposedChange: "Add conversion helpers and enum for response format",
+                justification: "Improve developer experience and type safety",
+                complexity: "Low",
+                migrationPath: "Additive methods with possible deprecation",
+                dependencies: "Image generation API",
+                summary: "The `ImageResponse` can have more helpers to convert base64 to binary. Review for ease of use in using the `ImageResponse`. Maybe `getResponseFormat` can be an enum instead of a string",
+                url: "https://github.com/spring-projects/spring-ai/issues/326",
+                tags: ["Image Generation", "API Design", "Usability"]
+            },
+            {
+                number: 311,
+                title: "Add enumeration for all supported embedding models",
+                category: "Type Safety, API Design",
+                impact: "Low",
+                priority: "Low Priority",
+                currentDesign: "String-based model identification",
+                proposedChange: "Enum for supported embedding models",
+                justification: "Prevent typos and improve IDE support",
+                complexity: "Low",
+                migrationPath: "Additive with string fallback",
+                dependencies: "All embedding model providers",
+                summary: "Add enumeration for all supported embedding models to improve type safety and developer experience.",
+                url: "https://github.com/spring-projects/spring-ai/issues/311",
+                tags: ["Embedding Models", "Type Safety", "API Design"]
+            },
+            {
+                number: 221,
+                title: "Create ResourceReader extends Function<Resource, List<Document>>",
+                category: "API Design, ETL Pipeline",
+                impact: "Medium",
+                priority: "Medium Priority",
+                currentDesign: "Manual TextReader instantiation in loops",
+                proposedChange: "Functional interface for resource reading",
+                justification: "Simplify resource loading patterns",
+                complexity: "Low",
+                migrationPath: "Additive interface",
+                dependencies: "Document loading framework",
+                summary: "This will facilitate loading a list of `Resource`s into a vector database inside a loop. Currently this requires recreating `TextReader` instances.",
+                url: "https://github.com/spring-projects/spring-ai/issues/221",
+                tags: ["Resource Loading", "Functional Interface", "ETL Pipeline"]
+            }
+        ];
+
+        // Extract unique tags and count issues per tag
+        const getThemeData = () => {
+            const themeCounts = {};
+            const themeIcons = {
+                'API Design': '🎯',
+                'Vector Store': '🗄️',
+                'Multimodality': '🎨',
+                'Configuration': '⚙️',
+                'Error Handling': '🚨',
+                'Observability': '📊',
+                'Developer Experience': '👩‍💻',
+                'Breaking Change': '💥',
+                'Performance': '⚡',
+                'Security': '🔒',
+                'Streaming': '🌊',
+                'HTTP Client': '🌐',
+                'Search Enhancement': '🔍',
+                'Type Safety': '🛡️',
+                'Usability': '✨'
+            };
+
+            issues.forEach(issue => {
+                issue.tags.forEach(tag => {
+                    themeCounts[tag] = (themeCounts[tag] || 0) + 1;
+                });
+            });
+
+            return Object.entries(themeCounts)
+                .sort((a, b) => b[1] - a[1])
+                .map(([theme, count]) => ({
+                    theme,
+                    count,
+                    icon: themeIcons[theme] || '📝'
+                }));
+        };
+
+        // State management
+        let activeFilters = new Set();
+        let activePriorityFilters = new Set();
+        let currentSearchTerm = '';
+        let filteredIssues = [...issues];
+
+        // DOM elements
+        const searchInput = document.getElementById('searchInput');
+        const filterSection = document.getElementById('filterSection');
+        const priorityFilterSection = document.getElementById('priorityFilterSection');
+        const clearFiltersBtn = document.getElementById('clearFilters');
+        const issuesGrid = document.getElementById('issuesGrid');
+        const noResults = document.getElementById('noResults');
+        const totalIssuesSpan = document.getElementById('totalIssues');
+        const visibleIssuesSpan = document.getElementById('visibleIssues');
+        const activeFiltersSpan = document.getElementById('activeFilters');
+        const themeGrid = document.getElementById('themeGrid');
+
+        // Initialize the application
+        function init() {
+            renderThemeOverview();
+            renderFilters();
+            renderPriorityFilters();
+            renderIssues();
+            setupEventListeners();
+            updateStats();
+        }
+
+        // Render theme overview
+        function renderThemeOverview() {
+            const themes = getThemeData();
+            
+            // Separate themes by count
+            const majorThemes = themes.filter(({ count }) => count >= 3);
+            const mediumThemes = themes.filter(({ count }) => count === 2);
+            const minorThemes = themes.filter(({ count }) => count === 1);
+            
+            let html = '';
+            
+            // Major themes section
+            if (majorThemes.length > 0) {
+                html += `
+                    <div class="theme-section">
+                        <div class="section-title">
+                            <span>🎯 Major Themes</span>
+                            <span style="font-size: 0.9rem; color: #6c757d;">(3+ issues)</span>
+                        </div>
+                        <div class="theme-grid">
+                            ${majorThemes.map(({ theme, count, icon }) => `
+                                <div class="theme-card" data-theme="${theme}">
+                                    <div class="theme-icon">${icon}</div>
+                                    <div class="theme-title">${theme}</div>
+                                    <div class="theme-count">${count} issues</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Medium themes section
+            if (mediumThemes.length > 0) {
+                html += `
+                    <div class="theme-section">
+                        <div class="section-title">
+                            <span>📊 Supporting Themes</span>
+                            <span style="font-size: 0.9rem; color: #6c757d;">(2 issues)</span>
+                        </div>
+                        <div class="theme-grid">
+                            ${mediumThemes.map(({ theme, count, icon }) => `
+                                <div class="theme-card" data-theme="${theme}">
+                                    <div class="theme-icon">${icon}</div>
+                                    <div class="theme-title">${theme}</div>
+                                    <div class="theme-count">${count} issues</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Minor themes as compact tags
+            if (minorThemes.length > 0) {
+                html += `
+                    <div class="theme-section">
+                        <div class="section-title">
+                            <span>🏷️ Specialized Topics</span>
+                            <span style="font-size: 0.9rem; color: #6c757d;">(1 issue each)</span>
+                        </div>
+                        <div class="other-themes">
+                            ${minorThemes.map(({ theme, count, icon }) => `
+                                <div class="mini-theme-tag" data-theme="${theme}">
+                                    ${icon} ${theme}
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            themeGrid.innerHTML = html;
+        }
+
+        // Render filter buttons
+        function renderFilters() {
+            const allTags = [...new Set(issues.flatMap(issue => issue.tags))].sort();
+            
+            filterSection.innerHTML = allTags.map(tag => `
+                <div class="tag-filter" data-tag="${tag}">${tag}</div>
+            `).join('');
+        }
+        
+        // Render priority filter buttons
+        function renderPriorityFilters() {
+            const allPriorities = [...new Set(issues.map(issue => issue.priority).filter(p => p))].sort();
+            
+            priorityFilterSection.innerHTML = allPriorities.map(priority => `
+                <div class="tag-filter" data-priority="${priority}">${priority}</div>
+            `).join('');
+        }
+
+        // Render issues
+        function renderIssues() {
+            if (filteredIssues.length === 0) {
+                issuesGrid.style.display = 'none';
+                noResults.style.display = 'block';
+                return;
+            }
+
+            issuesGrid.style.display = 'grid';
+            noResults.style.display = 'none';
+
+            issuesGrid.innerHTML = filteredIssues.map(issue => {
+                const getPriorityClass = (priority) => {
+                    if (priority?.includes('High')) return 'priority-high';
+                    if (priority?.includes('Medium')) return 'priority-medium';
+                    if (priority?.includes('Low')) return 'priority-low';
+                    return 'priority-medium';
+                };
+                
+                const getImpactClass = (impact) => {
+                    if (impact === 'High') return 'impact-high';
+                    if (impact === 'Medium') return 'impact-medium';
+                    if (impact === 'Low') return 'impact-low';
+                    return 'impact-medium';
+                };
+                
+                return `
+                    <div class="issue-card">
+                        <div class="issue-number">#${issue.number}</div>
+                        <div class="issue-title">${issue.title}</div>
+                        <div class="issue-metadata">
+                            ${issue.priority ? `<span class="metadata-badge ${getPriorityClass(issue.priority)}">${issue.priority}</span>` : ''}
+                            ${issue.impact ? `<span class="metadata-badge ${getImpactClass(issue.impact)}">Impact: ${issue.impact}</span>` : ''}
+                            ${issue.category ? `<span class="metadata-badge category-badge">${issue.category}</span>` : ''}
+                        </div>
+                        <div class="issue-tags">
+                            ${issue.tags.map(tag => `<span class="issue-tag">${tag}</span>`).join('')}
+                        </div>
+                        <div class="issue-summary" id="summary-${issue.number}">${issue.summary}</div>
+                        <div class="issue-details" id="details-${issue.number}">
+                            ${issue.currentDesign ? `<div class="detail-section"><span class="detail-label">Current Design:</span> <span class="detail-value">${issue.currentDesign}</span></div>` : ''}
+                            ${issue.proposedChange ? `<div class="detail-section"><span class="detail-label">Proposed Change:</span> <span class="detail-value">${issue.proposedChange}</span></div>` : ''}
+                            ${issue.justification ? `<div class="detail-section"><span class="detail-label">Justification:</span> <span class="detail-value">${issue.justification}</span></div>` : ''}
+                            ${issue.complexity ? `<div class="detail-section"><span class="detail-label">Complexity:</span> <span class="detail-value">${issue.complexity}</span></div>` : ''}
+                            ${issue.migrationPath ? `<div class="detail-section"><span class="detail-label">Migration Path:</span> <span class="detail-value">${issue.migrationPath}</span></div>` : ''}
+                            ${issue.dependencies ? `<div class="detail-section"><span class="detail-label">Dependencies:</span> <span class="detail-value">${issue.dependencies}</span></div>` : ''}
+                        </div>
+                        <div class="issue-actions">
+                            <button class="expand-btn" onclick="toggleDetails(${issue.number})">
+                                <span id="expand-text-${issue.number}">Show Details</span>
+                            </button>
+                            <a href="${issue.url}" target="_blank" class="github-link">View on GitHub</a>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Toggle details expansion
+        window.toggleDetails = function(issueNumber) {
+            const summary = document.getElementById(`summary-${issueNumber}`);
+            const details = document.getElementById(`details-${issueNumber}`);
+            const expandText = document.getElementById(`expand-text-${issueNumber}`);
+            
+            if (details.classList.contains('expanded')) {
+                summary.classList.remove('expanded');
+                details.classList.remove('expanded');
+                expandText.textContent = 'Show Details';
+            } else {
+                summary.classList.add('expanded');
+                details.classList.add('expanded');
+                expandText.textContent = 'Hide Details';
+            }
+        };
+
+        // Filter issues based on search, tags, and priority
+        function filterIssues() {
+            filteredIssues = issues.filter(issue => {
+                // Search filter
+                const searchMatch = currentSearchTerm === '' || 
+                    issue.title.toLowerCase().includes(currentSearchTerm.toLowerCase()) ||
+                    issue.summary.toLowerCase().includes(currentSearchTerm.toLowerCase()) ||
+                    issue.tags.some(tag => tag.toLowerCase().includes(currentSearchTerm.toLowerCase()));
+
+                // Tag filter
+                const tagMatch = activeFilters.size === 0 || 
+                    [...activeFilters].some(filter => issue.tags.includes(filter));
+
+                // Priority filter
+                const priorityMatch = activePriorityFilters.size === 0 || 
+                    [...activePriorityFilters].some(filter => issue.priority === filter);
+
+                return searchMatch && tagMatch && priorityMatch;
+            });
+
+            renderIssues();
+            updateStats();
+        }
+
+        // Update theme cards active state
+        function updateThemeCards() {
+            document.querySelectorAll('.theme-card, .mini-theme-tag').forEach(card => {
+                const theme = card.dataset.theme;
+                if (activeFilters.has(theme)) {
+                    card.classList.add('active');
+                } else {
+                    card.classList.remove('active');
+                }
+            });
+        }
+
+        // Update filter buttons active state
+        function updateFilterButtons() {
+            document.querySelectorAll('.tag-filter').forEach(btn => {
+                const tag = btn.dataset.tag;
+                if (activeFilters.has(tag)) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+        }
+
+        // Update filter buttons active state
+        function updatePriorityFilterButtons() {
+            document.querySelectorAll('#priorityFilterSection .tag-filter').forEach(btn => {
+                const priority = btn.dataset.priority;
+                if (activePriorityFilters.has(priority)) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+        }
+
+        // Update statistics
+        function updateStats() {
+            visibleIssuesSpan.textContent = filteredIssues.length;
+            activeFiltersSpan.textContent = activeFilters.size + activePriorityFilters.size;
+            updateThemeCards();
+            updateFilterButtons();
+            updatePriorityFilterButtons();
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            // Search input
+            searchInput.addEventListener('input', (e) => {
+                currentSearchTerm = e.target.value;
+                filterIssues();
+            });
+
+            // Theme cards (top overview) - handle both card types
+            themeGrid.addEventListener('click', (e) => {
+                const themeCard = e.target.closest('.theme-card');
+                const miniTag = e.target.closest('.mini-theme-tag');
+                
+                const element = themeCard || miniTag;
+                if (element) {
+                    const theme = element.dataset.theme;
+                    
+                    if (activeFilters.has(theme)) {
+                        activeFilters.delete(theme);
+                    } else {
+                        activeFilters.add(theme);
+                    }
+                    
+                    filterIssues();
+                }
+            });
+
+            // Filter buttons
+            filterSection.addEventListener('click', (e) => {
+                if (e.target.classList.contains('tag-filter')) {
+                    const tag = e.target.dataset.tag;
+                    
+                    if (activeFilters.has(tag)) {
+                        activeFilters.delete(tag);
+                    } else {
+                        activeFilters.add(tag);
+                    }
+                    
+                    filterIssues();
+                }
+            });
+            
+            // Priority filter buttons
+            priorityFilterSection.addEventListener('click', (e) => {
+                if (e.target.classList.contains('tag-filter')) {
+                    const priority = e.target.dataset.priority;
+                    
+                    if (activePriorityFilters.has(priority)) {
+                        activePriorityFilters.delete(priority);
+                    } else {
+                        activePriorityFilters.add(priority);
+                    }
+                    
+                    filterIssues();
+                }
+            });
+
+            // Clear filters
+            clearFiltersBtn.addEventListener('click', () => {
+                activeFilters.clear();
+                activePriorityFilters.clear();
+                currentSearchTerm = '';
+                searchInput.value = '';
+                
+                filterIssues();
+            });
+        }
+
+        // Initialize the application when DOM is loaded
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

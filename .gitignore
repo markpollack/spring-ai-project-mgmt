@@ -28,5 +28,18 @@ scripts/issues/
 scripts/logs/
 scripts/issues-compressed/
 
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
 # PR Review workflow - cloned repositories
 pr-review/spring-ai/
+
+# PR Review workflow - generated files that should be ignored
+pr-review/.build_cache_pr_*
+pr-review/reports/test-logs-pr-*/
+pr-review/reports/review-pr-*.md
+pr-review/reports/enhanced-review-pr-*.md
+pr-review/plans/plan-pr-*.md
