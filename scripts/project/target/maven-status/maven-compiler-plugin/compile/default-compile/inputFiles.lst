@@ -1,2 +1,6 @@
+/home/mark/project-mgmt/spring-ai-project-mgmt/scripts/project/src/main/java/org/springaicommunity/github/ai/collection/ArgumentParser.java
 /home/mark/project-mgmt/spring-ai-project-mgmt/scripts/project/src/main/java/org/springaicommunity/github/ai/collection/CollectGithubIssues.java
+/home/mark/project-mgmt/spring-ai-project-mgmt/scripts/project/src/main/java/org/springaicommunity/github/ai/collection/ConfigurationSupport.java
 /home/mark/project-mgmt/spring-ai-project-mgmt/scripts/project/src/main/java/org/springaicommunity/github/ai/collection/DataModels.java
+/home/mark/project-mgmt/spring-ai-project-mgmt/scripts/project/src/main/java/org/springaicommunity/github/ai/collection/GitHubServices.java
+/home/mark/project-mgmt/spring-ai-project-mgmt/scripts/project/src/main/java/org/springaicommunity/github/ai/collection/IssueCollectionService.java

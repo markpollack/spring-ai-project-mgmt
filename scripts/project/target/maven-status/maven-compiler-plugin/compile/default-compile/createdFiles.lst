@@ -4,11 +4,13 @@ org/springaicommunity/github/ai/collection/DataModels$CollectionMetadata.class
 META-INF/spring-configuration-metadata.json
 org/springaicommunity/github/ai/collection/CollectionProperties.class
 org/springaicommunity/github/ai/collection/IssueCollectionService$SupplierWithException.class
+org/springaicommunity/github/ai/collection/ArgumentParser.class
 org/springaicommunity/github/ai/collection/DataModels$CollectionResult.class
 org/springaicommunity/github/ai/collection/GitHubConfig.class
 org/springaicommunity/github/ai/collection/DataModels$Comment.class
 org/springaicommunity/github/ai/collection/JsonNodeUtils.class
 org/springaicommunity/github/ai/collection/GitHubGraphQLService.class
+org/springaicommunity/github/ai/collection/ArgumentParser$ParsedConfiguration.class
 org/springaicommunity/github/ai/collection/CollectGithubIssues.class
 org/springaicommunity/github/ai/collection/DataModels.class
 org/springaicommunity/github/ai/collection/DataModels$BatchData.class

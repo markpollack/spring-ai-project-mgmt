@@ -1,7 +1,7 @@
 # CollectGithubIssues.java - Code Structure Reference
 
-**File Length**: 1,563 lines (updated after --zip implementation)  
-**Last Updated**: 2025-07-23
+**File Length**: 1,644 lines (current state)  
+**Last Updated**: 2025-07-24
 
 > **Important**: Always refer to this file before adding new code to CollectGithubIssues.java. Update this file after making changes.
 
@@ -50,91 +50,91 @@
   - **Lines 458-459**: **UPDATED** Clean options help text with new defaults
   - **Lines 485-486**: **NEW** Examples showing --no-clean usage
 
-## Data Models - Records (Lines 474-531)
-- **Lines 474-487**: `record Issue(...)`
-- **Lines 488-493**: `record Comment(...)`
-- **Lines 494-498**: `record Author(...)`
-- **Lines 499-504**: `record Label(...)`
-- **Lines 505-513**: `record CollectionMetadata(...)`
-- **Lines 514-523**: `record CollectionRequest(...)` - **TO UPDATE** in Phase 4
-- **Lines 524-531**: `record CollectionResult(...)`
+## Data Models - Records (Lines 500-559)
+- **Lines 501-513**: `record Issue(...)` - Core issue data model
+- **Lines 515-519**: `record Comment(...)` - Issue comment data
+- **Lines 521-524**: `record Author(...)` - User/author information
+- **Lines 526-530**: `record Label(...)` - Issue label data
+- **Lines 532-539**: `record CollectionMetadata(...)` - Collection run metadata
+- **Lines 541-552**: `record CollectionRequest(...)` - Collection parameters with filtering
+- **Lines 554-559**: `record CollectionResult(...)` - Collection results summary
 
-## Configuration Class: GitHubConfig (Lines 532-568)
-- **Lines 532-568**: Spring @Configuration class with beans
-- **Lines 539-542**: GitHub client bean
-- **Lines 544-550**: REST client bean
-- **Lines 552-559**: GraphQL client bean
-- **Lines 561-566**: ObjectMapper bean
+## Configuration Class: GitHubConfig (Lines 562-596)
+- **Lines 562-596**: Spring @Configuration class with beans
+- **Lines 568-571**: GitHub client bean
+- **Lines 573-579**: REST client bean  
+- **Lines 581-588**: GraphQL client bean
+- **Lines 590-596**: ObjectMapper bean with JSR310 time module
 
 ## Service Classes
 
-### GitHubRestService (Lines 569-623)
-- **Lines 569-623**: REST API service for basic GitHub operations
-- **Lines 584-586**: Rate limit checking
-- **Lines 588-590**: Repository access
-- **Lines 592-604**: Repository info fetching
-- **Lines 606-621**: Total issue count (REST-based)
+### GitHubRestService (Lines 599-653)
+- **Lines 599-653**: REST API service for basic GitHub operations
+- **Lines 614-616**: Rate limit checking
+- **Lines 618-620**: Repository access
+- **Lines 622-634**: Repository info fetching
+- **Lines 636-651**: Total issue count (REST-based)
 
-### GitHubGraphQLService (Lines 631-699)
-- **Lines 631-699**: GraphQL API service
-- **Lines 641-657**: `executeQuery()` - core GraphQL execution
-- **Lines 659-678**: `getTotalIssueCount()` - repository-based count
-- **Lines 680-697**: `getSearchIssueCount()` - **COMPLETED** search-based count for filtering
+### GitHubGraphQLService (Lines 655-723)
+- **Lines 655-723**: GraphQL API service
+- **Lines 665-681**: `executeQuery()` - core GraphQL execution
+- **Lines 683-702**: `getTotalIssueCount()` - repository-based count
+- **Lines 704-721**: `getSearchIssueCount()` - **COMPLETED** search-based count for filtering
 
-### JsonNodeUtils (Lines 700-749)
-- **Lines 700-749**: Utility service for JSON navigation
-- **Lines 702-708**: String extraction
-- **Lines 710-716**: Integer extraction  
-- **Lines 718-728**: DateTime parsing
-- **Lines 730-748**: Array handling
+### JsonNodeUtils (Lines 724-773)
+- **Lines 724-773**: Utility service for JSON navigation
+- **Lines 726-732**: String extraction
+- **Lines 734-740**: Integer extraction  
+- **Lines 742-752**: DateTime parsing
+- **Lines 754-772**: Array handling
 
-### IssueCollectionService (Lines 750-1400)
+### IssueCollectionService (Lines 775-1555)
 **Main collection service - all filtering functionality implemented**
 
-#### Constructor and Main Methods (Lines 750-835)
-- **Lines 750-784**: Class declaration and constructor
-- **Lines 782-834**: `collectIssues()` - **COMPLETED** uses search-based counting
+#### Constructor and Main Methods (Lines 775-860)
+- **Lines 775-809**: Class declaration and constructor
+- **Lines 807-859**: `collectIssues()` - **COMPLETED** uses search-based counting
 
-#### Collection Core Logic (Lines 836-947)
-- **Lines 836-946**: `collectInBatches()` - **COMPLETED** uses search API integration
+#### Collection Core Logic (Lines 861-972)
+- **Lines 861-971**: `collectInBatches()` - **COMPLETED** uses search API integration
 
-#### Utility Methods (Lines 948-996)
-- **Lines 948-976**: Retry and backoff logic
-- **Lines 978-984**: Rate limit error detection
-- **Lines 986-992**: Backoff delay calculation
-- **Lines 994-996**: Exception interface
+#### Utility Methods (Lines 973-1021)
+- **Lines 973-1001**: Retry and backoff logic
+- **Lines 1003-1009**: Rate limit error detection
+- **Lines 1011-1017**: Backoff delay calculation
+- **Lines 1019-1021**: Exception interface
 
-#### Batch Processing (Lines 998-1066)
-- **Lines 998-1033**: Adaptive batch creation
-- **Lines 1035-1050**: Issue size estimation
-- **Lines 1052-1065**: Large issue detection
+#### Batch Processing (Lines 1023-1091)
+- **Lines 1023-1058**: Adaptive batch creation
+- **Lines 1060-1075**: Issue size estimation
+- **Lines 1077-1090**: Large issue detection
 
-#### GraphQL Query Building (Lines 1067-1200)
-- **Lines 1067-1132**: `buildIssuesQuery()` - repository-based query (legacy)
-- **Lines 1134-1200**: `buildSearchIssuesQuery()` - **COMPLETED** search-based query
+#### GraphQL Query Building (Lines 1092-1225)
+- **Lines 1092-1157**: `buildIssuesQuery()` - repository-based query (legacy)
+- **Lines 1159-1225**: `buildSearchIssuesQuery()` - **COMPLETED** search-based query
 
-#### Data Conversion (Lines 1202-1270)
-- **Lines 1202-1257**: Issue conversion from JSON
-- **Lines 1259-1269**: DateTime parsing utility
+#### Data Conversion (Lines 1227-1295)
+- **Lines 1227-1282**: Issue conversion from JSON
+- **Lines 1284-1294**: DateTime parsing utility
 
-#### File Operations (Lines 1271-1445)
-- **Lines 1271-1320**: Metadata file creation with zip integration
-- **Lines 1322-1359**: **NEW** `createCompressedArchive()` - zip creation functionality
-- **Lines 1361-1426**: **NEW** `addCommandLineArgsToZip()` - command line documentation
-- **Lines 1428-1433**: Filter suffix building for zip names
-- **Lines 1435-1439**: File size formatting utility
-- **Lines 1441-1445**: Previous data cleanup
+#### File Operations (Lines 1296-1470)
+- **Lines 1296-1345**: Metadata file creation with zip integration
+- **Lines 1347-1384**: **COMPLETED** `createCompressedArchive()` - zip creation functionality
+- **Lines 1386-1451**: **COMPLETED** `addCommandLineArgsToZip()` - command line documentation
+- **Lines 1453-1458**: Filter suffix building for zip names
+- **Lines 1460-1464**: File size formatting utility
+- **Lines 1466-1470**: Previous data cleanup
 
-#### Search Integration (Lines 1447-1489)
-- **Lines 1447-1489**: **COMPLETED** `buildSearchQuery()` - search query builder with state and label filtering
+#### Search Integration (Lines 1472-1514)
+- **Lines 1472-1514**: **COMPLETED** `buildSearchQuery()` - search query builder with state and label filtering
 
-#### Internal Records (Lines 1491-1534)
-- **Lines 1491**: `BatchData` record
-- **Lines 1493**: `CollectionStats` record  
-- **Lines 1495-1533**: `ResumeState` record
+#### Internal Records (Lines 1555-1565)
+- **Lines 1555**: `BatchData` record
+- **Lines 1557**: `CollectionStats` record  
+- **Lines 1559-1565**: `ResumeState` record
 
-## Configuration Properties: CollectionProperties (Lines 1535-1563)
-- **Lines 1535-1563**: Application configuration class with getter/setter methods
+## Configuration Properties: CollectionProperties (Lines 1568-1644)
+- **Lines 1568-1644**: Application configuration class with getter/setter methods
 - **Configuration fields include:**
   - Default repository, batch settings, rate limiting
   - Large issue thresholds, file paths, logging settings
@@ -143,12 +143,12 @@
 ## Implementation Status - ALL PHASES 1-6 COMPLETED ✅
 
 ### ✅ Phase 1-4: GitHub Issues Filtering Implementation
-1. **Lines 680-697**: `getSearchIssueCount()` method implemented
-2. **Lines 1134-1200**: `buildSearchIssuesQuery()` search-based query implemented
-3. **Lines 1357-1399**: `buildSearchQuery()` with state and label filtering
-4. **Lines 514-523**: `CollectionRequest` record updated with filtering fields
-5. **Lines 782-834**: `collectIssues()` updated to use search queries
-6. **Lines 836-946**: `collectInBatches()` updated to use search API
+1. **Lines 704-721**: `getSearchIssueCount()` method implemented
+2. **Lines 1159-1225**: `buildSearchIssuesQuery()` search-based query implemented
+3. **Lines 1472-1514**: `buildSearchQuery()` with state and label filtering
+4. **Lines 541-552**: `CollectionRequest` record updated with filtering fields
+5. **Lines 807-859**: `collectIssues()` updated to use search queries
+6. **Lines 861-971**: `collectInBatches()` updated to use search API
 
 ### ✅ Phase 5-6: Testing and Documentation
 1. ✅ **COMPLETED**: Comprehensive testing of all filtering functionality
@@ -164,9 +164,9 @@
 ### ✅ Zip Archive Enhancement:
 1. **Line 108**: `private boolean zip = false;` - Renamed from compress
 2. **Lines 271-274**: Changed to `-z, --zip` flag (was -c, --compress)
-3. **Lines 1322-1359**: Added `createCompressedArchive()` method
-4. **Lines 1361-1426**: Added `addCommandLineArgsToZip()` method for command line documentation
-5. **Lines 1428-1439**: Added utility methods for zip file naming and formatting
+3. **Lines 1347-1384**: Added `createCompressedArchive()` method
+4. **Lines 1386-1451**: Added `addCommandLineArgsToZip()` method for command line documentation
+5. **Lines 1453-1464**: Added utility methods for zip file naming and formatting
 6. **Updated Records**: Changed `compressed` to `zipped` in CollectionMetadata record
 
 ## Method Dependencies

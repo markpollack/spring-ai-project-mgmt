@@ -1,0 +1,4 @@
+1. having all the records inside of DataModels feels a bit off.  There probably should be a package for that?  Thought the 'package per feature' would be against that segmenting of 'controller', 'repository' ,'service layer'.
+
+2. Similar with respsect to 'ConfigurationSupport' those classes should not be nested inside an top level object.  it's a smell.
+3.
