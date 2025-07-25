@@ -40,6 +40,16 @@ This application uses a modular Spring Boot architecture with the following comp
   - Pure Java implementation with comprehensive CLI argument support
   - `ParsedConfiguration`: Type-safe parsed argument results
   - Environment validation and help text generation
+- **GitHubServices.java**: GitHub API service classes
+  - `GitHubRestService`: GitHub REST API operations and search query building
+  - `GitHubGraphQLService`: GraphQL query execution and issue counting
+  - `JsonNodeUtils`: Safe JSON navigation with Optional return types
+- **IssueCollectionService.java**: Core business logic for issue collection
+  - Main collection orchestration and workflow management
+  - Batch processing with adaptive sizing based on issue content
+  - File operations, compression, and metadata generation
+  - Resume state management and error recovery with exponential backoff
+  - Search query building with advanced filtering capabilities
 - **CollectGithubIssues.java**: Main Spring Boot application class with CommandLineRunner
 
 ### Configuration Properties

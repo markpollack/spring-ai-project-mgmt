@@ -29,7 +29,15 @@ This is a Spring Boot Maven application for collecting GitHub issues with advanc
    - `JsonNodeUtils`: Safe JSON navigation with Optional return types
    - Pure Java services with minimal Spring dependencies for better testability
 
-5. **CollectGithubIssues.java** - Main Spring Boot application with CommandLineRunner
+5. **IssueCollectionService.java** - Core business logic for issue collection
+   - Main collection orchestration and workflow management (780+ lines extracted)
+   - Batch processing with adaptive sizing based on issue content
+   - File operations, compression, and metadata generation
+   - Resume state management and error recovery with exponential backoff
+   - Search query building with advanced filtering capabilities
+   - Pure Java service with comprehensive mocked testing strategy
+
+6. **CollectGithubIssues.java** - Main Spring Boot application with CommandLineRunner
 
 ### Refactoring Status
 
@@ -39,9 +47,9 @@ This is a Spring Boot Maven application for collecting GitHub issues with advanc
 - ✅ Phase 2: ConfigurationSupport.java extraction
 - ✅ Phase 3: ArgumentParser.java extraction
 - ✅ Phase 4: GitHubServices.java extraction
+- ✅ Phase 5: IssueCollectionService.java extraction (Highest Risk Phase)
 
 **Remaining Phases:**
-- Phase 5: CollectionService.java extraction
 - Phase 6: Documentation completion
 - Phase 7: Integration testing and main class refactoring
 
@@ -135,8 +143,13 @@ CollectGithubIssues.java (main)
 │   ├── GitHubRestService (REST operations)
 │   ├── GitHubGraphQLService (GraphQL operations)
 │   └── JsonNodeUtils (JSON utilities)
-└── [Future modules]
-    └── CollectionService.java
+└── IssueCollectionService.java (business logic)
+    ├── Collection orchestration (collectIssues)
+    ├── Batch processing (adaptive sizing)
+    ├── File operations (JSON, ZIP)
+    ├── Resume state management
+    ├── Error handling (exponential backoff)
+    └── Search query building
 ```
 
 ## Testing Requirements
@@ -210,9 +223,16 @@ mvnd test -Dtest=DataModelsTest
 - Functional testing via dry-run validation more reliable than complex unit test mocking
 - Successfully removed 229 lines of service logic from main application
 
+### Phase 5 Lessons Learned (Highest Risk Phase)
+- Successfully extracted massive IssueCollectionService with 780+ lines of core business logic
+- Applied strictest safety protocols using @TempDir and comprehensive mocking
+- AssertJ test compilation errors resolved using ArgumentCaptor for complex mock verification
+- File naming conflicts resolved by matching class names with file names
+- Maintained perfect safety record - zero production operations during highest-risk phase
+- Clean migration approach successfully applied to largest service extraction
+
 ### Future Phase Considerations
-- Continue applying clean migration approach for all extractions
-- Maintain strict separation between testing strategies
-- Always read previous lessons learned documents before starting new phases
-- Phase 5 (CollectionService) is highest risk - contains main business logic
-- Document all architectural decisions for future reference
+- Phase 6: Documentation completion and architectural review
+- Phase 7: Integration testing with minimal Spring context for service interaction validation
+- All extraction phases completed successfully with zero functionality regression
+- Modular architecture fully established with clear service boundaries

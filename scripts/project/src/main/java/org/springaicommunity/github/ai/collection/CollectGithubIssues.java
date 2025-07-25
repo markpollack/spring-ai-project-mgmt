@@ -13,48 +13,15 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.stereotype.Component;
-import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestClient;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.kohsuke.github.GitHub;
-import org.kohsuke.github.GitHubBuilder;
-import org.kohsuke.github.GHRepository;
-import org.kohsuke.github.GHRateLimit;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Arrays;
+import java.util.ArrayList;
 
 import static org.springaicommunity.github.ai.collection.DataModels.*;
-import java.util.Optional;
-import java.util.Map;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.time.format.DateTimeFormatter;
-import java.time.ZonedDateTime;
-import java.util.zip.ZipOutputStream;
-import java.util.zip.ZipEntry;
-import java.io.FileOutputStream;
-import java.io.ByteArrayOutputStream;
-import java.util.stream.Stream;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * GitHub Issues Collection Tool
@@ -182,20 +149,14 @@ public class CollectGithubIssues implements CommandLineRunner {
         try {
             logger.info("Testing GitHub API connectivity...");
             
-            // Test Hub4j GitHub API
-            String githubToken = System.getenv("GITHUB_TOKEN");
-            GitHub github = new GitHubBuilder().withOAuthToken(githubToken).build();
+            // Use injected GitHub service for connectivity test
+            String searchQuery = restService.buildSearchQuery(
+                repo.split("/")[0], repo.split("/")[1], 
+                issueState, labelFilters, labelMode);
             
-            // Test rate limit (simple connectivity test)
-            GHRateLimit rateLimit = github.getRateLimit();
-            logger.info("GitHub API Rate Limit - Remaining: {}/{}", rateLimit.getRemaining(), rateLimit.getLimit());
+            int issueCount = graphQLService.getSearchIssueCount(searchQuery);
+            logger.info("GitHub API connectivity test passed - found {} issues", issueCount);
             
-            // Test repository access
-            String[] repoParts = repo.split("/");
-            GHRepository repository = github.getRepository(repo);
-            logger.info("Repository access successful: {} ({})", repository.getFullName(), repository.getDescription());
-            
-            logger.info("GitHub API connectivity test passed");
         } catch (Exception e) {
             logger.error("GitHub API connectivity test failed: {}", e.getMessage());
             if (verbose) {
