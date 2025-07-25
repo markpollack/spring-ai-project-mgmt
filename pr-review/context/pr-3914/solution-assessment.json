@@ -1,0 +1,31 @@
+{
+  "scope_analysis": "AI assessment parsing failed - manual review required",
+  "architecture_impact": [
+    "Assessment unavailable due to parsing error"
+  ],
+  "implementation_quality": [
+    "Manual code review required"
+  ],
+  "breaking_changes_assessment": [
+    "Compatibility analysis needed"
+  ],
+  "testing_adequacy": [
+    "Test coverage review required"
+  ],
+  "documentation_completeness": [
+    "Documentation review needed"
+  ],
+  "solution_fitness": "Manual assessment required due to AI parsing failure",
+  "risk_factors": [
+    "Unknown risks due to assessment failure"
+  ],
+  "code_quality_score": 5,
+  "complexity_justification": "Assessment failed - default complexity assumed",
+  "final_complexity_score": 5,
+  "recommendations": [
+    "Retry AI assessment",
+    "Conduct manual code review"
+  ],
+  "assessment_timestamp": "2025-07-25T12:32:10.065539",
+  "assessor_version": "ai-powered-v1.0"
+}

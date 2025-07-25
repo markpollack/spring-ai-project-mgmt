@@ -106,8 +106,8 @@ class AIPoweredConversationAnalyzer:
             ("pr_data", "pr-data.json"),
             ("issue_data", "issue-data.json"), 
             ("conversation", "conversation.json"),
-            ("file_changes", "file-changes.json"),
-            ("heuristic_analysis", "conversation-analysis.json")
+            ("file_changes", "file-changes.json")
+            # Note: heuristic_analysis/conversation-analysis.json is optional
         ]
         
         for key, filename in files_to_load:

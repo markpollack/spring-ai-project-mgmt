@@ -103,8 +103,9 @@ class EnhancedReportGenerator:
         # Load analysis results
         analysis_files = {
             'pr_data': 'pr-data.json',
-            'conversation_analysis': 'ai-conversation-analysis.json',
-            'solution_assessment': 'solution-assessment.json',
+            'issue_data': 'issue-data.json',
+            'conversation': 'conversation.json',
+            'analysis_cache': 'analysis-cache.json',
             'file_changes': 'file-changes.json'
         }
         
@@ -138,14 +139,18 @@ class EnhancedReportGenerator:
         # Extract PR basic info
         pr_data = loaded_data.get('pr_data', {})
         
+        # Run AI analysis if needed
+        conversation_analysis = self._run_ai_conversation_analysis(pr_number, pr_context_dir)
+        solution_assessment = self._run_solution_assessment(pr_number, pr_context_dir)
+        
         return EnhancedReportData(
             pr_number=pr_number,
             pr_title=pr_data.get('title', 'Unknown'),
             pr_author=pr_data.get('author', 'Unknown'),
             pr_url=pr_data.get('url', ''),
             pr_status=pr_data.get('state', 'Unknown'),
-            conversation_analysis=loaded_data.get('conversation_analysis', {}),
-            solution_assessment=loaded_data.get('solution_assessment', {}),
+            conversation_analysis=conversation_analysis,
+            solution_assessment=solution_assessment,
             file_changes=loaded_data.get('file_changes', []),
             code_analysis=code_analysis,
             report_timestamp=datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
@@ -153,6 +158,68 @@ class EnhancedReportGenerator:
             test_results=test_results
         )
     
+    def _run_ai_conversation_analysis(self, pr_number: str, pr_context_dir: Path) -> Dict[str, Any]:
+        """Run AI conversation analysis using ai_conversation_analyzer.py"""
+        try:
+            analysis_file = pr_context_dir / "ai-conversation-analysis.json"
+            
+            # Check if analysis already exists
+            if analysis_file.exists():
+                Logger.info("Using existing AI conversation analysis")
+                with open(analysis_file, 'r') as f:
+                    return json.load(f)
+            
+            # Run AI conversation analyzer
+            Logger.info("Running AI conversation analysis...")
+            analyzer_script = self.script_dir / "ai_conversation_analyzer.py"
+            
+            result = subprocess.run([
+                "python3", str(analyzer_script), pr_number
+            ], capture_output=True, text=True, timeout=300)
+            
+            if result.returncode == 0 and analysis_file.exists():
+                Logger.success("AI conversation analysis completed")
+                with open(analysis_file, 'r') as f:
+                    return json.load(f)
+            else:
+                Logger.warn(f"AI conversation analysis failed: {result.stderr}")
+                return {}
+                
+        except Exception as e:
+            Logger.error(f"Error running AI conversation analysis: {e}")
+            return {}
+    
+    def _run_solution_assessment(self, pr_number: str, pr_context_dir: Path) -> Dict[str, Any]:
+        """Run solution assessment using solution_assessor.py"""
+        try:
+            assessment_file = pr_context_dir / "solution-assessment.json"
+            
+            # Check if assessment already exists
+            if assessment_file.exists():
+                Logger.info("Using existing solution assessment")
+                with open(assessment_file, 'r') as f:
+                    return json.load(f)
+            
+            # Run solution assessor
+            Logger.info("Running AI solution assessment...")
+            assessor_script = self.script_dir / "solution_assessor.py"
+            
+            result = subprocess.run([
+                "python3", str(assessor_script), pr_number
+            ], capture_output=True, text=True, timeout=300)
+            
+            if result.returncode == 0 and assessment_file.exists():
+                Logger.success("AI solution assessment completed")
+                with open(assessment_file, 'r') as f:
+                    return json.load(f)
+            else:
+                Logger.warn(f"AI solution assessment failed: {result.stderr}")
+                return {}
+                
+        except Exception as e:
+            Logger.error(f"Error running AI solution assessment: {e}")
+            return {}
+
     def _perform_code_analysis(self, pr_number: str) -> Dict[str, Any]:
         """Perform additional code analysis for the report"""
         try:

@@ -1,0 +1,18 @@
+{
+  "problem_summary": "AI analysis could not be parsed properly",
+  "key_requirements": [],
+  "design_decisions": [],
+  "outstanding_concerns": [],
+  "solution_approaches": [],
+  "complexity_indicators": [],
+  "complexity_score": 5,
+  "stakeholder_feedback": [],
+  "discussion_themes": [],
+  "timeline_summary": "",
+  "quality_assessment": "Analysis parsing failed",
+  "recommendations": [
+    "Retry analysis with improved prompting"
+  ],
+  "analysis_timestamp": "2025-07-25T12:30:01.649547",
+  "analyzer_version": "ai-powered-v1.0"
+}
