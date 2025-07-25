@@ -23,7 +23,13 @@ This is a Spring Boot Maven application for collecting GitHub issues with advanc
    - Comprehensive CLI argument support and validation
    - Environment validation and help text generation
 
-4. **CollectGithubIssues.java** - Main Spring Boot application with CommandLineRunner
+4. **GitHubServices.java** - GitHub API service classes
+   - `GitHubRestService`: GitHub REST API operations and search query building
+   - `GitHubGraphQLService`: GraphQL query execution and issue counting
+   - `JsonNodeUtils`: Safe JSON navigation with Optional return types
+   - Pure Java services with minimal Spring dependencies for better testability
+
+5. **CollectGithubIssues.java** - Main Spring Boot application with CommandLineRunner
 
 ### Refactoring Status
 
@@ -32,9 +38,9 @@ This is a Spring Boot Maven application for collecting GitHub issues with advanc
 - ✅ Phase 1: DataModels.java extraction 
 - ✅ Phase 2: ConfigurationSupport.java extraction
 - ✅ Phase 3: ArgumentParser.java extraction
+- ✅ Phase 4: GitHubServices.java extraction
 
 **Remaining Phases:**
-- Phase 4: GitHubServices.java extraction  
 - Phase 5: CollectionService.java extraction
 - Phase 6: Documentation completion
 - Phase 7: Integration testing and main class refactoring
@@ -124,9 +130,12 @@ CollectGithubIssues.java (main)
 ├── ConfigurationSupport.java (Spring config)
 │   ├── GitHubConfig (beans)
 │   └── CollectionProperties (properties)
+├── ArgumentParser.java (CLI parsing)
+├── GitHubServices.java (API services)
+│   ├── GitHubRestService (REST operations)
+│   ├── GitHubGraphQLService (GraphQL operations)
+│   └── JsonNodeUtils (JSON utilities)
 └── [Future modules]
-    ├── ArgumentParser.java
-    ├── GitHubServices.java
     └── CollectionService.java
 ```
 
@@ -193,8 +202,17 @@ mvnd test -Dtest=DataModelsTest
 - Clean migration approach successfully applied: removed 270+ lines of parsing logic
 - ArgumentParser integration seamless with type-safe ParsedConfiguration class
 
+### Phase 4 Lessons Learned
+- Successfully extracted GitHub service classes using clean migration approach
+- Comprehensive mocking strategy prevents accidental production operations during testing
+- Spring's component scanning eliminates need for explicit @Service class imports
+- RestClient mocking requires careful generic type handling in tests
+- Functional testing via dry-run validation more reliable than complex unit test mocking
+- Successfully removed 229 lines of service logic from main application
+
 ### Future Phase Considerations
 - Continue applying clean migration approach for all extractions
 - Maintain strict separation between testing strategies
 - Always read previous lessons learned documents before starting new phases
+- Phase 5 (CollectionService) is highest risk - contains main business logic
 - Document all architectural decisions for future reference
