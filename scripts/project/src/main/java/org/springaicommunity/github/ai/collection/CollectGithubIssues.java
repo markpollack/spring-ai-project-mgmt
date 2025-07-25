@@ -129,18 +129,21 @@ public class CollectGithubIssues implements CommandLineRunner {
         // Initialize configuration from properties
         initializeConfiguration();
         
-        // Parse command line arguments (can override config)
-        parseArguments(args);
+        // Parse and validate command line arguments using ArgumentParser
+        ArgumentParser argumentParser = new ArgumentParser(properties);
         
-        // Show help if requested
-        if (isHelpRequested(args)) {
-            showHelp();
+        // Check for help request first
+        if (argumentParser.isHelpRequested(args)) {
+            System.out.println(argumentParser.generateHelpText());
             return;
         }
         
-        // Validate environment and configuration
-        validateEnvironment();
-        validateConfiguration();
+        // Parse and validate arguments
+        ArgumentParser.ParsedConfiguration config = argumentParser.parseAndValidate(args);
+        argumentParser.validateEnvironment();
+        
+        // Apply parsed configuration to instance variables
+        applyParsedConfiguration(config);
         
         logger.info("Configuration:");
         logger.info("  Repository: {}", repo);
@@ -225,276 +228,23 @@ public class CollectGithubIssues implements CommandLineRunner {
         }
     }
     
-    private void parseArguments(String... args) {
-        for (int i = 0; i < args.length; i++) {
-            String arg = args[i];
-            
-            switch (arg) {
-                case "-r", "--repo":
-                    if (i + 1 < args.length) {
-                        repo = args[++i];
-                        logger.debug("Parsed repository: {}", repo);
-                    } else {
-                        logger.error("Missing value for repository option");
-                        System.exit(1);
-                    }
-                    break;
-                    
-                case "-b", "--batch-size":
-                    if (i + 1 < args.length) {
-                        try {
-                            batchSize = Integer.parseInt(args[++i]);
-                            logger.info("Parsed batch size from arguments: {}", batchSize);
-                            if (batchSize <= 0) {
-                                logger.error("Batch size must be positive: {}", batchSize);
-                                System.exit(1);
-                            }
-                        } catch (NumberFormatException e) {
-                            logger.error("Invalid batch size '{}': must be a positive integer", args[i]);
-                            System.exit(1);
-                        }
-                    } else {
-                        logger.error("Missing value for batch-size option");
-                        System.exit(1);
-                    }
-                    break;
-                    
-                case "-d", "--dry-run":
-                    dryRun = true;
-                    logger.debug("Dry run enabled");
-                    break;
-                    
-                case "-i", "--incremental":
-                    incremental = true;
-                    logger.debug("Incremental mode enabled");
-                    break;
-                    
-                case "-z", "--zip":
-                    zip = true;
-                    logger.debug("Zip output enabled");
-                    break;
-                    
-                case "-v", "--verbose":
-                    verbose = true;
-                    logger.debug("Verbose logging enabled");
-                    // Enable debug logging
-                    System.setProperty("logging.level.com.github.issues", "DEBUG");
-                    break;
-                    
-                case "--clean":
-                    clean = true;
-                    logger.debug("Clean mode enabled");
-                    break;
-                    
-                case "--no-clean":
-                case "--append":
-                    clean = false;
-                    logger.debug("Append mode enabled - keeping previous data");
-                    break;
-                    
-                case "--resume":
-                    resume = true;
-                    logger.debug("Resume mode enabled");
-                    break;
-                    
-                case "-s", "--state":
-                    if (i + 1 < args.length) {
-                        issueState = args[++i].toLowerCase();
-                        if (!List.of("open", "closed", "all").contains(issueState)) {
-                            logger.error("Invalid state '{}': must be 'open', 'closed', or 'all'", issueState);
-                            System.exit(1);
-                        }
-                        logger.debug("Parsed issue state: {}", issueState);
-                    } else {
-                        logger.error("Missing value for state option");
-                        System.exit(1);
-                    }
-                    break;
-                    
-                case "-l", "--labels":
-                    if (i + 1 < args.length) {
-                        String labelStr = args[++i];
-                        labelFilters = Arrays.stream(labelStr.split(","))
-                            .map(String::trim)
-                            .filter(s -> !s.isEmpty())
-                            .collect(ArrayList::new, ArrayList::add, ArrayList::addAll);
-                        logger.debug("Parsed labels: {}", labelFilters);
-                    } else {
-                        logger.error("Missing value for labels option");
-                        System.exit(1);
-                    }
-                    break;
-                    
-                case "--label-mode":
-                    if (i + 1 < args.length) {
-                        labelMode = args[++i].toLowerCase();
-                        if (!List.of("any", "all").contains(labelMode)) {
-                            logger.error("Invalid label mode '{}': must be 'any' or 'all'", labelMode);
-                            System.exit(1);
-                        }
-                        logger.debug("Parsed label mode: {}", labelMode);
-                    } else {
-                        logger.error("Missing value for label-mode option");
-                        System.exit(1);
-                    }
-                    break;
-                    
-                case "-h", "--help":
-                    // Help is handled separately
-                    break;
-                    
-                default:
-                    if (arg.startsWith("-")) {
-                        logger.warn("Unknown option: {}", arg);
-                    }
-                    break;
-            }
-        }
-    }
-    
-    private boolean isHelpRequested(String... args) {
-        for (String arg : args) {
-            if ("-h".equals(arg) || "--help".equals(arg)) {
-                return true;
-            }
-        }
-        return false;
-    }
-    
-    private void validateEnvironment() {
-        // Check for GitHub token
-        String githubToken = System.getenv("GITHUB_TOKEN");
-        if (githubToken == null || githubToken.trim().isEmpty()) {
-            logger.error("GITHUB_TOKEN environment variable is required");
-            logger.error("Please set your GitHub personal access token:");
-            logger.error("  export GITHUB_TOKEN=your_token_here");
-            System.exit(1);
-        }
+    private void applyParsedConfiguration(ArgumentParser.ParsedConfiguration config) {
+        this.repo = config.repository;
+        this.batchSize = config.batchSize;
+        this.dryRun = config.dryRun;
+        this.incremental = config.incremental;
+        this.zip = config.zip;
+        this.verbose = config.verbose;
+        this.clean = config.clean;
+        this.resume = config.resume;
+        this.issueState = config.issueState;
+        this.labelFilters = config.labelFilters;
+        this.labelMode = config.labelMode;
         
-        // Validate batch size
-        if (batchSize < 1 || batchSize > 1000) {
-            logger.error("Invalid batch size: {} (must be 1-1000)", batchSize);
-            System.exit(1);
+        // Enable debug logging if verbose is set
+        if (verbose) {
+            System.setProperty("logging.level.com.github.issues", "DEBUG");
         }
-        
-        // Validate repository format
-        if (!repo.contains("/") || repo.split("/").length != 2) {
-            logger.error("Invalid repository format: {} (expected: owner/repo)", repo);
-            System.exit(1);
-        }
-        
-        logger.info("Environment validation passed");
-    }
-    
-    private void validateConfiguration() {
-        List<String> errors = new ArrayList<>();
-        
-        // Validate repository format
-        if (repo == null || repo.trim().isEmpty()) {
-            errors.add("Repository cannot be empty");
-        } else if (!repo.matches("^[a-zA-Z0-9._-]+/[a-zA-Z0-9._-]+$")) {
-            errors.add("Repository must be in format 'owner/repo' (e.g., 'spring-projects/spring-ai')");
-        }
-        
-        // Validate batch size
-        if (batchSize <= 0) {
-            errors.add("Batch size must be positive (got: " + batchSize + ")");
-        } else if (batchSize > 1000) {
-            errors.add("Batch size too large (got: " + batchSize + ", max: 1000)");
-        }
-        
-        // Validate retry settings
-        if (maxRetries < 0) {
-            errors.add("Max retries must be non-negative (got: " + maxRetries + ")");
-        } else if (maxRetries > 10) {
-            errors.add("Max retries too large (got: " + maxRetries + ", max: 10)");
-        }
-        
-        if (retryDelay <= 0) {
-            errors.add("Retry delay must be positive (got: " + retryDelay + ")");
-        } else if (retryDelay > 60) {
-            errors.add("Retry delay too large (got: " + retryDelay + " seconds, max: 60 seconds)");
-        }
-        
-        // Validate large issue thresholds
-        if (largeIssueThreshold <= 0) {
-            errors.add("Large issue threshold must be positive (got: " + largeIssueThreshold + ")");
-        }
-        
-        if (sizeThreshold <= 0) {
-            errors.add("Size threshold must be positive (got: " + sizeThreshold + ")");
-        }
-        
-        // Validate issue state
-        if (!List.of("open", "closed", "all").contains(issueState.toLowerCase())) {
-            errors.add("Invalid issue state: " + issueState + " (must be 'open', 'closed', or 'all')");
-        }
-        
-        // Validate label mode
-        if (!List.of("any", "all").contains(labelMode.toLowerCase())) {
-            errors.add("Invalid label mode: " + labelMode + " (must be 'any' or 'all')");
-        }
-        
-        // Report validation errors
-        if (!errors.isEmpty()) {
-            logger.error("Configuration validation failed:");
-            for (String error : errors) {
-                logger.error("  - {}", error);
-            }
-            System.exit(1);
-        }
-        
-        logger.info("Configuration validation passed");
-    }
-    
-    private void showHelp() {
-        System.out.println("Usage: collect_github_issues.java [OPTIONS]");
-        System.out.println();
-        System.out.println("Collect GitHub issues from a repository with advanced filtering capabilities.");
-        System.out.println();
-        System.out.println("OPTIONS:");
-        System.out.println("    -h, --help              Show this help message");
-        System.out.println("    -r, --repo REPO         Repository in format owner/repo (default: " + properties.getDefaultRepository() + ")");
-        System.out.println("    -b, --batch-size SIZE   Issues per batch file (default: " + properties.getBatchSize() + ")");
-        System.out.println("    -d, --dry-run          Show what would be collected without doing it");
-        System.out.println("    -i, --incremental      Skip already collected issues");
-        System.out.println("    -z, --zip              Create zip archive of collected data");
-        System.out.println("    -v, --verbose          Enable verbose logging");
-        System.out.println("    --clean                Clean up previous collection data before starting (default)");
-        System.out.println("    --no-clean, --append  Keep previous collection data and append new data");
-        System.out.println("    --resume               Resume from last successful batch");
-        System.out.println();
-        System.out.println("FILTERING OPTIONS:");
-        System.out.println("    -s, --state <state>     Issue state: open, closed, all (default: " + properties.getDefaultState() + ")");
-        System.out.println("    -l, --labels <labels>   Comma-separated list of labels to filter by");
-        System.out.println("    --label-mode <mode>     Label matching mode: any, all (default: " + properties.getDefaultLabelMode() + ")");
-        System.out.println("                           Note: 'any' mode uses first label only due to API limitations");
-        System.out.println();
-        System.out.println("CONFIGURATION:");
-        System.out.println("    Configuration can be customized via application.yaml file");
-        System.out.println("    All settings under 'github.issues' prefix can be overridden");
-        System.out.println("    Command-line arguments take precedence over configuration file");
-        System.out.println();
-        System.out.println("ENVIRONMENT VARIABLES:");
-        System.out.println("    GITHUB_TOKEN           GitHub personal access token (required)");
-        System.out.println();
-        System.out.println("EXAMPLES:");
-        System.out.println("    # Basic usage");
-        System.out.println("    ./collect_github_issues.java --repo spring-projects/spring-ai");
-        System.out.println();
-        System.out.println("    # State filtering");
-        System.out.println("    ./collect_github_issues.java --state open --dry-run");
-        System.out.println("    ./collect_github_issues.java --state all --batch-size 50");
-        System.out.println();
-        System.out.println("    # Label filtering");
-        System.out.println("    ./collect_github_issues.java --labels bug");
-        System.out.println("    ./collect_github_issues.java --labels bug --no-clean  # Keep previous data");
-        System.out.println("    ./collect_github_issues.java --labels \"bug,priority:high\" --label-mode all");
-        System.out.println();
-        System.out.println("    # Combined filtering");
-        System.out.println("    ./collect_github_issues.java --state open --labels bug --verbose");
-        System.out.println("    ./collect_github_issues.java --state closed --labels documentation,enhancement");
-        System.out.println();
     }
 }
 

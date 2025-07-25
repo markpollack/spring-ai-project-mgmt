@@ -17,7 +17,13 @@ This is a Spring Boot Maven application for collecting GitHub issues with advanc
    - `GitHubConfig`: Spring beans for GitHub API clients (GitHub, RestClient, GraphQL, ObjectMapper)
    - `CollectionProperties`: @ConfigurationProperties with application defaults
 
-3. **CollectGithubIssues.java** - Main Spring Boot application with CommandLineRunner
+3. **ArgumentParser.java** - Command-line argument parsing and validation
+   - Pure Java implementation with no Spring dependencies
+   - `ParsedConfiguration`: Type-safe parsed argument results
+   - Comprehensive CLI argument support and validation
+   - Environment validation and help text generation
+
+4. **CollectGithubIssues.java** - Main Spring Boot application with CommandLineRunner
 
 ### Refactoring Status
 
@@ -25,9 +31,9 @@ This is a Spring Boot Maven application for collecting GitHub issues with advanc
 - ✅ Phase 0: JBang to Maven conversion using `jbang export portable`
 - ✅ Phase 1: DataModels.java extraction 
 - ✅ Phase 2: ConfigurationSupport.java extraction
+- ✅ Phase 3: ArgumentParser.java extraction
 
 **Remaining Phases:**
-- Phase 3: ArgumentParser.java extraction
 - Phase 4: GitHubServices.java extraction  
 - Phase 5: CollectionService.java extraction
 - Phase 6: Documentation completion
@@ -179,6 +185,13 @@ mvnd test -Dtest=DataModelsTest
 - Applied clean migration approach from Phase 1 (create new files first, then remove from main)
 - Prevented namespace conflicts through proper sequencing
 - Established comprehensive cleanup procedures for production data
+
+### Phase 3 Lessons Learned
+- Pure Java design with no Spring dependencies enables comprehensive plain JUnit testing
+- 70 tests executed successfully in under 5 seconds with no external dependencies
+- @ParameterizedTest excellent for CLI argument validation scenarios
+- Clean migration approach successfully applied: removed 270+ lines of parsing logic
+- ArgumentParser integration seamless with type-safe ParsedConfiguration class
 
 ### Future Phase Considerations
 - Continue applying clean migration approach for all extractions

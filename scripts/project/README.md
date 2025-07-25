@@ -36,6 +36,10 @@ This application uses a modular Spring Boot architecture with the following comp
 - **ConfigurationSupport.java**: Spring configuration classes and application properties
   - `GitHubConfig`: Spring beans for GitHub API clients (GitHub, RestClient, GraphQL, ObjectMapper)
   - `CollectionProperties`: Configuration properties with defaults for collection behavior
+- **ArgumentParser.java**: Command-line argument parsing and validation
+  - Pure Java implementation with comprehensive CLI argument support
+  - `ParsedConfiguration`: Type-safe parsed argument results
+  - Environment validation and help text generation
 - **CollectGithubIssues.java**: Main Spring Boot application class with CommandLineRunner
 
 ### Configuration Properties
