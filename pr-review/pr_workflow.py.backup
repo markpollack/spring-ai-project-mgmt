@@ -258,7 +258,7 @@ class PRAnalyzer:
             return False
     
     def generate_report(self, pr_number: str, dry_run: bool = False) -> Optional[Path]:
-        """Generate enhanced PR analysis report using context collection and AI-powered analysis"""
+        """Generate PR analysis report using Python-based analyzer"""
         
         # Check GitHub CLI authentication
         if not self.check_gh_auth():
@@ -273,73 +273,55 @@ class PRAnalyzer:
             return report_file
         
         Logger.info(f"🔍 Generating PR analysis report for PR #{pr_number}...")
-        Logger.info("Using enhanced analysis with context collection...")
+        Logger.info("Using Python-based analysis...")
         
         try:
-            # First collect context data
-            context_collector = self.config.script_dir / "pr_context_collector.py"
-            Logger.info("Collecting context data for enhanced report generation...")
-            context_result = subprocess.run(
-                ["python3", str(context_collector), pr_number], 
-                cwd=self.config.spring_ai_dir, 
-                capture_output=True, 
-                text=True, 
-                timeout=120
-            )
-
-            if context_result.returncode != 0:
-                Logger.error("Context collection failed - cannot generate enhanced report")
-                Logger.error(f"Context collection error: {context_result.stderr}")
+            # Use the Python report generator
+            python_generator = self.config.script_dir / "python_report_generator.py"
+            
+            if not python_generator.exists():
+                Logger.error(f"Python report generator not found: {python_generator}")
                 return None
             
-            Logger.success("✅ Context data collection completed")
-            
-            # Then generate enhanced report
-            enhanced_generator = self.config.script_dir / "enhanced_report_generator.py"
-            
-            if not enhanced_generator.exists():
-                Logger.error(f"Enhanced report generator not found: {enhanced_generator}")
-                return None
-            
-            # Execute enhanced report generator
-            Logger.info("Generating enhanced PR analysis report...")
+            # Execute Python report generator
+            Logger.info("Running Python-based PR analysis...")
             result = subprocess.run(
-                ["python3", str(enhanced_generator), pr_number], 
-                cwd=self.config.script_dir, 
-                capture_output=True, 
-                text=True, 
-                timeout=180
+                ["python3", str(python_generator), pr_number, str(report_file)],
+                cwd=self.config.spring_ai_dir,
+                capture_output=True,
+                text=True,
+                timeout=120  # 2 minute timeout
             )
             
             if result.returncode == 0:
-                Logger.success(f"📋 Enhanced PR analysis report generated: {report_file}")
+                Logger.success(f"📋 PR analysis report generated: {report_file}")
                 
                 # Show report stats
                 if report_file.exists():
                     with open(report_file, 'r') as f:
                         line_count = sum(1 for _ in f)
-                    Logger.info(f"Enhanced report contains {line_count} lines")
+                    Logger.info(f"Report contains {line_count} lines")
                     
                     # Show preview
-                    Logger.info("Enhanced report preview:")
+                    Logger.info("Report preview:")
                     print("=" * 50)
                     with open(report_file, 'r') as f:
                         preview_lines = f.readlines()[10:25]  # Skip header, show next 15 lines
                         for line in preview_lines:
                             print(line.rstrip())
                     print("=" * 50)
-                    Logger.info(f"Full enhanced report: {report_file}")
+                    Logger.info(f"Full report: {report_file}")
                 
                 return report_file
             else:
-                Logger.error("Enhanced PR analysis failed")
-                Logger.error(f"Enhanced report generation error: {result.stderr}")
+                Logger.error("Python PR analysis failed")
+                Logger.error(f"Error: {result.stderr}")
                 if result.stdout:
-                    Logger.error(f"Enhanced report output: {result.stdout}")
+                    Logger.error(f"Output: {result.stdout}")
                 return None
                 
         except subprocess.TimeoutExpired:
-            Logger.error("Enhanced PR analysis timed out (3 minutes)")
+            Logger.error("Python PR analysis timed out (2 minutes)")
             return None
         except Exception as e:
             Logger.error(f"Error generating report: {e}")
@@ -361,18 +343,8 @@ class PRWorkflow:
         config.plans_dir.mkdir(exist_ok=True)
         config.reports_dir.mkdir(exist_ok=True)
     
-    def run_command(self, cmd: List[str], description: str, cwd: Optional[Path] = None, dry_run: bool = False, 
-                   suppress_output: bool = False, log_file: Optional[Path] = None) -> bool:
-        """Run a command with logging
-        
-        Args:
-            cmd: Command to run
-            description: Description for logging
-            cwd: Working directory
-            dry_run: Whether to actually run the command
-            suppress_output: Whether to suppress stdout/stderr from terminal
-            log_file: Optional file to write output to
-        """
+    def run_command(self, cmd: List[str], description: str, cwd: Optional[Path] = None, dry_run: bool = False) -> bool:
+        """Run a command with logging"""
         if dry_run:
             Logger.info(f"[DRY RUN] Would execute: {description}")
             Logger.info(f"[DRY RUN] Command: {' '.join(cmd)}")
@@ -380,32 +352,10 @@ class PRWorkflow:
         
         Logger.info(f"Executing: {description}")
         try:
-            if suppress_output:
-                # Create logs directory if it doesn't exist
-                if log_file:
-                    log_file.parent.mkdir(parents=True, exist_ok=True)
-                    with open(log_file, 'w') as f:
-                        f.write(f"Command: {' '.join(cmd)}\n")
-                        f.write(f"Working directory: {cwd or 'current'}\n")
-                        f.write(f"Description: {description}\n")
-                        f.write("-" * 50 + "\n")
-                        f.flush()
-                        
-                        result = subprocess.run(cmd, cwd=cwd, check=True, 
-                                              stdout=f, stderr=subprocess.STDOUT, text=True)
-                else:
-                    # Suppress output completely
-                    result = subprocess.run(cmd, cwd=cwd, check=True, 
-                                          capture_output=True, text=True)
-                return True
-            else:
-                # Standard behavior - output goes to terminal
-                subprocess.run(cmd, cwd=cwd, check=True)
-                return True
+            subprocess.run(cmd, cwd=cwd, check=True)
+            return True
         except subprocess.CalledProcessError as e:
             Logger.error(f"Command failed: {' '.join(cmd)}")
-            if suppress_output and log_file and log_file.exists():
-                Logger.error(f"Check log file for details: {log_file}")
             return False
     
     def setup_repository(self, dry_run: bool = False) -> bool:
@@ -504,10 +454,6 @@ class PRWorkflow:
             Logger.info("[DRY RUN] Would apply Spring Java formatter")
             return True
         
-        # Create log file for formatter output
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        log_file = self.config.script_dir / "logs" / f"java-formatter-{timestamp}.log"
-        
         # Try different formatter commands in order of preference
         formatter_commands = [
             (["mvnd", "spring-javaformat:apply"], "Apply formatter with mvnd"),
@@ -525,9 +471,8 @@ class PRWorkflow:
                 if not shutil.which(cmd[0]):
                     continue
             
-            Logger.info(f"Using {cmd[0]} for formatting (output logged to {log_file.name})...")
-            if self.run_command(cmd, description, cwd=self.config.spring_ai_dir, 
-                              suppress_output=True, log_file=log_file):
+            Logger.info(f"Using {cmd[0]} for formatting...")
+            if self.run_command(cmd, description, cwd=self.config.spring_ai_dir):
                 Logger.success("✅ Java formatting applied successfully")
                 return True
             else:
@@ -719,8 +664,6 @@ class PRWorkflow:
             # Generated plans
             self.config.plans_dir / f"plan-pr-{pr_number}.md",
             self.config.plans_dir / f"enhanced-plan-pr-{pr_number}.md",
-            # Log files directory
-            self.config.script_dir / "logs",
             # Spring AI repository (for complete fresh start)
             self.config.spring_ai_dir,
         ]
@@ -1197,7 +1140,7 @@ File content with conflicts:"""
         return True
     
     def run_report_only(self, pr_number: str, dry_run: bool = False) -> bool:
-        """Generate enhanced PR analysis report with AI-powered analysis (assumes PR is already prepared)"""
+        """Generate only the PR analysis report (assumes PR is already prepared)"""
         Logger.info(f"📊 Generating PR analysis report for PR #{pr_number}")
         
         if dry_run:
@@ -1217,14 +1160,37 @@ File content with conflicts:"""
             Logger.warn(f"Current branch is '{current_branch}', expected '{expected_branch}'")
             Logger.warn("You may be generating a report for the wrong PR")
         
-        # Generate the enhanced report (now the only report)
+        # Generate the basic report
         report_file = self.pr_analyzer.generate_report(pr_number, dry_run)
         
+        # Generate the enhanced report
+        enhanced_report_file = None
+        if not dry_run:
+            try:
+                Logger.info("🤖 Generating enhanced AI-powered analysis report...")
+                enhanced_result = subprocess.run([
+                    sys.executable, "enhanced_report_generator.py", pr_number
+                ], capture_output=True, text=True, cwd=self.config.script_dir)
+                
+                if enhanced_result.returncode == 0:
+                    enhanced_report_file = self.config.reports_dir / f"enhanced-review-pr-{pr_number}.md"
+                    if enhanced_report_file.exists():
+                        Logger.success(f"🤖 Enhanced analysis report generated: {enhanced_report_file}")
+                    else:
+                        Logger.warn("Enhanced report generator completed but file not found")
+                else:
+                    Logger.warn(f"Enhanced report generation failed: {enhanced_result.stderr.strip()}")
+            except Exception as e:
+                Logger.warn(f"Error generating enhanced report: {e}")
+        
         if report_file:
-            Logger.success(f"📋 Enhanced PR analysis report generated: {report_file}")
+            success_msg = f"📋 PR analysis report generated: {report_file}"
+            if enhanced_report_file and enhanced_report_file.exists():
+                success_msg += f"\n📋 Enhanced analysis report generated: {enhanced_report_file}"
+            Logger.success(success_msg)
             return True
         else:
-            Logger.error("❌ Enhanced report generation failed")
+            Logger.error("❌ Report generation failed")
             return False
     
     def run_test_only(self, pr_number: str, dry_run: bool = False) -> bool:

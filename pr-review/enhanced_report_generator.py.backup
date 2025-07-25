@@ -77,7 +77,7 @@ class EnhancedReportGenerator:
             report_content = self._generate_report_content(report_data)
             
             # Save enhanced report
-            report_file = self.reports_dir / f"review-pr-{pr_number}.md"
+            report_file = self.reports_dir / f"enhanced-review-pr-{pr_number}.md"
             with open(report_file, 'w', encoding='utf-8') as f:
                 f.write(report_content)
             

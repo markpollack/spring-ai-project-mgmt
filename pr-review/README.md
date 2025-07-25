@@ -101,17 +101,18 @@ When you run `python pr_workflow.py 3386`, here's what happens automatically:
    - Architecture impact and breaking changes
    - Implementation quality and patterns
    - Testing adequacy and coverage
-4. **Report Generation**: Creates two comprehensive reports:
-   - **Basic Report**: Code quality analysis, issues, and recommendations
-   - **Enhanced Report**: Full AI analysis with conversation insights, risk assessment, and strategic recommendations
+4. **Report Generation**: Creates comprehensive AI-powered analysis report with:
+   - Full conversation insights and problem understanding
+   - Technical solution assessment and risk analysis  
+   - Code quality analysis with recommendations
+   - Strategic recommendations and action items
 
 ## 📊 Generated Outputs
 
 ### Reports Directory Structure
 ```
 reports/
-├── review-pr-3386.md              # Basic code quality analysis report
-├── enhanced-review-pr-3386.md     # Comprehensive AI-powered analysis report  
+├── review-pr-3386.md              # Comprehensive AI-powered analysis report
 └── test-logs-pr-3386/            # Detailed test execution logs and results
     ├── test-summary.md            # Test execution summary
     └── *.log                      # Individual test execution logs
@@ -119,7 +120,7 @@ reports/
 
 ### Report Contents
 
-**Enhanced Analysis Report includes**:
+**AI-Powered Analysis Report includes**:
 - 🎯 **Problem & Solution Overview**: AI-generated summary of what the PR solves
 - 📝 **Issue Context Analysis**: Understanding from GitHub discussions and requirements
 - 🔍 **Solution Assessment**: Technical analysis of implementation approach
@@ -225,13 +226,10 @@ done
    python pr_workflow.py 3386
    ```
 
-4. **Review Generated Reports**:
+4. **Review Generated Report**:
    ```bash
-   # Check basic report
+   # Check comprehensive AI-powered analysis report
    cat reports/review-pr-3386.md
-   
-   # Check comprehensive AI analysis
-   cat reports/enhanced-review-pr-3386.md
    ```
 
 ---

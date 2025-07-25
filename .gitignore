@@ -43,3 +43,4 @@ pr-review/reports/test-logs-pr-*/
 pr-review/reports/review-pr-*.md
 pr-review/reports/enhanced-review-pr-*.md
 pr-review/plans/plan-pr-*.md
+pr-review/logs/
