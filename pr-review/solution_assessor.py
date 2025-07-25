@@ -349,8 +349,8 @@ class AIPoweredSolutionAssessor:
         try:
             Logger.info("🤖 Running Claude Code solution assessment...")
             result = subprocess.run([
-                'claude', prompt
-            ], capture_output=True, text=True, timeout=300, cwd=self.working_dir)
+                'claude'
+            ], input=prompt, capture_output=True, text=True, timeout=300, cwd=self.working_dir)
             
             if result.returncode == 0:
                 return result.stdout

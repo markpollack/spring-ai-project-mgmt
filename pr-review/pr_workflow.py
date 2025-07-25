@@ -1340,58 +1340,9 @@ File content with conflicts:"""
         
         return None
     
-    def _ensure_clean_compilation(self) -> bool:
-        """Ensure clean compilation, fixing compilation errors if needed"""
-        Logger.info("🔧 Checking for compilation errors...")
-        
-        # Try to compile first
-        try:
-            os.chdir(self.config.spring_ai_dir)
-            result = subprocess.run([
-                "mvnd", "compile", "-q", "-Dmaven.javadoc.skip=true"
-            ], capture_output=True, text=True, timeout=300)
-            
-            if result.returncode == 0:
-                Logger.success("✅ Clean compilation achieved")
-                return True
-                
-            Logger.warn("❌ Compilation errors detected, attempting to fix...")
-            
-            # Use Claude Code to fix compilation errors
-            resolver = CompilationErrorResolver()
-            max_iterations = 3
-            
-            for iteration in range(max_iterations):
-                Logger.info(f"🔄 Compilation fix attempt {iteration + 1}/{max_iterations}")
-                
-                if resolver.resolve_compilation_errors(str(self.config.spring_ai_dir)):
-                    # Try compiling again
-                    result = subprocess.run([
-                        "mvnd", "compile", "-q", "-Dmaven.javadoc.skip=true"
-                    ], capture_output=True, text=True, timeout=300)
-                    
-                    if result.returncode == 0:
-                        Logger.success(f"✅ Compilation fixed after {iteration + 1} iteration(s)")
-                        return True
-                else:
-                    Logger.warn(f"Failed to resolve compilation errors in iteration {iteration + 1}")
-                    
-            Logger.error("❌ Unable to fix compilation errors after maximum iterations")
-            return False
-            
-        except Exception as e:
-            Logger.error(f"❌ Error during compilation check: {e}")
-            return False
-    
     def run_changed_tests(self, pr_number: str) -> bool:
         """Run tests for files that changed in the PR"""
         Logger.info("🧪 Running tests for changed test files...")
-        
-        # First ensure clean compilation before running tests
-        Logger.info("🔧 Ensuring clean compilation before running tests...")
-        if not self._ensure_clean_compilation():
-            Logger.error("❌ Failed to achieve clean compilation - cannot run tests")
-            return False
         
         test_files = self.get_changed_test_files(pr_number)
         if not test_files:
@@ -1429,6 +1380,52 @@ File content with conflicts:"""
             Logger.error("❌ Java formatter failed before tests - code will not pass CI")
             return False
         
+        # First do a complete build to ensure all dependencies are available
+        Logger.info("🔨 Performing complete build to ensure all dependencies are available...")
+        
+        # Create timestamped log file for build output
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        build_log_file = self.config.script_dir / "logs" / f"full-build-{timestamp}.log"
+        build_log_file.parent.mkdir(exist_ok=True)
+        
+        full_build_cmd = ["mvnd", "compile", "-Dmaven.javadoc.skip=true"]
+        
+        try:
+            build_result = subprocess.run(
+                full_build_cmd,
+                cwd=self.config.spring_ai_dir,
+                capture_output=True,
+                text=True,
+                timeout=600  # 10 minutes for full build
+            )
+            
+            # Always save build output to log file
+            with open(build_log_file, 'w') as f:
+                f.write(f"Build Command: {' '.join(full_build_cmd)}\n")
+                f.write(f"Working Directory: {self.config.spring_ai_dir}\n")
+                f.write(f"Return Code: {build_result.returncode}\n")
+                f.write("=" * 80 + "\n")
+                f.write("STDOUT:\n")
+                f.write(build_result.stdout)
+                f.write("\n" + "=" * 80 + "\n")
+                f.write("STDERR:\n")
+                f.write(build_result.stderr)
+            
+            if build_result.returncode != 0:
+                Logger.error("❌ Full build failed - cannot run tests")
+                Logger.error(f"Build output saved to: {build_log_file}")
+                return False
+            else:
+                Logger.success("✅ Full build completed successfully")
+                Logger.info(f"Build output logged to: {build_log_file}")
+                
+        except subprocess.TimeoutExpired:
+            Logger.error("❌ Full build timed out")
+            return False
+        except Exception as e:
+            Logger.error(f"❌ Full build failed with exception: {e}")
+            return False
+
         # Run tests by module
         success = True
         test_results = []
@@ -1442,18 +1439,22 @@ File content with conflicts:"""
                 # Create log file for this test
                 log_file = test_logs_dir / f"{test_class.replace('.', '_')}.log"
                 
-                # Run single test class using mvnd with full output
-                cmd = [
+                # Run single test class using mvnd from project root (dependencies already built)
+                # Get relative module path from project root
+                relative_module = module_path.relative_to(self.config.spring_ai_dir)
+                
+                # Run the specific test in the target module (dependencies already compiled)
+                test_cmd = [
                     "mvnd", "test", 
+                    f"-pl", str(relative_module),
                     f"-Dtest={test_class}",
-                    "-Dmaven.javadoc.skip=true",
-                    "-X"  # Debug output for more details
+                    "-Dmaven.javadoc.skip=true"
                 ]
                 
                 try:
                     result = subprocess.run(
-                        cmd,
-                        cwd=module_path,
+                        test_cmd,
+                        cwd=self.config.spring_ai_dir,  # Run from project root
                         capture_output=True,
                         text=True,
                         timeout=600  # 10 minute timeout for integration tests
@@ -1461,7 +1462,7 @@ File content with conflicts:"""
                     
                     # Save full test output to log file
                     with open(log_file, 'w') as f:
-                        f.write(f"Test Command: {' '.join(cmd)}\n")
+                        f.write(f"Test Command: {' '.join(test_cmd)}\n")
                         f.write(f"Working Directory: {module_path}\n")
                         f.write(f"Return Code: {result.returncode}\n")
                         f.write("=" * 80 + "\n")

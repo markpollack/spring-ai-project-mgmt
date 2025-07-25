@@ -250,19 +250,11 @@ class AIPoweredConversationAnalyzer:
     def _execute_claude_analysis(self, prompt: str) -> Optional[str]:
         """Execute analysis using Claude Code"""
         try:
-            # Create temporary file for the prompt
-            with tempfile.NamedTemporaryFile(mode='w', suffix='.md', delete=False, encoding='utf-8') as temp_file:
-                temp_file.write(prompt)
-                temp_file_path = temp_file.name
-            
             # Execute claude code with the prompt as stdin
             Logger.info("🤖 Running Claude Code analysis...")
             result = subprocess.run([
-                'claude', prompt
-            ], capture_output=True, text=True, timeout=300, cwd=self.working_dir)  # 5 minute timeout
-            
-            # Clean up temp file
-            Path(temp_file_path).unlink(missing_ok=True)
+                'claude'
+            ], input=prompt, capture_output=True, text=True, timeout=300, cwd=self.working_dir)  # 5 minute timeout
             
             if result.returncode == 0:
                 return result.stdout
