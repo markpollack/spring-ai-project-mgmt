@@ -64,6 +64,8 @@ Status: {pr_status}
 
 ## ⚠️ Risk Assessment & Concerns
 
+{risk_assessment_method_notice}
+
 ### Identified Risk Factors
 {risk_factors_section}
 

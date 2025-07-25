@@ -381,22 +381,60 @@ class PRWorkflow:
         Logger.info(f"Executing: {description}")
         try:
             if suppress_output:
+                # Enhanced mvnd output suppression using your colleague's solution
+                if cmd[0] == 'mvnd':
+                    # Add mvnd-specific suppression flags
+                    enhanced_cmd = cmd + [
+                        '-q',                        # Quiet mode  
+                        '-Dmvnd.rollingWindowSize=0' # Disable rolling window display
+                    ]
+                    
+                    # Set environment variables for complete suppression
+                    env = os.environ.copy()
+                    env.update({
+                        'TERM': 'dumb',
+                        'NO_COLOR': '1',
+                        'CI': 'true',                           # Many tools detect CI and disable fancy output
+                        'MAVEN_OPTS': '-Djansi.force=false',
+                        'MVND_TERMINAL': 'false'                # Disable mvnd terminal features
+                    })
+                else:
+                    enhanced_cmd = cmd
+                    env = None
+                
                 # Create logs directory if it doesn't exist
                 if log_file:
                     log_file.parent.mkdir(parents=True, exist_ok=True)
                     with open(log_file, 'w') as f:
-                        f.write(f"Command: {' '.join(cmd)}\n")
+                        f.write(f"Command: {' '.join(enhanced_cmd)}\n")
                         f.write(f"Working directory: {cwd or 'current'}\n")
                         f.write(f"Description: {description}\n")
                         f.write("-" * 50 + "\n")
                         f.flush()
                         
-                        result = subprocess.run(cmd, cwd=cwd, check=True, 
-                                              stdout=f, stderr=subprocess.STDOUT, text=True)
+                        result = subprocess.run(
+                            enhanced_cmd, 
+                            cwd=cwd, 
+                            check=True, 
+                            stdout=f, 
+                            stderr=f,
+                            stdin=subprocess.DEVNULL,
+                            start_new_session=True,
+                            env=env,
+                            text=True
+                        )
                 else:
                     # Suppress output completely
-                    result = subprocess.run(cmd, cwd=cwd, check=True, 
-                                          capture_output=True, text=True)
+                    result = subprocess.run(
+                        enhanced_cmd, 
+                        cwd=cwd, 
+                        check=True, 
+                        capture_output=True, 
+                        stdin=subprocess.DEVNULL,
+                        start_new_session=True,
+                        env=env,
+                        text=True
+                    )
                 return True
             else:
                 # Standard behavior - output goes to terminal
@@ -459,41 +497,21 @@ class PRWorkflow:
         """Checkout the PR"""
         Logger.info(f"Checking out PR #{pr_number}...")
         
-        pr_branch = f"pr-{pr_number}"
-        
         if dry_run:
-            Logger.info(f"[DRY RUN] Would checkout PR #{pr_number} into branch {pr_branch}")
+            Logger.info(f"[DRY RUN] Would checkout PR #{pr_number}")
             return True
         
-        # Check if PR branch already exists
-        try:
-            self.git.run_git(["show-ref", "--verify", "--quiet", f"refs/heads/{pr_branch}"])
-            # Branch exists - automatically clean it up for workflow runs
-            Logger.info(f"Branch {pr_branch} already exists, cleaning up automatically...")
-            
-            # Check if we're currently on that branch
-            current_branch = self.git.get_current_branch()
-            if current_branch == pr_branch:
-                Logger.info("Switching to main branch before cleanup...")
-                self.git.run_git(["checkout", self.config.main_branch])
-            
-            # Delete the existing branch
-            self.git.run_git(["branch", "-D", pr_branch])
-            Logger.info(f"Removed existing branch {pr_branch}")
-            
-        except subprocess.CalledProcessError:
-            # Branch doesn't exist, which is good
-            pass
-        
-        # Checkout the PR using GitHub CLI
+        # Checkout the PR using GitHub CLI - this will create/switch to the actual branch
         gh_cmd = ["gh", "pr", "checkout", pr_number]
         if not self.run_command(gh_cmd, f"Checkout PR #{pr_number}", cwd=self.config.spring_ai_dir):
             return False
         
-        # Rename branch to our convention if gh created a different name
-        current_branch = self.git.get_current_branch()
-        if current_branch != pr_branch:
-            self.git.run_git(["branch", "-m", current_branch, pr_branch])
+        # Get the actual branch name that was created/checked out
+        actual_branch = self.git.run_git(["rev-parse", "--abbrev-ref", "HEAD"], capture_output=True).stdout.strip()
+        Logger.info(f"Checked out to branch: {actual_branch}")
+        
+        # Store the actual branch name for cleanup purposes
+        self.current_pr_branch = actual_branch
         
         return True
     def apply_java_formatter(self, dry_run: bool = False) -> bool:
@@ -508,22 +526,17 @@ class PRWorkflow:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         log_file = self.config.script_dir / "logs" / f"java-formatter-{timestamp}.log"
         
-        # Try different formatter commands in order of preference
+        # Use mvnd for fastest formatting
         formatter_commands = [
-            (["mvnd", "spring-javaformat:apply"], "Apply formatter with mvnd"),
-            (["./mvnw", "spring-javaformat:apply"], "Apply formatter with mvnw"),
-            (["mvn", "spring-javaformat:apply"], "Apply formatter with system mvn")
+            (["mvnd", "spring-javaformat:apply"], "Apply formatter with mvnd")
         ]
         
         for cmd, description in formatter_commands:
-            if cmd[0] == "./mvnw":
-                # Check if mvnw exists
-                if not (self.config.spring_ai_dir / "mvnw").exists():
-                    continue
-            elif cmd[0] in ["mvnd", "mvn"]:
-                # Check if command exists
-                if not shutil.which(cmd[0]):
-                    continue
+            if cmd[0] == "mvnd":
+                # Check if mvnd exists
+                if not shutil.which("mvnd"):
+                    Logger.error("mvnd not found - please install Maven Daemon for fastest formatting")
+                    return False
             
             Logger.info(f"Using {cmd[0]} for formatting (output logged to {log_file.name})...")
             if self.run_command(cmd, description, cwd=self.config.spring_ai_dir, 
@@ -708,8 +721,6 @@ class PRWorkflow:
         Logger.info(f"🧹 Cleaning up PR #{pr_number} workspace...")
         
         cleanup_items = [
-            # Git branches (handled separately)
-            f"pr-{pr_number}",
             # Build cache files
             self.config.script_dir / f".build_cache_pr_{pr_number}",
             # Generated reports
@@ -739,23 +750,25 @@ class PRWorkflow:
         
         # Clean up git branch - skip if spring-ai directory will be removed
         if not (self.config.spring_ai_dir in cleanup_items[1:]):
-            branch_name = f"pr-{pr_number}"
+            # Use the actual branch name if available, otherwise fall back to pr-{number} pattern
+            branch_name = getattr(self, 'current_pr_branch', f"pr-{pr_number}")
             try:
                 # Check if spring-ai directory exists first
                 if self.config.spring_ai_dir.exists():
                     # Check if branch exists
-                    result = self.git.run_git(["show-ref", "--verify", "--quiet", f"refs/heads/{branch_name}"], capture_output=True)
-                    # Branch exists, delete it
-                    current_branch = self.git.run_git(["rev-parse", "--abbrev-ref", "HEAD"], capture_output=True).stdout.strip()
-                    
-                    if current_branch == branch_name:
-                        # Switch to main branch first
-                        Logger.info(f"Switching from {branch_name} to main branch...")
-                        self.git.run_git(["checkout", self.config.main_branch])
-                    
-                    Logger.info(f"Deleting git branch: {branch_name}")
-                    self.git.run_git(["branch", "-D", branch_name])
-                    cleaned_count += 1
+                    result = self.git.run_git(["show-ref", "--verify", "--quiet", f"refs/heads/{branch_name}"], check=False, capture_output=True)
+                    if result.returncode == 0:
+                        # Branch exists, delete it
+                        current_branch = self.git.run_git(["rev-parse", "--abbrev-ref", "HEAD"], capture_output=True).stdout.strip()
+                        
+                        if current_branch == branch_name:
+                            # Switch to main branch first
+                            Logger.info(f"Switching from {branch_name} to main branch...")
+                            self.git.run_git(["checkout", self.config.main_branch])
+                        
+                        Logger.info(f"Deleting git branch: {branch_name}")
+                        self.git.run_git(["branch", "-D", branch_name])
+                        cleaned_count += 1
                 else:
                     Logger.info("Spring AI directory doesn't exist (already clean)")
                     
@@ -831,12 +844,10 @@ class PRWorkflow:
             Logger.error("❌ Compilation errors could not be resolved")
             return False
         
-        # Try different build tools in order of preference
+        # Use mvnd for fastest builds (with fb as backup)
         build_commands = [
             (["fb"], "Run compilation check with fb alias"),
-            (["mvnd", "clean", "package", "-Dmaven.javadoc.skip=true", "-DskipTests"], "Run Maven build with mvnd"),
-            (["./mvnw", "clean", "package", "-Dmaven.javadoc.skip=true", "-DskipTests"], "Run Maven build with mvnw"),
-            (["mvn", "clean", "package", "-Dmaven.javadoc.skip=true", "-DskipTests"], "Run Maven build with system mvn")
+            (["mvnd", "clean", "install", "-Dmaven.javadoc.skip=true", "-DskipTests"], "Run Maven build with mvnd")
         ]
         
         for cmd, description in build_commands:
@@ -844,21 +855,41 @@ class PRWorkflow:
                 # Check if fb alias exists
                 if not shutil.which("fb"):
                     continue
-            elif cmd[0] == "./mvnw":
-                # Check if mvnw exists
-                if not (self.config.spring_ai_dir / "mvnw").exists():
-                    continue
-            elif cmd[0] in ["mvnd", "mvn"]:
-                # Check if command exists
-                if not shutil.which(cmd[0]):
+            elif cmd[0] == "mvnd":
+                # Check if mvnd exists
+                if not shutil.which("mvnd"):
+                    Logger.error("mvnd not found - please install Maven Daemon for fastest builds")
                     continue
             
             Logger.info(f"Using {cmd[0]} for build...")
-            if self.run_command(cmd, description, cwd=self.config.spring_ai_dir):
+            
+            # Create timestamped log file for build output
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            build_log_file = self.config.script_dir / "logs" / f"build-check-{timestamp}.log"
+            
+            if self.run_command(cmd, description, cwd=self.config.spring_ai_dir, 
+                               suppress_output=True, log_file=build_log_file):
+                Logger.success(f"✅ Build with {cmd[0]} completed successfully")
+                Logger.info(f"Build output logged to: {build_log_file}")
                 self.build_cache.save_build_success(pr_number)
                 return True
             else:
-                Logger.warn(f"Build with {cmd[0]} failed, trying next option...")
+                Logger.error(f"❌ Build with {cmd[0]} failed!")
+                Logger.error(f"Check build log for details: {build_log_file}")
+                
+                # Show last few lines of build log for immediate debugging
+                if build_log_file.exists():
+                    try:
+                        with open(build_log_file, 'r') as f:
+                            lines = f.readlines()
+                            if lines:
+                                Logger.error("Last 10 lines from build log:")
+                                for line in lines[-10:]:
+                                    Logger.error(f"  {line.rstrip()}")
+                    except Exception as e:
+                        Logger.error(f"Could not read build log: {e}")
+                
+                Logger.warn(f"Trying next build option...")
         
         Logger.error("All build options failed")
         return False
@@ -1209,13 +1240,27 @@ File content with conflicts:"""
             Logger.error("Please run the full workflow first to prepare the PR")
             return False
         
-        # Check if we're on the expected PR branch
+        # Validate we're working with the correct PR by checking GitHub
         current_branch = self.git.get_current_branch()
-        expected_branch = f"pr-{pr_number}"
         
-        if current_branch != expected_branch:
-            Logger.warn(f"Current branch is '{current_branch}', expected '{expected_branch}'")
-            Logger.warn("You may be generating a report for the wrong PR")
+        try:
+            # Get the actual PR branch name from GitHub
+            result = subprocess.run([
+                "gh", "pr", "view", pr_number, "--repo", self.config.spring_ai_repo,
+                "--json", "headRefName"
+            ], cwd=self.config.spring_ai_dir, capture_output=True, text=True, check=True)
+            
+            pr_data = json.loads(result.stdout)
+            actual_pr_branch = pr_data.get("headRefName")
+            
+            if actual_pr_branch and current_branch != actual_pr_branch:
+                Logger.warn(f"Current branch is '{current_branch}', but PR #{pr_number} is from branch '{actual_pr_branch}'")
+                Logger.warn("You may be generating a report for the wrong PR or branch")
+                Logger.info(f"Consider running: gh pr checkout {pr_number}")
+                
+        except (subprocess.CalledProcessError, json.JSONDecodeError, KeyError) as e:
+            Logger.warn(f"Could not validate PR branch from GitHub: {e}")
+            Logger.info(f"Current branch: '{current_branch}' - ensure this matches PR #{pr_number}")
         
         # Generate the enhanced report (now the only report)
         report_file = self.pr_analyzer.generate_report(pr_number, dry_run)
@@ -1388,32 +1433,62 @@ File content with conflicts:"""
         build_log_file = self.config.script_dir / "logs" / f"full-build-{timestamp}.log"
         build_log_file.parent.mkdir(exist_ok=True)
         
-        full_build_cmd = ["mvnd", "compile", "-Dmaven.javadoc.skip=true"]
+        full_build_cmd = [
+            "mvnd", "install", 
+            "-B",  # Batch mode - disable fancy output
+            "-U",  # Force update snapshots - ignore cached dependency failures
+            "--no-transfer-progress",  # Disable transfer progress
+            "-Dmaven.javadoc.skip=true",
+            "-DskipTests",  # Skip tests in dependency build - we'll run them separately
+            "-Djansi.force=false",  # Disable ANSI escape sequences
+            "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn"  # Suppress download progress
+        ]
         
         try:
-            build_result = subprocess.run(
-                full_build_cmd,
-                cwd=self.config.spring_ai_dir,
-                capture_output=True,
-                text=True,
-                timeout=600  # 10 minutes for full build
-            )
+            # Set environment variables to disable terminal features
+            env = os.environ.copy()
+            env.update({
+                'TERM': 'dumb',           # Disable terminal capabilities
+                'NO_COLOR': '1',          # Disable color output
+                'MAVEN_OPTS': '-Djansi.force=false -Dorg.slf4j.simpleLogger.showDateTime=true'
+            })
             
-            # Always save build output to log file
-            with open(build_log_file, 'w') as f:
-                f.write(f"Build Command: {' '.join(full_build_cmd)}\n")
-                f.write(f"Working Directory: {self.config.spring_ai_dir}\n")
-                f.write(f"Return Code: {build_result.returncode}\n")
-                f.write("=" * 80 + "\n")
-                f.write("STDOUT:\n")
-                f.write(build_result.stdout)
-                f.write("\n" + "=" * 80 + "\n")
-                f.write("STDERR:\n")
-                f.write(build_result.stderr)
+            # Comprehensive mvnd output suppression
+            with open(build_log_file, 'w') as log_f:
+                log_f.write(f"Build Command: {' '.join(full_build_cmd)}\n")
+                log_f.write(f"Working Directory: {self.config.spring_ai_dir}\n")
+                log_f.write("=" * 80 + "\n")
+                log_f.flush()
+                
+                build_result = subprocess.run(
+                    full_build_cmd,
+                    cwd=self.config.spring_ai_dir,
+                    stdout=log_f,              # Redirect stdout to log file
+                    stderr=log_f,              # Redirect stderr to log file  
+                    stdin=subprocess.DEVNULL,   # Close stdin
+                    start_new_session=True,     # Detach from terminal session
+                    env=env,                   # Use modified environment
+                    timeout=600  # 10 minutes for full build
+                )
+                
+                log_f.write(f"\n{'=' * 80}\n")
+                log_f.write(f"Return Code: {build_result.returncode}\n")
             
             if build_result.returncode != 0:
                 Logger.error("❌ Full build failed - cannot run tests")
                 Logger.error(f"Build output saved to: {build_log_file}")
+                
+                # Show last few lines of build log for immediate debugging
+                try:
+                    with open(build_log_file, 'r') as f:
+                        lines = f.readlines()
+                        if lines:
+                            Logger.error("Last 10 lines from full build log:")
+                            for line in lines[-10:]:
+                                Logger.error(f"  {line.rstrip()}")
+                except Exception as e:
+                    Logger.error(f"Could not read full build log: {e}")
+                
                 return False
             else:
                 Logger.success("✅ Full build completed successfully")
@@ -1447,6 +1522,7 @@ File content with conflicts:"""
                 test_cmd = [
                     "mvnd", "test", 
                     f"-pl", str(relative_module),
+                    "-U",  # Force update snapshots - ignore cached dependency failures
                     f"-Dtest={test_class}",
                     "-Dmaven.javadoc.skip=true"
                 ]
@@ -1490,7 +1566,7 @@ File content with conflicts:"""
                 except subprocess.TimeoutExpired:
                     Logger.error(f"❌ {test_class} - TIMEOUT (10 minutes)")
                     with open(log_file, 'w') as f:
-                        f.write(f"Test Command: {' '.join(cmd)}\n")
+                        f.write(f"Test Command: {' '.join(test_cmd)}\n")
                         f.write(f"Working Directory: {module_path}\n")
                         f.write("STATUS: TIMEOUT after 10 minutes\n")
                     test_results.append((test_class, "TIMEOUT", str(log_file)))
@@ -1498,7 +1574,7 @@ File content with conflicts:"""
                 except Exception as e:
                     Logger.error(f"❌ {test_class} - ERROR: {e}")
                     with open(log_file, 'w') as f:
-                        f.write(f"Test Command: {' '.join(cmd)}\n")
+                        f.write(f"Test Command: {' '.join(test_cmd)}\n")
                         f.write(f"Working Directory: {module_path}\n")
                         f.write(f"ERROR: {e}\n")
                     test_results.append((test_class, "ERROR", str(log_file)))

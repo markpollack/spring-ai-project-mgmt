@@ -221,41 +221,68 @@ class EnhancedReportGenerator:
             return {}
 
     def _perform_code_analysis(self, pr_number: str) -> Dict[str, Any]:
-        """Perform additional code analysis for the report"""
+        """Perform AI-powered code analysis for the report"""
         try:
-            # Import and use existing Python analyzer for code quality analysis
-            from python_report_generator import PythonPRAnalyzer
+            # Use AI-powered risk assessment instead of hardcoded patterns
+            from ai_risk_assessor import AIRiskAssessor
             
-            analyzer = PythonPRAnalyzer(self.spring_ai_dir)
-            changed_files = analyzer.get_changed_files()
+            assessor = AIRiskAssessor(self.working_dir, self.spring_ai_dir)
+            assessment_result = assessor.run_ai_risk_assessment(pr_number)
             
-            # Analyze each file for issues
-            all_issues = {}
-            for file_analysis in changed_files:
-                issues = analyzer.analyze_file_content(file_analysis)
-                all_issues[file_analysis.filename] = issues
-            
-            # Calculate risk level
-            risk_level = analyzer.calculate_risk_level(all_issues)
-            
-            return {
-                'changed_files': [
-                    {
-                        'filename': f.filename,
-                        'status': f.status,
-                        'lines_added': f.lines_added,
-                        'lines_removed': f.lines_removed,
-                        'is_test': f.is_test,
-                        'is_config': f.is_config
-                    } for f in changed_files
-                ],
-                'all_issues': all_issues,
-                'risk_level': risk_level
-            }
+            if assessment_result:
+                # Save the assessment results for future use
+                assessor.save_assessment_result(pr_number, assessment_result)
+                
+                # Convert AI assessment to format expected by report generator
+                all_issues = {}
+                
+                # Organize critical issues by file
+                for issue in assessment_result.critical_issues:
+                    filename = issue.get('file', 'Unknown')
+                    if filename not in all_issues:
+                        all_issues[filename] = {'critical': [], 'important': [], 'suggestions': []}
+                    
+                    issue_text = f"Line {issue.get('line', '?')}: {issue.get('issue', 'Unknown issue')}"
+                    all_issues[filename]['critical'].append(issue_text)
+                
+                # Organize important issues by file
+                for issue in assessment_result.important_issues:
+                    filename = issue.get('file', 'Unknown')
+                    if filename not in all_issues:
+                        all_issues[filename] = {'critical': [], 'important': [], 'suggestions': []}
+                    
+                    issue_text = f"Line {issue.get('line', '?')}: {issue.get('issue', 'Unknown issue')}"
+                    all_issues[filename]['important'].append(issue_text)
+                
+                # Map risk level to expected format
+                risk_level_map = {
+                    'LOW': 'Low',
+                    'MEDIUM': 'Medium', 
+                    'HIGH': 'High',
+                    'UNKNOWN': 'Medium'
+                }
+                
+                return {
+                    'ai_assessment': assessment_result,
+                    'all_issues': all_issues,
+                    'risk_level': risk_level_map.get(assessment_result.overall_risk_level, 'Medium'),
+                    'assessment_method': 'AI-powered'
+                }
+            else:
+                Logger.warn("⚠️  AI risk assessment not available, using basic analysis")
+                return self._fallback_code_analysis(pr_number)
             
         except Exception as e:
-            Logger.warn(f"⚠️  Code analysis failed: {e}")
-            return {}
+            Logger.warn(f"⚠️  AI code analysis failed: {e}")
+            return self._fallback_code_analysis(pr_number)
+    
+    def _fallback_code_analysis(self, pr_number: str) -> Dict[str, Any]:
+        """Fallback to basic analysis if AI assessment fails"""
+        return {
+            'all_issues': {},
+            'risk_level': 'Medium',
+            'assessment_method': 'fallback'
+        }
     
     def _load_test_results(self, pr_number: str) -> Dict[str, Any]:
         """Load test execution results from the workflow if available"""
@@ -403,13 +430,24 @@ class EnhancedReportGenerator:
             'documentation_completeness_section': self._format_list_section(solution_assess.get('documentation_completeness', []))
         })
         
-        # Risk Assessment
-        template_vars.update({
-            'risk_factors_section': self._format_list_section(solution_assess.get('risk_factors', []))
-        })
+        # Risk Assessment - Use AI assessment if available, otherwise fall back to solution assessment
+        code_analysis = data.code_analysis
+        ai_assessment = code_analysis.get('ai_assessment')
+        
+        if ai_assessment:
+            # Use AI-powered risk assessment
+            template_vars.update({
+                'risk_factors_section': self._format_list_section(ai_assessment.risk_factors),
+                'risk_assessment_method_notice': '🤖 **AI-Powered Risk Assessment**: This analysis was generated using Claude Code AI with Spring AI expertise.'
+            })
+        else:
+            # Fallback to solution assessment risk factors
+            template_vars.update({
+                'risk_factors_section': self._format_list_section(solution_assess.get('risk_factors', [])),
+                'risk_assessment_method_notice': '⚠️  **Basic Risk Assessment**: AI-powered analysis unavailable. Using basic pattern matching - results may include false positives.'
+            })
         
         # Code Analysis Sections
-        code_analysis = data.code_analysis
         template_vars.update({
             'critical_issues_section': self._build_critical_issues_section(code_analysis),
             'important_issues_section': self._build_important_issues_section(code_analysis),
@@ -613,21 +651,30 @@ class EnhancedReportGenerator:
         """Build positive findings section"""
         findings = []
         
-        java_files = [f for f in data.file_changes if f.get('filename', '').endswith('.java') and f.get('status') != 'deleted']
-        test_files = [f for f in data.file_changes if 'test' in f.get('filename', '').lower()]
-        config_files = [f for f in data.file_changes if f.get('filename', '').endswith(('.yml', '.yaml', '.properties', '.xml'))]
+        # Check for AI assessment positive findings first
+        code_analysis = data.code_analysis
+        ai_assessment = code_analysis.get('ai_assessment')
         
-        if java_files:
-            findings.append(f"Implementation includes {len(java_files)} Java files with proper structure")
-        if test_files:
-            findings.append(f"Includes {len(test_files)} test files for validation")
-        if config_files:
-            findings.append("Configuration changes are properly structured")
-        
-        # Add AI analysis positive findings
-        solution_assess = data.solution_assessment
-        if solution_assess.get('code_quality_score', 0) >= 7:
-            findings.append(f"High code quality score: {solution_assess.get('code_quality_score')}/10")
+        if ai_assessment and ai_assessment.positive_findings:
+            # Use AI-generated positive findings
+            findings.extend(ai_assessment.positive_findings)
+        else:
+            # Fallback to basic structural analysis
+            java_files = [f for f in data.file_changes if f.get('filename', '').endswith('.java') and f.get('status') != 'deleted']
+            test_files = [f for f in data.file_changes if 'test' in f.get('filename', '').lower()]
+            config_files = [f for f in data.file_changes if f.get('filename', '').endswith(('.yml', '.yaml', '.properties', '.xml'))]
+            
+            if java_files:
+                findings.append(f"Implementation includes {len(java_files)} Java files with proper structure")
+            if test_files:
+                findings.append(f"Includes {len(test_files)} test files for validation")
+            if config_files:
+                findings.append("Configuration changes are properly structured")
+            
+            # Add solution assessment positive findings
+            solution_assess = data.solution_assessment
+            if solution_assess.get('code_quality_score', 0) >= 7:
+                findings.append(f"High code quality score: {solution_assess.get('code_quality_score')}/10")
         
         if not findings:
             findings.append("Standard implementation approach")
