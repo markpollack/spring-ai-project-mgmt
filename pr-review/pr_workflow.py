@@ -333,12 +333,11 @@ class PRAnalyzer:
             
             # Execute enhanced report generator
             Logger.info("Generating enhanced PR analysis report...")
+            # Run without capturing output so we can see real-time progress
             result = subprocess.run(
                 ["python3", str(enhanced_generator), pr_number], 
                 cwd=self.config.script_dir, 
-                capture_output=True, 
-                text=True, 
-                timeout=180
+                timeout=600  # Increase to 10 minutes for debugging
             )
             
             if result.returncode == 0:
@@ -385,13 +384,11 @@ class PRAnalyzer:
                 return report_file
             else:
                 Logger.error("Enhanced PR analysis failed")
-                Logger.error(f"Enhanced report generation error: {result.stderr}")
-                if result.stdout:
-                    Logger.error(f"Enhanced report output: {result.stdout}")
+                Logger.error(f"Enhanced report generation return code: {result.returncode}")
                 return None
                 
         except subprocess.TimeoutExpired:
-            Logger.error("Enhanced PR analysis timed out (3 minutes)")
+            Logger.error("Enhanced PR analysis timed out (10 minutes)")
             return None
         except Exception as e:
             Logger.error(f"Error generating report: {e}")

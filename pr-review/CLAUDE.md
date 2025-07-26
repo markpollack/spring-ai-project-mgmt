@@ -78,13 +78,19 @@ The system integrates with Claude Code AI for intelligent analysis and uses GitH
 All AI-powered analysis components use the robust `ClaudeCodeWrapper` utility class for reliable Claude Code integration:
 
 ### Key Features
-- **File Reading Approach**: Leverages Claude Code's file reading capability instead of piping large content
+- **File Reading Approach**: Leverages Claude Code's native file reading capability by specifying file paths in prompts
 - **Permissions Handling**: Uses `--dangerously-skip-permissions` to handle temporary files
 - **Token-Based Limits**: Uses 80,000 token limit (~62,000 words) with 1 word = 1.3 tokens estimation
 - **Fail-Fast Approach**: Exits immediately if analysis fails (no fallback to placeholder data)
 - **Comprehensive Error Handling**: Proper timeout handling, error reporting, and debug logging
 - **Debug Logging**: All prompts and responses saved to `/logs/` directory for troubleshooting
-- **Flexible Output**: Supports both JSON and markdown/text output formats based on use case
+- **Direct File Access**: Claude Code reads files directly when given file paths in prompts (never use stdin piping)
+
+### Claude Code Integration Best Practices
+- **Always use file paths**: Structure prompts like `"Please read the file /path/to/file.java and analyze it"`
+- **Never use stdin**: Claude Code file reading works best with direct file access, not piped content
+- **Use --dangerously-skip-permissions**: Required for temporary files and workspace access
+- **Expect markdown responses**: Claude Code returns analysis in markdown format, parse JSON from code blocks
 
 ### Components Using ClaudeCodeWrapper
 - `ai_conversation_analyzer.py` - For parsing PR conversations and generating insights

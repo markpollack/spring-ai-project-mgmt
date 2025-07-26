@@ -371,9 +371,9 @@ class AIPoweredSolutionAssessor:
                 f.write(prompt)
             Logger.info(f"🔍 Saved prompt to: {debug_prompt_file}")
             
-            # Use wrapper to analyze from file with JSON output
+            # Use wrapper to analyze from file without JSON output (expecting markdown with JSON blocks)
             debug_response_file = logs_dir / "claude-response-solution-assessor.txt"
-            result = claude.analyze_from_file(str(debug_prompt_file), str(debug_response_file), timeout=300, use_json_output=True)
+            result = claude.analyze_from_file(str(debug_prompt_file), str(debug_response_file), timeout=300, use_json_output=False)
             
             if result['success']:
                 Logger.info(f"🔍 Claude Code stdout length: {len(result['response'])} chars")
@@ -391,42 +391,32 @@ class AIPoweredSolutionAssessor:
     def _parse_assessment_results(self, ai_output: str, context_data: Dict[str, Any]) -> SolutionAssessment:
         """Parse AI assessment results into structured format"""
         try:
-            # With --output-format json, Claude Code returns structured JSON directly
-            claude_response = json.loads(ai_output)
+            # Parse the analysis JSON from Claude's markdown response
+            import re
+            json_pattern = r'```json\s*\n(.*?)\n```'
+            json_match = re.search(json_pattern, ai_output, re.DOTALL)
             
-            # Extract the analysis result from Claude Code JSON structure
-            if 'result' in claude_response:
-                content_text = claude_response['result']
+            if json_match:
+                json_str = json_match.group(1)
+                ai_data = json.loads(json_str)
+            else:
+                # Try to find JSON without code blocks
+                lines = ai_output.split('\n')
+                json_lines = []
+                in_json = False
+                for line in lines:
+                    if line.strip().startswith('{'):
+                        in_json = True
+                    if in_json:
+                        json_lines.append(line)
+                    if line.strip().endswith('}') and in_json:
+                        break
                 
-                # Parse the analysis JSON from the content
-                import re
-                json_pattern = r'```json\s*\n(.*?)\n```'
-                json_match = re.search(json_pattern, content_text, re.DOTALL)
-                
-                if json_match:
-                    json_str = json_match.group(1)
+                if json_lines:
+                    json_str = '\n'.join(json_lines)
                     ai_data = json.loads(json_str)
                 else:
-                    # Try to find JSON without code blocks in content
-                    lines = content_text.split('\n')
-                    json_lines = []
-                    in_json = False
-                    for line in lines:
-                        if line.strip().startswith('{'):
-                            in_json = True
-                        if in_json:
-                            json_lines.append(line)
-                        if line.strip().endswith('}') and in_json:
-                            break
-                    
-                    if json_lines:
-                        json_str = '\n'.join(json_lines)
-                        ai_data = json.loads(json_str)
-                    else:
-                        raise ValueError("No analysis JSON found in Claude Code result")
-            else:
-                # Fallback: assume the output is the analysis JSON directly
-                ai_data = claude_response
+                    raise ValueError("No analysis JSON found in Claude response")
         
         except (json.JSONDecodeError, ValueError) as e:
             Logger.warn(f"⚠️  Could not parse AI assessment JSON: {e}")

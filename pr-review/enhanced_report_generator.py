@@ -72,10 +72,13 @@ class EnhancedReportGenerator:
     def generate_enhanced_report(self, pr_number: str) -> bool:
         """Generate comprehensive enhanced PR report"""
         Logger.info(f"📋 Generating enhanced PR report for PR #{pr_number}")
+        Logger.info(f"🔍 DEBUG: Starting enhanced report generation...")
         
         try:
             # Load all analysis data
+            Logger.info(f"🔍 DEBUG: Loading report data...")
             report_data = self._load_report_data(pr_number)
+            Logger.info(f"🔍 DEBUG: Report data loaded successfully")
             if not report_data:
                 Logger.error("❌ Failed to load report data")
                 return False
@@ -135,10 +138,6 @@ class EnhancedReportGenerator:
                 loaded_data[key] = {}
                 analysis_status[key] = 'Missing'
         
-        # Perform additional code analysis
-        code_analysis = self._perform_code_analysis(pr_number)
-        analysis_status['code_analysis'] = 'Available' if code_analysis else 'Failed'
-        
         # Load test execution results if available
         test_results = self._load_test_results(pr_number)
         analysis_status['test_results'] = 'Available' if test_results else 'Not Available'
@@ -147,8 +146,29 @@ class EnhancedReportGenerator:
         pr_data = loaded_data.get('pr_data', {})
         
         # Run AI analysis if needed
+        import time
+        
+        # Perform code analysis with timing
+        Logger.info("🔍 DEBUG: About to start code analysis (AI risk assessment)...")
+        Logger.info("🔍 Starting code analysis (AI risk assessment)...")
+        start_time = time.time()
+        code_analysis = self._perform_code_analysis(pr_number)
+        code_duration = time.time() - start_time
+        Logger.info(f"🔍 Code analysis completed in {code_duration:.1f} seconds")
+        analysis_status['code_analysis'] = 'Available' if code_analysis else 'Failed'
+        Logger.info("🔍 DEBUG: Code analysis finished")
+        
+        Logger.info("🔍 Starting AI conversation analysis...")
+        start_time = time.time()
         conversation_analysis = self._run_ai_conversation_analysis(pr_number, pr_context_dir)
+        conv_duration = time.time() - start_time
+        Logger.info(f"🔍 AI conversation analysis completed in {conv_duration:.1f} seconds")
+        
+        Logger.info("🔍 Starting solution assessment...")
+        start_time = time.time()
         solution_assessment = self._run_solution_assessment(pr_number, pr_context_dir)
+        sol_duration = time.time() - start_time
+        Logger.info(f"🔍 Solution assessment completed in {sol_duration:.1f} seconds")
         
         return EnhancedReportData(
             pr_number=pr_number,
@@ -226,8 +246,8 @@ class EnhancedReportGenerator:
                 with open(assessment_file, 'r') as f:
                     data = json.load(f)
                     # Check if this is placeholder/fallback data
-                    if data.get("scope_analysis") == "Assessment could not be completed due to parsing failure":
-                        Logger.error("❌ AI solution assessment failed - Claude Code output could not be parsed")
+                    if data.get("scope_analysis") == "Assessment unavailable":
+                        Logger.error("❌ AI solution assessment failed - Claude Code returned placeholder data")
                         Logger.error("❌ Cannot continue with incomplete AI analysis")
                         raise RuntimeError("AI solution assessment failed - no fallbacks allowed")
                     return data

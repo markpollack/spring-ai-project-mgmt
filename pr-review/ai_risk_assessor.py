@@ -64,6 +64,9 @@ class AIRiskAssessor:
         self.spring_ai_dir = spring_ai_dir
         self.context_dir = working_dir / "context"
         
+        # Cache for file content to avoid repeated stripping
+        self._file_content_cache = {}
+        
         # Initialize GitHub utilities for branch management
         if GitHubUtils:
             self.github_utils = GitHubUtils(working_dir)
@@ -115,51 +118,48 @@ class AIRiskAssessor:
             return {}
     
     def build_file_changes_detail(self, file_changes: List[Dict[str, Any]]) -> str:
-        """Build file changes detail with full file content and patches for AI analysis"""
+        """Build file changes detail with file references for Claude Code to read individually"""
         if not file_changes:
             return "*No file changes data available*"
         
         details = []
-        # Calculate token count and include files up to ~80,000 tokens
-        included_changes = self._select_files_by_token_limit(file_changes, max_tokens=80000)
+        details.append("**IMPORTANT**: Use your Read tool to examine the full content of each file listed below as needed for your analysis.")
+        details.append("")
+        details.append("**Changed Files to Analyze:**")
+        details.append("")
         
-        for change in included_changes:
+        for change in file_changes:
             filename = change.get('filename', 'Unknown')
             status = change.get('status', 'unknown')
             additions = change.get('additions', 0)
             deletions = change.get('deletions', 0)
             patch = change.get('patch', '')
             
-            details.append(f"**{filename}** ({status})")
-            details.append(f"  - +{additions}/-{deletions} lines")
+            # Create absolute path for Claude Code to read
+            absolute_path = f"/home/mark/project-mgmt/spring-ai-project-mgmt/pr-review/spring-ai/{filename}"
             
-            # Get full file content for context
-            full_content = self._get_full_file_content(filename)
-            if full_content:
-                details.append("  - Full file content:")
-                details.append("```java")
-                # Truncate very large files but keep substantial context
-                if len(full_content) > 8000:  # 8KB limit per file
-                    details.append(full_content[:8000] + "\n... [file truncated] ...")
-                else:
-                    details.append(full_content)
-                details.append("```")
-                details.append("")
+            details.append(f"### {filename}")
+            details.append(f"- **Status**: {status}")
+            details.append(f"- **File Path**: `{absolute_path}`")
+            details.append(f"- **Changes**: +{additions}/-{deletions} lines")
             
-            # Include patch to show exactly what changed
             if patch:
-                details.append("  - Patch (changes made):")
-                details.append("```diff")
-                # Include full patch but truncate if extremely long
-                if len(patch) > 4000:  # 4KB limit for patch
-                    details.append(patch[:4000] + "\n... [patch truncated] ...")
-                else:
-                    details.append(patch)
-                details.append("```")
+                # Just mention there are changes, don't include patch content
+                patch_line_count = len(patch.split('\n'))
+                details.append(f"- **Patch**: {patch_line_count} lines of changes (use Read tool to see full context)")
             
             details.append("")
         
-        # Note: No partial inclusion anymore - we exit if all files don't fit
+        details.append("---")
+        details.append("")
+        details.append(f"**Total Files**: {len(file_changes)} files to analyze")
+        details.append("")
+        details.append("**Analysis Workflow:**")
+        details.append("1. Use `Read` tool to examine each file's complete content")
+        details.append("2. Focus on areas indicated by the patch previews above")
+        details.append("3. Look for security, performance, integration, and maintainability risks")
+        details.append("4. Consider Spring AI framework patterns and best practices")
+        details.append("5. Provide specific file paths and line numbers in your findings")
         
         return '\n'.join(details)
     
@@ -193,70 +193,26 @@ class AIRiskAssessor:
         # Convert to tokens: 1 word = 1.3 tokens
         return int(word_count * 1.3)
     
-    def _select_files_by_token_limit(self, file_changes: List[Dict[str, Any]], max_tokens: int = 80000) -> List[Dict[str, Any]]:
-        """Select files up to token limit, prioritizing by importance"""
-        if not file_changes:
-            return []
+    def _validate_file_access(self, file_changes: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Validate that Claude Code can access all the files we're referencing"""
+        accessible_files = []
+        inaccessible_files = []
         
-        # Calculate token count for each file (full content + patch)
-        file_token_counts = []
         for change in file_changes:
             filename = change.get('filename', '')
-            patch = change.get('patch', '')
+            file_path = self.spring_ai_dir / filename
             
-            # Get full file content if available
-            full_content = self._get_full_file_content(filename)
-            
-            # Count tokens for full content + patch + metadata
-            content_tokens = self._count_tokens(full_content) if full_content else 0
-            patch_tokens = self._count_tokens(patch)
-            metadata_tokens = self._count_tokens(f"{filename} {change.get('status', '')} +{change.get('additions', 0)}/-{change.get('deletions', 0)}")
-            
-            total_tokens = content_tokens + patch_tokens + metadata_tokens
-            
-            file_token_counts.append({
-                'change': change,
-                'tokens': total_tokens,
-                'filename': filename
-            })
-        
-        # Sort by importance (prioritize main source files over tests)
-        def file_priority(item):
-            filename = item['filename'].lower()
-            # Higher priority (lower number) = included first
-            if filename.endswith('.java') and 'test' not in filename:
-                return 1  # Main Java files first
-            elif filename.endswith('.java') and 'test' in filename:
-                return 2  # Test files second
-            elif filename.endswith(('.yml', '.yaml', '.properties', '.xml')):
-                return 3  # Config files third
+            if file_path.exists() and file_path.is_file():
+                accessible_files.append(change)
             else:
-                return 4  # Other files last
+                inaccessible_files.append(filename)
         
-        file_token_counts.sort(key=file_priority)
+        if inaccessible_files:
+            Logger.warn(f"⚠️ Some files not accessible: {', '.join(inaccessible_files)}")
         
-        # Select files up to token limit
-        selected_files = []
-        total_tokens = 0
+        Logger.info(f"📊 File accessibility: {len(accessible_files)}/{len(file_changes)} files accessible to Claude Code")
         
-        for item in file_token_counts:
-            if total_tokens + item['tokens'] <= max_tokens:
-                selected_files.append(item['change'])
-                total_tokens += item['tokens']
-            else:
-                break
-        
-        Logger.info(f"📊 Token analysis: {len(selected_files)}/{len(file_changes)} files selected (~{total_tokens:,} tokens)")
-        
-        # Exit if we can't include all files within token limit
-        if len(selected_files) < len(file_changes):
-            excluded_count = len(file_changes) - len(selected_files)
-            Logger.error(f"❌ Cannot fit all {len(file_changes)} files within 80,000 token limit")
-            Logger.error(f"   {excluded_count} files would be excluded")
-            Logger.error(f"   Consider increasing token limit or reducing file content")
-            raise RuntimeError(f"Token limit exceeded: {excluded_count} files cannot be included")
-        
-        return selected_files
+        return accessible_files
     
     def _filter_patch_lines(self, patch: str) -> List[str]:
         """Filter patch lines to remove noise and keep relevant content"""
@@ -331,12 +287,17 @@ class AIRiskAssessor:
     
     def _get_full_file_content(self, filename: str) -> Optional[str]:
         """Get full file content from the Spring AI repository"""
+        # Check cache first
+        if filename in self._file_content_cache:
+            return self._file_content_cache[filename]
+            
         try:
             # Construct path to file in the spring-ai directory
             file_path = self.spring_ai_dir / filename
             
             if not file_path.exists():
                 Logger.warn(f"File not found: {file_path}")
+                self._file_content_cache[filename] = None
                 return None
             
             # Read file content
@@ -346,13 +307,84 @@ class AIRiskAssessor:
             # Skip very large files (over 50KB)
             if len(content) > 50000:
                 Logger.warn(f"Skipping large file: {filename} ({len(content)/1024:.1f}KB)")
+                self._file_content_cache[filename] = None
                 return None
             
+            # Strip copyright headers and imports for Java files
+            if filename.endswith('.java'):
+                content = self._strip_java_boilerplate(content)
+            
+            # Cache the result
+            self._file_content_cache[filename] = content
             return content
             
         except Exception as e:
             Logger.warn(f"Error reading file {filename}: {e}")
+            self._file_content_cache[filename] = None
             return None
+    
+    def _strip_java_boilerplate(self, content: str) -> str:
+        """Strip copyright headers and import statements from Java files"""
+        original_size = len(content)
+        lines = content.split('\n')
+        filtered_lines = []
+        in_copyright_block = False
+        skip_imports = False
+        copyright_lines_removed = 0
+        import_lines_removed = 0
+        
+        for line in lines:
+            stripped_line = line.strip()
+            
+            # Detect start of copyright block (must be at beginning of file)
+            if not in_copyright_block and stripped_line == '/*' and copyright_lines_removed == 0:
+                in_copyright_block = True
+                copyright_lines_removed += 1
+                continue
+                
+            # If in copyright block, remove all lines until closing
+            if in_copyright_block:
+                copyright_lines_removed += 1
+                if stripped_line.endswith('*/'):
+                    in_copyright_block = False
+                continue
+            
+            # Skip single-line copyright comments  
+            if stripped_line.startswith('//') and ('copyright' in line.lower() or 'licensed under' in line.lower()):
+                copyright_lines_removed += 1
+                continue
+                
+            # Skip import statements
+            if stripped_line.startswith('import ') or stripped_line.startswith('from '):
+                skip_imports = True
+                import_lines_removed += 1
+                continue
+                
+            # Stop skipping imports when we hit package or class declaration
+            if skip_imports and (stripped_line.startswith('package ') or 
+                               stripped_line.startswith('@') or
+                               stripped_line.startswith('public class') or
+                               stripped_line.startswith('public interface') or
+                               stripped_line.startswith('class ') or
+                               stripped_line.startswith('interface ')):
+                skip_imports = False
+            
+            # Skip if we're still in import section
+            if skip_imports:
+                import_lines_removed += 1
+                continue
+                
+            # Keep the line
+            filtered_lines.append(line)
+        
+        stripped_content = '\n'.join(filtered_lines)
+        stripped_size = len(stripped_content)
+        reduction_percent = ((original_size - stripped_size) / original_size * 100) if original_size > 0 else 0
+        
+        if copyright_lines_removed > 0 or import_lines_removed > 0:
+            Logger.info(f"🔍 Stripped Java boilerplate: {copyright_lines_removed} copyright lines, {import_lines_removed} import lines ({reduction_percent:.1f}% size reduction)")
+        
+        return stripped_content
     
     def create_risk_assessment_prompt(self, pr_number: str, context_data: Dict[str, Any]) -> str:
         """Create the AI prompt for risk assessment"""
@@ -400,27 +432,30 @@ class AIRiskAssessor:
         return '\n'.join(f"- {item}" for item in items[:5])  # Limit to 5 items
     
     def _log_files_being_sent(self, file_changes: List[Dict[str, Any]]):
-        """Log which files are being sent to the AI for analysis"""
+        """Log which files will be available for Claude Code to read"""
         if not file_changes:
             return
         
-        included_files = self._select_files_by_token_limit(file_changes, max_tokens=80000)
+        accessible_files = self._validate_file_access(file_changes)
         
-        Logger.info("📁 Files being sent to AI:")
-        for i, change in enumerate(included_files, 1):
+        Logger.info("📁 Files available for Claude Code analysis:")
+        for i, change in enumerate(accessible_files, 1):
             filename = change.get('filename', 'Unknown')
             status = change.get('status', 'unknown')
             additions = change.get('additions', 0)
             deletions = change.get('deletions', 0)
             
-            # Check if we can get full content
-            full_content = self._get_full_file_content(filename)
-            content_status = "✅ full content" if full_content else "⚠️ patch only"
-            content_size = f"({len(full_content)/1024:.1f}KB)" if full_content else ""
-            
-            Logger.info(f"   {i}. {filename} ({status}) +{additions}/-{deletions} - {content_status} {content_size}")
+            # Check file size for reference
+            file_path = self.spring_ai_dir / filename
+            try:
+                file_size = file_path.stat().st_size if file_path.exists() else 0
+                size_kb = file_size / 1024
+                size_status = "📖 available via Read tool"
+                Logger.info(f"   {i}. {filename} ({status}) +{additions}/-{deletions} - {size_status} ({size_kb:.1f}KB)")
+            except Exception:
+                Logger.info(f"   {i}. {filename} ({status}) +{additions}/-{deletions} - ❓ size unknown")
         
-        # Note: No partial inclusion anymore - we exit if all files don't fit
+        Logger.info(f"🔗 Strategy: File path references (no token concatenation limits)")
     
     def _log_context_optimization_stats(self, file_changes: List[Dict[str, Any]]):
         """Log context size for full file + patch approach"""
@@ -432,7 +467,7 @@ class AIRiskAssessor:
         original_patch_size = sum(len(f.get('patch', '')) for f in file_changes)
         
         # Calculate what we'll actually include based on token limit
-        included_files = self._select_files_by_token_limit(file_changes, max_tokens=80000)
+        included_files = self._validate_file_access(file_changes)
         included_file_count = len(included_files)
         
         # Calculate estimated context size with full files + patches
@@ -498,22 +533,37 @@ class AIRiskAssessor:
         Logger.info(f"📊 Loaded {len(file_changes)} files for analysis")
         
         try:
-            # Show which files will be sent to AI
-            self._log_files_being_sent(file_changes)
-            
-            # Show context optimization stats
+            # Log file accessibility for Claude Code
             file_changes = context_data.get('file_changes', [])
-            self._log_context_optimization_stats(file_changes)
+            self._log_files_being_sent(file_changes)
             
             # Create the AI prompt
             risk_prompt = self.create_risk_assessment_prompt(pr_number, context_data)
-            prompt_size_kb = len(risk_prompt) / 1024
-            Logger.info(f"📏 Final prompt size: {prompt_size_kb:.1f}KB")
             
-            # Create temporary file for the prompt
-            with tempfile.NamedTemporaryFile(mode='w', suffix='.md', delete=False) as prompt_file:
-                prompt_file.write(risk_prompt)
-                prompt_file_path = prompt_file.name
+            # Save prompt to logs directory for debugging
+            logs_dir = self.working_dir / "logs"
+            logs_dir.mkdir(exist_ok=True)
+            prompt_file_path = logs_dir / "claude-prompt-risk-assessor.txt"
+            
+            with open(prompt_file_path, 'w', encoding='utf-8') as f:
+                f.write(risk_prompt)
+            
+            # Log prompt size with token estimation before sending to Claude Code
+            prompt_size = len(risk_prompt.encode('utf-8'))
+            prompt_size_kb = prompt_size / 1024
+            estimated_tokens_method1 = prompt_size / 5  # 5 bytes per token
+            estimated_tokens_method2 = prompt_size_kb * 200  # 200 tokens per KB
+            
+            Logger.info(f"🔍 Saved risk assessment prompt to: {prompt_file_path}")
+            Logger.info(f"🔍 Prompt size: {prompt_size:,} bytes ({prompt_size_kb:.1f}KB)")
+            Logger.info(f"🔍 Estimated tokens (5 bytes/token): {estimated_tokens_method1:,.0f}")
+            Logger.info(f"🔍 Estimated tokens (200/KB): {estimated_tokens_method2:,.0f}")
+            Logger.info(f"🔗 File strategy: {len(file_changes)} files referenced (not concatenated)")
+            
+            if estimated_tokens_method1 > 25000:
+                Logger.warn(f"⚠️  Prompt exceeds 25,000 token limit (Claude Code Read tool limit)")
+            elif estimated_tokens_method1 < 25000:
+                Logger.info(f"✅ Prompt under Claude Code Read tool limit ({25000 - estimated_tokens_method1:,.0f} tokens remaining)")
             
             try:
                 Logger.info("🧠 Starting Claude Code AI analysis...")
@@ -525,36 +575,29 @@ class AIRiskAssessor:
                     Logger.error("❌ Claude Code is not available")
                     return None
                 
-                # Use wrapper to analyze from file with JSON output
-                logs_dir = Path(prompt_file_path).parent
+                # Use wrapper to analyze from file
                 debug_response_file = logs_dir / "claude-response-risk-assessor.txt"
-                result = claude.analyze_from_file(str(prompt_file_path), str(debug_response_file), timeout=300, use_json_output=False)
+                result = claude.analyze_from_file(str(prompt_file_path), str(debug_response_file), timeout=300, use_json_output=True)
+                
+                # Debug logging to trace the 'list' object error
+                Logger.info(f"🔍 Claude wrapper result type: {type(result)}")
+                Logger.info(f"🔍 Claude wrapper result keys: {result.keys() if isinstance(result, dict) else 'Not a dict!'}")
                 
                 if result['success'] and result['response'].strip():
                     response_content = result['response'].strip()
                     response_size_kb = len(response_content) / 1024
                     Logger.success(f"✅ Claude Code returned response ({response_size_kb:.1f}KB)")
                     
-                    # Use raw markdown/text response directly
-                    Logger.info("🔍 Using AI response as-is...")
                     try:
-                        # Extract risk level for basic categorization
-                        risk_level = "LOW"
-                        if "HIGH" in response_content.upper():
-                            risk_level = "HIGH"
-                        elif "MEDIUM" in response_content.upper():
-                            risk_level = "MEDIUM"
+                        # Parse as JSON - no fallbacks, fail fast
+                        assessment_data = json.loads(response_content)
                         
-                        # Create simple structure with raw content
-                        assessment_data = {
-                            'critical_issues': [],
-                            'important_issues': [],
-                            'risk_factors': [],
-                            'positive_findings': [],
-                            'overall_risk_level': risk_level,
-                            'risk_summary': response_content,
-                            'raw_assessment': response_content  # Keep the full response
-                        }
+                        # Validate required keys exist
+                        required_keys = ['critical_issues', 'important_issues', 'risk_factors', 'positive_findings', 'overall_risk_level', 'risk_summary']
+                        for key in required_keys:
+                            if key not in assessment_data:
+                                Logger.error(f"❌ Missing required key in JSON response: {key}")
+                                return None
                         
                         # Log what we found
                         critical_count = len(assessment_data.get('critical_issues', []))
@@ -579,23 +622,19 @@ class AIRiskAssessor:
                         return result_obj
                             
                     except json.JSONDecodeError as e:
-                        Logger.error(f"❌ Failed to parse AI response as JSON: {e}")
+                        Logger.error(f"❌ Failed to parse AI response as JSON - EXECUTION STOPPED: {e}")
                         Logger.error(f"Response content preview: {response_content[:500]}...")
                         return None
                 else:
-                    Logger.error(f"❌ Claude Code failed with return code: {result.returncode}")
-                    if result.stderr:
-                        Logger.error(f"Claude Code error: {result.stderr.strip()}")
-                    if result.stdout:
-                        Logger.error(f"Claude Code output: {result.stdout[:200]}...")
+                    Logger.error(f"❌ Claude Code failed: {result.get('error', 'Unknown error')}")
+                    if result.get('stderr'):
+                        Logger.error(f"Claude Code error: {result['stderr'].strip()}")
                     return None
                     
             finally:
-                # Clean up temporary file
-                try:
-                    os.unlink(prompt_file_path)
-                except OSError:
-                    pass
+                # Keep prompt file in logs for debugging
+                Logger.info(f"🔍 Risk assessment prompt saved at: {prompt_file_path}")
+                pass
                     
         except Exception as e:
             Logger.error(f"Error during AI risk assessment: {e}")

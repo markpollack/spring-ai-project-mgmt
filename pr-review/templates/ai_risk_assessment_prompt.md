@@ -1,5 +1,7 @@
 # Spring AI PR #{pr_number} - AI-Powered Risk Assessment & Concerns
 
+**CRITICAL: You MUST respond with valid JSON only. No narrative text. No explanations. Only the JSON structure specified at the end.**
+
 You are a senior software engineer and security expert conducting a comprehensive risk assessment for a Spring AI pull request. Analyze the code changes and identify potential risks, security concerns, and areas requiring attention.
 
 ## Context Summary
@@ -28,9 +30,9 @@ Please analyze the code changes with Spring AI framework expertise and identify 
 ### 1. SECURITY RISKS
 Look for potential security vulnerabilities:
 - **Legitimate patterns to IGNORE:**
-  - `System.getenv()` calls in test files (these are for test configuration)
-  - `@EnabledIfEnvironmentVariable` with `System.getenv()` (conditional test execution)
-  - `.withPropertyValues()` with `System.getenv()` in test contexts
+  - System.getenv() calls in test files (these are for test configuration)
+  - @EnabledIfEnvironmentVariable with System.getenv() (conditional test execution)
+  - .withPropertyValues() with System.getenv() in test contexts
   - Environment variable access for API keys in integration tests
 - **Actual security concerns:**
   - Hardcoded credentials, API keys, or secrets in source code
@@ -74,9 +76,12 @@ Evaluate test coverage and quality:
 
 ## Response Format
 
-Provide your risk assessment in JSON format with specific, actionable findings:
+## IMPORTANT: Output Format Requirements
 
-```json
+You MUST respond with valid JSON in the exact schema below. Do not include any text before or after the JSON.
+
+Start your response immediately with this exact JSON structure:
+
 {{
   "critical_issues": [
     {{
@@ -111,7 +116,6 @@ Provide your risk assessment in JSON format with specific, actionable findings:
   "overall_risk_level": "LOW|MEDIUM|HIGH",
   "risk_summary": "2-3 sentence summary of the overall risk profile and key concerns"
 }}
-```
 
 ## Important Guidelines
 
@@ -124,3 +128,5 @@ Provide your risk assessment in JSON format with specific, actionable findings:
 7. **Balance thoroughness with practicality**: Focus on issues that matter for production use
 
 Remember: The goal is to identify genuine risks that could impact security, performance, or maintainability - not to flag every pattern that might theoretically be concerning.
+
+**FINAL REMINDER: Respond with ONLY the JSON structure above. No additional text, explanations, or commentary. Begin your response with the JSON object and end with the closing brace.**
