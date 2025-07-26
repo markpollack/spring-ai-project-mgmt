@@ -1,0 +1,18 @@
+# Runtime state and cache files
+state/
+context/*/analysis-cache.json
+
+# Logs and temporary files
+logs/*.log
+logs/temp_*
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
