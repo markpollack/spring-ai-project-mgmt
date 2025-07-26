@@ -106,20 +106,38 @@ class GitHubUtils:
             result = subprocess.run([
                 "gh", "pr", "view", pr_number,
                 "--repo", self.spring_ai_repo,
-                "--json", "headRefName"
+                "--json", "headRefName,headRepository,baseRefName,headRepositoryOwner"
             ], capture_output=True, text=True, check=True, timeout=30)
             
             pr_data = json.loads(result.stdout)
-            branch_name = pr_data.get("headRefName")
+            head_ref = pr_data.get("headRefName")
+            head_repo = pr_data.get("headRepository", {})
+            head_repo_owner = pr_data.get("headRepositoryOwner", {})
+            base_ref = pr_data.get("baseRefName")
+            head_repo_name = head_repo.get("name", "") if head_repo else ""
             
-            if branch_name:
-                Logger.success(f"✅ Found branch: PR #{pr_number} → {branch_name}")
-                # Cache the result
-                self.store_pr_branch_mapping(pr_number, branch_name)
-                return branch_name
-            else:
+            if not head_ref:
                 Logger.error(f"No branch name found in PR #{pr_number} data")
                 return None
+            
+            # Handle fork PRs where head and base are both "main"
+            fork_owner_login = head_repo_owner.get("login", "") if head_repo_owner else ""
+            is_fork_pr = (head_ref == "main" and head_ref == base_ref and 
+                         fork_owner_login and fork_owner_login != "spring-projects")
+            
+            if is_fork_pr:
+                # This is a fork PR - gh pr checkout creates branch like "username/main"
+                branch_name = f"{fork_owner_login}/{head_ref}"
+                Logger.info(f"🔀 Fork PR detected: {fork_owner_login}/{head_repo_name}:{head_ref} → {base_ref}")
+                Logger.success(f"✅ Fork branch name: PR #{pr_number} → {branch_name}")
+            else:
+                # Regular PR with different head branch
+                branch_name = head_ref
+                Logger.success(f"✅ Found branch: PR #{pr_number} → {branch_name}")
+            
+            # Cache the result
+            self.store_pr_branch_mapping(pr_number, branch_name)
+            return branch_name
                 
         except subprocess.CalledProcessError as e:
             Logger.error(f"GitHub CLI error getting PR #{pr_number} branch: {e}")
