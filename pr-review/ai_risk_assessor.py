@@ -290,6 +290,47 @@ class AIRiskAssessor:
         
         return filtered_lines
     
+    def _extract_json_from_response(self, response_content: str) -> Dict[str, Any]:
+        """Extract JSON from response that may contain narrative text before JSON"""
+        # First try direct JSON parsing
+        try:
+            return json.loads(response_content)
+        except json.JSONDecodeError:
+            pass
+        
+        # If direct parsing fails, try to extract JSON from narrative response
+        import re
+        
+        # Look for JSON block starting with { and ending with }
+        # Handle multi-line JSON with proper brace matching
+        json_start = response_content.find('{')
+        if json_start == -1:
+            raise json.JSONDecodeError("No JSON found in response", response_content, 0)
+        
+        # Find the matching closing brace
+        brace_count = 0
+        json_end = -1
+        for i, char in enumerate(response_content[json_start:], json_start):
+            if char == '{':
+                brace_count += 1
+            elif char == '}':
+                brace_count -= 1
+                if brace_count == 0:
+                    json_end = i + 1
+                    break
+        
+        if json_end == -1:
+            raise json.JSONDecodeError("No matching closing brace found", response_content, json_start)
+        
+        # Extract and parse the JSON portion
+        json_str = response_content[json_start:json_end]
+        try:
+            return json.loads(json_str)
+        except json.JSONDecodeError as e:
+            Logger.error(f"Failed to parse extracted JSON: {e}")
+            Logger.error(f"Extracted JSON: {json_str[:200]}...")
+            raise
+    
     def _create_fallback_assessment_from_narrative(self, narrative_text: str) -> Dict[str, Any]:
         """Create a basic assessment structure from Claude Code's narrative response"""
         # Try to extract risk level from the narrative
@@ -716,8 +757,8 @@ class AIRiskAssessor:
                     Logger.success(f"✅ Claude Code returned response ({response_size_kb:.1f}KB)")
                     
                     try:
-                        # Parse as JSON - no fallbacks, fail fast
-                        assessment_data = json.loads(response_content)
+                        # Parse as JSON - first try direct parsing, then extract if needed
+                        assessment_data = self._extract_json_from_response(response_content)
                         
                         # Validate required keys exist
                         required_keys = ['critical_issues', 'important_issues', 'risk_factors', 'positive_findings', 'overall_risk_level', 'risk_summary']
