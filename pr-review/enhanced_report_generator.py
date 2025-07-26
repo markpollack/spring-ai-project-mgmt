@@ -55,11 +55,18 @@ class EnhancedReportData:
 class EnhancedReportGenerator:
     """Generates comprehensive reports integrating all AI analysis components"""
     
-    def __init__(self, working_dir: Path, spring_ai_dir: Path):
-        self.working_dir = working_dir
-        self.spring_ai_dir = spring_ai_dir
-        self.context_dir = working_dir / "context"
-        self.reports_dir = working_dir / "reports"
+    def __init__(self, working_dir: Path = None, spring_ai_dir: Path = None):
+        # Default to script directory if not provided (most robust approach)
+        if working_dir is None:
+            working_dir = Path(__file__).parent.absolute()
+        if spring_ai_dir is None:
+            spring_ai_dir = working_dir / "spring-ai"
+            
+        self.working_dir = working_dir.absolute()
+        self.spring_ai_dir = spring_ai_dir.absolute()
+        self.script_dir = self.working_dir  # Scripts are in the same directory as working_dir
+        self.context_dir = self.working_dir / "context"
+        self.reports_dir = self.working_dir / "reports"
         self.reports_dir.mkdir(exist_ok=True)
     
     def generate_enhanced_report(self, pr_number: str) -> bool:
@@ -180,14 +187,20 @@ class EnhancedReportGenerator:
             if result.returncode == 0 and analysis_file.exists():
                 Logger.success("AI conversation analysis completed")
                 with open(analysis_file, 'r') as f:
-                    return json.load(f)
+                    data = json.load(f)
+                    # Check if this is placeholder/fallback data
+                    if data.get("problem_summary") == "AI analysis could not be parsed properly":
+                        Logger.error("❌ AI conversation analysis failed - Claude Code output could not be parsed")
+                        Logger.error("❌ Cannot continue with incomplete AI analysis")
+                        raise RuntimeError("AI conversation analysis failed - no fallbacks allowed")
+                    return data
             else:
-                Logger.warn(f"AI conversation analysis failed: {result.stderr}")
-                return {}
+                Logger.error(f"❌ AI conversation analysis failed: {result.stderr}")
+                raise RuntimeError("AI conversation analysis failed - no fallbacks allowed")
                 
         except Exception as e:
             Logger.error(f"Error running AI conversation analysis: {e}")
-            return {}
+            raise RuntimeError(f"AI conversation analysis failed: {e}")
     
     def _run_solution_assessment(self, pr_number: str, pr_context_dir: Path) -> Dict[str, Any]:
         """Run solution assessment using solution_assessor.py"""
@@ -211,14 +224,20 @@ class EnhancedReportGenerator:
             if result.returncode == 0 and assessment_file.exists():
                 Logger.success("AI solution assessment completed")
                 with open(assessment_file, 'r') as f:
-                    return json.load(f)
+                    data = json.load(f)
+                    # Check if this is placeholder/fallback data
+                    if data.get("scope_analysis") == "Assessment could not be completed due to parsing failure":
+                        Logger.error("❌ AI solution assessment failed - Claude Code output could not be parsed")
+                        Logger.error("❌ Cannot continue with incomplete AI analysis")
+                        raise RuntimeError("AI solution assessment failed - no fallbacks allowed")
+                    return data
             else:
-                Logger.warn(f"AI solution assessment failed: {result.stderr}")
-                return {}
+                Logger.error(f"❌ AI solution assessment failed: {result.stderr}")
+                raise RuntimeError("AI solution assessment failed - no fallbacks allowed")
                 
         except Exception as e:
             Logger.error(f"Error running AI solution assessment: {e}")
-            return {}
+            raise RuntimeError(f"AI solution assessment failed: {e}")
 
     def _perform_code_analysis(self, pr_number: str) -> Dict[str, Any]:
         """Perform AI-powered code analysis for the report"""
@@ -269,12 +288,12 @@ class EnhancedReportGenerator:
                     'assessment_method': 'AI-powered'
                 }
             else:
-                Logger.warn("⚠️  AI risk assessment not available, using basic analysis")
-                return self._fallback_code_analysis(pr_number)
+                Logger.error("❌ AI risk assessment not available")
+                raise RuntimeError("AI risk assessment failed - no fallbacks allowed")
             
         except Exception as e:
-            Logger.warn(f"⚠️  AI code analysis failed: {e}")
-            return self._fallback_code_analysis(pr_number)
+            Logger.error(f"❌ AI code analysis failed: {e}")
+            raise RuntimeError(f"AI code analysis failed: {e}")
     
     def _fallback_code_analysis(self, pr_number: str) -> Dict[str, Any]:
         """Fallback to basic analysis if AI assessment fails"""
@@ -936,8 +955,8 @@ def main():
     
     pr_number = sys.argv[1]
     
-    # Use current directory for report generation
-    working_dir = Path.cwd()
+    # Use script directory for report generation (robust regardless of where script is called from)
+    working_dir = Path(__file__).parent.absolute()
     spring_ai_dir = working_dir / "spring-ai"
     
     generator = EnhancedReportGenerator(working_dir, spring_ai_dir)

@@ -1,0 +1,22 @@
+Please analyze the following request: "What is the weather like?"
+
+## Response Format
+Provide your analysis in JSON format with the following structure:
+
+```json
+{
+  "problem_summary": "...",
+  "key_requirements": ["...", "..."],
+  "design_decisions": ["...", "..."],
+  "outstanding_concerns": ["...", "..."],
+  "solution_approaches": ["...", "..."],
+  "complexity_indicators": ["...", "..."],
+  "complexity_score": 5,
+  "stakeholder_feedback": ["...", "..."],
+  "discussion_themes": ["...", "..."],
+  "quality_assessment": "...",
+  "recommendations": ["...", "..."]
+}
+```
+
+Focus on providing insights that would be valuable to a senior software engineer reviewing this PR for merge approval.

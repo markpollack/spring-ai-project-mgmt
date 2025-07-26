@@ -8,7 +8,9 @@ This directory contains a comprehensive AI-powered PR review automation system f
 - `enhanced_report_generator.py` - AI-powered report generation with comprehensive analysis
 - `ai_conversation_analyzer.py` - Claude Code integration for conversation analysis
 - `solution_assessor.py` - AI-powered technical solution assessment
+- `ai_risk_assessor.py` - AI-powered security and quality risk assessment
 - `pr_context_collector.py` - GitHub context and issue data collection
+- `claude_code_wrapper.py` - Robust utility class for Claude Code CLI integration
 
 ## Supporting Subdirectories
 
@@ -46,6 +48,8 @@ Design documents and implementation plans:
 ### `/logs/`
 Verbose output logs from build and formatting operations:
 - `java-formatter-{timestamp}.log` - Java formatting operation logs
+- `claude-prompt-*.txt` - Saved prompts sent to Claude Code for debugging
+- `claude-response-*.txt` - Claude Code responses saved for troubleshooting
 - Various timestamped log files for debugging and troubleshooting
 
 ### `/spring-ai/`
@@ -68,4 +72,36 @@ python pr_workflow.py --cleanup 3914
 ```
 
 The system integrates with Claude Code AI for intelligent analysis and uses GitHub CLI for repository operations.
+
+## Claude Code Integration
+
+All AI-powered analysis components use the robust `ClaudeCodeWrapper` utility class for reliable Claude Code integration:
+
+### Key Features
+- **File Reading Approach**: Leverages Claude Code's file reading capability instead of piping large content
+- **Permissions Handling**: Uses `--dangerously-skip-permissions` to handle temporary files
+- **Token-Based Limits**: Uses 80,000 token limit (~62,000 words) with 1 word = 1.3 tokens estimation
+- **Fail-Fast Approach**: Exits immediately if analysis fails (no fallback to placeholder data)
+- **Comprehensive Error Handling**: Proper timeout handling, error reporting, and debug logging
+- **Debug Logging**: All prompts and responses saved to `/logs/` directory for troubleshooting
+- **Flexible Output**: Supports both JSON and markdown/text output formats based on use case
+
+### Components Using ClaudeCodeWrapper
+- `ai_conversation_analyzer.py` - For parsing PR conversations and generating insights
+- `solution_assessor.py` - For technical solution quality assessment
+- `ai_risk_assessor.py` - For security and quality risk evaluation
+- `pr_workflow.py` - For automated conflict resolution
+
+### Usage Pattern
+```python
+from claude_code_wrapper import ClaudeCodeWrapper
+
+claude = ClaudeCodeWrapper()
+if claude.is_available():
+    result = claude.analyze_from_file(prompt_file, output_file, use_json_output=True)
+    if result['success']:
+        response = result['response']
+```
+
+This ensures consistent, reliable Claude Code integration across all system components.
 

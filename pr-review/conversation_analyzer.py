@@ -550,8 +550,8 @@ def main():
     
     pr_number = sys.argv[1]
     
-    # Use current directory for analysis
-    working_dir = Path.cwd()
+    # Use script directory for analysis (robust regardless of where script is called from)
+    working_dir = Path(__file__).parent.absolute()
     analyzer = ConversationAnalyzer(working_dir)
     
     # Analyze conversation

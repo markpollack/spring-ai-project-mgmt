@@ -1,0 +1,1 @@
+Hello Claude, please respond with "Claude Code is working correctly" to confirm basic functionality.

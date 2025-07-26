@@ -1,0 +1,13 @@
+Please analyze this text.
+
+## Response Format
+Provide your analysis in JSON format with the following structure:
+
+```json
+{
+  "problem_summary": "...",
+  "key_requirements": ["...", "..."]
+}
+```
+
+Focus on providing insights.

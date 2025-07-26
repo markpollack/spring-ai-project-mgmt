@@ -18,6 +18,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass, asdict
+from claude_code_wrapper import ClaudeCodeWrapper
 
 # Simple logger to avoid circular imports
 class Logger:
@@ -51,9 +52,13 @@ class AIConversationAnalysis:
 class AIPoweredConversationAnalyzer:
     """Uses Claude Code to perform intelligent conversation analysis"""
     
-    def __init__(self, working_dir: Path):
-        self.working_dir = working_dir
-        self.context_dir = working_dir / "context"
+    def __init__(self, working_dir: Path = None):
+        # Default to script directory if not provided (most robust approach)
+        if working_dir is None:
+            working_dir = Path(__file__).parent.absolute()
+            
+        self.working_dir = working_dir.absolute()
+        self.context_dir = self.working_dir / "context"
     
     def analyze_with_ai(self, pr_number: str) -> Optional[AIConversationAnalysis]:
         """Perform AI-powered conversation analysis"""
@@ -248,61 +253,98 @@ class AIPoweredConversationAnalyzer:
         return [entry for score, entry in scored_entries[:8]]
     
     def _execute_claude_analysis(self, prompt: str) -> Optional[str]:
-        """Execute analysis using Claude Code"""
+        """Execute analysis using Claude Code via robust wrapper"""
         try:
-            # Execute claude code with the prompt as stdin
             Logger.info("🤖 Running Claude Code analysis...")
-            result = subprocess.run([
-                'claude'
-            ], input=prompt, capture_output=True, text=True, timeout=300, cwd=self.working_dir)  # 5 minute timeout
             
-            if result.returncode == 0:
-                return result.stdout
+            # Initialize Claude Code wrapper
+            claude = ClaudeCodeWrapper()
+            
+            # Debug: Check availability with details
+            is_available = claude.is_available()
+            version = claude.get_version()
+            Logger.info(f"🔍 Claude Code path: {claude.claude_binary_path}")
+            Logger.info(f"🔍 Claude Code available: {is_available}")
+            Logger.info(f"🔍 Claude Code version: {version}")
+            
+            if not is_available:
+                Logger.error("❌ Claude Code is not available")
+                return None
+            
+            # Debug: Save prompt to logs directory for future debugging
+            logs_dir = self.working_dir / "logs"
+            logs_dir.mkdir(exist_ok=True)
+            debug_prompt_file = logs_dir / "claude-prompt-ai-analyzer.txt"
+            with open(debug_prompt_file, 'w') as f:
+                f.write(prompt)
+            Logger.info(f"🔍 Saved prompt to: {debug_prompt_file}")
+            
+            # Use the robust wrapper to analyze from file directly with JSON output format
+            debug_response_file = logs_dir / "claude-response-ai-analyzer.txt"
+            result = claude.analyze_from_file(str(debug_prompt_file), str(debug_response_file), timeout=300, use_json_output=True)
+            
+            if result['success']:
+                Logger.info(f"🔍 Claude Code stdout length: {len(result['response'])} chars")
+                Logger.info(f"🔍 Claude Code stderr: {result['stderr'][:200] if result['stderr'] else 'None'}")
+                Logger.info(f"🔍 Saved Claude Code response to: {debug_response_file}")
+                
+                if len(result['response']) <= 10:
+                    Logger.info(f"🔍 Claude Code stdout content (short): '{result['response']}'")
+                
+                return result['response']
             else:
-                Logger.error(f"Claude Code execution failed: {result.stderr}")
+                Logger.error(f"❌ Claude Code analysis failed: {result['error']}")
+                if result['stderr']:
+                    Logger.error(f"❌ Claude Code stderr: {result['stderr']}")
                 return None
                 
-        except subprocess.TimeoutExpired:
-            Logger.error("❌ Claude Code analysis timed out")
-            return None
         except Exception as e:
             Logger.error(f"❌ Failed to execute Claude Code: {e}")
             return None
     
     def _parse_ai_results(self, ai_output: str, context_data: Dict[str, Any]) -> AIConversationAnalysis:
         """Parse AI analysis results into structured format"""
-        # Try to extract JSON from the AI output
-        json_match = None
         try:
-            # Look for JSON block in the output
-            import re
-            json_pattern = r'```json\s*\n(.*?)\n```'
-            json_match = re.search(json_pattern, ai_output, re.DOTALL)
+            # With --output-format json, Claude Code returns structured JSON directly
+            claude_response = json.loads(ai_output)
             
-            if json_match:
-                json_str = json_match.group(1)
-                ai_data = json.loads(json_str)
-            else:
-                # Try to find JSON without code blocks
-                lines = ai_output.split('\n')
-                json_lines = []
-                in_json = False
-                for line in lines:
-                    if line.strip().startswith('{'):
-                        in_json = True
-                    if in_json:
-                        json_lines.append(line)
-                    if line.strip().endswith('}') and in_json:
-                        break
+            # Extract the analysis result from Claude Code JSON structure
+            if 'result' in claude_response:
+                content_text = claude_response['result']
                 
-                if json_lines:
-                    json_str = '\n'.join(json_lines)
+                # Parse the analysis JSON from the content
+                import re
+                json_pattern = r'```json\s*\n(.*?)\n```'
+                json_match = re.search(json_pattern, content_text, re.DOTALL)
+                
+                if json_match:
+                    json_str = json_match.group(1)
                     ai_data = json.loads(json_str)
                 else:
-                    raise ValueError("No JSON found in AI output")
+                    # Try to find JSON without code blocks in content
+                    lines = content_text.split('\n')
+                    json_lines = []
+                    in_json = False
+                    for line in lines:
+                        if line.strip().startswith('{'):
+                            in_json = True
+                        if in_json:
+                            json_lines.append(line)
+                        if line.strip().endswith('}') and in_json:
+                            break
+                    
+                    if json_lines:
+                        json_str = '\n'.join(json_lines)
+                        ai_data = json.loads(json_str)
+                    else:
+                        raise ValueError("No analysis JSON found in Claude Code result")
+            else:
+                # Fallback: assume the output is the analysis JSON directly
+                ai_data = claude_response
         
         except (json.JSONDecodeError, ValueError) as e:
-            Logger.warn(f"⚠️  Could not parse AI JSON output: {e}")
+            Logger.warn(f"⚠️  Could not parse Claude Code JSON output: {e}")
+            Logger.info(f"🔍 Raw output for debugging: {ai_output[:500]}...")
             # Fallback to extracting information from text
             ai_data = self._extract_from_text(ai_output)
         
@@ -365,8 +407,8 @@ def main():
     
     pr_number = sys.argv[1]
     
-    # Use current directory for analysis
-    working_dir = Path.cwd()
+    # Use script directory for analysis (robust regardless of where script is called from)
+    working_dir = Path(__file__).parent.absolute()
     analyzer = AIPoweredConversationAnalyzer(working_dir)
     
     # Perform AI analysis

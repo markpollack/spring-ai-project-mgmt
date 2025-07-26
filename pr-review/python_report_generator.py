@@ -445,7 +445,8 @@ def main():
     
     pr_number = sys.argv[1]
     output_file = Path(sys.argv[2])
-    spring_ai_dir = Path.cwd()
+    # Use script directory for analysis (robust regardless of where script is called from)
+    spring_ai_dir = Path(__file__).parent.absolute()
     
     analyzer = PythonPRAnalyzer(spring_ai_dir)
     success = analyzer.generate_report(pr_number, output_file)

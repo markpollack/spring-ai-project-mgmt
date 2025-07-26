@@ -20,6 +20,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Any, Tuple
 from dataclasses import dataclass, asdict
+from claude_code_wrapper import ClaudeCodeWrapper
 
 # Simple logger to avoid circular imports
 class Logger:
@@ -53,10 +54,16 @@ class SolutionAssessment:
 class AIPoweredSolutionAssessor:
     """Uses Claude Code to perform intelligent solution assessment"""
     
-    def __init__(self, working_dir: Path, spring_ai_dir: Path):
-        self.working_dir = working_dir
-        self.spring_ai_dir = spring_ai_dir
-        self.context_dir = working_dir / "context"
+    def __init__(self, working_dir: Path = None, spring_ai_dir: Path = None):
+        # Default to script directory if not provided (most robust approach)
+        if working_dir is None:
+            working_dir = Path(__file__).parent.absolute()
+        if spring_ai_dir is None:
+            spring_ai_dir = working_dir / "spring-ai"
+            
+        self.working_dir = working_dir.absolute()
+        self.spring_ai_dir = spring_ai_dir.absolute()
+        self.context_dir = self.working_dir / "context"
     
     def assess_solution(self, pr_number: str) -> Optional[SolutionAssessment]:
         """Perform comprehensive AI-powered solution assessment"""
@@ -348,19 +355,35 @@ class AIPoweredSolutionAssessor:
         """Execute assessment using Claude Code"""
         try:
             Logger.info("🤖 Running Claude Code solution assessment...")
-            result = subprocess.run([
-                'claude'
-            ], input=prompt, capture_output=True, text=True, timeout=300, cwd=self.working_dir)
             
-            if result.returncode == 0:
-                return result.stdout
+            # Use ClaudeCodeWrapper for reliable integration
+            claude = ClaudeCodeWrapper()
+            
+            if not claude.is_available():
+                Logger.error("❌ Claude Code is not available")
+                return None
+            
+            # Save prompt to logs for debugging
+            logs_dir = self.working_dir / "logs"
+            logs_dir.mkdir(exist_ok=True)
+            debug_prompt_file = logs_dir / "claude-prompt-solution-assessor.txt"
+            with open(debug_prompt_file, 'w') as f:
+                f.write(prompt)
+            Logger.info(f"🔍 Saved prompt to: {debug_prompt_file}")
+            
+            # Use wrapper to analyze from file with JSON output
+            debug_response_file = logs_dir / "claude-response-solution-assessor.txt"
+            result = claude.analyze_from_file(str(debug_prompt_file), str(debug_response_file), timeout=300, use_json_output=True)
+            
+            if result['success']:
+                Logger.info(f"🔍 Claude Code stdout length: {len(result['response'])} chars")
+                return result['response']
             else:
-                Logger.error(f"Claude Code assessment failed: {result.stderr}")
+                Logger.error(f"❌ Claude Code assessment failed: {result['error']}")
+                if result['stderr']:
+                    Logger.error(f"❌ Claude Code stderr: {result['stderr']}")
                 return None
                 
-        except subprocess.TimeoutExpired:
-            Logger.error("❌ Claude Code assessment timed out")
-            return None
         except Exception as e:
             Logger.error(f"❌ Failed to execute Claude Code assessment: {e}")
             return None
@@ -368,32 +391,42 @@ class AIPoweredSolutionAssessor:
     def _parse_assessment_results(self, ai_output: str, context_data: Dict[str, Any]) -> SolutionAssessment:
         """Parse AI assessment results into structured format"""
         try:
-            # Extract JSON from AI output
-            import re
-            json_pattern = r'```json\s*\n(.*?)\n```'
-            json_match = re.search(json_pattern, ai_output, re.DOTALL)
+            # With --output-format json, Claude Code returns structured JSON directly
+            claude_response = json.loads(ai_output)
             
-            if json_match:
-                json_str = json_match.group(1)
-                ai_data = json.loads(json_str)
-            else:
-                # Try to find JSON without code blocks
-                lines = ai_output.split('\n')
-                json_lines = []
-                in_json = False
-                for line in lines:
-                    if line.strip().startswith('{'):
-                        in_json = True
-                    if in_json:
-                        json_lines.append(line)
-                    if line.strip().endswith('}') and in_json:
-                        break
+            # Extract the analysis result from Claude Code JSON structure
+            if 'result' in claude_response:
+                content_text = claude_response['result']
                 
-                if json_lines:
-                    json_str = '\n'.join(json_lines)
+                # Parse the analysis JSON from the content
+                import re
+                json_pattern = r'```json\s*\n(.*?)\n```'
+                json_match = re.search(json_pattern, content_text, re.DOTALL)
+                
+                if json_match:
+                    json_str = json_match.group(1)
                     ai_data = json.loads(json_str)
                 else:
-                    raise ValueError("No JSON found in AI output")
+                    # Try to find JSON without code blocks in content
+                    lines = content_text.split('\n')
+                    json_lines = []
+                    in_json = False
+                    for line in lines:
+                        if line.strip().startswith('{'):
+                            in_json = True
+                        if in_json:
+                            json_lines.append(line)
+                        if line.strip().endswith('}') and in_json:
+                            break
+                    
+                    if json_lines:
+                        json_str = '\n'.join(json_lines)
+                        ai_data = json.loads(json_str)
+                    else:
+                        raise ValueError("No analysis JSON found in Claude Code result")
+            else:
+                # Fallback: assume the output is the analysis JSON directly
+                ai_data = claude_response
         
         except (json.JSONDecodeError, ValueError) as e:
             Logger.warn(f"⚠️  Could not parse AI assessment JSON: {e}")
@@ -459,8 +492,8 @@ def main():
     
     pr_number = sys.argv[1]
     
-    # Use current directory for assessment
-    working_dir = Path.cwd()
+    # Use script directory for assessment (robust regardless of where script is called from)
+    working_dir = Path(__file__).parent.absolute()
     spring_ai_dir = working_dir / "spring-ai"  # Spring AI clone in pr-review directory
     
     assessor = AIPoweredSolutionAssessor(working_dir, spring_ai_dir)

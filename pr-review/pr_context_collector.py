@@ -473,8 +473,8 @@ def main():
     pr_number = sys.argv[1]
     force_refresh = "--force-refresh" in sys.argv
     
-    # Use current directory for context collection
-    working_dir = Path.cwd()
+    # Use script directory for context collection (robust regardless of where script is called from)
+    working_dir = Path(__file__).parent.absolute()
     collector = PRContextCollector(working_dir)
     
     # Collect context data

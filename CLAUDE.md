@@ -118,6 +118,33 @@ Complex project management tasks may require bash scripts that combine multiple 
 - Prefer direct `gh` commands for simple operations
 - Use bash scripts for complex multi-step operations
 
+## Important: Spring AI Directory Management
+
+**CRITICAL**: The `/spring-ai/` directory is a working clone managed exclusively by the Python workflow scripts (`pr_workflow.py` and related automation). 
+
+**Claude interactive sessions should NEVER directly manipulate this directory or run git commands within it.**
+
+The Python workflow handles all git operations including:
+- Repository cloning and setup
+- Branch checkout and switching  
+- Conflict resolution via Claude Code CLI subprocess calls
+- Rebase operations and commit squashing
+- Repository cleanup and state management
+
+If there are git conflicts or issues in the spring-ai directory, these should be resolved by:
+1. Using the appropriate Python workflow flags (e.g. `--cleanup`, `--force`)
+2. Modifying the Python workflow code itself to fix subprocess issues
+3. Running the workflow commands, not direct git operations
+
+This separation ensures the Python automation maintains full control over the repository state and prevents conflicts between interactive Claude sessions and the automated workflow processes.
+
+
+## AI Risk Assessment Optimization Guidelines
+
+When optimizing context for large PRs in the AI risk assessor:
+- **Always include full test classes** - Never truncate test files, even for large PRs
+- Test classes need complete context for proper security analysis and coverage review
+- Production code can be optimized, but tests must remain complete for AI analysis
 
 ## Script creation guidance
 

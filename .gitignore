@@ -39,8 +39,17 @@ pr-review/spring-ai/
 
 # PR Review workflow - generated files that should be ignored
 pr-review/.build_cache_pr_*
-pr-review/reports/test-logs-pr-*/
-pr-review/reports/review-pr-*.md
-pr-review/reports/enhanced-review-pr-*.md
+pr-review/reports/
 pr-review/plans/plan-pr-*.md
+pr-review/plans/enhanced-plan-pr-*.md
 pr-review/logs/
+pr-review/context/pr-*/ai-risk-assessment.json
+pr-review/context/pr-*/ai-conversation-analysis.json
+pr-review/context/pr-*/solution-assessment.json
+
+# PR Review workflow - persistent state files
+pr-review/state/pr-branch-mapping.json
+
+# IDE files
+pr-review/.idea/
+.idea/

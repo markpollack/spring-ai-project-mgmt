@@ -51,14 +51,51 @@ class IntelligentSquash:
         self.spring_ai_repo = spring_ai_repo
         self.conflict_analyzer = ConflictAnalyzer(str(Path(__file__).parent))
         
+    def _log_rebase_state(self, stage: str):
+        """Log current git rebase state for debugging"""
+        try:
+            Logger.info(f"🔍 Git state at {stage}:")
+            
+            # Check if in rebase
+            rebase_head = self.spring_ai_dir / ".git" / "REBASE_HEAD"
+            Logger.info(f"   In rebase: {rebase_head.exists()}")
+            
+            # Get status
+            status = self.run_git(["status", "--porcelain"], capture_output=True)
+            status_lines = [line for line in status.stdout.strip().split('\n') if line]
+            Logger.info(f"   Dirty files: {len(status_lines)}")
+            
+            # Get conflicted files
+            conflicted = [line for line in status_lines if line.startswith(('UU ', 'AA ', 'DD '))]
+            Logger.info(f"   Conflicted files: {len(conflicted)}")
+            if conflicted:
+                for line in conflicted:
+                    Logger.info(f"     - {line}")
+            
+            # Get staged files
+            staged = [line for line in status_lines if line[0] in 'MADRC']
+            Logger.info(f"   Staged files: {len(staged)}")
+            
+        except Exception as e:
+            Logger.warn(f"Error logging rebase state: {e}")
+    
     def run_git(self, cmd: List[str], capture_output: bool = True, check: bool = True) -> subprocess.CompletedProcess:
-        """Run git command in the Spring AI directory"""
+        """Run git command in the Spring AI directory with non-interactive environment"""
+        # Global environment to prevent any git editor popups
+        env = os.environ.copy()
+        env['GIT_EDITOR'] = 'true'  # Use 'true' command that always succeeds
+        env['EDITOR'] = 'true'
+        env['VISUAL'] = 'true'
+        env['GIT_SEQUENCE_EDITOR'] = 'true'
+        env['GIT_MERGE_AUTOEDIT'] = 'no'
+        
         return subprocess.run(
             ["git"] + cmd, 
             cwd=self.spring_ai_dir, 
             capture_output=capture_output, 
             text=True, 
-            check=check
+            check=check,
+            env=env
         )
     
     def run_gh(self, cmd: List[str]) -> subprocess.CompletedProcess:
@@ -199,7 +236,15 @@ class IntelligentSquash:
                 env = os.environ.copy()
                 env['GIT_SEQUENCE_EDITOR'] = script_path
                 
-                self.run_git(["rebase", "-i", base_sha], check=True)
+                # Use subprocess.run directly to pass custom environment
+                result = subprocess.run(
+                    ["git", "rebase", "-i", base_sha],
+                    cwd=self.spring_ai_dir,
+                    env=env,
+                    capture_output=True,
+                    text=True,
+                    check=True
+                )
                 Logger.success("✅ Interactive rebase completed successfully")
                 
                 # Verify that squashing actually worked
@@ -227,6 +272,9 @@ class IntelligentSquash:
         """Handle rebase conflicts using existing Claude Code AI infrastructure"""
         Logger.info("🧠 Analyzing conflicts with Claude Code AI...")
         
+        # Log initial rebase state
+        self._log_rebase_state("start of conflict handling")
+        
         try:
             analysis = self.conflict_analyzer.analyze_conflicts(pr_number)
             
@@ -248,8 +296,16 @@ class IntelligentSquash:
                     rebase_head_exists = (self.spring_ai_dir / ".git" / "REBASE_HEAD").exists()
                     if rebase_head_exists:
                         Logger.info("Continuing rebase...")
-                        self.run_git(["rebase", "--continue"])
-                        Logger.success("✅ Rebase completed successfully after conflict resolution")
+                        self._log_rebase_state("before rebase continue")
+                        
+                        try:
+                            self.run_git(["rebase", "--continue"])
+                            Logger.success("✅ Rebase completed successfully after conflict resolution")
+                            self._log_rebase_state("after successful rebase continue")
+                        except subprocess.CalledProcessError as e:
+                            Logger.error(f"❌ Rebase continue failed with exit code {e.returncode}")
+                            self._log_rebase_state("after failed rebase continue")
+                            raise
                     else:
                         # Not in rebase state, check if we have staged changes to commit
                         try:
@@ -318,8 +374,16 @@ class IntelligentSquash:
                         rebase_head_exists = (self.spring_ai_dir / ".git" / "REBASE_HEAD").exists()
                         if rebase_head_exists:
                             Logger.info("Continuing rebase...")
-                            self.run_git(["rebase", "--continue"])
-                            Logger.success("✅ Rebase completed successfully after auto-resolution")
+                            self._log_rebase_state("before rebase continue (path 2)")
+                            
+                            try:
+                                self.run_git(["rebase", "--continue"])
+                                Logger.success("✅ Rebase completed successfully after auto-resolution")
+                                self._log_rebase_state("after successful rebase continue (path 2)")
+                            except subprocess.CalledProcessError as e:
+                                Logger.error(f"❌ Rebase continue failed with exit code {e.returncode} (path 2)")
+                                self._log_rebase_state("after failed rebase continue (path 2)")
+                                raise
                         else:
                             Logger.warn("⚠️  Rebase completed but may not have properly squashed commits")
                             

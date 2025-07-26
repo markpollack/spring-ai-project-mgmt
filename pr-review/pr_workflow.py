@@ -20,6 +20,9 @@ from datetime import datetime
 # Import our conflict analyzer and compilation error resolver
 from conflict_analyzer import ConflictAnalyzer, ConflictAnalysis
 from compilation_error_resolver import CompilationErrorResolver
+# Import GitHub utilities for branch management
+from github_utils import GitHubUtils
+from claude_code_wrapper import ClaudeCodeWrapper
 
 
 @dataclass
@@ -83,15 +86,24 @@ class GitHelper:
         self.repo_dir = repo_dir
     
     def run_git(self, args: List[str], check: bool = True, capture_output: bool = False) -> subprocess.CompletedProcess:
-        """Run git command in the repository directory"""
+        """Run git command in the repository directory with non-interactive environment"""
         cmd = ["git"] + args
         try:
+            # Global environment to prevent any git editor popups
+            env = os.environ.copy()
+            env['GIT_EDITOR'] = 'true'  # Use 'true' command that always succeeds
+            env['EDITOR'] = 'true'
+            env['VISUAL'] = 'true'
+            env['GIT_SEQUENCE_EDITOR'] = 'true'
+            env['GIT_MERGE_AUTOEDIT'] = 'no'
+            
             result = subprocess.run(
                 cmd,
                 cwd=self.repo_dir,
                 capture_output=capture_output,
                 text=True,
-                check=check
+                check=check,
+                env=env
             )
             return result
         except subprocess.CalledProcessError as e:
@@ -281,16 +293,34 @@ class PRAnalyzer:
             Logger.info("Collecting context data for enhanced report generation...")
             context_result = subprocess.run(
                 ["python3", str(context_collector), pr_number], 
-                cwd=self.config.spring_ai_dir, 
+                cwd=self.config.script_dir,  # Fixed: run from script_dir, not spring_ai_dir
                 capture_output=True, 
                 text=True, 
                 timeout=120
             )
 
+            # Debug: Log context collection output
+            Logger.info(f"🔍 Context collection return code: {context_result.returncode}")
+            if context_result.stdout:
+                Logger.info(f"🔍 Context collection stdout: {context_result.stdout.strip()}")
+            if context_result.stderr:
+                Logger.warn(f"🔍 Context collection stderr: {context_result.stderr.strip()}")
+
             if context_result.returncode != 0:
                 Logger.error("Context collection failed - cannot generate enhanced report")
                 Logger.error(f"Context collection error: {context_result.stderr}")
                 return None
+            
+            # Verify context data was actually created
+            context_dir = self.config.script_dir / "context" / f"pr-{pr_number}"
+            if not context_dir.exists():
+                Logger.error(f"❌ Context directory not created: {context_dir}")
+                return None
+            
+            context_files = list(context_dir.glob("*.json"))
+            Logger.info(f"🔍 Context files created: {len(context_files)} files")
+            for file in context_files:
+                Logger.info(f"   - {file.name}")
             
             Logger.success("✅ Context data collection completed")
             
@@ -312,23 +342,45 @@ class PRAnalyzer:
             )
             
             if result.returncode == 0:
+                # Check if report was actually created with real content
+                if not report_file.exists():
+                    Logger.error(f"❌ Enhanced report file was not created: {report_file}")
+                    return None
+                
+                # Verify report has real data (not just placeholder content)
+                with open(report_file, 'r') as f:
+                    content = f.read()
+                    
+                # Check for placeholder/empty data indicators
+                placeholder_indicators = [
+                    "Analysis not available",
+                    "Assessment not available", 
+                    "N/A/10 ⭐",
+                    "Problem Being Solved**: Analysis not available"
+                ]
+                
+                has_placeholder_data = any(indicator in content for indicator in placeholder_indicators)
+                
+                if has_placeholder_data:
+                    Logger.error("❌ Enhanced report contains placeholder data - AI analysis failed")
+                    Logger.error("❌ Context data was not properly processed by the enhanced report generator")
+                    Logger.error("❌ Cannot continue with incomplete AI analysis")
+                    return None
+                
                 Logger.success(f"📋 Enhanced PR analysis report generated: {report_file}")
                 
                 # Show report stats
-                if report_file.exists():
-                    with open(report_file, 'r') as f:
-                        line_count = sum(1 for _ in f)
-                    Logger.info(f"Enhanced report contains {line_count} lines")
-                    
-                    # Show preview
-                    Logger.info("Enhanced report preview:")
-                    print("=" * 50)
-                    with open(report_file, 'r') as f:
-                        preview_lines = f.readlines()[10:25]  # Skip header, show next 15 lines
-                        for line in preview_lines:
-                            print(line.rstrip())
-                    print("=" * 50)
-                    Logger.info(f"Full enhanced report: {report_file}")
+                line_count = len(content.splitlines())
+                Logger.info(f"Enhanced report contains {line_count} lines")
+                
+                # Show preview
+                Logger.info("Enhanced report preview:")
+                print("=" * 50)
+                preview_lines = content.splitlines()[10:25]  # Skip header, show next 15 lines
+                for line in preview_lines:
+                    print(line)
+                print("=" * 50)
+                Logger.info(f"Full enhanced report: {report_file}")
                 
                 return report_file
             else:
@@ -356,6 +408,7 @@ class PRWorkflow:
         self.conflict_analyzer = ConflictAnalyzer(str(config.script_dir))
         self.pr_analyzer = PRAnalyzer(config)
         self.compilation_resolver = CompilationErrorResolver(config.spring_ai_dir)
+        self.github_utils = GitHubUtils(config.script_dir, config.spring_ai_repo)
         
         # Ensure directories exist
         config.plans_dir.mkdir(exist_ok=True)
@@ -494,24 +547,52 @@ class PRWorkflow:
         return True
     
     def checkout_pr(self, pr_number: str, force: bool = False, dry_run: bool = False) -> bool:
-        """Checkout the PR"""
+        """Checkout the PR using smart branch switching"""
         Logger.info(f"Checking out PR #{pr_number}...")
         
         if dry_run:
             Logger.info(f"[DRY RUN] Would checkout PR #{pr_number}")
             return True
         
-        # Checkout the PR using GitHub CLI - this will create/switch to the actual branch
-        gh_cmd = ["gh", "pr", "checkout", pr_number]
-        if not self.run_command(gh_cmd, f"Checkout PR #{pr_number}", cwd=self.config.spring_ai_dir):
+        # Get the expected branch name for this PR
+        expected_branch = self.github_utils.get_pr_branch_name(pr_number)
+        if not expected_branch:
+            Logger.error(f"Could not determine branch name for PR #{pr_number}")
             return False
         
-        # Get the actual branch name that was created/checked out
-        actual_branch = self.git.run_git(["rev-parse", "--abbrev-ref", "HEAD"], capture_output=True).stdout.strip()
-        Logger.info(f"Checked out to branch: {actual_branch}")
+        # Check if we already have this branch locally
+        try:
+            result = self.git.run_git(["show-ref", "--verify", "--quiet", f"refs/heads/{expected_branch}"], 
+                                    check=False, capture_output=True)
+            branch_exists_locally = (result.returncode == 0)
+        except:
+            branch_exists_locally = False
+        
+        if branch_exists_locally and not force:
+            # Branch exists locally - just switch to it (preserves local changes/squashes)
+            Logger.info(f"🔄 Branch {expected_branch} exists locally, switching to it")
+            if not self.github_utils.switch_to_branch(self.config.spring_ai_dir, expected_branch):
+                return False
+        else:
+            # Branch doesn't exist locally or force requested - use gh pr checkout
+            if force and branch_exists_locally:
+                Logger.info(f"🔄 Force checkout requested - will overwrite local branch {expected_branch}")
+            
+            Logger.info(f"📥 Checking out PR #{pr_number} from GitHub")
+            gh_cmd = ["gh", "pr", "checkout", pr_number]
+            if not self.run_command(gh_cmd, f"Checkout PR #{pr_number}", cwd=self.config.spring_ai_dir):
+                return False
+            
+            # Store the branch mapping for future use
+            actual_branch = self.git.run_git(["rev-parse", "--abbrev-ref", "HEAD"], capture_output=True).stdout.strip()
+            self.github_utils.store_pr_branch_mapping(pr_number, actual_branch)
+        
+        # Verify we're on the correct branch
+        current_branch = self.git.run_git(["rev-parse", "--abbrev-ref", "HEAD"], capture_output=True).stdout.strip()
+        Logger.success(f"✅ Now on branch: {current_branch}")
         
         # Store the actual branch name for cleanup purposes
-        self.current_pr_branch = actual_branch
+        self.current_pr_branch = current_branch
         
         return True
     def apply_java_formatter(self, dry_run: bool = False) -> bool:
@@ -716,10 +797,17 @@ class PRWorkflow:
         
         return "\n".join(f"- {issue}" for issue in issues)
     
-    def cleanup_pr_workspace(self, pr_number: str, dry_run: bool = False) -> bool:
-        """Clean up PR workspace and generated files"""
-        Logger.info(f"🧹 Cleaning up PR #{pr_number} workspace...")
+    def cleanup_pr_workspace(self, pr_number: str, cleanup_mode: str = 'light', dry_run: bool = False) -> bool:
+        """Clean up PR workspace and generated files
         
+        Args:
+            pr_number: PR number to clean up
+            cleanup_mode: 'full' (remove everything) or 'light' (keep spring-ai repo)
+            dry_run: Show what would be done without executing
+        """
+        Logger.info(f"🧹 Cleaning up PR #{pr_number} workspace ({cleanup_mode} mode)...")
+        
+        # Core generated files that are always cleaned
         cleanup_items = [
             # Build cache files
             self.config.script_dir / f".build_cache_pr_{pr_number}",
@@ -732,9 +820,13 @@ class PRWorkflow:
             self.config.plans_dir / f"enhanced-plan-pr-{pr_number}.md",
             # Log files directory
             self.config.script_dir / "logs",
-            # Spring AI repository (for complete fresh start)
-            self.config.spring_ai_dir,
+            # Context files for this PR
+            self.config.script_dir / "context" / f"pr-{pr_number}",
         ]
+        
+        # Add spring-ai repo only for full cleanup
+        if cleanup_mode == 'full':
+            cleanup_items.append(self.config.spring_ai_dir)
         
         success = True
         cleaned_count = 0
@@ -748,40 +840,25 @@ class PRWorkflow:
                     Logger.info(f"[DRY RUN]   - File/Directory: {item}")
             return True
         
-        # Clean up git branch - skip if spring-ai directory will be removed
-        if not (self.config.spring_ai_dir in cleanup_items[1:]):
-            # Use the actual branch name if available, otherwise fall back to pr-{number} pattern
-            branch_name = getattr(self, 'current_pr_branch', f"pr-{pr_number}")
+        # Handle git branch cleanup based on cleanup mode
+        if cleanup_mode == 'light' and self.config.spring_ai_dir.exists():
+            # For light cleanup, just ensure we're on main branch
             try:
-                # Check if spring-ai directory exists first
-                if self.config.spring_ai_dir.exists():
-                    # Check if branch exists
-                    result = self.git.run_git(["show-ref", "--verify", "--quiet", f"refs/heads/{branch_name}"], check=False, capture_output=True)
-                    if result.returncode == 0:
-                        # Branch exists, delete it
-                        current_branch = self.git.run_git(["rev-parse", "--abbrev-ref", "HEAD"], capture_output=True).stdout.strip()
-                        
-                        if current_branch == branch_name:
-                            # Switch to main branch first
-                            Logger.info(f"Switching from {branch_name} to main branch...")
-                            self.git.run_git(["checkout", self.config.main_branch])
-                        
-                        Logger.info(f"Deleting git branch: {branch_name}")
-                        self.git.run_git(["branch", "-D", branch_name])
-                        cleaned_count += 1
-                else:
-                    Logger.info("Spring AI directory doesn't exist (already clean)")
-                    
-            except subprocess.CalledProcessError:
-                # Branch doesn't exist, which is fine
-                Logger.info(f"Git branch {branch_name} does not exist (already clean)")
+                current_branch = self.git.run_git(["rev-parse", "--abbrev-ref", "HEAD"], capture_output=True).stdout.strip()
+                if current_branch != self.config.main_branch:
+                    Logger.info(f"🔄 Switching from {current_branch} to main branch...")
+                    self.git.run_git(["checkout", self.config.main_branch])
+                    Logger.info("✅ Switched to main branch (keeping repository)")
             except Exception as e:
-                Logger.warn(f"Error cleaning git branch {branch_name}: {e}")
-                # Don't fail cleanup just because of git branch issues
-                pass
+                Logger.warn(f"Error switching to main branch: {e}")
+        elif cleanup_mode == 'full':
+            # For full cleanup, the entire spring-ai directory will be removed
+            Logger.info("📁 Spring AI directory will be completely removed (full cleanup)")
+        else:
+            Logger.info("📁 Spring AI directory doesn't exist (already clean)")
         
         # Clean up files and directories
-        for item in cleanup_items[1:]:  # Skip the branch name
+        for item in cleanup_items:
             try:
                 if item.exists():
                     if item.is_file():
@@ -1049,8 +1126,10 @@ class PRWorkflow:
             except Exception as e:
                 Logger.warn(f"Error processing {file_path}: {e}")
         
-        if resolved_count > 0:
-            Logger.success(f"Auto-resolved conflicts in {resolved_count} file(s)")
+        total_conflicts = len(conflicted_files)
+        
+        if resolved_count == total_conflicts:
+            Logger.success(f"✅ All {total_conflicts} conflicts successfully resolved!")
             
             # Apply Java formatter after resolving conflicts to fix any formatting issues
             Logger.info("🎨 Applying Java formatter after conflict resolution...")
@@ -1060,7 +1139,14 @@ class PRWorkflow:
             
             return True
         else:
-            Logger.warn("No conflicts could be auto-resolved")
+            if resolved_count > 0:
+                unresolved_count = total_conflicts - resolved_count
+                Logger.warn(f"❌ Only resolved {resolved_count}/{total_conflicts} conflicts")
+                Logger.warn(f"❌ {unresolved_count} conflicts still remain unresolved")
+            else:
+                Logger.warn("❌ No conflicts could be auto-resolved")
+            
+            Logger.warn("❌ Cannot continue - script must resolve ALL conflicts to proceed")
             return False
     
     def resolve_with_claude_code(self, file_path: Path) -> bool:
@@ -1071,8 +1157,9 @@ class PRWorkflow:
         
         try:
             # Check if Claude Code CLI is available
+            claude_path = '/home/mark/.nvm/versions/node/v22.15.0/bin/claude'
             try:
-                subprocess.run(['claude', '--version'], capture_output=True, check=True, timeout=5)
+                subprocess.run([claude_path, '--version'], capture_output=True, check=True, timeout=5)
             except (subprocess.CalledProcessError, subprocess.TimeoutExpired, FileNotFoundError):
                 Logger.warn("Claude Code CLI not available for AI conflict resolution")
                 return False
@@ -1085,6 +1172,13 @@ class PRWorkflow:
                 return False  # No conflicts to resolve
             
             Logger.info(f"🤖 Using Claude Code AI to resolve conflicts in: {file_path.name}")
+            
+            # Save conflicted file for debugging
+            debug_file = self.config.script_dir / "logs" / f"conflict-debug-{file_path.name}"
+            debug_file.parent.mkdir(exist_ok=True)
+            with open(debug_file, 'w', encoding='utf-8') as f:
+                f.write(content)
+            Logger.info(f"🔍 Saved conflicted file for debugging: {debug_file}")
             
             # Create prompt for Claude Code
             claude_prompt = """Please resolve this Git merge conflict intelligently.
@@ -1099,6 +1193,19 @@ Analyze the conflicting changes and resolve them appropriately:
 
 File content with conflicts:"""
             
+            # Log the prompt being sent to Claude Code
+            full_prompt = claude_prompt + '\n\n' + content
+            Logger.info(f"🔍 Claude Code prompt length: {len(full_prompt)} chars")
+            Logger.info(f"🔍 Conflict markers in file: {content.count('<<<<<<<')} conflicts detected")
+            Logger.info(f"🔍 File size: {len(content)} chars, {len(content.split(chr(10)))} lines")
+            
+            # Save full prompt sent to Claude Code for debugging
+            prompt_debug_file = self.config.script_dir / "logs" / f"claude-prompt-{file_path.name}.txt"
+            with open(prompt_debug_file, 'w', encoding='utf-8') as f:
+                f.write(claude_prompt + '\n\n')
+                f.write(content)
+            Logger.info(f"🔍 Saved Claude Code prompt for debugging: {prompt_debug_file}")
+            
             # Create temporary files
             with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False) as input_file:
                 input_file.write(claude_prompt + '\n\n')
@@ -1106,33 +1213,63 @@ File content with conflicts:"""
                 input_file_path = input_file.name
             
             try:
-                # Call Claude Code to resolve conflicts
-                with open(input_file_path, 'r') as stdin:
-                    result = subprocess.run(
-                        ['claude', '--print'],
-                        stdin=stdin,
-                        capture_output=True,
-                        text=True,
-                        timeout=300,  # 5 minute timeout
-                        check=False
-                    )
+                # Use full path to Claude Code to ensure correct version
+                claude_path = '/home/mark/.nvm/versions/node/v22.15.0/bin/claude'
                 
-                if result.returncode == 0 and result.stdout.strip():
-                    resolved_content = result.stdout.strip()
+                # Debug: Check what version is being called
+                version_check = subprocess.run([claude_path, '--version'], capture_output=True, text=True, check=False)
+                Logger.info(f"🔍 Claude Code version being called: {version_check.stdout.strip() if version_check.stdout else 'No stdout'}")
+                Logger.info(f"🔍 Claude Code version stderr: {version_check.stderr.strip() if version_check.stderr else 'No stderr'}")
+                
+                # Use ClaudeCodeWrapper with permissions skip for temp files
+                claude = ClaudeCodeWrapper()
+                
+                if not claude.is_available():
+                    Logger.error("❌ Claude Code is not available")
+                    return None
+                
+                # Use wrapper to analyze from file (conflict resolution doesn't need JSON output)
+                logs_dir = self.config.script_dir / "logs"
+                logs_dir.mkdir(exist_ok=True)
+                debug_response_file = logs_dir / f"claude-response-conflict-resolution-{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+                result = claude.analyze_from_file(str(input_file_path), str(debug_response_file), timeout=300, use_json_output=False)
+                
+                # Debug: Log Claude Code execution details
+                Logger.info(f"🔍 Claude Code execution - Success: {result['success']}")
+                if result['success']:
+                    Logger.info(f"🔍 Claude Code stdout length: {len(result['response']) if result['response'] else 0} chars")
+                else:
+                    Logger.error(f"🔍 Claude Code error: {result['error']}")
+                    Logger.info(f"🔍 Claude Code stderr: {result['stderr'] if result['stderr'] else 'None'}")
+                
+                # Response is already saved to debug_response_file by the wrapper
+                Logger.info(f"🔍 Saved Claude Code response for debugging: {debug_response_file}")
+                
+                if result['success'] and result['response'] and result['response'].strip():
+                    resolved_content = result['response'].strip()
+                    Logger.info(f"🔍 Claude Code response preview: {resolved_content[:100]}...")
                     
                     # Strip markdown code fences if present
                     lines = resolved_content.split('\n')
                     if lines and lines[0].startswith('```'):
                         lines = lines[1:]
+                        Logger.info("🔍 Stripped opening code fence")
                     if lines and lines[-1].startswith('```'):
                         lines = lines[:-1]
+                        Logger.info("🔍 Stripped closing code fence")
                     resolved_content = '\n'.join(lines)
                     
                     # Verify the result doesn't still have conflict markers
-                    if not any(marker in resolved_content for marker in ['<<<<<<<', '>>>>>>>', '=======']):
+                    conflict_markers = ['<<<<<<<', '>>>>>>>', '=======']
+                    remaining_markers = [marker for marker in conflict_markers if marker in resolved_content]
+                    
+                    if not remaining_markers:
                         # Verify the file is not empty and seems reasonable
                         original_lines = len(content.split('\n'))
                         resolved_lines = len(resolved_content.split('\n'))
+                        
+                        Logger.info(f"🔍 Line count: {original_lines} → {resolved_lines}")
+                        Logger.info(f"🔍 Content length: {len(content)} → {len(resolved_content)} chars")
                         
                         if resolved_content.strip() and resolved_lines > original_lines // 2:
                             # Write resolved content back to original file
@@ -1142,13 +1279,25 @@ File content with conflicts:"""
                             Logger.success(f"✅ Claude Code successfully resolved conflicts in: {file_path.name}")
                             return True
                         else:
-                            Logger.warn(f"⚠️  Claude Code resolution resulted in suspicious output for: {file_path.name}")
+                            Logger.warn(f"❌ Claude Code resolution failed - suspicious output for: {file_path.name}")
+                            Logger.warn(f"   Content empty: {not resolved_content.strip()}")
+                            Logger.warn(f"   Lines too few: {resolved_lines} <= {original_lines // 2}")
+                            return False
                     else:
-                        Logger.warn(f"⚠️  Claude Code output still contains conflict markers for: {file_path.name}")
+                        Logger.warn(f"❌ Claude Code output still contains conflict markers for: {file_path.name}")
+                        Logger.warn(f"   Remaining markers: {remaining_markers}")
+                        Logger.info(f"🔍 Problematic content preview: {resolved_content[:200]}...")
+                        return False
                 else:
-                    Logger.warn(f"⚠️  Claude Code failed to process: {file_path.name}")
-                    if result.stderr:
-                        Logger.warn(f"Claude Code error: {result.stderr.strip()}")
+                    Logger.warn(f"❌ Claude Code failed to process: {file_path.name}")
+                    Logger.warn(f"   Success: {result['success']}")
+                    if result.get('error'):
+                        Logger.warn(f"   Error: {result['error']}")
+                    if result.get('response'):
+                        Logger.warn(f"   Response preview: {result['response'][:200]}...")
+                    if result.get('stderr'):
+                        Logger.warn(f"   Stderr: {result['stderr'].strip()}")
+                    return False
                 
             finally:
                 # Clean up temporary files
@@ -1167,7 +1316,7 @@ File content with conflicts:"""
     
     
     def run_complete_workflow(self, pr_number: str, skip_squash: bool = False, skip_compile: bool = False, 
-                            auto_resolve: bool = False, force: bool = False, generate_report: bool = True, dry_run: bool = False) -> bool:
+                            skip_tests: bool = False, auto_resolve: bool = False, force: bool = False, generate_report: bool = True, dry_run: bool = False) -> bool:
         """Run the complete PR workflow"""
         Logger.info(f"🚀 Starting complete PR review workflow for PR #{pr_number}")
         
@@ -1209,7 +1358,7 @@ File content with conflicts:"""
                 Logger.warn("⚠️  Report generation failed, but PR preparation was successful")
         
         # Phase 7: Run tests for changed test files
-        if not skip_compile and not dry_run:
+        if not skip_compile and not skip_tests and not dry_run:
             self.run_changed_tests(pr_number)
         
         # Success
@@ -1238,6 +1387,11 @@ File content with conflicts:"""
         if not self.config.spring_ai_dir.exists():
             Logger.error(f"Spring AI repository not found: {self.config.spring_ai_dir}")
             Logger.error("Please run the full workflow first to prepare the PR")
+            return False
+        
+        # Ensure we're on the correct branch for this PR
+        if not self.github_utils.ensure_correct_branch(pr_number, self.config.spring_ai_dir):
+            Logger.error(f"Failed to switch to correct branch for PR #{pr_number}")
             return False
         
         # Validate we're working with the correct PR by checking GitHub
@@ -1657,7 +1811,8 @@ Examples:
   python3 pr_workflow.py --report-only 3386        # Generate only the analysis report
   python3 pr_workflow.py --test-only 3386          # Run only the changed tests
   python3 pr_workflow.py --plan-only 3386          # Generate enhanced workflow plan
-  python3 pr_workflow.py --cleanup 3386            # Clean up PR workspace and files
+  python3 pr_workflow.py --cleanup 3386            # Clean up PR workspace (light mode - keeps spring-ai repo)
+  python3 pr_workflow.py --cleanup 3386 --cleanup-mode full  # Full cleanup (removes everything)
   python3 pr_workflow.py --dry-run 3386            # Preview the workflow
         """
     )
@@ -1665,6 +1820,7 @@ Examples:
     parser.add_argument('pr_number', help='GitHub PR number to process')
     parser.add_argument('--skip-squash', action='store_true', help='Skip commit squashing')
     parser.add_argument('--skip-compile', action='store_true', help='Skip compilation check')
+    parser.add_argument('--skip-tests', action='store_true', help='Skip test execution')
     parser.add_argument('--no-auto-resolve', action='store_true', help='Disable automatic conflict resolution (auto-resolve is enabled by default)')
     parser.add_argument('--force', action='store_true', help='Force operations (overwrite existing branches)')
     parser.add_argument('--skip-report', action='store_true', help='Skip PR analysis report generation')
@@ -1672,6 +1828,8 @@ Examples:
     parser.add_argument('--test-only', action='store_true', help='Run only the changed tests (assumes PR already prepared)')
     parser.add_argument('--plan-only', action='store_true', help='Generate enhanced workflow plan with progress tracking')
     parser.add_argument('--cleanup', action='store_true', help='Clean up PR workspace and generated files')
+    parser.add_argument('--cleanup-mode', choices=['full', 'light'], default='light', 
+                       help='Cleanup mode: full (remove everything including spring-ai repo) or light (keep spring-ai repo, remove generated files only)')
     parser.add_argument('--dry-run', action='store_true', help='Show what would be done without executing')
     
     args = parser.parse_args()
@@ -1713,7 +1871,7 @@ Examples:
         else:
             Logger.error("❌ Failed to generate enhanced plan")
     elif args.cleanup:
-        success = workflow.cleanup_pr_workspace(args.pr_number, dry_run=args.dry_run)
+        success = workflow.cleanup_pr_workspace(args.pr_number, cleanup_mode=args.cleanup_mode, dry_run=args.dry_run)
         if success:
             Logger.success(f"🧹 PR #{args.pr_number} workspace cleaned successfully")
         else:
@@ -1723,6 +1881,7 @@ Examples:
             pr_number=args.pr_number,
             skip_squash=args.skip_squash,
             skip_compile=args.skip_compile,
+            skip_tests=args.skip_tests,
             auto_resolve=not args.no_auto_resolve,  # Auto-resolve by default unless disabled
             force=args.force,
             generate_report=not args.skip_report,
