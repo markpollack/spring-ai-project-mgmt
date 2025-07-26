@@ -118,50 +118,218 @@ class AIRiskAssessor:
             return {}
     
     def build_file_changes_detail(self, file_changes: List[Dict[str, Any]]) -> str:
-        """Build file changes detail with file references for Claude Code to read individually"""
+        """Build file changes detail with status-aware content strategy"""
         if not file_changes:
             return "*No file changes data available*"
         
         details = []
-        details.append("**IMPORTANT**: Use your Read tool to examine the full content of each file listed below as needed for your analysis.")
-        details.append("")
-        details.append("**Changed Files to Analyze:**")
+        details.append("**IMPORTANT**: Use your Read tool to examine files as needed for analysis.")
         details.append("")
         
-        for change in file_changes:
-            filename = change.get('filename', 'Unknown')
-            status = change.get('status', 'unknown')
-            additions = change.get('additions', 0)
-            deletions = change.get('deletions', 0)
-            patch = change.get('patch', '')
-            
-            # Create absolute path for Claude Code to read
-            absolute_path = f"/home/mark/project-mgmt/spring-ai-project-mgmt/pr-review/spring-ai/{filename}"
+        # Group files by status for better organization
+        new_files = [f for f in file_changes if f.get('status') == 'added']
+        modified_files = [f for f in file_changes if f.get('status') == 'modified']
+        removed_files = [f for f in file_changes if f.get('status') == 'removed']
+        
+        if new_files:
+            details.extend(self._format_new_files(new_files))
+        if modified_files:
+            details.extend(self._format_modified_files(modified_files))
+        if removed_files:
+            details.extend(self._format_removed_files(removed_files))
+        
+        return '\n'.join(details)
+    
+    def _format_new_files(self, new_files: List[Dict[str, Any]]) -> List[str]:
+        """Format new files without any patch content (completely redundant for new files)"""
+        details = ["## New Files Added"]
+        details.append("")
+        
+        # Prioritize Java files first
+        java_files = [f for f in new_files if f.get('filename', '').endswith('.java')]
+        other_files = [f for f in new_files if not f.get('filename', '').endswith('.java')]
+        
+        for file_info in java_files + other_files:
+            filename = file_info.get('filename', 'Unknown')
+            additions = file_info.get('additions', 0)
+            file_path = f"/home/mark/project-mgmt/spring-ai-project-mgmt/pr-review/spring-ai/{filename}"
             
             details.append(f"### {filename}")
-            details.append(f"- **Status**: {status}")
-            details.append(f"- **File Path**: `{absolute_path}`")
-            details.append(f"- **Changes**: +{additions}/-{deletions} lines")
+            details.append(f"- **Status**: New file (patch content omitted - would be identical to full file)")
+            details.append(f"- **File Path**: `{file_path}`")
+            details.append(f"- **Size**: {additions} lines")
+            details.append(f"- **Analysis**: Use Read tool to examine complete file content")
             
-            if patch:
-                # Just mention there are changes, don't include patch content
-                patch_line_count = len(patch.split('\n'))
-                details.append(f"- **Patch**: {patch_line_count} lines of changes (use Read tool to see full context)")
+            # Add contextual summary for Java files (prioritized)
+            if filename.endswith('.java'):
+                file_summary = self._generate_java_file_summary(filename, file_info)
+                details.append(f"- **Priority**: HIGH - Java source file")
+                details.append(f"- **Purpose**: {file_summary}")
+            else:
+                file_summary = self._generate_file_summary(filename, file_info)
+                if file_summary:
+                    details.append(f"- **Purpose**: {file_summary}")
             
             details.append("")
         
-        details.append("---")
+        return details
+    
+    def _format_modified_files(self, modified_files: List[Dict[str, Any]]) -> List[str]:
+        """Format modified files with relevant patch excerpts"""
+        details = ["## Modified Files"]
         details.append("")
-        details.append(f"**Total Files**: {len(file_changes)} files to analyze")
-        details.append("")
-        details.append("**Analysis Workflow:**")
-        details.append("1. Use `Read` tool to examine each file's complete content")
-        details.append("2. Focus on areas indicated by the patch previews above")
-        details.append("3. Look for security, performance, integration, and maintainability risks")
-        details.append("4. Consider Spring AI framework patterns and best practices")
-        details.append("5. Provide specific file paths and line numbers in your findings")
         
-        return '\n'.join(details)
+        for file_info in modified_files:
+            filename = file_info.get('filename', 'Unknown')
+            additions = file_info.get('additions', 0)
+            deletions = file_info.get('deletions', 0)
+            patch = file_info.get('patch', '')
+            file_path = f"/home/mark/project-mgmt/spring-ai-project-mgmt/pr-review/spring-ai/{filename}"
+            
+            details.append(f"### {filename}")
+            details.append(f"- **Status**: Modified")
+            details.append(f"- **File Path**: `{file_path}`")
+            details.append(f"- **Changes**: +{additions}/-{deletions} lines")
+            
+            # Include filtered patch excerpts for context
+            if patch:
+                filtered_patch = self._filter_patch_for_security_analysis(patch)
+                if filtered_patch:
+                    details.append(f"- **Key Changes**:")
+                    details.extend(f"  - {line}" for line in filtered_patch[:5])  # Top 5 changes
+            
+            details.append(f"- **Full Analysis**: Use Read tool for complete context")
+            details.append("")
+        
+        return details
+    
+    def _format_removed_files(self, removed_files: List[Dict[str, Any]]) -> List[str]:
+        """Format removed files with minimal context"""
+        details = ["## Removed Files"]
+        details.append("")
+        
+        for file_info in removed_files:
+            filename = file_info.get('filename', 'Unknown')
+            deletions = file_info.get('deletions', 0)
+            
+            details.append(f"### {filename}")
+            details.append(f"- **Status**: Removed")
+            details.append(f"- **Size**: {deletions} lines removed")
+            details.append(f"- **Analysis**: Consider security implications of removed functionality")
+            details.append("")
+        
+        return details
+    
+    def _generate_java_file_summary(self, filename: str, file_info: Dict[str, Any]) -> str:
+        """Generate contextual summary for Java files based on path/type"""
+        if 'test' in filename.lower():
+            return "Test class - examine for test coverage and security test patterns"
+        elif 'autoconfigure' in filename.lower() or 'AutoConfiguration' in filename:
+            return "Auto-configuration class - check for proper Spring Boot setup and security"  
+        elif filename.endswith('Properties.java'):
+            return "Configuration properties - examine for credential handling and validation"
+        elif 'Controller' in filename:
+            return "Spring Controller - check for input validation, authentication, and authorization"
+        elif 'Service' in filename:
+            return "Service class - analyze for business logic security and data handling"
+        elif 'Repository' in filename:
+            return "Repository class - examine for SQL injection prevention and data access security"
+        else:
+            return "Java source file - analyze for security, performance, and integration risks"
+    
+    def _generate_file_summary(self, filename: str, file_info: Dict[str, Any]) -> str:
+        """Generate contextual summary for non-Java files based on path/type"""
+        if filename.endswith('.xml'):
+            if filename == 'pom.xml':
+                return "Maven POM - check dependencies, plugins, and build security"
+            else:
+                return "XML configuration - examine for injection risks and sensitive data"
+        elif filename.endswith('.md'):
+            return "Documentation - review for sensitive information disclosure"
+        elif filename.endswith(('.yml', '.yaml', '.properties')):
+            return "Configuration file - check for hardcoded credentials and security settings"
+        else:
+            return "Source file - perform comprehensive security and quality analysis"
+    
+    def _filter_patch_for_security_analysis(self, patch: str) -> List[str]:
+        """Filter patch lines to highlight security-relevant changes"""
+        if not patch:
+            return []
+        
+        filtered_lines = []
+        patch_lines = patch.split('\n')
+        
+        for line in patch_lines:
+            # Skip diff headers
+            if line.startswith(('@@', '+++', '---', 'diff --git', 'index ')):
+                continue
+            
+            # Only include addition lines for security focus
+            if not line.startswith('+'):
+                continue
+            
+            line_content = line[1:].strip()  # Remove the '+' prefix
+            
+            # Prioritize security-relevant changes
+            if any(keyword in line_content.lower() for keyword in [
+                'password', 'key', 'secret', 'token', 'auth', 'credential',
+                'security', 'validation', 'sanitize', 'encrypt', 'decrypt',
+                'sql', 'query', 'inject', 'xss', 'csrf'
+            ]):
+                filtered_lines.append(line[:80])  # Truncate long lines
+                
+            # Keep method signatures and class declarations
+            elif any(pattern in line_content for pattern in [
+                'public ', 'private ', 'protected ', 'class ', 'interface '
+            ]):
+                filtered_lines.append(line[:80])
+            
+            # Limit lines to prevent prompt bloat  
+            if len(filtered_lines) >= 8:
+                break
+        
+        return filtered_lines
+    
+    def _extract_json_from_response(self, response_content: str) -> Dict[str, Any]:
+        """Extract JSON from response that may contain narrative text before JSON"""
+        # First try direct JSON parsing
+        try:
+            return json.loads(response_content)
+        except json.JSONDecodeError:
+            pass
+        
+        # If direct parsing fails, try to extract JSON from narrative response
+        import re
+        
+        # Look for JSON block starting with { and ending with }
+        # Handle multi-line JSON with proper brace matching
+        json_start = response_content.find('{')
+        if json_start == -1:
+            raise json.JSONDecodeError("No JSON found in response", response_content, 0)
+        
+        # Find the matching closing brace
+        brace_count = 0
+        json_end = -1
+        for i, char in enumerate(response_content[json_start:], json_start):
+            if char == '{':
+                brace_count += 1
+            elif char == '}':
+                brace_count -= 1
+                if brace_count == 0:
+                    json_end = i + 1
+                    break
+        
+        if json_end == -1:
+            raise json.JSONDecodeError("No matching closing brace found", response_content, json_start)
+        
+        # Extract and parse the JSON portion
+        json_str = response_content[json_start:json_end]
+        try:
+            return json.loads(json_str)
+        except json.JSONDecodeError as e:
+            Logger.error(f"Failed to parse extracted JSON: {e}")
+            Logger.error(f"Extracted JSON: {json_str[:200]}...")
+            raise
     
     def _create_fallback_assessment_from_narrative(self, narrative_text: str) -> Dict[str, Any]:
         """Create a basic assessment structure from Claude Code's narrative response"""
@@ -589,8 +757,8 @@ class AIRiskAssessor:
                     Logger.success(f"✅ Claude Code returned response ({response_size_kb:.1f}KB)")
                     
                     try:
-                        # Parse as JSON - no fallbacks, fail fast
-                        assessment_data = json.loads(response_content)
+                        # Parse as JSON - first try direct parsing, then extract if needed
+                        assessment_data = self._extract_json_from_response(response_content)
                         
                         # Validate required keys exist
                         required_keys = ['critical_issues', 'important_issues', 'risk_factors', 'positive_findings', 'overall_risk_level', 'risk_summary']
