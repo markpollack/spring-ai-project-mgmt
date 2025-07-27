@@ -29,6 +29,21 @@ import subprocess
 from pr_workflow import PRWorkflow, WorkflowConfig
 
 
+class RunSpecificWorkflowConfig(WorkflowConfig):
+    """WorkflowConfig that uses run-specific directories"""
+    
+    def __init__(self, script_dir: Path, run_dir: Path):
+        self.script_dir = script_dir
+        self.run_dir = run_dir
+        self.spring_ai_repo = "spring-projects/spring-ai"
+        self.upstream_remote = "upstream"
+        self.main_branch = "main"
+    
+    @property
+    def reports_dir(self) -> Path:
+        return self.run_dir / "reports"
+
+
 class Logger:
     @staticmethod
     def info(msg): print(f"\033[34m[INFO]\033[0m {msg}")
@@ -112,8 +127,10 @@ class PerformanceMonitor:
         """Extract smart prompt metrics from log files"""
         metrics = {}
         try:
-            # Look for the Claude prompt log file
-            log_file = Path(f"logs/claude-prompt-risk-assessor.txt")
+            # Look for the Claude prompt log file (check current run first, then legacy location)
+            log_file = self.log_dir.parent.parent / "logs" / "claude-prompt-risk-assessor.txt"
+            if not log_file.exists():
+                log_file = Path(f"logs/claude-prompt-risk-assessor.txt")
             if log_file.exists():
                 # Read the file and extract metrics
                 with open(log_file, 'r') as f:
@@ -206,11 +223,25 @@ class BatchPRWorkflow:
     def __init__(self, config: BatchProcessingConfig):
         self.config = config
         self.script_dir = Path(__file__).parent.absolute()
-        self.workflow_config = WorkflowConfig(self.script_dir)
+        
+        # Setup runs directory structure first
+        self.runs_dir = self.script_dir / "runs"
+        self.runs_dir.mkdir(exist_ok=True)
+        
+        # Find next available run number
+        self.current_run_dir = self._get_next_run_directory()
+        self.current_run_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Create subdirectories in the current run
+        for subdir in ["logs", "reports", "context"]:
+            (self.current_run_dir / subdir).mkdir(exist_ok=True)
+        
+        # Create workflow config that uses the current run directory
+        self.workflow_config = RunSpecificWorkflowConfig(self.script_dir, self.current_run_dir)
         self.workflow = PRWorkflow(self.workflow_config)
         
-        # Setup logging and monitoring
-        self.batch_log_dir = self.script_dir / "logs" / f"batch-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
+        # Setup logging and monitoring in the current run directory
+        self.batch_log_dir = self.current_run_dir / "logs" / f"batch-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
         self.batch_log_dir.mkdir(parents=True, exist_ok=True)
         
         if self.config.collect_metrics:
@@ -219,6 +250,26 @@ class BatchPRWorkflow:
             self.monitor = None
         
         self.results: List[PRProcessingResult] = []
+        
+        Logger.info(f"📁 Using run directory: {self.current_run_dir}")
+    
+    def _get_next_run_directory(self) -> Path:
+        """Find the next available run directory (run-0, run-1, etc.)"""
+        run_number = 0
+        while True:
+            run_dir = self.runs_dir / f"run-{run_number}"
+            # If directory doesn't exist, use it
+            if not run_dir.exists():
+                return run_dir
+            # If directory exists but is empty, use it
+            if run_dir.exists() and not any(run_dir.iterdir()):
+                return run_dir
+            # If directory exists and has a BATCH_PROCESSING_SUMMARY.md, it's completed - try next
+            if (run_dir / "BATCH_PROCESSING_SUMMARY.md").exists():
+                run_number += 1
+                continue
+            # If directory exists but no summary, assume it's the current run
+            return run_dir
     
     def process_pr_list(self, pr_numbers: List[str]) -> bool:
         """Process a list of PRs through the complete workflow"""
@@ -308,9 +359,10 @@ class BatchPRWorkflow:
                 result.prompt_size_bytes = metrics.get('prompt_size_bytes')
                 result.token_count = metrics.get('token_count')
             
-            # Check if report was generated
-            report_file = self.script_dir / "reports" / f"review-pr-{pr_number}.md"
-            result.report_generated = report_file.exists()
+            # Check if report was generated (look in current run directory first, then fallback to legacy location)
+            report_file = self.current_run_dir / "reports" / f"review-pr-{pr_number}.md"
+            legacy_report_file = self.script_dir / "reports" / f"review-pr-{pr_number}.md"
+            result.report_generated = report_file.exists() or legacy_report_file.exists()
             
         except Exception as e:
             result.error_message = str(e)
@@ -419,7 +471,7 @@ class BatchPRWorkflow:
         
         for result in self.results:
             if result.report_generated:
-                summary_content += f"- [PR #{result.pr_number} Report](../reports/review-pr-{result.pr_number}.md)\n"
+                summary_content += f"- [PR #{result.pr_number} Report](reports/review-pr-{result.pr_number}.md)\n"
         
         summary_content += f"""
 ---

@@ -1,0 +1,37 @@
+{
+  "batch_start_time": "2025-07-27T14:41:22.849504",
+  "batch_end_time": "2025-07-27T14:43:10.037039",
+  "total_processing_time": null,
+  "prs_processed": [
+    {
+      "pr_number": "3918",
+      "success": true,
+      "start_time": "2025-07-27 14:41:22.849533",
+      "end_time": "2025-07-27 14:43:10.036465",
+      "processing_time": "0:01:47.186932",
+      "workflow_phase": "report_generation",
+      "error_message": null,
+      "prompt_size_bytes": null,
+      "token_count": null,
+      "files_analyzed": null,
+      "phases_completed": [
+        "report_generation"
+      ],
+      "report_generated": true,
+      "tests_passed": null
+    }
+  ],
+  "summary_stats": {
+    "total_prs": 1,
+    "successful_prs": 1,
+    "failed_prs": 0,
+    "success_rate": 100.0,
+    "avg_processing_time": 107.186932,
+    "total_batch_time": 107.187535
+  },
+  "smart_prompt_performance": {},
+  "system_info": {
+    "python_version": "3.12.3 (main, Jun 18 2025, 17:59:45) [GCC 13.3.0]",
+    "working_directory": "/home/mark/project-mgmt/spring-ai-project-mgmt/pr-review"
+  }
+}
