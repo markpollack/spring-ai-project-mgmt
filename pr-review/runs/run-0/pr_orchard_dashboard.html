@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🌳 Spring AI PR Orchard Dashboard</title>
+    
+        <style>
+        /* === ORCHARD DASHBOARD THEME === */
+        :root {
+            --orchard-green: #2d5016;
+            --apple-red: #dc3545;
+            --leaf-green: #28a745;
+            --bark-brown: #8b4513;
+            --sky-blue: #87ceeb;
+            --earth-tan: #deb887;
+            --harvest-gold: #ffd700;
+            --fresh-mint: #f0fff0;
+            --shadow-soft: rgba(0, 0, 0, 0.1);
+            --shadow-medium: rgba(0, 0, 0, 0.15);
+        }
+        
+        * {
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #f0fff0 0%, #e8f5e8 100%);
+            min-height: 100vh;
+            color: var(--orchard-green);
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        /* === HEADER STYLES === */
+        .dashboard-header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 30px;
+            background: linear-gradient(45deg, var(--orchard-green), var(--leaf-green));
+            border-radius: 20px;
+            color: white;
+            box-shadow: 0 8px 32px var(--shadow-medium);
+        }
+        
+        .dashboard-header h1 {
+            margin: 0 0 15px 0;
+            font-size: 2.5rem;
+            font-weight: 700;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .header-info {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            flex-wrap: wrap;
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+        
+        .header-info span {
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+        }
+        
+        /* === SUMMARY STATS === */
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 16px;
+            padding: 25px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            box-shadow: 0 4px 20px var(--shadow-soft);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border-left: 5px solid;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 30px var(--shadow-medium);
+        }
+        
+        .stat-card.low-hanging {
+            border-left-color: var(--apple-red);
+            background: linear-gradient(135deg, #fff 0%, #ffe6e6 100%);
+        }
+        
+        .stat-card.low-risk {
+            border-left-color: var(--leaf-green);
+            background: linear-gradient(135deg, #fff 0%, #e6ffe6 100%);
+        }
+        
+        .stat-card.total {
+            border-left-color: var(--sky-blue);
+            background: linear-gradient(135deg, #fff 0%, #e6f7ff 100%);
+        }
+        
+        .stat-icon {
+            font-size: 3rem;
+            line-height: 1;
+        }
+        
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--orchard-green);
+            line-height: 1;
+        }
+        
+        .stat-label {
+            font-size: 1rem;
+            color: #666;
+            margin-top: 5px;
+            font-weight: 500;
+        }
+        
+        /* === ORCHARD SECTIONS === */
+        .orchard-section {
+            margin-bottom: 50px;
+        }
+        
+        .section-header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 2px 10px var(--shadow-soft);
+        }
+        
+        .section-header h2 {
+            margin: 0 0 10px 0;
+            font-size: 2rem;
+            font-weight: 600;
+        }
+        
+        .ready-harvest .section-header {
+            background: linear-gradient(135deg, #ffe6e6 0%, #ffcccc 100%);
+            border-left: 5px solid var(--apple-red);
+        }
+        
+        .easy-picks .section-header {
+            background: linear-gradient(135deg, #e6ffe6 0%, #ccffcc 100%);
+            border-left: 5px solid var(--leaf-green);
+        }
+        
+        .requires-ladder .section-header {
+            background: linear-gradient(135deg, #fff3e0 0%, #ffe0b3 100%);
+            border-left: 5px solid #ff9800;
+        }
+        
+        .top-shelf .section-header {
+            background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%);
+            border-left: 5px solid #9c27b0;
+        }
+        
+        .section-subtitle {
+            margin: 0;
+            color: #666;
+            font-size: 1.1rem;
+        }
+        
+        /* === PR GRID === */
+        .pr-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            gap: 25px;
+        }
+        
+        /* === PR CARDS === */
+        .pr-card {
+            background: white;
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 4px 20px var(--shadow-soft);
+            transition: all 0.3s ease;
+            border-left: 4px solid transparent;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .pr-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 100px;
+            height: 100px;
+            background: radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 70%);
+            transform: translate(30px, -30px);
+        }
+        
+        .pr-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 40px var(--shadow-medium);
+        }
+        
+        .pr-card[data-risk="low"] {
+            border-left-color: var(--leaf-green);
+        }
+        
+        .pr-card[data-risk="medium"] {
+            border-left-color: #ff9800;
+        }
+        
+        .pr-card[data-risk="high"] {
+            border-left-color: var(--apple-red);
+        }
+        
+        .pr-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .pr-icon {
+            font-size: 2.5rem;
+            line-height: 1;
+            flex-shrink: 0;
+        }
+        
+        .pr-title-section {
+            flex-grow: 1;
+            min-width: 0;
+        }
+        
+        .pr-title {
+            margin: 0 0 10px 0;
+            font-size: 1.2rem;
+            font-weight: 600;
+            line-height: 1.3;
+        }
+        
+        .pr-link {
+            text-decoration: none;
+            color: var(--orchard-green);
+            transition: color 0.3s ease;
+        }
+        
+        .pr-link:hover {
+            color: var(--leaf-green);
+            text-decoration: underline;
+        }
+        
+        .pr-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            font-size: 0.9rem;
+        }
+        
+        .pr-author {
+            color: #666;
+            font-weight: 500;
+        }
+        
+        .pr-type {
+            background: var(--earth-tan);
+            color: var(--orchard-green);
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            text-transform: capitalize;
+        }
+        
+        .risk-badge {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .risk-low {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .risk-medium {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        
+        .risk-high {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        /* === PR STATS === */
+        .pr-stats {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+        
+        .stat {
+            text-align: center;
+        }
+        
+        .stat-label {
+            display: block;
+            font-size: 0.8rem;
+            color: #666;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        
+        .stat-value {
+            display: block;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--orchard-green);
+        }
+        
+        /* === PR SUMMARY === */
+        .pr-summary {
+            margin-bottom: 20px;
+        }
+        
+        .risk-summary {
+            margin: 0 0 15px 0;
+            color: #333;
+            line-height: 1.5;
+            font-size: 0.95rem;
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 3px solid var(--leaf-green);
+        }
+        
+        .positive-findings {
+            margin: 0;
+            padding-left: 20px;
+            list-style: none;
+        }
+        
+        .positive-findings li {
+            position: relative;
+            margin-bottom: 8px;
+            padding-left: 25px;
+            font-size: 0.9rem;
+            color: #2d5016;
+            line-height: 1.4;
+        }
+        
+        .positive-findings li::before {
+            content: '✅';
+            position: absolute;
+            left: 0;
+            top: 0;
+        }
+        
+        /* === DIFF PREVIEW === */
+        .show-diff-btn {
+            background: var(--leaf-green);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            margin-bottom: 15px;
+        }
+        
+        .show-diff-btn:hover {
+            background: var(--orchard-green);
+            transform: translateY(-2px);
+        }
+        
+        .diff-preview {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .diff-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .diff-header h4 {
+            margin: 0;
+            color: var(--orchard-green);
+            font-size: 1rem;
+        }
+        
+        .toggle-diff {
+            background: none;
+            border: 1px solid #ccc;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        
+        .file-diff {
+            margin-bottom: 15px;
+        }
+        
+        .file-header {
+            background: var(--earth-tan);
+            padding: 8px 12px;
+            border-radius: 5px 5px 0 0;
+            font-weight: 500;
+            font-size: 0.9rem;
+            color: var(--orchard-green);
+        }
+        
+        .diff-content {
+            background: #f8f9fa;
+            padding: 12px;
+            margin: 0;
+            border-radius: 0 0 5px 5px;
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+            font-size: 0.8rem;
+            line-height: 1.4;
+            overflow-x: auto;
+            border: 1px solid #e9ecef;
+            border-top: none;
+        }
+        
+        /* === PR ACTIONS === */
+        .pr-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border-radius: 20px;
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+            text-align: center;
+            flex: 1;
+        }
+        
+        .btn-primary {
+            background: var(--leaf-green);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: var(--orchard-green);
+            transform: translateY(-2px);
+        }
+        
+        .btn-secondary {
+            background: white;
+            color: var(--orchard-green);
+            border: 2px solid var(--leaf-green);
+        }
+        
+        .btn-secondary:hover {
+            background: var(--leaf-green);
+            color: white;
+            transform: translateY(-2px);
+        }
+        
+        /* === RESPONSIVE DESIGN === */
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            
+            .dashboard-header h1 {
+                font-size: 2rem;
+            }
+            
+            .header-info {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .pr-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .pr-header {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .pr-stats {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .pr-actions {
+                flex-direction: column;
+            }
+        }
+        
+        /* === LOADING AND ANIMATIONS === */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .pr-card {
+            animation: fadeInUp 0.6s ease forwards;
+        }
+        
+        .pr-card:nth-child(2) { animation-delay: 0.1s; }
+        .pr-card:nth-child(3) { animation-delay: 0.2s; }
+        .pr-card:nth-child(4) { animation-delay: 0.3s; }
+        .pr-card:nth-child(5) { animation-delay: 0.4s; }
+        .pr-card:nth-child(6) { animation-delay: 0.5s; }
+        </style>
+        
+</head>
+<body>
+    <div class="container">
+        
+        <header class="dashboard-header">
+            <h1>🌳 Spring AI PR Orchard Dashboard</h1>
+            <div class="header-info">
+                <span class="run-info">Run: run-0</span>
+                <span class="pr-count">PRs Analyzed: 5</span>
+                <span class="timestamp">Generated: 2025-07-27 15:09:46</span>
+            </div>
+        </header>
+        
+        
+        <section class="summary-stats">
+            <div class="stat-card low-hanging">
+                <div class="stat-icon">🍎</div>
+                <div class="stat-content">
+                    <div class="stat-number">1</div>
+                    <div class="stat-label">Ready to Harvest</div>
+                </div>
+            </div>
+            <div class="stat-card low-risk">
+                <div class="stat-icon">✅</div>
+                <div class="stat-content">
+                    <div class="stat-number">4</div>
+                    <div class="stat-label">Low Risk PRs</div>
+                </div>
+            </div>
+            <div class="stat-card total">
+                <div class="stat-icon">📊</div>
+                <div class="stat-content">
+                    <div class="stat-number">5</div>
+                    <div class="stat-label">Total PRs</div>
+                </div>
+            </div>
+        </section>
+        
+        
+                <section class="orchard-section ready-harvest">
+                    <div class="section-header">
+                        <h2>🍎 Ready to Harvest</h2>
+                        <p class="section-subtitle">Low Hanging Fruit - Quick Wins (1 PRs)</p>
+                    </div>
+                    <div class="pr-grid">
+                        
+        <div class="pr-card" data-risk="low" data-type="documentation">
+            <div class="pr-header">
+                <div class="pr-icon">🍎</div>
+                <div class="pr-title-section">
+                    <h3 class="pr-title">
+                        <a href="https://github.com/spring-projects/spring-ai/pull/3920" target="_blank" class="pr-link">
+                            #3920: docs: update getting-started.adoc for 1.0.0 release
+                        </a>
+                    </h3>
+                    <div class="pr-meta">
+                        <span class="pr-author">by nahyukk</span>
+                        <span class="pr-type">documentation</span>
+                        <span class="risk-badge risk-low">LOW</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="pr-stats">
+                <div class="stat">
+                    <span class="stat-label">Files:</span>
+                    <span class="stat-value">1</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Lines:</span>
+                    <span class="stat-value">+34/-7</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Effort:</span>
+                    <span class="stat-value">2/10</span>
+                </div>
+            </div>
+            
+            <div class="pr-summary">
+                <p class="risk-summary">This is a documentation-only change updating getting-started.adoc for the 1.0.0 release with no code modifications. The changes appear to be straightforward version updates and repository configuration improvements with no security, performance, or integration risks.</p>
+                <ul class='positive-findings'><li>Documentation updates properly reflect the 1.0.0 release milestone</li><li>Clear repository configuration guidance for both Maven Central and snapshot repositories</li><li>Proper Maven mirror configuration warning helps prevent common dependency resolution issues</li></ul>
+            </div>
+            
+            
+            
+            <div class="pr-actions">
+                <a href="https://github.com/spring-projects/spring-ai/pull/3920" target="_blank" class="btn btn-primary">View on GitHub</a>
+                <a href="https://github.com/spring-projects/spring-ai/pull/3920/files" target="_blank" class="btn btn-secondary">View Files</a>
+            </div>
+        </div>
+        
+                    </div>
+                </section>
+                
+
+                <section class="orchard-section easy-picks">
+                    <div class="section-header">
+                        <h2>🍃 Easy Picks</h2>
+                        <p class="section-subtitle">Simple Reach - Low-Medium Effort (1 PRs)</p>
+                    </div>
+                    <div class="pr-grid">
+                        
+        <div class="pr-card" data-risk="low" data-type="cleanup">
+            <div class="pr-header">
+                <div class="pr-icon">🍃</div>
+                <div class="pr-title-section">
+                    <h3 class="pr-title">
+                        <a href="https://github.com/spring-projects/spring-ai/pull/3921" target="_blank" class="pr-link">
+                            #3921: Remove unused import
+                        </a>
+                    </h3>
+                    <div class="pr-meta">
+                        <span class="pr-author">by ngocnhan-tran1996</span>
+                        <span class="pr-type">cleanup</span>
+                        <span class="risk-badge risk-low">LOW</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="pr-stats">
+                <div class="stat">
+                    <span class="stat-label">Files:</span>
+                    <span class="stat-value">8</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Lines:</span>
+                    <span class="stat-value">+2/-14</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Effort:</span>
+                    <span class="stat-value">3/10</span>
+                </div>
+            </div>
+            
+            <div class="pr-summary">
+                <p class="risk-summary">This PR contains only unused import removal and copyright year updates with no functional changes. The changes improve code cleanliness and have minimal risk impact.</p>
+                <ul class='positive-findings'><li>All changes are only removing unused imports - a clean maintenance practice</li><li>Copyright headers are properly updated to 2025 in affected files</li><li>No functional code changes that could introduce new risks</li></ul>
+            </div>
+            
+            
+            
+            <div class="pr-actions">
+                <a href="https://github.com/spring-projects/spring-ai/pull/3921" target="_blank" class="btn btn-primary">View on GitHub</a>
+                <a href="https://github.com/spring-projects/spring-ai/pull/3921/files" target="_blank" class="btn btn-secondary">View Files</a>
+            </div>
+        </div>
+        
+                    </div>
+                </section>
+                
+
+                <section class="orchard-section requires-ladder">
+                    <div class="section-header">
+                        <h2>🌿 Requires Ladder</h2>
+                        <p class="section-subtitle">Medium Risk/Effort (1 PRs)</p>
+                    </div>
+                    <div class="pr-grid">
+                        
+        <div class="pr-card" data-risk="low" data-type="feature">
+            <div class="pr-header">
+                <div class="pr-icon">🌿</div>
+                <div class="pr-title-section">
+                    <h3 class="pr-title">
+                        <a href="https://github.com/spring-projects/spring-ai/pull/3918" target="_blank" class="pr-link">
+                            #3918: Wrap RuntimeExceptions from toolFunction in ToolExecutionException and rethrow
+                        </a>
+                    </h3>
+                    <div class="pr-meta">
+                        <span class="pr-author">by YunKuiLu</span>
+                        <span class="pr-type">feature</span>
+                        <span class="risk-badge risk-low">LOW</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="pr-stats">
+                <div class="stat">
+                    <span class="stat-label">Files:</span>
+                    <span class="stat-value">2</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Lines:</span>
+                    <span class="stat-value">+202/-1</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Effort:</span>
+                    <span class="stat-value">5/10</span>
+                </div>
+            </div>
+            
+            <div class="pr-summary">
+                <p class="risk-summary">This PR implements a clean exception handling improvement that wraps RuntimeExceptions in ToolExecutionException while preserving existing ToolExecutionException instances. The comprehensive test coverage and proper Spring patterns indicate a low-risk change with good maintainability.</p>
+                <ul class='positive-findings'><li>Proper exception handling with ToolExecutionException wrapping maintains tool definition context</li><li>Comprehensive test coverage for all function types (Consumer, Function, BiFunction, Supplier)</li><li>Well-structured exception propagation that preserves ToolExecutionException instances while wrapping RuntimeExceptions</li></ul>
+            </div>
+            
+            
+            
+            <div class="pr-actions">
+                <a href="https://github.com/spring-projects/spring-ai/pull/3918" target="_blank" class="btn btn-primary">View on GitHub</a>
+                <a href="https://github.com/spring-projects/spring-ai/pull/3918/files" target="_blank" class="btn btn-secondary">View Files</a>
+            </div>
+        </div>
+        
+                    </div>
+                </section>
+                
+
+                <section class="orchard-section top-shelf">
+                    <div class="section-header">
+                        <h2>🌲 Top Shelf</h2>
+                        <p class="section-subtitle">High Risk/Complex (2 PRs)</p>
+                    </div>
+                    <div class="pr-grid">
+                        
+        <div class="pr-card" data-risk="low" data-type="feature">
+            <div class="pr-header">
+                <div class="pr-icon">🌲</div>
+                <div class="pr-title-section">
+                    <h3 class="pr-title">
+                        <a href="https://github.com/spring-projects/spring-ai/pull/3386" target="_blank" class="pr-link">
+                            #3386: Added support for the &quot;think&quot; for Ollama
+                        </a>
+                    </h3>
+                    <div class="pr-meta">
+                        <span class="pr-author">by sunyuhan1998</span>
+                        <span class="pr-type">feature</span>
+                        <span class="risk-badge risk-low">LOW</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="pr-stats">
+                <div class="stat">
+                    <span class="stat-label">Files:</span>
+                    <span class="stat-value">15</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Lines:</span>
+                    <span class="stat-value">+341/-16</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Effort:</span>
+                    <span class="stat-value">7/10</span>
+                </div>
+            </div>
+            
+            <div class="pr-summary">
+                <p class="risk-summary">The implementation is well-structured with good test coverage and maintains backward compatibility. Main concerns are around performance optimization for large thinking streams and ensuring graceful handling of unsupported Ollama versions.</p>
+                <ul class='positive-findings'><li>Proper use of @JsonProperty annotations for consistent API mapping</li><li>Comprehensive test coverage including both positive and negative thinking scenarios</li><li>Backward compatibility maintained - existing code without thinking support continues to work</li></ul>
+            </div>
+            
+            
+            
+            <div class="pr-actions">
+                <a href="https://github.com/spring-projects/spring-ai/pull/3386" target="_blank" class="btn btn-primary">View on GitHub</a>
+                <a href="https://github.com/spring-projects/spring-ai/pull/3386/files" target="_blank" class="btn btn-secondary">View Files</a>
+            </div>
+        </div>
+        
+
+        <div class="pr-card" data-risk="medium" data-type="bugfix">
+            <div class="pr-header">
+                <div class="pr-icon">🌲</div>
+                <div class="pr-title-section">
+                    <h3 class="pr-title">
+                        <a href="https://github.com/spring-projects/spring-ai/pull/3914" target="_blank" class="pr-link">
+                            #3914: Fixes #3824, 3849 - New Google Gen AI Embedding Module, Starters for GenAI and GenAI EMbedding Module and support for ThinkingBudget
+                        </a>
+                    </h3>
+                    <div class="pr-meta">
+                        <span class="pr-author">by ddobrin</span>
+                        <span class="pr-type">bugfix</span>
+                        <span class="risk-badge risk-medium">MEDIUM</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="pr-stats">
+                <div class="stat">
+                    <span class="stat-label">Files:</span>
+                    <span class="stat-value">37</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Lines:</span>
+                    <span class="stat-value">+3469/-8</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Effort:</span>
+                    <span class="stat-value">10/10</span>
+                </div>
+            </div>
+            
+            <div class="pr-summary">
+                <p class="risk-summary">The PR introduces a well-structured Google Gen AI embedding module with proper Spring Boot integration patterns. Main concerns are around incomplete task type implementation and unused credentials handling in Vertex AI mode, but these are manageable issues that don&#x27;t pose security risks.</p>
+                <ul class='positive-findings'><li>Proper use of Spring Boot autoconfiguration patterns with conditional bean creation</li><li>Good separation of concerns between chat and embedding auto-configuration modules</li><li>Comprehensive integration tests covering both API key and Vertex AI authentication modes</li></ul>
+            </div>
+            
+            
+            
+            <div class="pr-actions">
+                <a href="https://github.com/spring-projects/spring-ai/pull/3914" target="_blank" class="btn btn-primary">View on GitHub</a>
+                <a href="https://github.com/spring-projects/spring-ai/pull/3914/files" target="_blank" class="btn btn-secondary">View Files</a>
+            </div>
+        </div>
+        
+                    </div>
+                </section>
+                
+    </div>
+    
+        <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🌳 PR Orchard Dashboard loaded');
+            
+            // Initialize diff preview toggles
+            initializeDiffPreviews();
+            
+            // Add smooth scrolling to anchors
+            addSmoothScrolling();
+            
+            // Add card hover effects
+            addCardInteractions();
+            
+            console.log('✅ Dashboard initialization complete');
+        });
+        
+        function initializeDiffPreviews() {
+            // Handle diff preview toggle buttons
+            document.querySelectorAll('.show-diff-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    const card = this.closest('.pr-card');
+                    const preview = card.querySelector('.diff-preview');
+                    
+                    if (preview) {
+                        const isVisible = preview.style.display !== 'none';
+                        
+                        if (isVisible) {
+                            preview.style.display = 'none';
+                            this.innerHTML = '🔍 Show Diff Preview';
+                            this.style.background = 'var(--leaf-green)';
+                        } else {
+                            preview.style.display = 'block';
+                            this.innerHTML = '📋 Hide Diff Preview';
+                            this.style.background = 'var(--orchard-green)';
+                        }
+                        
+                        // Smooth scroll to show the preview
+                        if (!isVisible) {
+                            setTimeout(() => {
+                                preview.scrollIntoView({ 
+                                    behavior: 'smooth', 
+                                    block: 'nearest' 
+                                });
+                            }, 100);
+                        }
+                    }
+                });
+            });
+            
+            // Handle individual diff toggle buttons
+            document.querySelectorAll('.toggle-diff').forEach(button => {
+                button.addEventListener('click', function() {
+                    const preview = this.closest('.diff-preview');
+                    preview.style.display = 'none';
+                    
+                    const showBtn = preview.parentElement.querySelector('.show-diff-btn');
+                    if (showBtn) {
+                        showBtn.innerHTML = '🔍 Show Diff Preview';
+                        showBtn.style.background = 'var(--leaf-green)';
+                    }
+                });
+            });
+        }
+        
+        function addSmoothScrolling() {
+            // Add scroll-to-section functionality
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.style.opacity = '1';
+                        entry.target.style.transform = 'translateY(0)';
+                    }
+                });
+            }, {
+                threshold: 0.1,
+                rootMargin: '0px 0px -50px 0px'
+            });
+            
+            document.querySelectorAll('.orchard-section').forEach(section => {
+                section.style.opacity = '0';
+                section.style.transform = 'translateY(30px)';
+                section.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+                observer.observe(section);
+            });
+        }
+        
+        function addCardInteractions() {
+            // Add enhanced hover effects and interactions
+            document.querySelectorAll('.pr-card').forEach(card => {
+                const icon = card.querySelector('.pr-icon');
+                
+                card.addEventListener('mouseenter', function() {
+                    if (icon) {
+                        icon.style.transform = 'scale(1.1) rotate(5deg)';
+                        icon.style.transition = 'transform 0.3s ease';
+                    }
+                });
+                
+                card.addEventListener('mouseleave', function() {
+                    if (icon) {
+                        icon.style.transform = 'scale(1) rotate(0deg)';
+                    }
+                });
+                
+                // Add click-to-expand functionality for mobile
+                if (window.innerWidth <= 768) {
+                    card.addEventListener('click', function(e) {
+                        if (e.target.tagName !== 'A' && e.target.tagName !== 'BUTTON') {
+                            this.classList.toggle('expanded');
+                        }
+                    });
+                }
+            });
+        }
+        
+        // Add keyboard navigation
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                // Hide all open diff previews
+                document.querySelectorAll('.diff-preview').forEach(preview => {
+                    if (preview.style.display !== 'none') {
+                        preview.style.display = 'none';
+                        const showBtn = preview.parentElement.querySelector('.show-diff-btn');
+                        if (showBtn) {
+                            showBtn.innerHTML = '🔍 Show Diff Preview';
+                            showBtn.style.background = 'var(--leaf-green)';
+                        }
+                    }
+                });
+            }
+        });
+        
+        // Add performance monitoring
+        window.addEventListener('load', function() {
+            const loadTime = performance.now();
+            console.log(`🚀 Dashboard loaded in ${Math.round(loadTime)}ms`);
+            
+            // Add subtle fade-in effect after load
+            document.body.style.opacity = '0';
+            document.body.style.transition = 'opacity 0.5s ease';
+            setTimeout(() => {
+                document.body.style.opacity = '1';
+            }, 100);
+        });
+        </script>
+        
+</body>
+</html>

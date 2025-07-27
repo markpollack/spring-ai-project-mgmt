@@ -27,6 +27,7 @@ import subprocess
 
 # Import the existing PR workflow
 from pr_workflow import PRWorkflow, WorkflowConfig
+from html_report_generator import LowHangingFruitReportGenerator
 
 
 class RunSpecificWorkflowConfig(WorkflowConfig):
@@ -90,6 +91,10 @@ class BatchProcessingConfig:
     # Performance monitoring
     collect_metrics: bool = True
     save_logs: bool = True
+    
+    # HTML Dashboard generation
+    generate_html_dashboard: bool = True
+    open_browser: bool = False
 
 
 class PerformanceMonitor:
@@ -305,6 +310,10 @@ class BatchPRWorkflow:
         # Generate batch summary
         self._generate_batch_summary()
         
+        # Generate HTML dashboard if enabled
+        if self.config.generate_html_dashboard:
+            self._generate_html_dashboard()
+        
         if self.monitor:
             self.monitor.finalize_batch()
         
@@ -482,6 +491,35 @@ class BatchPRWorkflow:
             f.write(summary_content)
         
         Logger.success(f"📋 Batch summary generated: {summary_file}")
+    
+    def _generate_html_dashboard(self):
+        """Generate interactive HTML dashboard for low hanging fruit identification"""
+        try:
+            Logger.info("🌳 Generating PR Orchard Dashboard...")
+            
+            # Create HTML report generator
+            html_generator = LowHangingFruitReportGenerator(self.current_run_dir)
+            
+            # Generate the HTML report
+            html_file = html_generator.generate_report()
+            
+            Logger.success(f"🎉 HTML Dashboard generated: {html_file}")
+            Logger.info(f"📱 Open in browser: file://{html_file.absolute()}")
+            
+            # Optionally open in browser
+            if self.config.open_browser:
+                try:
+                    import webbrowser
+                    webbrowser.open(f"file://{html_file.absolute()}")
+                    Logger.info("🌐 Opened dashboard in default browser")
+                except Exception as e:
+                    Logger.warn(f"Could not open browser: {e}")
+            
+        except Exception as e:
+            Logger.error(f"❌ Failed to generate HTML dashboard: {e}")
+            # Don't fail the entire batch process if HTML generation fails
+            import traceback
+            Logger.warn(f"Full error: {traceback.format_exc()}")
 
 
 def main():
@@ -491,11 +529,13 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  python3 batch_pr_workflow.py 3922 3921 3920                    # Process 3 PRs with full workflow
+  python3 batch_pr_workflow.py 3922 3921 3920                    # Process 3 PRs with full workflow + HTML dashboard
   python3 batch_pr_workflow.py --dry-run 3922 3921 3920          # Preview what would happen
-  python3 batch_pr_workflow.py --report-only 3922 3921 3920      # Generate reports only
+  python3 batch_pr_workflow.py --report-only 3922 3921 3920      # Generate reports only + HTML dashboard
   python3 batch_pr_workflow.py --no-cleanup 3922 3921 3920       # Skip cleanup between PRs
   python3 batch_pr_workflow.py --stop-on-error 3922 3921 3920    # Stop on first error
+  python3 batch_pr_workflow.py --open-browser 3922 3921 3920     # Auto-open HTML dashboard in browser
+  python3 batch_pr_workflow.py --no-html 3922 3921 3920          # Skip HTML dashboard generation
         """
     )
     
@@ -506,6 +546,8 @@ Examples:
     parser.add_argument('--stop-on-error', action='store_true', help='Stop processing on first error (default: continue)')
     parser.add_argument('--force-reprocess', action='store_true', help='Force reprocessing of PRs that already have reports')
     parser.add_argument('--no-metrics', action='store_true', help='Disable performance metrics collection')
+    parser.add_argument('--no-html', action='store_true', help='Skip HTML dashboard generation')
+    parser.add_argument('--open-browser', action='store_true', help='Automatically open HTML dashboard in browser')
     
     args = parser.parse_args()
     
@@ -522,7 +564,9 @@ Examples:
         dry_run=args.dry_run,
         report_only=args.report_only,
         force_reprocess=args.force_reprocess,
-        collect_metrics=not args.no_metrics
+        collect_metrics=not args.no_metrics,
+        generate_html_dashboard=not args.no_html,
+        open_browser=args.open_browser
     )
     
     # Create batch processor
