@@ -968,6 +968,66 @@ class PRWorkflow:
         Logger.error("All build options failed")
         return False
     
+    def run_antora_docs_build(self, pr_number: str, skip_docs: bool = False, dry_run: bool = False) -> bool:
+        """Run Antora documentation build for PRs containing .adoc files"""
+        if skip_docs:
+            Logger.info("📚 Skipping documentation build as requested")
+            return True
+        
+        # Check if PR contains .adoc files
+        if not self._has_adoc_files(pr_number):
+            Logger.info("📚 No .adoc files found - skipping documentation build")
+            return True
+        
+        Logger.info("📚 Running Antora documentation build...")
+        
+        if dry_run:
+            Logger.info("[DRY RUN] Would run: ./mvnw -pl spring-ai-docs antora")
+            return True
+        
+        # Create timestamped log file for documentation build output
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        docs_log_file = self.config.script_dir / "logs" / f"antora-docs-{timestamp}.log"
+        
+        # Ensure logs directory exists
+        docs_log_file.parent.mkdir(exist_ok=True)
+        
+        # Run Antora documentation build
+        cmd = ["./mvnw", "-pl", "spring-ai-docs", "antora"]
+        description = "Build Antora documentation"
+        
+        Logger.info(f"Running documentation build: {' '.join(cmd)}")
+        
+        success = self.run_command(
+            cmd, 
+            description, 
+            cwd=self.config.spring_ai_dir,
+            suppress_output=True,
+            log_file=docs_log_file
+        )
+        
+        if success:
+            Logger.success("✅ Antora documentation build completed successfully")
+            Logger.info(f"Documentation build output logged to: {docs_log_file}")
+            return True
+        else:
+            Logger.error("❌ Antora documentation build failed!")
+            Logger.error(f"Check documentation build log for details: {docs_log_file}")
+            
+            # Show last few lines of documentation build log for immediate debugging
+            if docs_log_file.exists():
+                try:
+                    with open(docs_log_file, 'r') as f:
+                        lines = f.readlines()
+                        if lines:
+                            Logger.error("Last 10 lines from documentation build log:")
+                            for line in lines[-10:]:
+                                Logger.error(f"  {line.rstrip()}")
+                except Exception as e:
+                    Logger.error(f"Could not read documentation build log: {e}")
+            
+            return False
+    
     def squash_commits(self, pr_number: str, skip_squash: bool = False, dry_run: bool = False) -> bool:
         """Squash commits using intelligent squash script"""
         if skip_squash:
@@ -1313,7 +1373,7 @@ File content with conflicts:"""
     
     
     def run_complete_workflow(self, pr_number: str, skip_squash: bool = False, skip_compile: bool = False, 
-                            skip_tests: bool = False, auto_resolve: bool = False, force: bool = False, generate_report: bool = True, dry_run: bool = False) -> bool:
+                            skip_tests: bool = False, skip_docs: bool = False, auto_resolve: bool = False, force: bool = False, generate_report: bool = True, dry_run: bool = False) -> bool:
         """Run the complete PR workflow"""
         Logger.info(f"🚀 Starting complete PR review workflow for PR #{pr_number}")
         
@@ -1344,6 +1404,12 @@ File content with conflicts:"""
         if not self.rebase_against_upstream(pr_number, auto_resolve, dry_run):
             Logger.error("❌ Rebase failed with conflicts")
             Logger.info("Resolve conflicts and run the workflow again")
+            return False
+        
+        # Phase 5.5: Build documentation if PR contains .adoc files
+        # This happens after rebase/conflict resolution and compilation
+        if not self.run_antora_docs_build(pr_number, skip_docs=skip_docs, dry_run=dry_run):
+            Logger.error("❌ Documentation build failed")
             return False
         
         # Phase 6: Generate PR Analysis Report (if requested)
@@ -1451,45 +1517,11 @@ File content with conflicts:"""
     
     def get_changed_test_files(self, pr_number: str) -> List[str]:
         """Get list of changed test files from the original PR (not post-rebase diff)"""
-        try:
-            # Get original files from the PR using GitHub CLI
-            result = subprocess.run([
-                "gh", "pr", "view", pr_number, "--repo", self.config.spring_ai_repo,
-                "--json", "files", "--jq", ".files[].path"
-            ], cwd=self.config.spring_ai_dir, capture_output=True, text=True, check=True)
-            
-            changed_files = result.stdout.strip().split('\n')
-            test_files = []
-            
-            for file in changed_files:
-                if file and self._is_test_file(file):
-                    test_files.append(file)
-            
-            Logger.info(f"Original PR files: {len(changed_files)} total, {len(test_files)} test files")
-            return test_files
-            
-        except subprocess.CalledProcessError as e:
-            Logger.error(f"Failed to get original PR test files: {e}")
-            Logger.warn("Falling back to git diff method...")
-            
-            # Fallback to original method
-            try:
-                result = self.git.run_git([
-                    "diff", "--name-only", f"{self.config.upstream_remote}/{self.config.main_branch}"
-                ], capture_output=True)
-                
-                changed_files = result.stdout.strip().split('\n')
-                test_files = []
-                
-                for file in changed_files:
-                    if file and self._is_test_file(file):
-                        test_files.append(file)
-                
-                return test_files
-                
-            except subprocess.CalledProcessError as e2:
-                Logger.error(f"Failed to get changed test files: {e2}")
-                return []
+        changed_files = self._get_changed_files(pr_number)
+        test_files = [file for file in changed_files if self._is_test_file(file)]
+        
+        Logger.info(f"Original PR files: {len(changed_files)} total, {len(test_files)} test files")
+        return test_files
     
     def _is_test_file(self, filepath: str) -> bool:
         """Check if a file is a test file"""
@@ -1502,6 +1534,61 @@ File content with conflicts:"""
             filepath.endswith('Tests.java') or
             filepath.endswith('IT.java')
         )
+    
+    def _get_changed_files(self, pr_number: str) -> List[str]:
+        """Get list of all changed files from the original PR (not post-rebase diff)"""
+        try:
+            # Get original files from the PR using GitHub CLI
+            result = subprocess.run([
+                "gh", "pr", "view", pr_number, "--repo", self.config.spring_ai_repo,
+                "--json", "files", "--jq", ".files[].path"
+            ], cwd=self.config.spring_ai_dir, capture_output=True, text=True, check=True)
+            
+            changed_files = result.stdout.strip().split('\n')
+            # Filter out empty strings
+            return [file for file in changed_files if file]
+            
+        except subprocess.CalledProcessError as e:
+            Logger.error(f"Failed to get original PR files: {e}")
+            Logger.warn("Falling back to git diff method...")
+            
+            # Fallback to git diff method
+            try:
+                result = self.git.run_git([
+                    "diff", "--name-only", f"{self.config.upstream_remote}/{self.config.main_branch}"
+                ], capture_output=True)
+                
+                if result.returncode == 0:
+                    return [file for file in result.stdout.strip().split('\n') if file]
+                else:
+                    Logger.error("Git diff fallback also failed")
+                    return []
+                    
+            except Exception as fallback_error:
+                Logger.error(f"Git diff fallback failed: {fallback_error}")
+                return []
+    
+    def _has_adoc_files(self, pr_number: str) -> bool:
+        """Check if PR contains any .adoc documentation files"""
+        changed_files = self._get_changed_files(pr_number)
+        adoc_files = [file for file in changed_files if file.endswith('.adoc')]
+        
+        if adoc_files:
+            Logger.info(f"📚 Found {len(adoc_files)} .adoc documentation files in PR #{pr_number}")
+            for file in adoc_files:
+                Logger.info(f"   - {file}")
+            return True
+        else:
+            Logger.info(f"📚 No .adoc documentation files found in PR #{pr_number}")
+            return False
+    
+    def get_changed_adoc_files(self, pr_number: str) -> List[str]:
+        """Get list of changed .adoc documentation files from the original PR"""
+        changed_files = self._get_changed_files(pr_number)
+        adoc_files = [file for file in changed_files if file.endswith('.adoc')]
+        
+        Logger.info(f"📚 Documentation files: {len(adoc_files)} .adoc files")
+        return adoc_files
     
     def _get_test_class_name(self, test_file: str) -> Optional[str]:
         """Extract the fully qualified test class name from file path"""
@@ -1818,6 +1905,7 @@ Examples:
     parser.add_argument('--skip-squash', action='store_true', help='Skip commit squashing')
     parser.add_argument('--skip-compile', action='store_true', help='Skip compilation check')
     parser.add_argument('--skip-tests', action='store_true', help='Skip test execution')
+    parser.add_argument('--skip-docs', action='store_true', help='Skip Antora documentation build')
     parser.add_argument('--no-auto-resolve', action='store_true', help='Disable automatic conflict resolution (auto-resolve is enabled by default)')
     parser.add_argument('--force', action='store_true', help='Force operations (overwrite existing branches)')
     parser.add_argument('--skip-report', action='store_true', help='Skip PR analysis report generation')
@@ -1879,6 +1967,7 @@ Examples:
             skip_squash=args.skip_squash,
             skip_compile=args.skip_compile,
             skip_tests=args.skip_tests,
+            skip_docs=args.skip_docs,
             auto_resolve=not args.no_auto_resolve,  # Auto-resolve by default unless disabled
             force=args.force,
             generate_report=not args.skip_report,

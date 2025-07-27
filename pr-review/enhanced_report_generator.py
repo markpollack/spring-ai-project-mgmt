@@ -45,6 +45,7 @@ class EnhancedReportData:
     solution_assessment: Dict[str, Any]
     file_changes: List[Dict[str, Any]]
     code_analysis: Dict[str, Any]
+    backport_assessment: Dict[str, Any]
     test_results: Dict[str, Any]
     
     # Report Metadata
@@ -170,6 +171,13 @@ class EnhancedReportGenerator:
         sol_duration = time.time() - start_time
         Logger.info(f"🔍 Solution assessment completed in {sol_duration:.1f} seconds")
         
+        Logger.info("🔍 Starting backport candidate assessment...")
+        start_time = time.time()
+        backport_assessment = self._run_backport_assessment(pr_number, pr_context_dir)
+        backport_duration = time.time() - start_time
+        Logger.info(f"🔍 Backport assessment completed in {backport_duration:.1f} seconds")
+        analysis_status['backport_assessment'] = 'Available' if backport_assessment else 'Failed'
+        
         return EnhancedReportData(
             pr_number=pr_number,
             pr_title=pr_data.get('title', 'Unknown'),
@@ -180,6 +188,7 @@ class EnhancedReportGenerator:
             solution_assessment=solution_assessment,
             file_changes=loaded_data.get('file_changes', []),
             code_analysis=code_analysis,
+            backport_assessment=backport_assessment,
             report_timestamp=datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
             analysis_status=analysis_status,
             test_results=test_results
@@ -258,6 +267,43 @@ class EnhancedReportGenerator:
         except Exception as e:
             Logger.error(f"Error running AI solution assessment: {e}")
             raise RuntimeError(f"AI solution assessment failed: {e}")
+
+    def _run_backport_assessment(self, pr_number: str, pr_context_dir: Path) -> Dict[str, Any]:
+        """Run backport candidate assessment using backport_assessor.py"""
+        try:
+            assessment_file = pr_context_dir / "backport-assessment.json"
+            
+            # Check if assessment already exists
+            if assessment_file.exists():
+                Logger.info("Using existing backport assessment")
+                with open(assessment_file, 'r') as f:
+                    return json.load(f)
+            
+            # Run backport assessor
+            Logger.info("Running AI backport candidate assessment...")
+            assessor_script = self.script_dir / "backport_assessor.py"
+            
+            result = subprocess.run([
+                "python3", str(assessor_script), pr_number
+            ], capture_output=True, text=True, timeout=300)
+            
+            if result.returncode == 0 and assessment_file.exists():
+                Logger.success("AI backport assessment completed")
+                with open(assessment_file, 'r') as f:
+                    data = json.load(f)
+                    # Check if this is placeholder/fallback data
+                    if data.get("decision") == "UNKNOWN":
+                        Logger.error("❌ AI backport assessment failed - Claude Code returned placeholder data")
+                        Logger.error("❌ Cannot continue with incomplete AI analysis")
+                        raise RuntimeError("AI backport assessment failed - no fallbacks allowed")
+                    return data
+            else:
+                Logger.error(f"❌ AI backport assessment failed: {result.stderr}")
+                raise RuntimeError("AI backport assessment failed - no fallbacks allowed")
+                
+        except Exception as e:
+            Logger.error(f"Error running AI backport assessment: {e}")
+            raise RuntimeError(f"AI backport assessment failed: {e}")
 
     def _perform_code_analysis(self, pr_number: str) -> Dict[str, Any]:
         """Perform AI-powered code analysis for the report"""
@@ -566,11 +612,27 @@ class EnhancedReportGenerator:
             'discussion_themes_section': self._format_list_section(conv_analysis.get('discussion_themes', []))
         })
         
+        # Backport Assessment
+        backport_assess = data.backport_assessment
+        template_vars.update({
+            'backport_decision': backport_assess.get('decision', 'UNKNOWN'),
+            'backport_classification': backport_assess.get('classification', 'Unknown'),
+            'backport_scope': backport_assess.get('scope', 'Analysis not available'),
+            'backport_api_impact': backport_assess.get('api_impact', 'Unknown'),
+            'backport_risk_level': backport_assess.get('risk_level', 'Unknown'),
+            'backport_dependencies_changed': '✅ Yes' if backport_assess.get('dependencies_changed', False) else '❌ No',
+            'backport_files_count': backport_assess.get('files_changed_count', 0),
+            'backport_key_findings': self._format_list_section(backport_assess.get('key_findings', [])),
+            'backport_reasoning': backport_assess.get('reasoning', 'Analysis not available'),
+            'backport_recommendations': backport_assess.get('recommendations', 'Analysis not available')
+        })
+        
         # Analysis Status
         template_vars.update({
             'conversation_analysis_status': '✅ Available' if data.analysis_status.get('conversation_analysis') == 'Available' else '❌ Not Available',
             'solution_assessment_status': '✅ Available' if data.analysis_status.get('solution_assessment') == 'Available' else '❌ Not Available',
             'code_analysis_status': '✅ Available' if data.analysis_status.get('code_analysis') == 'Available' else '❌ Not Available',
+            'backport_assessment_status': '✅ Available' if data.analysis_status.get('backport_assessment') == 'Available' else '❌ Not Available',
             'ai_integration_status': '✅ Active' if any(status == 'Available' for status in data.analysis_status.values()) else '❌ Inactive'
         })
         

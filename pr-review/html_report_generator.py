@@ -55,6 +55,15 @@ class PRSummary:
     effort_score: int  # 1-10 scale
     fruit_icon: str  # 🍎, 🍃, 🌿, 🌲
     
+    # Backport eligibility information
+    backport_eligible: bool  # Whether PR is approved for backporting
+    backport_decision: str  # APPROVE/REJECT/UNKNOWN
+    backport_classification: str  # Bug Fix/Documentation/Feature/etc.
+    backport_risk_level: str  # Low/Medium/High backport risk
+    backport_reasoning: str  # Brief reasoning for decision
+    backport_badge_color: str  # CSS color class for badge
+    backport_icon: str  # Icon for backport status
+    
     # Diff data for previews
     file_changes: List[Dict[str, Any]]
 
@@ -113,6 +122,7 @@ class LowHangingFruitReportGenerator:
         pr_data_file = pr_dir / "pr-data.json"
         risk_file = pr_dir / "ai-risk-assessment.json"
         changes_file = pr_dir / "file-changes.json"
+        backport_file = pr_dir / "backport-assessment.json"
         
         if not all(f.exists() for f in [pr_data_file, risk_file, changes_file]):
             print(f"⚠️  Missing data files for PR #{pr_number}")
@@ -126,6 +136,16 @@ class LowHangingFruitReportGenerator:
         with open(changes_file) as f:
             file_changes = json.load(f)
             
+        # Load backport assessment if available
+        backport_data = {}
+        if backport_file.exists():
+            try:
+                with open(backport_file) as f:
+                    backport_data = json.load(f)
+            except Exception as e:
+                print(f"⚠️  Error loading backport data for PR #{pr_number}: {e}")
+                backport_data = {}
+            
         # Determine PR type from analysis
         pr_type = self._classify_pr_type(pr_data, risk_data, file_changes)
         
@@ -133,6 +153,9 @@ class LowHangingFruitReportGenerator:
         harvest_difficulty, effort_score, fruit_icon = self._calculate_harvest_metrics(
             risk_data, pr_data, file_changes
         )
+        
+        # Process backport assessment data
+        backport_info = self._process_backport_data(backport_data)
         
         return PRSummary(
             number=str(pr_data["number"]),
@@ -155,6 +178,14 @@ class LowHangingFruitReportGenerator:
             harvest_difficulty=harvest_difficulty,
             effort_score=effort_score,
             fruit_icon=fruit_icon,
+            # Backport information
+            backport_eligible=backport_info["eligible"],
+            backport_decision=backport_info["decision"],
+            backport_classification=backport_info["classification"],
+            backport_risk_level=backport_info["risk_level"],
+            backport_reasoning=backport_info["reasoning"],
+            backport_badge_color=backport_info["badge_color"],
+            backport_icon=backport_info["icon"],
             file_changes=file_changes[:5]  # Limit to first 5 files for preview
         )
     
@@ -224,6 +255,52 @@ class LowHangingFruitReportGenerator:
         else:
             return "very-hard", effort_score, "🌲"  # Tree top - major effort
     
+    def _process_backport_data(self, backport_data: Dict) -> Dict[str, str]:
+        """Process backport assessment data into display format"""
+        if not backport_data:
+            return {
+                "eligible": False,
+                "decision": "UNKNOWN",
+                "classification": "Assessment Missing",
+                "risk_level": "Unknown",
+                "reasoning": "Backport assessment not available",
+                "badge_color": "unknown",
+                "icon": "❓"
+            }
+        
+        decision = backport_data.get("decision", "UNKNOWN").upper()
+        classification = backport_data.get("classification", "Unknown")
+        risk_level = backport_data.get("risk_level", "Unknown")
+        reasoning = backport_data.get("reasoning", "No reasoning provided")
+        
+        # Determine badge color and icon based on decision
+        if decision == "APPROVE":
+            badge_color = "approve"
+            icon = "✅"
+            eligible = True
+        elif decision == "REJECT":
+            badge_color = "reject"
+            icon = "❌"
+            eligible = False
+        else:
+            badge_color = "unknown"
+            icon = "❓"
+            eligible = False
+        
+        # Truncate reasoning for display
+        if len(reasoning) > 100:
+            reasoning = reasoning[:97] + "..."
+        
+        return {
+            "eligible": eligible,
+            "decision": decision,
+            "classification": classification,
+            "risk_level": risk_level,
+            "reasoning": reasoning,
+            "badge_color": badge_color,
+            "icon": icon
+        }
+    
     def _categorize_prs(self):
         """Sort PRs by harvest difficulty and effort"""
         self.pr_summaries.sort(key=lambda pr: (pr.effort_score, pr.risk_level, pr.changed_files))
@@ -236,6 +313,13 @@ class LowHangingFruitReportGenerator:
             "medium": [pr for pr in self.pr_summaries if pr.harvest_difficulty == "medium"],
             "hard": [pr for pr in self.pr_summaries if pr.harvest_difficulty == "hard"],
             "very-hard": [pr for pr in self.pr_summaries if pr.harvest_difficulty == "very-hard"]
+        }
+        
+        # Create backport-specific categories
+        backport_categories = {
+            "backport-ready": [pr for pr in self.pr_summaries if pr.backport_eligible],
+            "not-suitable": [pr for pr in self.pr_summaries if pr.backport_decision == "REJECT"],
+            "assessment-missing": [pr for pr in self.pr_summaries if pr.backport_decision == "UNKNOWN"]
         }
         
         # Generate HTML sections
@@ -251,6 +335,7 @@ class LowHangingFruitReportGenerator:
     <div class="container">
         {self._generate_header()}
         {self._generate_summary_stats()}
+        {self._generate_backport_section(backport_categories)}
         {self._generate_orchard_sections(categories)}
     </div>
     {self._generate_javascript()}
@@ -280,29 +365,68 @@ class LowHangingFruitReportGenerator:
         total = len(self.pr_summaries)
         low_risk = len([pr for pr in self.pr_summaries if pr.risk_level == "LOW"])
         easy_harvest = len([pr for pr in self.pr_summaries if pr.harvest_difficulty == "easy"])
+        backport_ready = len([pr for pr in self.pr_summaries if pr.backport_eligible])
         
         return f"""
         <section class="summary-stats">
-            <div class="stat-card low-hanging">
+            <div class="stat-card backport-ready" data-filter="backport-ready" onclick="filterPRsByType('backport-ready')">
+                <div class="stat-icon">📦</div>
+                <div class="stat-content">
+                    <div class="stat-number">{backport_ready}</div>
+                    <div class="stat-label">Backport Ready</div>
+                </div>
+            </div>
+            <div class="stat-card low-hanging" data-filter="ready-harvest" onclick="filterPRsByType('ready-harvest')">
                 <div class="stat-icon">🍎</div>
                 <div class="stat-content">
                     <div class="stat-number">{easy_harvest}</div>
                     <div class="stat-label">Ready to Harvest</div>
                 </div>
             </div>
-            <div class="stat-card low-risk">
+            <div class="stat-card low-risk" data-filter="low-risk" onclick="filterPRsByType('low-risk')">
                 <div class="stat-icon">✅</div>
                 <div class="stat-content">
                     <div class="stat-number">{low_risk}</div>
                     <div class="stat-label">Low Risk PRs</div>
                 </div>
             </div>
-            <div class="stat-card total">
+            <div class="stat-card total" data-filter="all" onclick="filterPRsByType('all')">
                 <div class="stat-icon">📊</div>
                 <div class="stat-content">
                     <div class="stat-number">{total}</div>
                     <div class="stat-label">Total PRs</div>
                 </div>
+            </div>
+        </section>
+        """
+    
+    def _generate_backport_section(self, backport_categories: Dict[str, List[PRSummary]]) -> str:
+        """Generate dedicated backport candidate section"""
+        backport_ready = backport_categories["backport-ready"]
+        
+        if not backport_ready:
+            return f"""
+            <section class="backport-section">
+                <div class="section-header">
+                    <h2>📦 Spring AI 1.0.x Backport Candidates</h2>
+                    <p class="section-description">No PRs currently approved for backporting</p>
+                </div>
+            </section>
+            """
+        
+        # Sort backport-ready PRs by classification and risk
+        backport_ready.sort(key=lambda pr: (pr.backport_classification, pr.backport_risk_level, pr.effort_score))
+        
+        return f"""
+        <section class="backport-section">
+            <div class="section-header">
+                <h2>📦 Spring AI 1.0.x Backport Candidates</h2>
+                <p class="section-description">
+                    {len(backport_ready)} PR(s) approved for backporting to the maintenance branch
+                </p>
+            </div>
+            <div class="backport-grid">
+                {self._generate_pr_cards(backport_ready)}
             </div>
         </section>
         """
@@ -359,7 +483,7 @@ class LowHangingFruitReportGenerator:
             positive_list = f"<ul class='positive-findings'>{''.join(items)}</ul>"
         
         return f"""
-        <div class="pr-card" data-risk="{pr.risk_level.lower()}" data-type="{pr.pr_type}">
+        <div class="pr-card" data-risk="{pr.risk_level.lower()}" data-type="{pr.pr_type}" data-backport="{pr.backport_badge_color}">
             <div class="pr-header">
                 <div class="pr-icon">{pr.fruit_icon}</div>
                 <div class="pr-title-section">
@@ -372,6 +496,9 @@ class LowHangingFruitReportGenerator:
                         <span class="pr-author">by {author}</span>
                         <span class="pr-type">{pr.pr_type}</span>
                         <span class="risk-badge risk-{pr.risk_level.lower()}">{pr.risk_level}</span>
+                        <span class="backport-badge backport-{pr.backport_badge_color}" title="{html.escape(pr.backport_reasoning)}">
+                            {pr.backport_icon} {pr.backport_decision}
+                        </span>
                     </div>
                 </div>
             </div>
@@ -394,6 +521,14 @@ class LowHangingFruitReportGenerator:
             <div class="pr-summary">
                 <p class="risk-summary">{risk_summary}</p>
                 {positive_list}
+            </div>
+            
+            <div class="backport-info">
+                <div class="backport-classification">
+                    <strong>Backport Classification:</strong> {pr.backport_classification} 
+                    <span class="backport-risk">({pr.backport_risk_level} Risk)</span>
+                </div>
+                <div class="backport-reasoning">{html.escape(pr.backport_reasoning)}</div>
             </div>
             
             {diff_preview}
@@ -526,11 +661,19 @@ class LowHangingFruitReportGenerator:
             box-shadow: 0 4px 20px var(--shadow-soft);
             transition: transform 0.3s ease, box-shadow 0.3s ease;
             border-left: 5px solid;
+            cursor: pointer;
+            user-select: none;
         }
         
         .stat-card:hover {
             transform: translateY(-5px);
             box-shadow: 0 8px 30px var(--shadow-medium);
+        }
+        
+        .stat-card.active {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 40px var(--shadow-medium);
+            border-left-width: 8px;
         }
         
         .stat-card.low-hanging {
@@ -546,6 +689,11 @@ class LowHangingFruitReportGenerator:
         .stat-card.total {
             border-left-color: var(--sky-blue);
             background: linear-gradient(135deg, #fff 0%, #e6f7ff 100%);
+        }
+        
+        .stat-card.backport-ready {
+            border-left-color: #17a2b8;
+            background: linear-gradient(135deg, #fff 0%, #e6f8fb 100%);
         }
         
         .stat-icon {
@@ -611,6 +759,37 @@ class LowHangingFruitReportGenerator:
             margin: 0;
             color: #666;
             font-size: 1.1rem;
+        }
+        
+        .section-description {
+            margin: 0;
+            color: #666;
+            font-size: 1.1rem;
+        }
+        
+        /* === BACKPORT SECTION === */
+        .backport-section {
+            margin-bottom: 50px;
+            padding: 30px;
+            background: linear-gradient(135deg, #e6f8fb 0%, #b3e5fc 100%);
+            border-radius: 20px;
+            border: 2px solid #17a2b8;
+            box-shadow: 0 8px 32px rgba(23, 162, 184, 0.2);
+        }
+        
+        .backport-section .section-header {
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            border-left: 5px solid #17a2b8;
+        }
+        
+        .backport-section .section-header h2 {
+            color: #17a2b8;
+        }
+        
+        .backport-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            gap: 25px;
         }
         
         /* === PR GRID === */
@@ -746,6 +925,36 @@ class LowHangingFruitReportGenerator:
             border: 1px solid #f5c6cb;
         }
         
+        /* === BACKPORT BADGES === */
+        .backport-badge {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-left: 8px;
+            cursor: help;
+        }
+        
+        .backport-approve {
+            background: #d1f2eb;
+            color: #0c5460;
+            border: 1px solid #7bdcb5;
+        }
+        
+        .backport-reject {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .backport-unknown {
+            background: #e2e3e5;
+            color: #495057;
+            border: 1px solid #d6d8db;
+        }
+        
         /* === PR STATS === */
         .pr-stats {
             display: flex;
@@ -811,6 +1020,43 @@ class LowHangingFruitReportGenerator:
             position: absolute;
             left: 0;
             top: 0;
+        }
+        
+        /* === BACKPORT INFO === */
+        .backport-info {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 12px;
+            border-left: 4px solid #6c757d;
+        }
+        
+        .backport-info .backport-classification {
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+        
+        .backport-info .backport-risk {
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .backport-info .backport-reasoning {
+            font-size: 0.85rem;
+            color: #6c757d;
+            line-height: 1.4;
+            font-style: italic;
+        }
+        
+        /* Update backport-info based on approval status */
+        .pr-card[data-backport="approve"] .backport-info {
+            border-left-color: #28a745;
+            background: linear-gradient(135deg, #d1f2eb 0%, #a3e4d7 100%);
+        }
+        
+        .pr-card[data-backport="reject"] .backport-info {
+            border-left-color: #dc3545;
+            background: linear-gradient(135deg, #f8d7da 0%, #f1aeb5 100%);
         }
         
         /* === DIFF PREVIEW === */
@@ -1120,6 +1366,70 @@ class LowHangingFruitReportGenerator:
                     }
                 });
             }
+        });
+        
+        // PR Filtering functionality
+        function filterPRsByType(filterType) {
+            console.log(`🔍 Filtering PRs by type: ${filterType}`);
+            
+            // Update active stat card
+            document.querySelectorAll('.stat-card').forEach(card => {
+                card.classList.remove('active');
+            });
+            document.querySelector(`[data-filter="${filterType}"]`).classList.add('active');
+            
+            // Show/hide sections based on filter
+            const backportSection = document.querySelector('.backport-section');
+            const orchardSections = document.querySelectorAll('.orchard-section');
+            
+            if (filterType === 'all') {
+                // Show all sections
+                if (backportSection) backportSection.style.display = 'block';
+                orchardSections.forEach(section => section.style.display = 'block');
+            } else if (filterType === 'backport-ready') {
+                // Show only backport section
+                if (backportSection) backportSection.style.display = 'block';
+                orchardSections.forEach(section => section.style.display = 'none');
+            } else if (filterType === 'ready-harvest') {
+                // Show only ready-harvest section
+                if (backportSection) backportSection.style.display = 'none';
+                orchardSections.forEach(section => {
+                    if (section.classList.contains('ready-harvest')) {
+                        section.style.display = 'block';
+                    } else {
+                        section.style.display = 'none';
+                    }
+                });
+            } else if (filterType === 'low-risk') {
+                // Show sections and filter PR cards by risk level
+                if (backportSection) backportSection.style.display = 'none';
+                orchardSections.forEach(section => {
+                    section.style.display = 'block';
+                    // Hide PR cards that aren't low risk
+                    const prCards = section.querySelectorAll('.pr-card');
+                    prCards.forEach(card => {
+                        if (card.getAttribute('data-risk') === 'low') {
+                            card.style.display = 'block';
+                        } else {
+                            card.style.display = 'none';
+                        }
+                    });
+                });
+            }
+            
+            // Smooth scroll to first visible section
+            setTimeout(() => {
+                const firstVisibleSection = document.querySelector('.backport-section[style*="block"], .orchard-section[style*="block"]');
+                if (firstVisibleSection) {
+                    firstVisibleSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }, 100);
+        }
+        
+        // Initialize with 'all' filter active
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set 'Total PRs' as initially active
+            document.querySelector('[data-filter="all"]').classList.add('active');
         });
         
         // Add performance monitoring

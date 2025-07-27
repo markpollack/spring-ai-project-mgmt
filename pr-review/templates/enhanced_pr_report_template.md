@@ -77,6 +77,31 @@ Status: {pr_status}
 
 ---
 
+## 📦 Backport Candidate Assessment
+
+**Decision**: **{backport_decision}** 
+
+### Classification
+- **Type**: {backport_classification}
+- **Scope**: {backport_scope}
+
+### Analysis Summary
+- **Files Changed**: {backport_files_count}
+- **API Impact**: {backport_api_impact}
+- **Dependencies Changed**: {backport_dependencies_changed}
+- **Risk Level**: {backport_risk_level}
+
+### Key Findings
+{backport_key_findings}
+
+### Reasoning
+{backport_reasoning}
+
+### Recommendations
+{backport_recommendations}
+
+---
+
 ## 🧪 Test Execution Results
 
 ### Test Summary
@@ -189,4 +214,5 @@ Status: {pr_status}
 - 🤖 AI Conversation Analysis: {conversation_analysis_status}
 - 🔍 Solution Assessment: {solution_assessment_status}  
 - 📊 Code Pattern Recognition: {code_analysis_status}
+- 📦 Backport Assessment: {backport_assessment_status}
 - 🧠 Claude Code Integration: {ai_integration_status}
