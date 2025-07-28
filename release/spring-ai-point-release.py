@@ -177,6 +177,11 @@ class ReleaseGitHelper:
     
     def get_current_version(self) -> Optional[str]:
         """Get current version from main POM"""
+        # In dry-run mode, repository isn't cloned so POM won't exist
+        if self.config.dry_run:
+            Logger.info("DRY RUN: Would read current version from pom.xml")
+            return "X.Y.Z-SNAPSHOT (dry-run placeholder)"
+        
         try:
             pom_path = self.repo_dir / "pom.xml"
             if not pom_path.exists():
