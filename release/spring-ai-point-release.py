@@ -681,28 +681,30 @@ class MavenStatusChecker:
             Logger.warn(f"Failed to fetch Maven status: {e}")
             return {}
     
-    def is_publishing_healthy(self, status_data: dict) -> bool:
-        """Check if publishing services are operational"""
-        if not status_data:
+    def is_publishing_healthy(self, warnings: dict) -> bool:
+        """Check if publishing services are operational based on warnings"""
+        if not warnings:
             return True  # Assume healthy if we can't check
         
-        try:
-            components = status_data.get('components', [])
-            for component in components:
-                name = component.get('name', '').lower()
-                status = component.get('status', '')
-                
-                # Check publishing-related components
-                if any(keyword in name for keyword in ['publish', 'deploy', 'central', 'repository']):
-                    if status not in ['operational']:
-                        return False
-            return True
-        except Exception:
-            return True  # Assume healthy if parsing fails
+        # Publishing is unhealthy if there are critical issues or critical incidents  
+        if warnings.get('critical'):
+            return False
+        
+        if warnings.get('incidents'):
+            for incident in warnings['incidents']:
+                if '🔴 CRITICAL' in incident:
+                    return False
+        
+        return True
     
-    def get_status_warnings(self, status_data: dict) -> List[str]:
-        """Get list of warnings about Maven Central status"""
-        warnings = []
+    def get_status_warnings(self, status_data: dict) -> dict:
+        """Get categorized warnings about Maven Central status"""
+        warnings = {
+            'critical': [],      # Services that directly affect publishing
+            'important': [],     # Services that may affect publishing
+            'incidents': [],     # Active incidents
+            'overall': None      # Overall system status
+        }
         
         if not status_data:
             return warnings
@@ -711,7 +713,12 @@ class MavenStatusChecker:
             # Check overall page status
             page_status = status_data.get('status', {}).get('indicator', '')
             if page_status not in ['none', 'operational']:
-                warnings.append(f"Overall system status: {page_status}")
+                status_descriptions = {
+                    'minor': 'Minor service disruptions detected',
+                    'major': 'Major service disruptions - publishing may be affected',
+                    'critical': 'Critical service outage - publishing likely blocked'
+                }
+                warnings['overall'] = status_descriptions.get(page_status, f'System status: {page_status}')
             
             # Check active incidents
             incidents = status_data.get('incidents', [])
@@ -719,32 +726,89 @@ class MavenStatusChecker:
                 if incident.get('status') in ['investigating', 'identified', 'monitoring']:
                     name = incident.get('name', 'Unknown incident')
                     impact = incident.get('impact', 'unknown')
-                    warnings.append(f"Active incident ({impact}): {name}")
+                    impact_desc = {
+                        'critical': '🔴 CRITICAL',
+                        'major': '🟠 MAJOR', 
+                        'minor': '🟡 MINOR',
+                        'none': '🟢 INFO'
+                    }.get(impact, f'({impact.upper()})')
+                    warnings['incidents'].append(f"{impact_desc}: {name}")
             
-            # Check component statuses
+            # Categorize component statuses by publishing impact
+            publishing_critical = [
+                'publishing', 'upload', 'artifact', 'deploy', 'central repository',
+                'nexus', 'sonatype', 'staging', 'release'
+            ]
+            
+            publishing_important = [
+                'portal', 'api', 'search', 'sync', 'cdn', 'repo1.maven.org'
+            ]
+            
             components = status_data.get('components', [])
             for component in components:
                 name = component.get('name', '')
                 status = component.get('status', '')
                 
                 if status not in ['operational']:
-                    warnings.append(f"{name}: {status.replace('_', ' ').title()}")
+                    status_display = status.replace('_', ' ').title()
+                    component_msg = f"{name}: {status_display}"
+                    
+                    # Categorize by impact on publishing
+                    name_lower = name.lower()
+                    if any(keyword in name_lower for keyword in publishing_critical):
+                        warnings['critical'].append(f"🔴 {component_msg} (blocks publishing)")
+                    elif any(keyword in name_lower for keyword in publishing_important):
+                        warnings['important'].append(f"🟠 {component_msg} (may affect publishing)")
+                    else:
+                        warnings['important'].append(f"🟡 {component_msg}")
         
         except Exception as e:
             Logger.warn(f"Error parsing Maven status: {e}")
         
         return warnings
     
-    def format_status_message(self, warnings: List[str]) -> str:
+    def format_status_message(self, warnings: dict) -> str:
         """Format status warnings into a user-friendly message"""
-        if not warnings:
+        if not any([warnings.get('critical'), warnings.get('important'), 
+                   warnings.get('incidents'), warnings.get('overall')]):
             return "✅ Maven Central infrastructure appears healthy"
         
         message = "⚠️  MAVEN CENTRAL STATUS WARNINGS:\n"
-        for warning in warnings:
-            message += f"  - {warning}\n"
-        message += "\n📍 Check https://status.maven.org/ for details"
-        message += "\n💡 Consider waiting if publishing services are affected"
+        
+        # Show overall system status
+        if warnings.get('overall'):
+            message += f"🌐 {warnings['overall']}\n\n"
+        
+        # Show critical publishing issues first
+        if warnings.get('critical'):
+            message += "CRITICAL - Publishing Blocked:\n"
+            for warning in warnings['critical']:
+                message += f"  {warning}\n"
+            message += "\n"
+        
+        # Show active incidents
+        if warnings.get('incidents'):
+            message += "Active Incidents:\n"
+            for incident in warnings['incidents']:
+                message += f"  {incident}\n"
+            message += "\n"
+        
+        # Show other important issues
+        if warnings.get('important'):
+            message += "Other Service Issues:\n"
+            for warning in warnings['important']:
+                message += f"  {warning}\n"
+            message += "\n"
+        
+        # Add guidance based on severity
+        if warnings.get('critical'):
+            message += "🚫 RECOMMENDATION: Publishing will likely fail - wait for resolution\n"
+        elif warnings.get('incidents') and any('CRITICAL' in inc for inc in warnings['incidents']):
+            message += "⚠️  RECOMMENDATION: High risk of publishing failure - consider waiting\n"
+        elif warnings.get('important') or warnings.get('incidents'):
+            message += "💡 RECOMMENDATION: Publishing may be slower or fail - monitor closely\n"
+        
+        message += "📍 Live status: https://status.maven.org/"
         
         return message
 
@@ -1466,10 +1530,11 @@ class ReleaseWorkflow:
             status_data = status_checker.check_maven_status()
             warnings = status_checker.get_status_warnings(status_data)
             
-            if warnings:
+            if any([warnings.get('critical'), warnings.get('important'), 
+                   warnings.get('incidents'), warnings.get('overall')]):
                 Logger.warn(status_checker.format_status_message(warnings))
                 
-                if not status_checker.is_publishing_healthy(status_data):
+                if not status_checker.is_publishing_healthy(warnings):
                     Logger.warn("⚠️  Publishing services may be affected - deployment could fail")
                 
                 # Ask user if they want to proceed despite warnings
@@ -1617,7 +1682,8 @@ Skip-to options: setup, set-version, build, commit-release, tag, push, docs, jav
         
         print(status_checker.format_status_message(warnings))
         
-        if warnings and not status_checker.is_publishing_healthy(status_data):
+        if any([warnings.get('critical'), warnings.get('important'), 
+               warnings.get('incidents'), warnings.get('overall')]) and not status_checker.is_publishing_healthy(warnings):
             Logger.warn("\n⚠️  Publishing services may be affected - consider waiting before deployment")
             sys.exit(1)
         else:
