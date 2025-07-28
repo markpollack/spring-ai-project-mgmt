@@ -332,6 +332,94 @@ class MavenHelper:
         except subprocess.CalledProcessError as e:
             Logger.error("Documentation build failed")
             return False
+    
+    def verify_pom_version(self, pom_path: Path, expected_version: str) -> bool:
+        """Verify a specific POM file has the expected version"""
+        if self.config.dry_run:
+            Logger.info(f"DRY RUN: Would verify {pom_path.name} has version {expected_version}")
+            return True
+        
+        try:
+            if not pom_path.exists():
+                Logger.error(f"POM file not found: {pom_path}")
+                return False
+            
+            with open(pom_path, 'r') as f:
+                content = f.read()
+                # Look for <version>X.Y.Z</version> near the top (before dependencies)
+                lines = content.split('\n')
+                for i, line in enumerate(lines[:50]):  # Check first 50 lines
+                    if '<version>' in line and '</version>' in line:
+                        # Extract version between tags
+                        start = line.find('<version>') + 9
+                        end = line.find('</version>')
+                        if start > 8 and end > start:
+                            version = line[start:end].strip()
+                            if version == expected_version:
+                                Logger.info(f"✓ {pom_path.name} has correct version: {version}")
+                                return True
+                            else:
+                                Logger.error(f"✗ {pom_path.name} has incorrect version: {version} (expected: {expected_version})")
+                                return False
+                
+                Logger.error(f"✗ Could not find version in {pom_path.name}")
+                return False
+                
+        except Exception as e:
+            Logger.error(f"Failed to verify {pom_path.name}: {e}")
+            return False
+    
+    def check_for_snapshots(self) -> bool:
+        """Check for any remaining SNAPSHOT versions in POM files"""
+        if self.config.dry_run:
+            Logger.info("DRY RUN: Would check for SNAPSHOT versions in all POM files")
+            return True
+        
+        try:
+            # Use grep to find SNAPSHOT in all pom.xml files
+            cmd = ["grep", "-r", "--include=pom.xml", "-n", "SNAPSHOT", "."]
+            result = subprocess.run(cmd, cwd=self.repo_dir, capture_output=True, text=True)
+            
+            if result.returncode == 0:  # Found SNAPSHOT references
+                Logger.error("✗ Found SNAPSHOT references in POM files:")
+                for line in result.stdout.strip().split('\n'):
+                    if line.strip():
+                        Logger.error(f"  {line}")
+                return False
+            else:
+                Logger.info("✓ No SNAPSHOT versions found in POM files")
+                return True
+                
+        except Exception as e:
+            Logger.error(f"Failed to check for SNAPSHOT versions: {e}")
+            return False
+    
+    def verify_release_versions(self, release_version: str) -> bool:
+        """Comprehensive version verification after setting release version"""
+        Logger.info("Verifying all POM files have correct release version...")
+        
+        success = True
+        
+        # Check root POM
+        root_pom = self.repo_dir / "pom.xml"
+        if not self.verify_pom_version(root_pom, release_version):
+            success = False
+        
+        # Check BOM POM
+        bom_pom = self.repo_dir / "spring-ai-bom" / "pom.xml"
+        if not self.verify_pom_version(bom_pom, release_version):
+            success = False
+        
+        # Check for any remaining SNAPSHOT versions
+        if not self.check_for_snapshots():
+            success = False
+        
+        if success:
+            Logger.success("✓ All version verifications passed")
+        else:
+            Logger.error("✗ Version verification failed")
+        
+        return success
 
 
 class GitHubActionsHelper:
@@ -455,7 +543,10 @@ class ReleaseWorkflow:
         elif step_name == "Set release version":
             commands = [
                 f"mvnd versions:set -DnewVersion={self.config.target_version} -DgenerateBackupPoms=false",
-                f"mvnd versions:set -DnewVersion={self.config.target_version} -DgenerateBackupPoms=false -pl spring-ai-bom"
+                f"mvnd versions:set -DnewVersion={self.config.target_version} -DgenerateBackupPoms=false -pl spring-ai-bom",
+                f"Verify pom.xml has version {self.config.target_version}",
+                f"Verify spring-ai-bom/pom.xml has version {self.config.target_version}",
+                "Check all POM files for SNAPSHOT versions (should find none)"
             ]
         elif step_name == "Build and verify":
             commands = [
@@ -662,10 +753,13 @@ class ReleaseWorkflow:
         return True
     
     def _set_release_version(self) -> bool:
-        """Set the release version"""
+        """Set the release version and verify it was applied correctly"""
         if not self.maven_helper.set_version(self.config.target_version):
             return False
-        return self.maven_helper.set_bom_version(self.config.target_version)
+        if not self.maven_helper.set_bom_version(self.config.target_version):
+            return False
+        # Verify versions were set correctly
+        return self.maven_helper.verify_release_versions(self.config.target_version)
     
     def _build_and_verify(self) -> bool:
         """Build and verify the release"""
