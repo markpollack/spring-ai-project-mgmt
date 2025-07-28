@@ -16,11 +16,14 @@ The `spring-ai-point-release.py` script automates the complete workflow for crea
 ## Quick Start
 
 ```bash
-# Test the release workflow without making changes
+# Test the main release workflow without making changes
 python3 spring-ai-point-release.py 1.0.1 --dry-run
 
-# Execute the actual release
+# Execute the main release workflow (stops at Maven Central trigger)
 python3 spring-ai-point-release.py 1.0.1
+
+# After Maven Central deployment succeeds, complete the development version setup
+python3 spring-ai-point-release.py 1.0.1 --post-maven-central
 
 # Use a different branch (if needed)
 python3 spring-ai-point-release.py 1.0.1 --branch 1.0.x
@@ -38,12 +41,36 @@ Options:
   --branch BRANCH       Branch to release from (default: 1.0.x)
   --dry-run            Preview commands without executing them
   --workspace PATH      Override workspace directory (default: ./spring-ai-release)
+  --post-maven-central  Complete development version setup after Maven Central success
   --help               Show help message and exit
 ```
 
+## Two-Phase Release Process
+
+The script implements a **two-phase workflow** for safer Maven Central integration:
+
+### Phase 1: Main Release Workflow (9 steps)
+Executes release steps up to Maven Central trigger and **stops**:
+```bash
+python3 spring-ai-point-release.py 1.0.1
+```
+
+### Phase 2: Post-Maven Central Workflow (3 steps)  
+Completes development version setup **only after Maven Central success**:
+```bash
+python3 spring-ai-point-release.py 1.0.1 --post-maven-central
+```
+
+**Why Two Phases?**
+- **Risk Reduction**: Prevents development version changes before Maven Central deployment is confirmed
+- **Manual Verification**: Allows human verification of Maven Central success
+- **State Recovery**: Uses persistent state in `./state/` directory for workflow continuity
+
 ## Release Workflow Steps
 
-The script executes the following steps in order, with user confirmation at each stage:
+### Phase 1: Main Release Workflow
+
+The main workflow executes steps 1-9 and stops at Maven Central trigger:
 
 ### 1. Setup Workspace
 - **Action**: Creates fresh checkout in `./spring-ai-release`
@@ -143,13 +170,47 @@ The script executes the following steps in order, with user confirmation at each
   ```
 - **Purpose**: Publishes javadocs for the specific release version
 
-### 11. Trigger Maven Central Release
+### 9. Trigger Maven Central Release
 - **Action**: Triggers GitHub Actions workflow for artifact publishing
 - **Commands**:
   ```bash
   gh workflow run new-maven-central-release.yml --repo spring-projects/spring-ai --ref 1.0.x
   ```
-- **Purpose**: Uploads build artifacts to Maven Central (final step)
+- **Purpose**: Uploads build artifacts to Maven Central
+- **🛑 WORKFLOW STOPS HERE**: Phase 1 complete, state saved
+
+### Phase 2: Post-Maven Central Workflow
+
+After Maven Central deployment succeeds, run with `--post-maven-central`:
+
+### 10. Set Next Development Version  
+- **Action**: Updates POM files to next development version
+- **Commands**:
+  ```bash
+  # Set main project version
+  mvnd versions:set -DnewVersion=1.0.2-SNAPSHOT -DgenerateBackupPoms=false
+  
+  # Set BOM module version specifically
+  mvnd versions:set -DnewVersion=1.0.2-SNAPSHOT -DgenerateBackupPoms=false -pl spring-ai-bom
+  ```
+- **Purpose**: Prepares branch for continued development with proper BOM versioning
+
+### 11. Commit Development Version
+- **Action**: Commits development version changes
+- **Commands**:
+  ```bash
+  git add -A
+  git commit -m "Next development version 1.0.2-SNAPSHOT"
+  ```
+- **Purpose**: Records development version changes
+
+### 12. Push Development Version
+- **Action**: Pushes development version changes to remote
+- **Commands**:
+  ```bash
+  git push origin 1.0.x
+  ```
+- **Purpose**: Makes development version available for continued work
 
 ## Interactive Workflow
 
@@ -282,11 +343,14 @@ release/
 │   ├── pom.xml                   # Root POM with version updates
 │   ├── spring-ai-docs/           # Documentation module
 │   └── ...                       # Other Spring AI modules
+├── state/                        # Release state persistence
+│   └── release-1.0.1.json        # State file for version 1.0.1
 └── README.md                     # This file
 ```
 
 ### Cleanup
-The workspace directory (`spring-ai-release`) is automatically cleaned and recreated for each release to ensure a pristine environment.
+- The workspace directory (`spring-ai-release`) is automatically cleaned and recreated for each release to ensure a pristine environment
+- State files in `./state/` directory persist between phases and can be manually cleaned after successful releases
 
 ## Version Strategy
 
