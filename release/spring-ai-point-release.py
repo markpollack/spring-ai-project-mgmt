@@ -33,6 +33,7 @@ class ReleaseConfig:
     dry_run: bool = False
     post_maven_central: bool = False
     skip_to: Optional[str] = None
+    cleanup: bool = False
     
     @property
     def spring_ai_dir(self) -> Path:
@@ -622,6 +623,50 @@ class ReleaseWorkflow:
         """Ensure state directory exists"""
         self.config.state_dir.mkdir(exist_ok=True)
     
+    def cleanup_workspace_and_state(self) -> bool:
+        """Clean up workspace directory and state files for fresh start"""
+        Logger.info("🧹 Cleaning up workspace and state files...")
+        
+        cleanup_items = [
+            (self.config.spring_ai_dir, "workspace directory"),
+            (self.config.release_state_file, "release state file"),
+        ]
+        
+        success = True
+        cleaned_count = 0
+        
+        for item_path, description in cleanup_items:
+            try:
+                if item_path.exists():
+                    if self.config.dry_run:
+                        Logger.info(f"DRY RUN: Would remove {description}: {item_path}")
+                        cleaned_count += 1
+                    else:
+                        if item_path.is_dir():
+                            import shutil
+                            shutil.rmtree(item_path)
+                            Logger.success(f"✅ Removed {description}: {item_path}")
+                        else:
+                            item_path.unlink()
+                            Logger.success(f"✅ Removed {description}: {item_path}")
+                        cleaned_count += 1
+                else:
+                    Logger.info(f"ℹ️  {description} not found: {item_path}")
+            except Exception as e:
+                Logger.error(f"❌ Failed to remove {description} {item_path}: {e}")
+                success = False
+        
+        if success:
+            if cleaned_count > 0:
+                action = "Would clean" if self.config.dry_run else "Cleaned"
+                Logger.success(f"🎉 {action} {cleaned_count} items successfully!")
+            else:
+                Logger.info("ℹ️  No cleanup needed - workspace already clean")
+        else:
+            Logger.error("❌ Some cleanup operations failed")
+        
+        return success
+    
     def save_release_state(self, phase: str, completed_steps: List[str]):
         """Save current release state to file"""
         state = {
@@ -1001,6 +1046,10 @@ Examples:
   python3 spring-ai-point-release.py 1.0.1 --skip-to build
   python3 spring-ai-point-release.py 1.0.1 --skip-to commit-release
   
+  # Clean up workspace and state for fresh start
+  python3 spring-ai-point-release.py 1.0.1 --cleanup
+  python3 spring-ai-point-release.py 1.0.1 --cleanup --dry-run
+  
   # Post-Maven Central workflow (after deployment succeeds)
   python3 spring-ai-point-release.py 1.0.1 --post-maven-central
 
@@ -1018,6 +1067,8 @@ Skip-to options: setup, set-version, build, commit-release, tag, push, docs, jav
         'setup', 'set-version', 'build', 'commit-release', 'tag', 'push', 
         'docs', 'javadoc', 'maven-central'
     ], help='Skip to specific workflow step (useful for resuming interrupted releases)')
+    parser.add_argument('--cleanup', action='store_true',
+                       help='Clean up state files and workspace directory before starting (fresh start)')
     
     args = parser.parse_args()
     
@@ -1032,7 +1083,8 @@ Skip-to options: setup, set-version, build, commit-release, tag, push, docs, jav
         branch=args.branch,
         dry_run=args.dry_run,
         post_maven_central=args.post_maven_central,
-        skip_to=args.skip_to
+        skip_to=args.skip_to,
+        cleanup=args.cleanup
     )
     
     # Validate version format
@@ -1043,6 +1095,28 @@ Skip-to options: setup, set-version, build, commit-release, tag, push, docs, jav
     
     # Create workflow and execute
     workflow = ReleaseWorkflow(config)
+    
+    # Handle cleanup if requested
+    if config.cleanup:
+        Logger.bold("\n🧹 CLEANUP MODE")
+        Logger.bold("=" * 30)
+        
+        if not workflow.confirm_step("Clean up workspace and state files"):
+            Logger.info("Cleanup cancelled by user")
+            sys.exit(0)
+        
+        try:
+            success = workflow.cleanup_workspace_and_state()
+            if not success:
+                Logger.error("\nCleanup failed!")
+                sys.exit(1)
+            else:
+                Logger.success("\n✅ Cleanup completed successfully!")
+                Logger.info("You can now run the release from a clean state.")
+                sys.exit(0)
+        except Exception as e:
+            Logger.error(f"\nUnexpected error during cleanup: {e}")
+            sys.exit(1)
     
     if config.post_maven_central:
         # Post-Maven Central workflow
