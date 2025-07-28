@@ -391,13 +391,86 @@ class ReleaseWorkflow:
         self.maven_helper = None
         self.github_helper = None
     
+    def get_step_commands(self, step_name: str) -> List[str]:
+        """Get detailed command summary for a step"""
+        commands = []
+        
+        if step_name == "Setup workspace":
+            commands = [
+                f"git clone https://github.com/{self.config.spring_ai_repo}.git {self.config.spring_ai_dir}",
+                f"cd {self.config.spring_ai_dir}",
+                f"git checkout {self.config.branch}",
+                f"git pull origin {self.config.branch}",
+                "Initialize Maven and GitHub helpers"
+            ]
+        elif step_name == "Set release version":
+            commands = [
+                f"mvnd versions:set -DnewVersion={self.config.target_version} -DgenerateBackupPoms=false",
+                f"mvnd versions:set -DnewVersion={self.config.target_version} -DgenerateBackupPoms=false -pl spring-ai-bom"
+            ]
+        elif step_name == "Build and verify":
+            commands = [
+                "mvnd clean package -Dmaven.javadoc.skip=true -DskipTests",
+                "./mvnw -pl spring-ai-docs antora"
+            ]
+        elif step_name == "Commit release version":
+            commands = [
+                "git add -A",
+                f"git commit -m 'Release version {self.config.target_version}'"
+            ]
+        elif step_name == "Create release tag":
+            commands = [
+                f"git tag -a {self.config.tag_name} -m 'Release version {self.config.target_version}'"
+            ]
+        elif step_name == "Set next development version":
+            commands = [
+                f"mvnd versions:set -DnewVersion={self.config.next_dev_version} -DgenerateBackupPoms=false",
+                f"mvnd versions:set -DnewVersion={self.config.next_dev_version} -DgenerateBackupPoms=false -pl spring-ai-bom"
+            ]
+        elif step_name == "Commit development version":
+            commands = [
+                "git add -A",
+                f"git commit -m 'Next development version {self.config.next_dev_version}'"
+            ]
+        elif step_name == "Push changes":
+            commands = [
+                f"git push origin {self.config.branch}",
+                f"git push origin {self.config.tag_name}"
+            ]
+        elif step_name == "Trigger documentation deployment":
+            commands = [
+                f"gh workflow run deploy-docs.yml --repo {self.config.spring_ai_repo} --ref {self.config.branch}"
+            ]
+        elif step_name == "Trigger javadoc upload":
+            commands = [
+                f"gh workflow run documentation-upload.yml --repo {self.config.spring_ai_repo} --ref {self.config.branch} -f releaseVersion={self.config.target_version}"
+            ]
+        elif step_name == "Trigger Maven Central release":
+            commands = [
+                f"gh workflow run new-maven-central-release.yml --repo {self.config.spring_ai_repo} --ref {self.config.branch}"
+            ]
+        
+        return commands
+    
     def confirm_step(self, message: str) -> bool:
         """Ask user for confirmation before proceeding with a step"""
+        Logger.step(message)
+        
+        # Show detailed command summary
+        step_name = message.replace("Execute: ", "")
+        commands = self.get_step_commands(step_name)
+        
+        if commands:
+            mode_prefix = "DRY RUN - " if self.config.dry_run else ""
+            Logger.info(f"{mode_prefix}Commands that will be executed:")
+            for i, cmd in enumerate(commands, 1):
+                print(f"  {Colors.CYAN}{i}.{Colors.NC} {cmd}")
+            print()  # Add blank line for readability
+        
         if self.config.dry_run:
             Logger.warn(f"DRY RUN: {message}")
             return True
-        
-        Logger.step(message)
+            
         response = input(f"{Colors.YELLOW}Proceed? (Y/n): {Colors.NC}").strip().lower()
         return response in ['', 'y', 'yes']
     
