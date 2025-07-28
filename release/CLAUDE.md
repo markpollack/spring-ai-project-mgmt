@@ -18,9 +18,11 @@ The `/release` directory houses specialized scripts for:
 **Functionality**:
 - Fresh repository checkout in isolated workspace (`./spring-ai-release`)
 - Interactive step-by-step workflow with user confirmations
+- **Full command transparency** - shows exact commands before execution
 - Dual version management (main project + spring-ai-bom module)
 - Fast compilation with `mvnd` and documentation verification
 - Git operations including tagging and pushing to 1.0.x branch
+- GitHub Actions automation for post-release publishing
 - Dry-run mode for safe testing and validation
 - Automatic next development version calculation
 
@@ -117,6 +119,7 @@ The `spring-ai-point-release.py` script specifically handles the technical relea
 - ✅ **Git Operations**: Automated tagging and branch management
 - ✅ **GitHub Actions Integration**: Post-release automation (docs, javadocs, Maven Central)
 - ✅ **Interactive Workflow**: Step-by-step confirmations with dry-run mode
+- ✅ **Command Transparency**: Full disclosure of exact commands before execution
 - ✅ **Contributor Acknowledgment**: Author extraction with `get-authors-2.sh`
 
 ## Future Enhancements

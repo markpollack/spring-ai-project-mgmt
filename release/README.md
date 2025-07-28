@@ -153,7 +153,7 @@ The script executes the following steps in order, with user confirmation at each
 
 ## Interactive Workflow
 
-The script provides step-by-step confirmation:
+The script provides step-by-step confirmation with **full command transparency**:
 
 ```
 ============================================================
@@ -171,26 +171,37 @@ SPRING AI POINT RELEASE SUMMARY
 Proceed? (Y/n): y
 
 [STEP] Execute: Setup workspace
+[INFO] Commands that will be executed:
+  1. git clone https://github.com/spring-projects/spring-ai.git ./spring-ai-release
+  2. cd ./spring-ai-release
+  3. git checkout 1.0.x
+  4. git pull origin 1.0.x
+  5. Initialize Maven and GitHub helpers
+
 Proceed? (Y/n): y
 [STEP] Execute: Set release version
+[INFO] Commands that will be executed:
+  1. mvnd versions:set -DnewVersion=1.0.1 -DgenerateBackupPoms=false
+  2. mvnd versions:set -DnewVersion=1.0.1 -DgenerateBackupPoms=false -pl spring-ai-bom
+
 Proceed? (Y/n): y
 [STEP] Execute: Build and verify
+[INFO] Commands that will be executed:
+  1. mvnd clean package -Dmaven.javadoc.skip=true -DskipTests
+  2. ./mvnw -pl spring-ai-docs antora
+
 Proceed? (Y/n): y
 [STEP] Execute: Commit release version
+[INFO] Commands that will be executed:
+  1. git add -A
+  2. git commit -m 'Release version 1.0.1'
+
 Proceed? (Y/n): y
-[STEP] Execute: Create release tag
-Proceed? (Y/n): y
-[STEP] Execute: Set next development version
-Proceed? (Y/n): y
-[STEP] Execute: Commit development version
-Proceed? (Y/n): y
-[STEP] Execute: Push changes
-Proceed? (Y/n): y
-[STEP] Execute: Trigger documentation deployment
-Proceed? (Y/n): y
-[STEP] Execute: Trigger javadoc upload
-Proceed? (Y/n): y
+... (continues with command transparency for all steps)
 [STEP] Execute: Trigger Maven Central release
+[INFO] Commands that will be executed:
+  1. gh workflow run new-maven-central-release.yml --repo spring-projects/spring-ai --ref 1.0.x
+
 Proceed? (Y/n): y
 ```
 
@@ -221,6 +232,12 @@ Proceed? (Y/n): y
 - **Authentication Check**: Validates GitHub CLI availability
 - **Graceful Fallback**: Continues if GitHub CLI unavailable
 - **Interactive Control**: Step-by-step confirmation for each workflow
+
+### Command Transparency
+- **Full Disclosure**: Shows exact commands before execution
+- **Numbered Lists**: Clear enumeration of all commands per step
+- **Security Focused**: Perfect for paranoid users who need full visibility
+- **Both Modes**: Works in normal and dry-run modes with appropriate labeling
 
 ## Error Handling
 
