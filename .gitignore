@@ -50,6 +50,11 @@ pr-review/context/pr-*/solution-assessment.json
 # PR Review workflow - persistent state files
 pr-review/state/pr-branch-mapping.json
 
+# Release workflow - generated files and working directories
+release/logs/
+release/state/
+release/spring-ai-release/
+
 # IDE files
 pr-review/.idea/
 .idea/
