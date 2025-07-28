@@ -268,11 +268,11 @@ class MavenHelper:
             if suppress_output:
                 # Enhanced mvnd output suppression using proven solution
                 if cmd[0] == 'mvnd':
-                    # Add mvnd-specific suppression flags
-                    enhanced_cmd = cmd + [
-                        '-q',                        # Quiet mode  
-                        '-Dmvnd.rollingWindowSize=0' # Disable rolling window display
-                    ]
+                    # When logging to file, don't use -q so we get full output in the log
+                    if log_file:
+                        enhanced_cmd = cmd + ['-Dmvnd.rollingWindowSize=0']  # Still disable rolling window
+                    else:
+                        enhanced_cmd = cmd + ['-q', '-Dmvnd.rollingWindowSize=0']  # Full quiet mode
                     
                     # Set environment variables for complete suppression
                     env = os.environ.copy()
@@ -284,8 +284,12 @@ class MavenHelper:
                         'MVND_TERMINAL': 'false'                # Disable mvnd terminal features
                     })
                 elif cmd[0] == './mvnw':
-                    # Add Maven wrapper quiet flags
-                    enhanced_cmd = cmd + ['-q']
+                    # When logging to file, don't use -q so we get full output in the log
+                    if log_file:
+                        enhanced_cmd = cmd  # No quiet flags for full logging
+                    else:
+                        enhanced_cmd = cmd + ['-q']  # Quiet mode when no logging
+                    
                     env = os.environ.copy()
                     env.update({
                         'TERM': 'dumb',
@@ -312,14 +316,14 @@ class MavenHelper:
                             cwd=self.repo_dir, 
                             check=True, 
                             stdout=f, 
-                            stderr=f,
+                            stderr=subprocess.STDOUT,  # Redirect stderr to stdout so it goes to the log file
                             stdin=subprocess.DEVNULL,
                             start_new_session=True,
                             env=env,
                             text=True
                         )
                 else:
-                    # Suppress output completely
+                    # Suppress output completely (no log file)
                     result = subprocess.run(
                         enhanced_cmd, 
                         cwd=self.repo_dir, 
