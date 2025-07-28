@@ -31,10 +31,19 @@ class ReleaseConfig:
     spring_ai_repo: str = "spring-projects/spring-ai"
     upstream_remote: str = "origin"
     dry_run: bool = False
+    post_maven_central: bool = False
     
     @property
     def spring_ai_dir(self) -> Path:
         return self.script_dir / "spring-ai-release"
+    
+    @property
+    def state_dir(self) -> Path:
+        return self.script_dir / "state"
+    
+    @property
+    def release_state_file(self) -> Path:
+        return self.state_dir / f"release-{self.target_version}.json"
     
     @property
     def next_dev_version(self) -> str:
@@ -395,6 +404,41 @@ class ReleaseWorkflow:
         self.git_helper = None
         self.maven_helper = None
         self.github_helper = None
+        self._ensure_state_dir()
+    
+    def _ensure_state_dir(self):
+        """Ensure state directory exists"""
+        self.config.state_dir.mkdir(exist_ok=True)
+    
+    def save_release_state(self, phase: str, completed_steps: List[str]):
+        """Save current release state to file"""
+        state = {
+            "version": self.config.target_version,
+            "branch": self.config.branch,
+            "phase": phase,
+            "completed_steps": completed_steps,
+            "timestamp": datetime.now().isoformat(),
+            "next_dev_version": self.config.next_dev_version
+        }
+        
+        if not self.config.dry_run:
+            with open(self.config.release_state_file, 'w') as f:
+                json.dump(state, f, indent=2)
+            Logger.info(f"Release state saved to {self.config.release_state_file}")
+        else:
+            Logger.info("DRY RUN: Would save release state")
+    
+    def load_release_state(self) -> Optional[Dict[str, Any]]:
+        """Load release state from file"""
+        if not self.config.release_state_file.exists():
+            return None
+        
+        try:
+            with open(self.config.release_state_file, 'r') as f:
+                return json.load(f)
+        except Exception as e:
+            Logger.error(f"Failed to load release state: {e}")
+            return None
     
     def get_step_commands(self, step_name: str) -> List[str]:
         """Get detailed command summary for a step"""
@@ -441,6 +485,10 @@ class ReleaseWorkflow:
             commands = [
                 f"git push origin {self.config.branch}",
                 f"git push origin {self.config.tag_name}"
+            ]
+        elif step_name == "Push development version":
+            commands = [
+                f"git push origin {self.config.branch}"
             ]
         elif step_name == "Trigger documentation deployment":
             commands = [
@@ -519,8 +567,8 @@ class ReleaseWorkflow:
         return True
     
     def execute_release(self) -> bool:
-        """Execute the release workflow"""
-        Logger.bold("\nStarting release workflow...\n")
+        """Execute the main release workflow (stops at Maven Central trigger)"""
+        Logger.bold("\nStarting main release workflow...\n")
         
         steps = [
             ("Setup workspace", self.setup_workspace),
@@ -528,13 +576,13 @@ class ReleaseWorkflow:
             ("Build and verify", self._build_and_verify),
             ("Commit release version", self._commit_release_version),
             ("Create release tag", self._create_release_tag),
-            ("Set next development version", self._set_next_dev_version),
-            ("Commit development version", self._commit_dev_version),
             ("Push changes", self._push_changes),
             ("Trigger documentation deployment", self._trigger_deploy_docs),
             ("Trigger javadoc upload", self._trigger_documentation_upload),
             ("Trigger Maven Central release", self._trigger_maven_central_release),
         ]
+        
+        completed_steps = []
         
         for step_name, step_func in steps:
             if not self.confirm_step(f"Execute: {step_name}"):
@@ -546,9 +594,70 @@ class ReleaseWorkflow:
                     Logger.error(f"Step failed: {step_name}")
                     return False
                 Logger.success(f"Step completed: {step_name}")
+                completed_steps.append(step_name)
             except Exception as e:
                 Logger.error(f"Step failed with exception: {step_name} - {e}")
                 return False
+        
+        # Save state after Maven Central trigger
+        self.save_release_state("maven_central_triggered", completed_steps)
+        
+        Logger.bold(f"\n🎯 Main release workflow completed!")
+        Logger.bold(f"Maven Central release has been triggered.")
+        Logger.bold(f"\nAfter Maven Central deployment succeeds, run:")
+        Logger.bold(f"python3 spring-ai-point-release.py {self.config.target_version} --post-maven-central")
+        
+        return True
+    
+    def execute_post_maven_central(self) -> bool:
+        """Execute post-Maven Central steps (development version setup)"""
+        Logger.bold("\nStarting post-Maven Central workflow...\n")
+        
+        # Load and validate state
+        state = self.load_release_state()
+        if not state:
+            Logger.error("No release state found. Run the main release workflow first.")
+            return False
+        
+        if state["phase"] != "maven_central_triggered":
+            Logger.error(f"Invalid release phase: {state['phase']}. Expected 'maven_central_triggered'")
+            return False
+        
+        Logger.info(f"Resuming release {state['version']} from Maven Central trigger phase")
+        
+        # Setup workspace (repository should already exist from main workflow)
+        if not self.setup_workspace():
+            return False
+        
+        steps = [
+            ("Set next development version", self._set_next_dev_version),
+            ("Commit development version", self._commit_dev_version),
+            ("Push development version", self._push_dev_changes),
+        ]
+        
+        completed_steps = state["completed_steps"].copy()
+        
+        for step_name, step_func in steps:
+            if not self.confirm_step(f"Execute: {step_name}"):
+                Logger.warn("Step cancelled by user")
+                return False
+            
+            try:
+                if not step_func():
+                    Logger.error(f"Step failed: {step_name}")
+                    return False
+                Logger.success(f"Step completed: {step_name}")
+                completed_steps.append(step_name)
+            except Exception as e:
+                Logger.error(f"Step failed with exception: {step_name} - {e}")
+                return False
+        
+        # Save final state
+        self.save_release_state("completed", completed_steps)
+        
+        Logger.bold(f"\n🎉 Complete release workflow finished!")
+        Logger.bold(f"Released version: {self.config.target_version}")
+        Logger.bold(f"Development version: {self.config.next_dev_version}")
         
         return True
     
@@ -589,6 +698,15 @@ class ReleaseWorkflow:
         """Push changes and tags"""
         return self.git_helper.push_changes()
     
+    def _push_dev_changes(self) -> bool:
+        """Push development version changes (no tags)"""
+        try:
+            Logger.info(f"Pushing development version changes to {self.config.upstream_remote} {self.config.branch}")
+            self.git_helper.run_git(["push", self.config.upstream_remote, self.config.branch])
+            return True
+        except subprocess.CalledProcessError:
+            return False
+    
     def _trigger_deploy_docs(self) -> bool:
         """Trigger documentation deployment on target branch"""
         if not self.github_helper.is_gh_available():
@@ -618,8 +736,12 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
+  # Main release workflow (stops at Maven Central trigger)
   python3 spring-ai-point-release.py 1.0.1 --dry-run
-  python3 spring-ai-point-release.py 1.0.2 --branch 1.0.x
+  python3 spring-ai-point-release.py 1.0.1 --branch 1.0.x
+  
+  # Post-Maven Central workflow (after deployment succeeds)
+  python3 spring-ai-point-release.py 1.0.1 --post-maven-central
         """
     )
     
@@ -627,6 +749,8 @@ Examples:
     parser.add_argument('--branch', default='1.0.x', help='Branch to release from (default: 1.0.x)')
     parser.add_argument('--dry-run', action='store_true', help='Preview commands without executing')
     parser.add_argument('--workspace', type=Path, help='Override workspace directory')
+    parser.add_argument('--post-maven-central', action='store_true', 
+                       help='Complete development version setup after Maven Central success')
     
     args = parser.parse_args()
     
@@ -639,7 +763,8 @@ Examples:
         script_dir=script_dir,
         target_version=args.version,
         branch=args.branch,
-        dry_run=args.dry_run
+        dry_run=args.dry_run,
+        post_maven_central=args.post_maven_central
     )
     
     # Validate version format
@@ -650,27 +775,48 @@ Examples:
     
     # Create workflow and execute
     workflow = ReleaseWorkflow(config)
-    workflow.display_summary()
     
-    if not workflow.confirm_step("Start release workflow"):
-        Logger.info("Release cancelled by user")
-        sys.exit(0)
-    
-    try:
-        success = workflow.execute_release()
-        if success:
-            Logger.success("\nRelease workflow completed successfully!")
-            Logger.bold(f"Released version: {config.target_version}")
-            Logger.bold(f"Tag created: {config.tag_name}")
-        else:
-            Logger.error("\nRelease workflow failed!")
+    if config.post_maven_central:
+        # Post-Maven Central workflow
+        Logger.bold("\nPost-Maven Central Development Version Setup")
+        Logger.bold("="*50)
+        
+        if not workflow.confirm_step("Start post-Maven Central workflow"):
+            Logger.info("Post-Maven Central workflow cancelled by user")
+            sys.exit(0)
+        
+        try:
+            success = workflow.execute_post_maven_central()
+            if success:
+                Logger.success("\nPost-Maven Central workflow completed successfully!")
+            else:
+                Logger.error("\nPost-Maven Central workflow failed!")
+                sys.exit(1)
+        except KeyboardInterrupt:
+            Logger.warn("\nPost-Maven Central workflow interrupted by user")
             sys.exit(1)
-    except KeyboardInterrupt:
-        Logger.warn("\nRelease workflow interrupted by user")
-        sys.exit(1)
-    except Exception as e:
-        Logger.error(f"\nUnexpected error: {e}")
-        sys.exit(1)
+        except Exception as e:
+            Logger.error(f"\nUnexpected error: {e}")
+            sys.exit(1)
+    else:
+        # Main release workflow
+        workflow.display_summary()
+        
+        if not workflow.confirm_step("Start main release workflow"):
+            Logger.info("Release cancelled by user")
+            sys.exit(0)
+        
+        try:
+            success = workflow.execute_release()
+            if not success:
+                Logger.error("\nMain release workflow failed!")
+                sys.exit(1)
+        except KeyboardInterrupt:
+            Logger.warn("\nRelease workflow interrupted by user")
+            sys.exit(1)
+        except Exception as e:
+            Logger.error(f"\nUnexpected error: {e}")
+            sys.exit(1)
 
 
 if __name__ == "__main__":
