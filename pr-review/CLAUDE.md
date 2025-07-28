@@ -9,6 +9,8 @@ This directory contains a comprehensive AI-powered PR review automation system f
 - `ai_conversation_analyzer.py` - Claude Code integration for conversation analysis
 - `solution_assessor.py` - AI-powered technical solution assessment
 - `ai_risk_assessor.py` - AI-powered security and quality risk assessment
+- `backport_assessor.py` - AI-powered backport candidate evaluation for maintenance branches
+- `commit_message_generator.py` - AI-powered comprehensive commit message generation
 - `pr_context_collector.py` - GitHub context and issue data collection
 - `claude_code_wrapper.py` - Robust utility class for Claude Code CLI integration
 
@@ -19,6 +21,8 @@ Contains report templates and prompts for AI analysis:
 - `enhanced_pr_report_template.md` - Main enhanced report template
 - `ai_conversation_analysis_prompt.md` - Prompt for conversation analysis
 - `solution_assessment_prompt.md` - Prompt for solution assessment
+- `backport-candidate.md` - Spring AI 1.0.x backporting evaluation criteria
+- `review-commit-message.md` - Comprehensive commit message generation template
 - Various conflict resolution and planning templates
 
 ### `/context/`
@@ -96,6 +100,8 @@ All AI-powered analysis components use the robust `ClaudeCodeWrapper` utility cl
 - `ai_conversation_analyzer.py` - For parsing PR conversations and generating insights
 - `solution_assessor.py` - For technical solution quality assessment
 - `ai_risk_assessor.py` - For security and quality risk evaluation
+- `backport_assessor.py` - For evaluating backport candidate eligibility
+- `commit_message_generator.py` - For generating comprehensive commit messages
 - `pr_workflow.py` - For automated conflict resolution
 
 ### Usage Pattern

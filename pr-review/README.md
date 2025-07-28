@@ -49,7 +49,7 @@ The Spring AI PR Review system provides a **complete automated workflow** for ef
 
 **Before**: Manual PR review required multiple complex steps, frequent conflicts, manual error resolution, and inconsistent analysis quality.
 
-**After**: Single command provides complete PR preparation, intelligent conflict resolution, automated compilation fixes, comprehensive testing, and professional-grade AI-powered analysis reports.
+**After**: Single command provides complete PR preparation, intelligent conflict resolution, automated compilation fixes, comprehensive testing, professional AI-generated commit messages, and professional-grade AI-powered analysis reports.
 
 ## 🔄 Complete Workflow Overview
 
@@ -64,8 +64,8 @@ When you run `python pr_workflow.py 3386`, here's what happens automatically:
 ### Phase 2: Intelligent Commit Management  
 1. **Commit Analysis**: Analyzes PR commit structure and history
 2. **Intelligent Squashing**: Automatically squashes multiple commits into clean single commit
-3. **Conflict-Aware Rebase**: Rebases against latest upstream with intelligent conflict detection
-4. **Commit Message Enhancement**: Generates clear, descriptive commit messages
+3. **AI-Powered Commit Messages**: Uses Claude Code AI to generate comprehensive, professional commit messages based on PR context, changes, and discussions
+4. **Conflict-Aware Rebase**: Rebases against latest upstream with intelligent conflict detection
 
 ### Phase 3: AI-Powered Conflict Resolution
 1. **Conflict Detection**: Identifies and categorizes merge conflicts by complexity
@@ -134,6 +134,7 @@ reports/
 ### Claude Code AI Capabilities
 - **Intelligent Conflict Resolution**: Understands code context and intent for semantic conflict resolution
 - **Compilation Error Fixing**: Automatically fixes Java/Spring compilation issues with proper API usage
+- **Professional Commit Messages**: Generates comprehensive commit messages that explain the "why" and "what" of changes
 - **Conversation Analysis**: Analyzes GitHub discussions to understand requirements and concerns
 - **Solution Assessment**: Evaluates technical approach, architecture impact, and implementation quality
 - **Risk Analysis**: Identifies potential issues, breaking changes, and integration concerns
@@ -172,6 +173,7 @@ reports/
 pr-review/
 ├── pr_workflow.py                 # 🎯 Main workflow orchestrator
 ├── enhanced_report_generator.py   # AI-powered report generation
+├── commit_message_generator.py    # AI-powered commit message generation
 ├── conflict_analyzer.py           # Conflict detection and analysis
 ├── compilation_error_resolver.py  # AI-powered compilation fixing
 ├── intelligent_squash.py          # Smart commit squashing

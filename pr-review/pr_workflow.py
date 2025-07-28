@@ -23,6 +23,7 @@ from compilation_error_resolver import CompilationErrorResolver
 # Import GitHub utilities for branch management
 from github_utils import GitHubUtils
 from claude_code_wrapper import ClaudeCodeWrapper
+from commit_message_generator import CommitMessageGenerator
 
 
 @dataclass
@@ -1067,6 +1068,62 @@ class PRWorkflow:
             Logger.error(f"❌ Error running intelligent squash: {e}")
             return False
     
+    def generate_commit_message(self, pr_number: str, skip_commit_message: bool = False, 
+                              dry_run: bool = False) -> Optional[str]:
+        """Generate comprehensive commit message using AI"""
+        if skip_commit_message:
+            Logger.info("Skipping AI commit message generation as requested")
+            return None
+        
+        if dry_run:
+            Logger.info("🎭 DRY RUN: Would generate AI-powered commit message")
+            return None
+        
+        try:
+            Logger.info(f"🤖 Generating comprehensive commit message for PR #{pr_number}")
+            
+            # Get PR context directory
+            pr_context_dir = self.config.script_dir / "context" / f"pr-{pr_number}"
+            
+            # Load basic PR data for fallback title
+            fallback_title = None
+            pr_data_file = pr_context_dir / "pr-data.json"
+            if pr_data_file.exists():
+                try:
+                    with open(pr_data_file, 'r') as f:
+                        pr_data = json.load(f)
+                        fallback_title = pr_data.get('title', f"PR #{pr_number}")
+                except Exception as e:
+                    Logger.warn(f"Could not load PR data for fallback: {e}")
+            
+            # Initialize commit message generator
+            generator = CommitMessageGenerator(self.config.script_dir)
+            
+            # Generate the commit message
+            result = generator.generate_commit_message(
+                pr_number=pr_number,
+                pr_context_dir=pr_context_dir,
+                fallback_title=fallback_title
+            )
+            
+            if result.success:
+                if result.fallback_used:
+                    Logger.warn(f"⚠️  Using fallback commit message: {result.error}")
+                else:
+                    Logger.success(f"✅ Generated AI-powered commit message ({result.processing_time:.1f}s)")
+                
+                return result.message
+            else:
+                Logger.error(f"❌ Failed to generate commit message: {result.error}")
+                # Return a basic fallback
+                title = fallback_title or f"PR #{pr_number}"
+                return f"{title}\n\nSquashed commits from PR #{pr_number}"
+                
+        except Exception as e:
+            Logger.error(f"❌ Error in commit message generation: {e}")
+            # Return a basic fallback
+            return f"Squashed commits from PR #{pr_number}"
+    
     def rebase_against_upstream(self, pr_number: str, auto_resolve: bool = False, dry_run: bool = False) -> bool:
         """Rebase against upstream main"""
         Logger.info(f"Rebasing against {self.config.upstream_remote}/{self.config.main_branch}...")
@@ -1373,7 +1430,7 @@ File content with conflicts:"""
     
     
     def run_complete_workflow(self, pr_number: str, skip_squash: bool = False, skip_compile: bool = False, 
-                            skip_tests: bool = False, skip_docs: bool = False, auto_resolve: bool = False, force: bool = False, generate_report: bool = True, dry_run: bool = False) -> bool:
+                            skip_tests: bool = False, skip_docs: bool = False, auto_resolve: bool = False, force: bool = False, generate_report: bool = True, skip_commit_message: bool = False, dry_run: bool = False) -> bool:
         """Run the complete PR workflow"""
         Logger.info(f"🚀 Starting complete PR review workflow for PR #{pr_number}")
         
@@ -1399,6 +1456,25 @@ File content with conflicts:"""
         if not self.squash_commits(pr_number, skip_squash, dry_run):
             Logger.error("❌ Squash commits failed - cannot proceed with multi-commit rebase")
             return False
+        
+        # Phase 4.5: Generate comprehensive commit message
+        commit_message = self.generate_commit_message(pr_number, skip_commit_message, dry_run)
+        if commit_message and not dry_run:
+            # Update the commit message if we generated one
+            Logger.info("📝 Updating commit with AI-generated message")
+            try:
+                # Amend the commit with the new message
+                result = subprocess.run(
+                    ["git", "commit", "--amend", "-m", commit_message],
+                    cwd=self.config.spring_ai_dir,
+                    capture_output=True,
+                    text=True,
+                    check=True
+                )
+                Logger.success("✅ Updated commit with comprehensive message")
+            except subprocess.CalledProcessError as e:
+                Logger.warn(f"⚠️  Could not update commit message: {e}")
+                Logger.warn("Proceeding with existing commit message")
         
         # Phase 5: Rebase against upstream
         if not self.rebase_against_upstream(pr_number, auto_resolve, dry_run):
@@ -1891,6 +1967,7 @@ Examples:
   python3 pr_workflow.py 3386                      # Full workflow for PR #3386 (with auto-resolve)
   python3 pr_workflow.py --no-auto-resolve 3386    # Disable automatic conflict resolution
   python3 pr_workflow.py --skip-squash 3386        # Skip commit squashing
+  python3 pr_workflow.py --skip-commit-message 3386 # Skip AI commit message generation
   python3 pr_workflow.py --skip-report 3386        # Skip report generation (prep only)
   python3 pr_workflow.py --report-only 3386        # Generate only the analysis report
   python3 pr_workflow.py --test-only 3386          # Run only the changed tests
@@ -1906,6 +1983,7 @@ Examples:
     parser.add_argument('--skip-compile', action='store_true', help='Skip compilation check')
     parser.add_argument('--skip-tests', action='store_true', help='Skip test execution')
     parser.add_argument('--skip-docs', action='store_true', help='Skip Antora documentation build')
+    parser.add_argument('--skip-commit-message', action='store_true', help='Skip AI-powered commit message generation')
     parser.add_argument('--no-auto-resolve', action='store_true', help='Disable automatic conflict resolution (auto-resolve is enabled by default)')
     parser.add_argument('--force', action='store_true', help='Force operations (overwrite existing branches)')
     parser.add_argument('--skip-report', action='store_true', help='Skip PR analysis report generation')
@@ -1971,6 +2049,7 @@ Examples:
             auto_resolve=not args.no_auto_resolve,  # Auto-resolve by default unless disabled
             force=args.force,
             generate_report=not args.skip_report,
+            skip_commit_message=args.skip_commit_message,
             dry_run=args.dry_run
         )
     
