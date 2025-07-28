@@ -44,8 +44,10 @@ Options:
   --post-maven-central         Complete development version setup after Maven Central success
   --check-maven-status         Check Maven Central infrastructure status and exit
   --skip-maven-status-check    Skip Maven Central status check before deployment
-  --skip-to STEP              Skip to specific workflow step (setup, set-version, build, etc.)
+  --skip-to STEP              Skip to specific workflow step (setup, set-version, build, start-spring-io, etc.)
   --cleanup                   Clean up state files and workspace directory before starting
+  --skip-start-spring-io      Skip start.spring.io update in post-Maven Central workflow
+  --cleanup-start-spring-io   Clean up start.spring.io repository and exit
   --help                      Show help message and exit
 ```
 
@@ -59,7 +61,7 @@ Executes release steps up to Maven Central trigger and **stops**:
 python3 spring-ai-point-release.py 1.0.1
 ```
 
-### Phase 2: Post-Maven Central Workflow (3 steps)  
+### Phase 2: Post-Maven Central Workflow (4 steps)  
 Completes development version setup **only after Maven Central success**:
 ```bash
 python3 spring-ai-point-release.py 1.0.1 --post-maven-central
@@ -218,6 +220,19 @@ After Maven Central deployment succeeds, run with `--post-maven-central`:
   ```
 - **Purpose**: Makes both release commit and development version available on maintenance branch
 - **Note**: This pushes both commits that were accumulated locally during Phase 2
+
+### 14. Update start.spring.io
+- **Action**: Updates Spring Initializr with new Spring AI version
+- **Commands**:
+  ```bash
+  git clone https://github.com/spring-io/start.spring.io.git ./start-spring-io
+  cd ./start-spring-io && git checkout -b update-spring-ai-1.0.1
+  # Update application.yml: spring-ai version → 1.0.1
+  git add application.yml && git commit -m "Update Spring AI to 1.0.1"
+  gh pr create --title "Update Spring AI to 1.0.1" --body "..."
+  ```
+- **Purpose**: Makes new Spring AI version available in Spring Initializr for new projects
+- **Interactive**: Shows diff preview and PR details before creating pull request
 
 ## Interactive Workflow
 
@@ -485,6 +500,80 @@ python3 spring-ai-point-release.py 1.0.1 --skip-maven-status-check
 - **Missing Dependencies**: Falls back gracefully if `requests` library unavailable
 - **Parsing Errors**: Assumes healthy status if API response can't be parsed
 - **User Control**: Always allows proceeding despite warnings
+
+## start.spring.io Integration
+
+The script automatically updates start.spring.io (Spring Initializr) to make new Spring AI releases available for new projects.
+
+### Automatic Update Process
+
+**Part of Phase 2 Workflow:**
+After Maven Central deployment succeeds, the script automatically:
+1. Clones https://github.com/spring-io/start.spring.io repository
+2. Creates feature branch `update-spring-ai-{version}`
+3. Updates `application.yml` to change Spring AI BOM version
+4. Shows interactive diff preview for user confirmation
+5. Creates pull request with standardized title and description
+
+**Example Interactive Preview:**
+```
+📋 CHANGES PREVIEW:
+File: application.yml
+@@ -83,7 +83,7 @@
+       spring-ai:
+         groupId: org.springframework.ai
+         artifactId: spring-ai-bom
+         versionProperty: spring-ai.version
+         mappings:
+           - compatibilityRange: "[3.4.0,4.0.0-M1)"
+-            version: 1.0.0
++            version: 1.0.1
+
+🔍 Commit Message:
+Update Spring AI to 1.0.1
+
+🎯 PR Title: Update Spring AI to 1.0.1
+📝 PR Body:
+Updates Spring AI BOM version to 1.0.1 for compatibility with latest point release.
+- Updated spring-ai version mapping from 1.0.0 to 1.0.1
+- Maintains compatibility range [3.4.0,4.0.0-M1)
+
+This change makes Spring AI 1.0.1 available in Spring Initializr for new projects.
+
+Proceed with creating PR? (Y/n):
+```
+
+### Manual Operation
+
+**Run only start.spring.io update:**
+```bash
+python3 spring-ai-point-release.py 1.0.1 --skip-to start-spring-io
+```
+
+**Skip start.spring.io update in Phase 2:**
+```bash
+python3 spring-ai-point-release.py 1.0.1 --post-maven-central --skip-start-spring-io
+```
+
+**Clean up repository:**
+```bash
+python3 spring-ai-point-release.py 1.0.1 --cleanup-start-spring-io
+```
+
+### Error Handling
+
+- **Repository Issues**: Automatic cleanup of existing directory before clone
+- **Version Already Updated**: Detects if version is already current, skips gracefully
+- **GitHub CLI Issues**: Clear error messages about authentication or permissions
+- **Network Problems**: Robust handling of clone and push failures
+- **User Cancellation**: Allows canceling at any confirmation prompt
+
+### Benefits
+
+- **Immediate Availability**: New releases instantly available in Spring Initializr
+- **Consistent PRs**: Standardized commit messages and PR descriptions
+- **User Control**: Full transparency with diff preview before submission
+- **Error Recovery**: Automatic cleanup and clear error reporting
 
 ### Getting Help
 - Use `--help` for command options

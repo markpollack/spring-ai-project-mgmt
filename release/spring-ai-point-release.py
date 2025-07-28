@@ -749,6 +749,209 @@ class MavenStatusChecker:
         return message
 
 
+class StartSpringIOUpdater:
+    """Update start.spring.io with new Spring AI releases"""
+    
+    def __init__(self, config: ReleaseConfig):
+        self.config = config
+        self.repo_url = "https://github.com/spring-io/start.spring.io.git"
+        self.repo_dir = config.script_dir / "start-spring-io"
+        self.application_yml = self.repo_dir / "application.yml"
+        self.branch_name = f"update-spring-ai-{config.target_version}"
+    
+    def clone_repository(self) -> bool:
+        """Clone start.spring.io repository"""
+        try:
+            # Remove existing directory if it exists
+            if self.repo_dir.exists():
+                Logger.info(f"Removing existing directory: {self.repo_dir}")
+                import shutil
+                shutil.rmtree(self.repo_dir)
+            
+            Logger.info(f"Cloning start.spring.io repository to {self.repo_dir}")
+            subprocess.run([
+                "git", "clone", self.repo_url, str(self.repo_dir)
+            ], check=True, capture_output=True, text=True)
+            
+            return True
+        except subprocess.CalledProcessError as e:
+            Logger.error(f"Failed to clone repository: {e}")
+            return False
+    
+    def create_feature_branch(self) -> bool:
+        """Create feature branch for the update"""
+        try:
+            Logger.info(f"Creating feature branch: {self.branch_name}")
+            subprocess.run([
+                "git", "-C", str(self.repo_dir), "checkout", "-b", self.branch_name
+            ], check=True, capture_output=True, text=True)
+            
+            return True
+        except subprocess.CalledProcessError as e:
+            Logger.error(f"Failed to create feature branch: {e}")
+            return False
+    
+    def find_current_version(self) -> str:
+        """Find current Spring AI version in application.yml"""
+        try:
+            with open(self.application_yml, 'r') as f:
+                content = f.read()
+            
+            # Look for spring-ai section and extract version
+            import re
+            pattern = r'spring-ai:.*?version:\s*([0-9]+\.[0-9]+\.[0-9]+)'
+            match = re.search(pattern, content, re.DOTALL)
+            
+            if match:
+                return match.group(1)
+            else:
+                Logger.error("Could not find spring-ai version in application.yml")
+                return ""
+        except Exception as e:
+            Logger.error(f"Error reading application.yml: {e}")
+            return ""
+    
+    def update_spring_ai_version(self) -> tuple[bool, str]:
+        """Update Spring AI version in application.yml"""
+        try:
+            current_version = self.find_current_version()
+            if not current_version:
+                return False, ""
+            
+            if current_version == self.config.target_version:
+                Logger.warn(f"Version {self.config.target_version} is already set in application.yml")
+                return False, current_version
+            
+            Logger.info(f"Updating Spring AI version: {current_version} → {self.config.target_version}")
+            
+            with open(self.application_yml, 'r') as f:
+                content = f.read()
+            
+            # Replace the version in spring-ai section
+            import re
+            pattern = r'(spring-ai:.*?version:\s*)([0-9]+\.[0-9]+\.[0-9]+)'
+            new_content = re.sub(pattern, f'\\g<1>{self.config.target_version}', content, flags=re.DOTALL)
+            
+            if content == new_content:
+                Logger.error("Version replacement failed - no changes made")
+                return False, current_version
+            
+            with open(self.application_yml, 'w') as f:
+                f.write(new_content)
+            
+            return True, current_version
+        except Exception as e:
+            Logger.error(f"Error updating application.yml: {e}")
+            return False, ""
+    
+    def show_changes_preview(self, old_version: str) -> bool:
+        """Show diff of changes for user review"""
+        try:
+            Logger.info("📋 CHANGES PREVIEW:")
+            
+            # Show git diff
+            result = subprocess.run([
+                "git", "-C", str(self.repo_dir), "diff", "application.yml"
+            ], capture_output=True, text=True)
+            
+            if result.stdout:
+                print(f"{Colors.CYAN}File: application.yml{Colors.NC}")
+                print(result.stdout)
+            
+            # Show commit and PR details
+            commit_msg = f"Update Spring AI to {self.config.target_version}"
+            pr_title = f"Update Spring AI to {self.config.target_version}"
+            pr_body = f"""Updates Spring AI BOM version to {self.config.target_version} for compatibility with latest point release.
+
+- Updated spring-ai version mapping from {old_version} to {self.config.target_version}
+- Maintains compatibility range [3.4.0,4.0.0-M1)
+
+This change makes Spring AI {self.config.target_version} available in Spring Initializr for new projects."""
+            
+            print(f"\n{Colors.GREEN}🔍 Commit Message:{Colors.NC}")
+            print(commit_msg)
+            print(f"\n{Colors.GREEN}🎯 PR Title:{Colors.NC} {pr_title}")
+            print(f"{Colors.GREEN}📝 PR Body:{Colors.NC}")
+            print(pr_body)
+            
+            return True
+        except Exception as e:
+            Logger.error(f"Error showing changes preview: {e}")
+            return False
+    
+    def commit_changes(self) -> bool:
+        """Commit the version update"""
+        try:
+            commit_msg = f"Update Spring AI to {self.config.target_version}"
+            
+            Logger.info(f"Committing changes: {commit_msg}")
+            subprocess.run([
+                "git", "-C", str(self.repo_dir), "add", "application.yml"
+            ], check=True, capture_output=True, text=True)
+            
+            subprocess.run([
+                "git", "-C", str(self.repo_dir), "commit", "-m", commit_msg
+            ], check=True, capture_output=True, text=True)
+            
+            return True
+        except subprocess.CalledProcessError as e:
+            Logger.error(f"Failed to commit changes: {e}")
+            return False
+    
+    def create_pull_request(self, old_version: str) -> bool:
+        """Create pull request using GitHub CLI"""
+        try:
+            pr_title = f"Update Spring AI to {self.config.target_version}"
+            pr_body = f"""Updates Spring AI BOM version to {self.config.target_version} for compatibility with latest point release.
+
+- Updated spring-ai version mapping from {old_version} to {self.config.target_version}
+- Maintains compatibility range [3.4.0,4.0.0-M1)
+
+This change makes Spring AI {self.config.target_version} available in Spring Initializr for new projects."""
+            
+            Logger.info("Creating pull request...")
+            
+            if self.config.dry_run:
+                Logger.warn("DRY RUN: Would create pull request")
+                return True
+            
+            # Push branch first
+            subprocess.run([
+                "git", "-C", str(self.repo_dir), "push", "-u", "origin", self.branch_name
+            ], check=True, capture_output=True, text=True)
+            
+            # Create PR
+            subprocess.run([
+                "gh", "pr", "create",
+                "--repo", "spring-io/start.spring.io",
+                "--title", pr_title,
+                "--body", pr_body,
+                "--head", self.branch_name,
+                "--base", "main"
+            ], cwd=str(self.repo_dir), check=True, capture_output=True, text=True)
+            
+            Logger.success("Pull request created successfully!")
+            return True
+            
+        except subprocess.CalledProcessError as e:
+            Logger.error(f"Failed to create pull request: {e}")
+            if e.stderr:
+                Logger.error(f"Error details: {e.stderr}")
+            return False
+    
+    def cleanup_repository(self) -> bool:
+        """Remove the cloned repository"""
+        try:
+            if self.repo_dir.exists():
+                Logger.info(f"Cleaning up repository: {self.repo_dir}")
+                import shutil
+                shutil.rmtree(self.repo_dir)
+            return True
+        except Exception as e:
+            Logger.error(f"Error cleaning up repository: {e}")
+            return False
+
+
 class ReleaseWorkflow:
     """Main workflow orchestrator"""
     
@@ -907,6 +1110,14 @@ class ReleaseWorkflow:
         elif step_name == "Trigger Maven Central release":
             commands = [
                 f"gh workflow run new-maven-central-release.yml --repo {self.config.spring_ai_repo} --ref {self.config.release_branch}"
+            ]
+        elif step_name == "Update start.spring.io":
+            commands = [
+                "git clone https://github.com/spring-io/start.spring.io.git ./start-spring-io",
+                f"cd ./start-spring-io && git checkout -b update-spring-ai-{self.config.target_version}",
+                f"Update application.yml: spring-ai version → {self.config.target_version}",
+                f"git add application.yml && git commit -m 'Update Spring AI to {self.config.target_version}'",
+                f"gh pr create --title 'Update Spring AI to {self.config.target_version}' --body '...'"
             ]
         
         return commands
@@ -1080,6 +1291,7 @@ class ReleaseWorkflow:
             ("Set next development version", self._set_next_dev_version),
             ("Commit development version", self._commit_dev_version),
             ("Push all changes", self._push_dev_changes),
+            ("Update start.spring.io", self._update_start_spring_io),
         ]
         
         completed_steps = state["completed_steps"].copy()
@@ -1166,6 +1378,67 @@ class ReleaseWorkflow:
         except subprocess.CalledProcessError:
             return False
     
+    def _update_start_spring_io(self) -> bool:
+        """Update start.spring.io with new Spring AI version"""
+        # Skip if user requested to skip this step
+        if getattr(self.config, 'skip_start_spring_io', False):
+            Logger.info("Skipping start.spring.io update (--skip-start-spring-io specified)")
+            return True
+        
+        # Check if GitHub CLI is available
+        if not self.github_helper.is_gh_available():
+            Logger.warn("GitHub CLI not available - skipping start.spring.io update")
+            return True
+        
+        updater = StartSpringIOUpdater(self.config)
+        
+        try:
+            # Clone repository
+            if not updater.clone_repository():
+                return False
+            
+            # Create feature branch
+            if not updater.create_feature_branch():
+                return False
+            
+            # Update version and get old version
+            success, old_version = updater.update_spring_ai_version()
+            if not success:
+                if old_version == self.config.target_version:
+                    Logger.info("Version already up to date - no changes needed")
+                    updater.cleanup_repository()
+                    return True
+                return False
+            
+            # Show changes preview
+            if not updater.show_changes_preview(old_version):
+                return False
+            
+            # Ask for confirmation
+            proceed = input(f"\n{Colors.YELLOW}Proceed with creating PR? (Y/n): {Colors.NC}").strip().lower()
+            if proceed not in ['', 'y', 'yes']:
+                Logger.info("start.spring.io update cancelled by user")
+                updater.cleanup_repository()
+                return False
+            
+            # Commit changes
+            if not updater.commit_changes():
+                return False
+            
+            # Create pull request
+            if not updater.create_pull_request(old_version):
+                return False
+            
+            Logger.success("✅ start.spring.io update completed successfully!")
+            return True
+            
+        except Exception as e:
+            Logger.error(f"Unexpected error updating start.spring.io: {e}")
+            return False
+        finally:
+            # Always cleanup the repository
+            updater.cleanup_repository()
+    
     def _trigger_deploy_docs(self) -> bool:
         """Trigger documentation deployment on target branch"""
         if not self.github_helper.is_gh_available():
@@ -1244,7 +1517,7 @@ Skip-to options: setup, set-version, build, commit-release, tag, push, docs, jav
                        help='Complete development version setup after Maven Central success')
     parser.add_argument('--skip-to', choices=[
         'setup', 'set-version', 'build', 'commit-release', 'tag', 'branch', 'push', 
-        'docs', 'javadoc', 'maven-central'
+        'docs', 'javadoc', 'maven-central', 'start-spring-io'
     ], help='Skip to specific workflow step (useful for resuming interrupted releases)')
     parser.add_argument('--cleanup', action='store_true',
                        help='Clean up state files and workspace directory before starting (fresh start)')
@@ -1252,6 +1525,10 @@ Skip-to options: setup, set-version, build, commit-release, tag, push, docs, jav
                        help='Check Maven Central infrastructure status and exit')
     parser.add_argument('--skip-maven-status-check', action='store_true',
                        help='Skip Maven Central status check before deployment')
+    parser.add_argument('--skip-start-spring-io', action='store_true',
+                       help='Skip start.spring.io update in post-Maven Central workflow')
+    parser.add_argument('--cleanup-start-spring-io', action='store_true',
+                       help='Clean up start.spring.io repository and exit')
     
     args = parser.parse_args()
     
@@ -1273,6 +1550,8 @@ Skip-to options: setup, set-version, build, commit-release, tag, push, docs, jav
     # Add new attributes to config
     config.check_maven_status = args.check_maven_status
     config.skip_maven_status_check = args.skip_maven_status_check
+    config.skip_start_spring_io = args.skip_start_spring_io
+    config.cleanup_start_spring_io = args.cleanup_start_spring_io
     
     # Validate version format
     if not config.validate_version():
@@ -1303,6 +1582,28 @@ Skip-to options: setup, set-version, build, commit-release, tag, push, docs, jav
                 sys.exit(0)
         except Exception as e:
             Logger.error(f"\nUnexpected error during cleanup: {e}")
+            sys.exit(1)
+    
+    # Handle start.spring.io cleanup if requested
+    if config.cleanup_start_spring_io:
+        Logger.bold("\n🧹 START.SPRING.IO CLEANUP")
+        Logger.bold("=" * 35)
+        
+        if not workflow.confirm_step("Clean up start.spring.io repository"):
+            Logger.info("start.spring.io cleanup cancelled by user")
+            sys.exit(0)
+        
+        try:
+            updater = StartSpringIOUpdater(config)
+            success = updater.cleanup_repository()
+            if success:
+                Logger.success("\n✅ start.spring.io repository cleaned up successfully!")
+            else:
+                Logger.error("\nstart.spring.io cleanup failed!")
+                sys.exit(1)
+            sys.exit(0)
+        except Exception as e:
+            Logger.error(f"\nUnexpected error during start.spring.io cleanup: {e}")
             sys.exit(1)
     
     # Handle manual Maven status check if requested
