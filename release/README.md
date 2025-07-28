@@ -445,6 +445,22 @@ If the script fails mid-process:
 3. **Restart** from beginning after fixing issues
 4. **Use dry-run** to verify fixes before re-execution
 
+### Skip to Specific Steps
+
+**Skip directly to Maven Central deployment (useful for re-running failed deployments):**
+```bash
+python3 spring-ai-point-release.py 1.0.1 --skip-to maven-central
+```
+
+**Other commonly used skip options:**
+```bash
+# Skip to documentation deployment
+python3 spring-ai-point-release.py 1.0.1 --skip-to docs
+
+# Skip to start.spring.io update (Phase 2 only)
+python3 spring-ai-point-release.py 1.0.1 --skip-to start-spring-io
+```
+
 ## Maven Central Status Monitoring
 
 The script automatically checks Maven Central's infrastructure status before triggering deployments to help avoid failures due to service issues.
