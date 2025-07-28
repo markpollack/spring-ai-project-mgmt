@@ -49,13 +49,13 @@ Options:
 
 The script implements a **two-phase workflow** for safer Maven Central integration:
 
-### Phase 1: Main Release Workflow (9 steps)
+### Phase 1: Main Release Workflow (10 steps)
 Executes release steps up to Maven Central trigger and **stops**:
 ```bash
 python3 spring-ai-point-release.py 1.0.1
 ```
 
-### Phase 2: Post-Maven Central Workflow (3 steps)  
+### Phase 2: Post-Maven Central Workflow (4 steps)  
 Completes development version setup **only after Maven Central success**:
 ```bash
 python3 spring-ai-point-release.py 1.0.1 --post-maven-central
@@ -70,7 +70,7 @@ python3 spring-ai-point-release.py 1.0.1 --post-maven-central
 
 ### Phase 1: Main Release Workflow
 
-The main workflow executes steps 1-9 and stops at Maven Central trigger:
+The main workflow executes steps 1-10 and stops at Maven Central trigger:
 
 ### 1. Setup Workspace
 - **Action**: Creates fresh checkout in `./spring-ai-release`
@@ -119,7 +119,7 @@ The main workflow executes steps 1-9 and stops at Maven Central trigger:
   - Last 10 lines shown on build failures for immediate debugging
 
 ### 4. Commit Release Version
-- **Action**: Commits version changes
+- **Action**: Commits version changes on the maintenance branch
 - **Commands**:
   ```bash
   git add -A
@@ -128,73 +128,72 @@ The main workflow executes steps 1-9 and stops at Maven Central trigger:
 - **Purpose**: Creates commit with release version changes
 
 ### 5. Create Release Tag
-- **Action**: Creates annotated Git tag
+- **Action**: Creates annotated Git tag on the release commit
 - **Commands**:
   ```bash
   git tag -a v1.0.1 -m "Release version 1.0.1"
   ```
-- **Purpose**: Marks the exact commit for the release
+- **Purpose**: Marks the exact release commit (tag points to release version)
 
-### 6. Set Next Development Version
-- **Action**: Updates POM files to next development version
+### 6. Create Release Branch
+- **Action**: Creates new local branch from the release tag
 - **Commands**:
   ```bash
-  # Set main project version
-  mvnd versions:set -DnewVersion=1.0.2-SNAPSHOT -DgenerateBackupPoms=false
-  
-  # Set BOM module version specifically
-  mvnd versions:set -DnewVersion=1.0.2-SNAPSHOT -DgenerateBackupPoms=false -pl spring-ai-bom
+  git checkout -b 1.0.1 v1.0.1
   ```
-- **Purpose**: Prepares branch for continued development with proper BOM versioning
+- **Purpose**: Creates dedicated branch for release work, containing the release commit
 
-### 7. Commit Development Version
-- **Action**: Commits development version changes
+### 7. Push Changes
+- **Action**: Pushes tag and release branch to remote repository
 - **Commands**:
   ```bash
-  git add -A
-  git commit -m "Next development version 1.0.2-SNAPSHOT"
-  ```
-- **Purpose**: Separates release and development version commits
-
-### 8. Push Changes
-- **Action**: Pushes commits and tags to remote repository
-- **Commands**:
-  ```bash
-  git push origin 1.0.x
   git push origin v1.0.1
+  git push origin 1.0.1
   ```
-- **Purpose**: Makes release publicly available
+- **Purpose**: Makes release tag and dedicated release branch available for GitHub Actions
+- **Note**: Maintenance branch `1.0.x` stays local (not pushed)
 
-### 9. Trigger Documentation Deployment
+### 8. Trigger Documentation Deployment
 - **Action**: Triggers GitHub Actions workflow for reference documentation
 - **Commands**:
   ```bash
-  gh workflow run deploy-docs.yml --repo spring-projects/spring-ai --ref 1.0.x
+  gh workflow run deploy-docs.yml --repo spring-projects/spring-ai --ref 1.0.1
   ```
 - **Purpose**: Deploys updated documentation for the release
+- **Target**: Runs on dedicated release branch `1.0.1`
 
-### 10. Trigger Javadoc Upload
+### 9. Trigger Javadoc Upload
 - **Action**: Triggers GitHub Actions workflow for API documentation
 - **Commands**:
   ```bash
-  gh workflow run documentation-upload.yml --repo spring-projects/spring-ai --ref 1.0.x -f releaseVersion=1.0.1
+  gh workflow run documentation-upload.yml --repo spring-projects/spring-ai --ref 1.0.1 -f releaseVersion=1.0.1
   ```
 - **Purpose**: Publishes javadocs for the specific release version
+- **Target**: Runs on dedicated release branch `1.0.1`
 
-### 9. Trigger Maven Central Release
+### 10. Trigger Maven Central Release
 - **Action**: Triggers GitHub Actions workflow for artifact publishing
 - **Commands**:
   ```bash
-  gh workflow run new-maven-central-release.yml --repo spring-projects/spring-ai --ref 1.0.x
+  gh workflow run new-maven-central-release.yml --repo spring-projects/spring-ai --ref 1.0.1
   ```
 - **Purpose**: Uploads build artifacts to Maven Central
+- **Target**: Runs on dedicated release branch `1.0.1`
 - **🛑 WORKFLOW STOPS HERE**: Phase 1 complete, state saved
 
 ### Phase 2: Post-Maven Central Workflow
 
 After Maven Central deployment succeeds, run with `--post-maven-central`:
 
-### 10. Set Next Development Version  
+### 11. Push Release Commit
+- **Action**: Push the release commit to the branch (redundant but harmless)
+- **Commands**:
+  ```bash
+  git push origin 1.0.x
+  ```
+- **Purpose**: Ensures release commit is on remote branch (already done in Phase 1)
+
+### 12. Set Next Development Version  
 - **Action**: Updates POM files to next development version
 - **Commands**:
   ```bash
@@ -206,7 +205,7 @@ After Maven Central deployment succeeds, run with `--post-maven-central`:
   ```
 - **Purpose**: Prepares branch for continued development with proper BOM versioning
 
-### 11. Commit Development Version
+### 13. Commit Development Version
 - **Action**: Commits development version changes
 - **Commands**:
   ```bash
@@ -215,7 +214,7 @@ After Maven Central deployment succeeds, run with `--post-maven-central`:
   ```
 - **Purpose**: Records development version changes
 
-### 12. Push Development Version
+### 14. Push Development Version
 - **Action**: Pushes development version changes to remote
 - **Commands**:
   ```bash

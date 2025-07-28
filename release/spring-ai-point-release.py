@@ -48,6 +48,11 @@ class ReleaseConfig:
         return self.state_dir / f"release-{self.target_version}.json"
     
     @property
+    def release_branch(self) -> str:
+        """Get the release branch name (same as target version)"""
+        return self.target_version
+    
+    @property
     def next_dev_version(self) -> str:
         """Calculate next development version from target version"""
         # Parse version like 1.0.1 -> 1.0.2-SNAPSHOT
@@ -229,8 +234,17 @@ class ReleaseGitHelper:
         except subprocess.CalledProcessError:
             return False
     
+    def create_release_branch(self, branch_name: str, from_tag: str) -> bool:
+        """Create a new release branch from a tag"""
+        try:
+            Logger.info(f"Creating release branch {branch_name} from tag {from_tag}")
+            self.run_git(["checkout", "-b", branch_name, from_tag])
+            return True
+        except subprocess.CalledProcessError:
+            return False
+    
     def push_changes(self) -> bool:
-        """Push changes and tags to remote"""
+        """Push changes and tags to remote (legacy method)"""
         try:
             Logger.info(f"Pushing changes to {self.config.upstream_remote} {self.config.branch}")
             self.run_git(["push", self.config.upstream_remote, self.config.branch])
@@ -238,6 +252,41 @@ class ReleaseGitHelper:
             Logger.info(f"Pushing tag {self.config.tag_name}")
             self.run_git(["push", self.config.upstream_remote, self.config.tag_name])
             
+            return True
+        except subprocess.CalledProcessError:
+            return False
+    
+    def push_tag_only(self) -> bool:
+        """Push only the release tag to remote (not the branch commits)"""
+        try:
+            Logger.info(f"Pushing tag {self.config.tag_name}")
+            self.run_git(["push", self.config.upstream_remote, self.config.tag_name])
+            
+            Logger.info("ℹ️  Release commit stays local until Maven Central deployment succeeds")
+            return True
+        except subprocess.CalledProcessError:
+            return False
+    
+    def push_branch_only(self) -> bool:
+        """Push branch commits to remote (not tags)"""
+        try:
+            Logger.info(f"Pushing release commit to {self.config.upstream_remote} {self.config.branch}")
+            self.run_git(["push", self.config.upstream_remote, self.config.branch])
+            
+            return True
+        except subprocess.CalledProcessError:
+            return False
+    
+    def push_tag_and_release_branch(self) -> bool:
+        """Push tag and release branch to remote (not maintenance branch)"""
+        try:
+            Logger.info(f"Pushing tag {self.config.tag_name}")
+            self.run_git(["push", self.config.upstream_remote, self.config.tag_name])
+            
+            Logger.info(f"Pushing release branch {self.config.release_branch}")
+            self.run_git(["push", self.config.upstream_remote, self.config.release_branch])
+            
+            Logger.info(f"ℹ️  Maintenance branch {self.config.branch} stays local (not pushed)")
             return True
         except subprocess.CalledProcessError:
             return False
@@ -563,10 +612,12 @@ class GitHubActionsHelper:
         except (subprocess.CalledProcessError, FileNotFoundError):
             return False
     
-    def run_gh_workflow(self, workflow_file: str, inputs: Dict[str, str] = None) -> bool:
+    def run_gh_workflow(self, workflow_file: str, inputs: Dict[str, str] = None, use_release_branch: bool = False) -> bool:
         """Run GitHub workflow with optional inputs on specified branch"""
         try:
-            cmd = ['gh', 'workflow', 'run', workflow_file, '--repo', self.repo, '--ref', self.config.branch]
+            # Use release branch for release workflows, maintenance branch for others
+            branch = self.config.release_branch if use_release_branch else self.config.branch
+            cmd = ['gh', 'workflow', 'run', workflow_file, '--repo', self.repo, '--ref', branch]
             
             # Add input parameters if provided
             if inputs:
@@ -594,19 +645,19 @@ class GitHubActionsHelper:
     
     def trigger_deploy_docs(self) -> bool:
         """Trigger documentation deployment workflow"""
-        Logger.info(f"Triggering documentation deployment on branch {self.config.branch}")
-        return self.run_gh_workflow('deploy-docs.yml')
+        Logger.info(f"Triggering documentation deployment on release branch {self.config.release_branch}")
+        return self.run_gh_workflow('deploy-docs.yml', use_release_branch=True)
     
     def trigger_documentation_upload(self) -> bool:
         """Trigger javadoc upload with version parameter"""
-        Logger.info(f"Triggering javadoc upload for version {self.config.target_version} on branch {self.config.branch}")
+        Logger.info(f"Triggering javadoc upload for version {self.config.target_version} on release branch {self.config.release_branch}")
         inputs = {'releaseVersion': self.config.target_version}
-        return self.run_gh_workflow('documentation-upload.yml', inputs)
+        return self.run_gh_workflow('documentation-upload.yml', inputs, use_release_branch=True)
     
     def trigger_maven_central_release(self) -> bool:
         """Trigger Maven Central artifact upload"""
-        Logger.info(f"Triggering Maven Central release on branch {self.config.branch}")
-        return self.run_gh_workflow('new-maven-central-release.yml')
+        Logger.info(f"Triggering Maven Central release on release branch {self.config.release_branch}")
+        return self.run_gh_workflow('new-maven-central-release.yml', use_release_branch=True)
 
 
 class ReleaseWorkflow:
@@ -741,10 +792,15 @@ class ReleaseWorkflow:
                 "git add -A",
                 f"git commit -m 'Next development version {self.config.next_dev_version}'"
             ]
-        elif step_name == "Push changes":
+        elif step_name == "Push release tag":
+            commands = [
+                f"git push origin {self.config.tag_name}",
+                "# Release commit stays local until Maven Central deployment succeeds"
+            ]
+        elif step_name == "Push release commit":
             commands = [
                 f"git push origin {self.config.branch}",
-                f"git push origin {self.config.tag_name}"
+                "# Pushes the release commit after Maven Central deployment succeeds"
             ]
         elif step_name == "Push development version":
             commands = [
@@ -837,6 +893,7 @@ class ReleaseWorkflow:
             'build': 'Build and verify',
             'commit-release': 'Commit release version',
             'tag': 'Create release tag',
+            'branch': 'Create release branch',
             'push': 'Push changes',
             'docs': 'Trigger documentation deployment',
             'javadoc': 'Trigger javadoc upload',
@@ -849,6 +906,7 @@ class ReleaseWorkflow:
             ("Build and verify", self._build_and_verify),
             ("Commit release version", self._commit_release_version),
             ("Create release tag", self._create_release_tag),
+            ("Create release branch", self._create_release_branch),
             ("Push changes", self._push_changes),
             ("Trigger documentation deployment", self._trigger_deploy_docs),
             ("Trigger javadoc upload", self._trigger_documentation_upload),
@@ -929,6 +987,7 @@ class ReleaseWorkflow:
             return False
         
         steps = [
+            ("Push release commit", self._push_release_commit),
             ("Set next development version", self._set_next_dev_version),
             ("Commit development version", self._commit_dev_version),
             ("Push development version", self._push_dev_changes),
@@ -985,6 +1044,10 @@ class ReleaseWorkflow:
         message = f"Release version {self.config.target_version}"
         return self.git_helper.create_tag(self.config.tag_name, message)
     
+    def _create_release_branch(self) -> bool:
+        """Create the release branch from the tag"""
+        return self.git_helper.create_release_branch(self.config.release_branch, self.config.tag_name)
+    
     def _set_next_dev_version(self) -> bool:
         """Set the next development version"""
         if not self.maven_helper.set_version(self.config.next_dev_version):
@@ -997,8 +1060,12 @@ class ReleaseWorkflow:
         return self.git_helper.commit_changes(message)
     
     def _push_changes(self) -> bool:
-        """Push changes and tags"""
-        return self.git_helper.push_changes()
+        """Push tag and release branch (not maintenance branch)"""
+        return self.git_helper.push_tag_and_release_branch()
+    
+    def _push_release_commit(self) -> bool:
+        """Push the release commit to the branch (after Maven Central success)"""
+        return self.git_helper.push_branch_only()
     
     def _push_dev_changes(self) -> bool:
         """Push development version changes (no tags)"""
@@ -1064,7 +1131,7 @@ Skip-to options: setup, set-version, build, commit-release, tag, push, docs, jav
     parser.add_argument('--post-maven-central', action='store_true', 
                        help='Complete development version setup after Maven Central success')
     parser.add_argument('--skip-to', choices=[
-        'setup', 'set-version', 'build', 'commit-release', 'tag', 'push', 
+        'setup', 'set-version', 'build', 'commit-release', 'tag', 'branch', 'push', 
         'docs', 'javadoc', 'maven-central'
     ], help='Skip to specific workflow step (useful for resuming interrupted releases)')
     parser.add_argument('--cleanup', action='store_true',
