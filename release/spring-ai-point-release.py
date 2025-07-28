@@ -320,6 +320,68 @@ class MavenHelper:
             return False
 
 
+class GitHubActionsHelper:
+    """GitHub Actions workflow trigger helper"""
+    
+    def __init__(self, config: ReleaseConfig):
+        self.config = config
+        self.repo = config.spring_ai_repo
+    
+    def is_gh_available(self) -> bool:
+        """Check if GitHub CLI is available and authenticated"""
+        try:
+            result = subprocess.run(['gh', 'auth', 'status'], 
+                                  capture_output=True, text=True, check=True)
+            return True
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            return False
+    
+    def run_gh_workflow(self, workflow_file: str, inputs: Dict[str, str] = None) -> bool:
+        """Run GitHub workflow with optional inputs on specified branch"""
+        try:
+            cmd = ['gh', 'workflow', 'run', workflow_file, '--repo', self.repo, '--ref', self.config.branch]
+            
+            # Add input parameters if provided
+            if inputs:
+                for key, value in inputs.items():
+                    cmd.extend(['-f', f'{key}={value}'])
+            
+            Logger.info(f"Running GitHub workflow: {' '.join(cmd)}")
+            
+            if self.config.dry_run:
+                Logger.warn("DRY RUN: Would trigger GitHub workflow")
+                return True
+            
+            result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+            Logger.success(f"GitHub workflow '{workflow_file}' triggered successfully on branch {self.config.branch}")
+            return True
+            
+        except subprocess.CalledProcessError as e:
+            Logger.error(f"Failed to trigger GitHub workflow '{workflow_file}'")
+            Logger.error(f"Exit code: {e.returncode}")
+            if e.stdout:
+                Logger.error(f"Stdout: {e.stdout}")
+            if e.stderr:
+                Logger.error(f"Stderr: {e.stderr}")
+            return False
+    
+    def trigger_deploy_docs(self) -> bool:
+        """Trigger documentation deployment workflow"""
+        Logger.info(f"Triggering documentation deployment on branch {self.config.branch}")
+        return self.run_gh_workflow('deploy-docs.yml')
+    
+    def trigger_documentation_upload(self) -> bool:
+        """Trigger javadoc upload with version parameter"""
+        Logger.info(f"Triggering javadoc upload for version {self.config.target_version} on branch {self.config.branch}")
+        inputs = {'releaseVersion': self.config.target_version}
+        return self.run_gh_workflow('documentation-upload.yml', inputs)
+    
+    def trigger_maven_central_release(self) -> bool:
+        """Trigger Maven Central artifact upload"""
+        Logger.info(f"Triggering Maven Central release on branch {self.config.branch}")
+        return self.run_gh_workflow('new-maven-central-release.yml')
+
+
 class ReleaseWorkflow:
     """Main workflow orchestrator"""
     
@@ -327,6 +389,7 @@ class ReleaseWorkflow:
         self.config = config
         self.git_helper = None
         self.maven_helper = None
+        self.github_helper = None
     
     def confirm_step(self, message: str) -> bool:
         """Ask user for confirmation before proceeding with a step"""
@@ -364,6 +427,11 @@ class ReleaseWorkflow:
             return False
         
         self.maven_helper = MavenHelper(self.config.spring_ai_dir, self.config)
+        self.github_helper = GitHubActionsHelper(self.config)
+        
+        # Check GitHub CLI availability
+        if not self.github_helper.is_gh_available():
+            Logger.warn("GitHub CLI not available or not authenticated - GitHub Actions will be skipped")
         
         # Display current version
         current_version = self.git_helper.get_current_version()
@@ -385,6 +453,9 @@ class ReleaseWorkflow:
             ("Set next development version", self._set_next_dev_version),
             ("Commit development version", self._commit_dev_version),
             ("Push changes", self._push_changes),
+            ("Trigger documentation deployment", self._trigger_deploy_docs),
+            ("Trigger javadoc upload", self._trigger_documentation_upload),
+            ("Trigger Maven Central release", self._trigger_maven_central_release),
         ]
         
         for step_name, step_func in steps:
@@ -439,6 +510,27 @@ class ReleaseWorkflow:
     def _push_changes(self) -> bool:
         """Push changes and tags"""
         return self.git_helper.push_changes()
+    
+    def _trigger_deploy_docs(self) -> bool:
+        """Trigger documentation deployment on target branch"""
+        if not self.github_helper.is_gh_available():
+            Logger.warn("GitHub CLI not available - skipping documentation deployment")
+            return True
+        return self.github_helper.trigger_deploy_docs()
+    
+    def _trigger_documentation_upload(self) -> bool:
+        """Trigger javadoc upload with version parameter on target branch"""
+        if not self.github_helper.is_gh_available():
+            Logger.warn("GitHub CLI not available - skipping javadoc upload")
+            return True
+        return self.github_helper.trigger_documentation_upload()
+    
+    def _trigger_maven_central_release(self) -> bool:
+        """Trigger Maven Central artifact upload on target branch"""
+        if not self.github_helper.is_gh_available():
+            Logger.warn("GitHub CLI not available - skipping Maven Central release")
+            return True
+        return self.github_helper.trigger_maven_central_release()
 
 
 def main():
