@@ -248,8 +248,111 @@ class MavenHelper:
         self.repo_dir = repo_dir
         self.config = config
     
+    def run_command(self, cmd: List[str], description: str, suppress_output: bool = False, 
+                   log_file: Optional[Path] = None) -> bool:
+        """Run a command with logging (adapted from pr_workflow.py)
+        
+        Args:
+            cmd: Command to run  
+            description: Description for logging
+            suppress_output: Whether to suppress stdout/stderr from terminal
+            log_file: Optional file to write output to
+        """
+        if self.config.dry_run:
+            Logger.warn(f"DRY RUN: Would execute: {description}")
+            Logger.info(f"DRY RUN: Command: {' '.join(cmd)}")
+            return True
+        
+        Logger.info(f"Executing: {description}")
+        try:
+            if suppress_output:
+                # Enhanced mvnd output suppression using proven solution
+                if cmd[0] == 'mvnd':
+                    # Add mvnd-specific suppression flags
+                    enhanced_cmd = cmd + [
+                        '-q',                        # Quiet mode  
+                        '-Dmvnd.rollingWindowSize=0' # Disable rolling window display
+                    ]
+                    
+                    # Set environment variables for complete suppression
+                    env = os.environ.copy()
+                    env.update({
+                        'TERM': 'dumb',
+                        'NO_COLOR': '1',
+                        'CI': 'true',                           # Many tools detect CI and disable fancy output
+                        'MAVEN_OPTS': '-Djansi.force=false',
+                        'MVND_TERMINAL': 'false'                # Disable mvnd terminal features
+                    })
+                elif cmd[0] == './mvnw':
+                    # Add Maven wrapper quiet flags
+                    enhanced_cmd = cmd + ['-q']
+                    env = os.environ.copy()
+                    env.update({
+                        'TERM': 'dumb',
+                        'NO_COLOR': '1',
+                        'CI': 'true',
+                        'MAVEN_OPTS': '-Djansi.force=false'
+                    })
+                else:
+                    enhanced_cmd = cmd
+                    env = None
+                
+                # Create logs directory if it doesn't exist
+                if log_file:
+                    log_file.parent.mkdir(parents=True, exist_ok=True)
+                    with open(log_file, 'w') as f:
+                        f.write(f"Command: {' '.join(enhanced_cmd)}\n")
+                        f.write(f"Working directory: {self.repo_dir}\n")
+                        f.write(f"Description: {description}\n")
+                        f.write("-" * 50 + "\n")
+                        f.flush()
+                        
+                        result = subprocess.run(
+                            enhanced_cmd, 
+                            cwd=self.repo_dir, 
+                            check=True, 
+                            stdout=f, 
+                            stderr=f,
+                            stdin=subprocess.DEVNULL,
+                            start_new_session=True,
+                            env=env,
+                            text=True
+                        )
+                else:
+                    # Suppress output completely
+                    result = subprocess.run(
+                        enhanced_cmd, 
+                        cwd=self.repo_dir, 
+                        check=True, 
+                        capture_output=True, 
+                        stdin=subprocess.DEVNULL,
+                        start_new_session=True,
+                        env=env,
+                        text=True
+                    )
+                return True
+            else:
+                # Standard behavior - output goes to terminal
+                subprocess.run(cmd, cwd=self.repo_dir, check=True)
+                return True
+        except subprocess.CalledProcessError as e:
+            Logger.error(f"Command failed: {' '.join(cmd)}")
+            if suppress_output and log_file and log_file.exists():
+                Logger.error(f"Check log file for details: {log_file}")
+                # Show last few lines of log for immediate debugging
+                try:
+                    with open(log_file, 'r') as f:
+                        lines = f.readlines()
+                        if lines:
+                            Logger.error("Last 10 lines from log:")
+                            for line in lines[-10:]:
+                                Logger.error(f"  {line.rstrip()}")
+                except Exception:
+                    pass
+            return False
+    
     def run_maven(self, goals: List[str], check: bool = True) -> subprocess.CompletedProcess:
-        """Run Maven command"""
+        """Run Maven command (legacy method for compatibility)"""
         # Use mvnd if available, otherwise fall back to ./mvnw
         mvnd_available = shutil.which('mvnd') is not None
         cmd = ['mvnd'] if mvnd_available else ['./mvnw']
@@ -303,35 +406,51 @@ class MavenHelper:
     
     def fast_build(self) -> bool:
         """Run fast build without tests and javadoc"""
-        try:
-            Logger.info("Running fast build (no tests, no javadoc)")
-            self.run_maven([
-                "clean", "package",
-                "-Dmaven.javadoc.skip=true",
-                "-DskipTests"
-            ])
-            return True
-        except subprocess.CalledProcessError:
-            return False
+        # Use mvnd if available, otherwise fall back to ./mvnw
+        mvnd_available = shutil.which('mvnd') is not None
+        cmd = ['mvnd'] if mvnd_available else ['./mvnw']
+        cmd.extend([
+            "clean", "package",
+            "-Dmaven.javadoc.skip=true",
+            "-DskipTests"
+        ])
+        
+        # Create timestamped log file for build output
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        build_log_file = self.config.script_dir / "logs" / f"fast-build-{timestamp}.log"
+        
+        description = f"Fast build with {cmd[0]} (no tests, no javadoc)"
+        success = self.run_command(cmd, description, suppress_output=True, log_file=build_log_file)
+        
+        if success:
+            Logger.success(f"✅ Fast build with {cmd[0]} completed successfully")
+            Logger.info(f"Build output logged to: {build_log_file}")
+        else:
+            Logger.error(f"❌ Fast build with {cmd[0]} failed!")
+            Logger.error(f"Check build log for details: {build_log_file}")
+        
+        return success
     
     def verify_docs(self) -> bool:
         """Verify documentation build"""
-        try:
-            Logger.info("Verifying documentation build")
-            # Use ./mvnw specifically for docs
-            cmd = ["./mvnw", "-pl", "spring-ai-docs", "antora"]
-            
-            if self.config.dry_run:
-                Logger.warn("DRY RUN: Would verify docs build")
-                return True
-            
-            result = subprocess.run(cmd, cwd=self.repo_dir, check=True,
-                                  capture_output=True, text=True)
-            Logger.success("Documentation build verified")
-            return True
-        except subprocess.CalledProcessError as e:
-            Logger.error("Documentation build failed")
-            return False
+        # Use ./mvnw specifically for docs (antora requires ./mvnw)
+        cmd = ["./mvnw", "-pl", "spring-ai-docs", "antora"]
+        
+        # Create timestamped log file for documentation build output
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        docs_log_file = self.config.script_dir / "logs" / f"docs-build-{timestamp}.log"
+        
+        description = "Verify Antora documentation build"
+        success = self.run_command(cmd, description, suppress_output=True, log_file=docs_log_file)
+        
+        if success:
+            Logger.success("✅ Antora documentation build completed successfully")
+            Logger.info(f"Documentation build output logged to: {docs_log_file}")
+        else:
+            Logger.error("❌ Antora documentation build failed!")
+            Logger.error(f"Check documentation build log for details: {docs_log_file}")
+        
+        return success
     
     def verify_pom_version(self, pom_path: Path, expected_version: str) -> bool:
         """Verify a specific POM file has the expected version"""
