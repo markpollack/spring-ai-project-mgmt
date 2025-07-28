@@ -660,6 +660,95 @@ class GitHubActionsHelper:
         return self.run_gh_workflow('new-maven-central-release.yml', use_release_branch=True)
 
 
+class MavenStatusChecker:
+    """Check Maven Central infrastructure status before deployments"""
+    
+    def __init__(self):
+        self.status_url = "https://status.maven.org/api/v2/status.json"
+        self.timeout = 10  # seconds
+    
+    def check_maven_status(self) -> dict:
+        """Fetch current Maven Central status from API"""
+        try:
+            import requests
+            response = requests.get(self.status_url, timeout=self.timeout)
+            response.raise_for_status()
+            return response.json()
+        except ImportError:
+            Logger.warn("requests library not available - skipping Maven status check")
+            return {}
+        except Exception as e:
+            Logger.warn(f"Failed to fetch Maven status: {e}")
+            return {}
+    
+    def is_publishing_healthy(self, status_data: dict) -> bool:
+        """Check if publishing services are operational"""
+        if not status_data:
+            return True  # Assume healthy if we can't check
+        
+        try:
+            components = status_data.get('components', [])
+            for component in components:
+                name = component.get('name', '').lower()
+                status = component.get('status', '')
+                
+                # Check publishing-related components
+                if any(keyword in name for keyword in ['publish', 'deploy', 'central', 'repository']):
+                    if status not in ['operational']:
+                        return False
+            return True
+        except Exception:
+            return True  # Assume healthy if parsing fails
+    
+    def get_status_warnings(self, status_data: dict) -> List[str]:
+        """Get list of warnings about Maven Central status"""
+        warnings = []
+        
+        if not status_data:
+            return warnings
+        
+        try:
+            # Check overall page status
+            page_status = status_data.get('status', {}).get('indicator', '')
+            if page_status not in ['none', 'operational']:
+                warnings.append(f"Overall system status: {page_status}")
+            
+            # Check active incidents
+            incidents = status_data.get('incidents', [])
+            for incident in incidents:
+                if incident.get('status') in ['investigating', 'identified', 'monitoring']:
+                    name = incident.get('name', 'Unknown incident')
+                    impact = incident.get('impact', 'unknown')
+                    warnings.append(f"Active incident ({impact}): {name}")
+            
+            # Check component statuses
+            components = status_data.get('components', [])
+            for component in components:
+                name = component.get('name', '')
+                status = component.get('status', '')
+                
+                if status not in ['operational']:
+                    warnings.append(f"{name}: {status.replace('_', ' ').title()}")
+        
+        except Exception as e:
+            Logger.warn(f"Error parsing Maven status: {e}")
+        
+        return warnings
+    
+    def format_status_message(self, warnings: List[str]) -> str:
+        """Format status warnings into a user-friendly message"""
+        if not warnings:
+            return "✅ Maven Central infrastructure appears healthy"
+        
+        message = "⚠️  MAVEN CENTRAL STATUS WARNINGS:\n"
+        for warning in warnings:
+            message += f"  - {warning}\n"
+        message += "\n📍 Check https://status.maven.org/ for details"
+        message += "\n💡 Consider waiting if publishing services are affected"
+        
+        return message
+
+
 class ReleaseWorkflow:
     """Main workflow orchestrator"""
     
@@ -1096,6 +1185,28 @@ class ReleaseWorkflow:
         if not self.github_helper.is_gh_available():
             Logger.warn("GitHub CLI not available - skipping Maven Central release")
             return True
+        
+        # Check Maven Central status before triggering deployment
+        if not getattr(self.config, 'skip_maven_status_check', False):
+            Logger.info("Checking Maven Central infrastructure status...")
+            status_checker = MavenStatusChecker()
+            status_data = status_checker.check_maven_status()
+            warnings = status_checker.get_status_warnings(status_data)
+            
+            if warnings:
+                Logger.warn(status_checker.format_status_message(warnings))
+                
+                if not status_checker.is_publishing_healthy(status_data):
+                    Logger.warn("⚠️  Publishing services may be affected - deployment could fail")
+                
+                # Ask user if they want to proceed despite warnings
+                proceed = input(f"\n{Colors.YELLOW}Proceed with Maven Central deployment anyway? (y/N): {Colors.NC}").strip().lower()
+                if proceed not in ['y', 'yes']:
+                    Logger.info("Maven Central deployment cancelled by user")
+                    return False
+            else:
+                Logger.info(status_checker.format_status_message(warnings))
+        
         return self.github_helper.trigger_maven_central_release()
 
 
@@ -1137,6 +1248,10 @@ Skip-to options: setup, set-version, build, commit-release, tag, push, docs, jav
     ], help='Skip to specific workflow step (useful for resuming interrupted releases)')
     parser.add_argument('--cleanup', action='store_true',
                        help='Clean up state files and workspace directory before starting (fresh start)')
+    parser.add_argument('--check-maven-status', action='store_true',
+                       help='Check Maven Central infrastructure status and exit')
+    parser.add_argument('--skip-maven-status-check', action='store_true',
+                       help='Skip Maven Central status check before deployment')
     
     args = parser.parse_args()
     
@@ -1154,6 +1269,10 @@ Skip-to options: setup, set-version, build, commit-release, tag, push, docs, jav
         skip_to=args.skip_to,
         cleanup=args.cleanup
     )
+    
+    # Add new attributes to config
+    config.check_maven_status = args.check_maven_status
+    config.skip_maven_status_check = args.skip_maven_status_check
     
     # Validate version format
     if not config.validate_version():
@@ -1185,6 +1304,24 @@ Skip-to options: setup, set-version, build, commit-release, tag, push, docs, jav
         except Exception as e:
             Logger.error(f"\nUnexpected error during cleanup: {e}")
             sys.exit(1)
+    
+    # Handle manual Maven status check if requested
+    if config.check_maven_status:
+        Logger.bold("\n🔍 MAVEN CENTRAL STATUS CHECK")
+        Logger.bold("=" * 35)
+        
+        status_checker = MavenStatusChecker()
+        status_data = status_checker.check_maven_status()
+        warnings = status_checker.get_status_warnings(status_data)
+        
+        print(status_checker.format_status_message(warnings))
+        
+        if warnings and not status_checker.is_publishing_healthy(status_data):
+            Logger.warn("\n⚠️  Publishing services may be affected - consider waiting before deployment")
+            sys.exit(1)
+        else:
+            Logger.success("\n✅ Maven Central appears ready for deployment")
+            sys.exit(0)
     
     if config.post_maven_central:
         # Post-Maven Central workflow

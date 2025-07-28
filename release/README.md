@@ -38,11 +38,15 @@ Arguments:
   VERSION               Target release version (e.g., 1.0.1, 1.0.2)
 
 Options:
-  --branch BRANCH       Branch to release from (default: 1.0.x)
-  --dry-run            Preview commands without executing them
-  --workspace PATH      Override workspace directory (default: ./spring-ai-release)
-  --post-maven-central  Complete development version setup after Maven Central success
-  --help               Show help message and exit
+  --branch BRANCH              Branch to release from (default: 1.0.x)
+  --dry-run                   Preview commands without executing them
+  --workspace PATH             Override workspace directory (default: ./spring-ai-release)
+  --post-maven-central         Complete development version setup after Maven Central success
+  --check-maven-status         Check Maven Central infrastructure status and exit
+  --skip-maven-status-check    Skip Maven Central status check before deployment
+  --skip-to STEP              Skip to specific workflow step (setup, set-version, build, etc.)
+  --cleanup                   Clean up state files and workspace directory before starting
+  --help                      Show help message and exit
 ```
 
 ## Two-Phase Release Process
@@ -292,10 +296,16 @@ Proceed? (Y/n): y
 - **Atomic Operations**: Each step can be confirmed individually
 
 ### GitHub Actions Integration
-- **Branch-Specific**: All workflows triggered on correct branch (1.0.x)
+- **Branch-Specific**: All workflows triggered on correct branch (1.0.1)
 - **Authentication Check**: Validates GitHub CLI availability
 - **Graceful Fallback**: Continues if GitHub CLI unavailable
 - **Interactive Control**: Step-by-step confirmation for each workflow
+
+### Maven Central Status Monitoring
+- **Automatic Checking**: Checks Maven Central infrastructure before deployment
+- **Proactive Warnings**: Alerts about active incidents or service issues
+- **Publishing Health**: Specifically monitors publishing-related services
+- **User Choice**: Allows proceeding despite warnings or canceling deployment
 
 ### Command Transparency
 - **Full Disclosure**: Shows exact commands before execution
@@ -419,6 +429,62 @@ If the script fails mid-process:
 2. **Manual cleanup** may be required in workspace directory
 3. **Restart** from beginning after fixing issues
 4. **Use dry-run** to verify fixes before re-execution
+
+## Maven Central Status Monitoring
+
+The script automatically checks Maven Central's infrastructure status before triggering deployments to help avoid failures due to service issues.
+
+### Automatic Status Checking
+
+**Before Maven Central Deployment:**
+The script automatically checks https://status.maven.org/ and displays warnings about:
+- Active incidents affecting publishing services
+- Components under maintenance or experiencing issues
+- Overall system degradation
+
+**Example Output:**
+```
+[INFO] Checking Maven Central infrastructure status...
+⚠️  MAVEN CENTRAL STATUS WARNINGS:
+  - Publishing services: Under Maintenance
+  - Active incident (critical): search.maven.org is down
+  - CDN - repo1.maven.org: Degraded Performance
+
+📍 Check https://status.maven.org/ for details
+💡 Consider waiting if publishing services are affected
+
+⚠️  Publishing services may be affected - deployment could fail
+Proceed with Maven Central deployment anyway? (y/N):
+```
+
+### Manual Status Check
+
+**Check status without running release:**
+```bash
+python3 spring-ai-point-release.py 1.0.1 --check-maven-status
+```
+
+**Example healthy status:**
+```
+🔍 MAVEN CENTRAL STATUS CHECK
+===================================
+✅ Maven Central infrastructure appears healthy
+✅ Maven Central appears ready for deployment
+```
+
+### Skip Status Check
+
+**For urgent releases or when status API is unavailable:**
+```bash
+python3 spring-ai-point-release.py 1.0.1 --skip-maven-status-check
+```
+
+### Status Check Behavior
+
+- **Network Issues**: Gracefully handles API timeouts or unavailability
+- **Missing Dependencies**: Falls back gracefully if `requests` library unavailable
+- **Parsing Errors**: Assumes healthy status if API response can't be parsed
+- **User Control**: Always allows proceeding despite warnings
 
 ### Getting Help
 - Use `--help` for command options
