@@ -84,7 +84,7 @@ The main workflow executes steps 1-9 and stops at Maven Central trigger:
 - **Purpose**: Ensures clean working directory isolated from development checkouts
 
 ### 2. Set Release Version
-- **Action**: Updates all POM files to release version
+- **Action**: Updates all POM files to release version with comprehensive verification
 - **Commands**:
   ```bash
   # Set main project version
@@ -92,20 +92,31 @@ The main workflow executes steps 1-9 and stops at Maven Central trigger:
   
   # Set BOM module version specifically
   mvnd versions:set -DnewVersion=1.0.1 -DgenerateBackupPoms=false -pl spring-ai-bom
+  
+  # Verify versions were set correctly
+  # - Check root pom.xml has version 1.0.1
+  # - Check spring-ai-bom/pom.xml has version 1.0.1  
+  # - Grep all POM files for SNAPSHOT versions (should find none)
   ```
 - **Purpose**: Removes `-SNAPSHOT` suffix and sets exact release version in all modules including BOM
+- **Safety**: Comprehensive verification ensures all POMs have correct versions before proceeding
 
 ### 3. Build and Verify
-- **Action**: Performs fast compilation and documentation verification
+- **Action**: Performs fast compilation and documentation verification with comprehensive logging
 - **Commands**:
   ```bash
-  # Fast build without tests and javadoc
-  mvnd clean package -Dmaven.javadoc.skip=true -DskipTests
+  # Fast build without tests and javadoc (output logged to file)
+  mvnd clean package -Dmaven.javadoc.skip=true -DskipTests -q -Dmvnd.rollingWindowSize=0
   
-  # Verify documentation builds correctly
-  ./mvnw -pl spring-ai-docs antora
+  # Verify documentation builds correctly (output logged to file)
+  ./mvnw -pl spring-ai-docs antora -q
   ```
 - **Purpose**: Ensures code compiles and documentation generates successfully
+- **Output Management**: 
+  - No scrolling Maven output during interactive execution
+  - Build logs saved to `./logs/fast-build-{timestamp}.log`
+  - Documentation logs saved to `./logs/docs-build-{timestamp}.log`
+  - Last 10 lines shown on build failures for immediate debugging
 
 ### 4. Commit Release Version
 - **Action**: Commits version changes
@@ -339,11 +350,14 @@ The script provides detailed error reporting:
 ```
 release/
 ├── spring-ai-point-release.py    # Main script
-├── spring-ai-release/            # Fresh checkout (created automatically)
+├── logs/                         # Build and documentation logs (gitignored)
+│   ├── fast-build-{timestamp}.log  # Compilation build logs
+│   └── docs-build-{timestamp}.log  # Documentation build logs
+├── spring-ai-release/            # Fresh checkout (created automatically, gitignored)
 │   ├── pom.xml                   # Root POM with version updates
 │   ├── spring-ai-docs/           # Documentation module
 │   └── ...                       # Other Spring AI modules
-├── state/                        # Release state persistence
+├── state/                        # Release state persistence (gitignored)
 │   └── release-1.0.1.json        # State file for version 1.0.1
 └── README.md                     # This file
 ```
@@ -351,6 +365,8 @@ release/
 ### Cleanup
 - The workspace directory (`spring-ai-release`) is automatically cleaned and recreated for each release to ensure a pristine environment
 - State files in `./state/` directory persist between phases and can be manually cleaned after successful releases
+- Log files in `./logs/` directory accumulate over time and can be cleaned manually or automatically archived
+- All generated directories (`logs/`, `state/`, `spring-ai-release/`) are gitignored and won't be committed
 
 ## Version Strategy
 

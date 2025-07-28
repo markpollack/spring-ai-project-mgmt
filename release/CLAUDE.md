@@ -28,15 +28,29 @@ The `/release` directory houses specialized scripts for:
 - Dry-run mode for safe testing and validation
 - **Risk reduction** - development version changes only after Maven Central success
 
+**Enhanced Build Output Management**:
+- **Output Suppression**: No scrolling Maven output during interactive execution
+- **Comprehensive Logging**: Timestamped log files in `./logs/` directory
+- **mvnd Optimization**: Advanced suppression flags (`-q`, `-Dmvnd.rollingWindowSize=0`)
+- **Environment Control**: `MVND_TERMINAL=false`, `CI=true`, `NO_COLOR=1`, `TERM=dumb`
+- **Error Handling**: Log file previews (last 10 lines) on build failures
+
+**Version Verification System**:
+- **POM Validation**: Verifies root pom.xml and spring-ai-bom/pom.xml versions
+- **SNAPSHOT Detection**: Comprehensive grep-based check for remaining SNAPSHOT references
+- **Release Safety**: Workflow stops if version verification fails
+
 **Key Commands Executed**:
 ```bash
-# Version setting (both main and BOM)
+# Version setting with verification (both main and BOM)
 mvnd versions:set -DnewVersion=1.0.1 -DgenerateBackupPoms=false
 mvnd versions:set -DnewVersion=1.0.1 -DgenerateBackupPoms=false -pl spring-ai-bom
+# Verify pom.xml and spring-ai-bom/pom.xml have correct versions
+# Check all POM files for SNAPSHOT versions (should find none)
 
-# Fast build and docs verification
-mvnd clean package -Dmaven.javadoc.skip=true -DskipTests
-./mvnw -pl spring-ai-docs antora
+# Fast build and docs verification (output logged to files)
+mvnd clean package -Dmaven.javadoc.skip=true -DskipTests  # -> logs/fast-build-{timestamp}.log
+./mvnw -pl spring-ai-docs antora                         # -> logs/docs-build-{timestamp}.log
 
 # Git operations
 git commit -m "Release version 1.0.1"
@@ -118,12 +132,15 @@ The `spring-ai-point-release.py` script specifically handles the technical relea
 **Implemented Features**:
 - ✅ **Point Release Automation**: Complete 1.0.x workflow with `spring-ai-point-release.py`
 - ✅ **Version Management**: Dual version setting (main + BOM module)
-- ✅ **Build Verification**: Fast compilation and documentation builds
+- ✅ **Version Verification**: Comprehensive POM validation and SNAPSHOT detection
+- ✅ **Build Output Management**: No scrolling output with comprehensive logging
+- ✅ **Build Verification**: Fast compilation and documentation builds with mvnd optimization
 - ✅ **Git Operations**: Automated tagging and branch management
 - ✅ **GitHub Actions Integration**: Post-release automation (docs, javadocs, Maven Central)
 - ✅ **Two-Phase Workflow**: Safer Maven Central integration with state persistence
 - ✅ **Interactive Workflow**: Step-by-step confirmations with dry-run mode
 - ✅ **Command Transparency**: Full disclosure of exact commands before execution
+- ✅ **Error Handling**: Build log previews and debugging support
 - ✅ **Risk Reduction**: Development version changes only after Maven Central success
 - ✅ **Contributor Acknowledgment**: Author extraction with `get-authors-2.sh`
 
