@@ -32,6 +32,7 @@ class ReleaseConfig:
     upstream_remote: str = "origin"
     dry_run: bool = False
     post_maven_central: bool = False
+    skip_to: Optional[str] = None
     
     @property
     def spring_ai_dir(self) -> Path:
@@ -784,6 +785,19 @@ class ReleaseWorkflow:
         """Execute the main release workflow (stops at Maven Central trigger)"""
         Logger.bold("\nStarting main release workflow...\n")
         
+        # Map skip-to names to step names
+        skip_to_mapping = {
+            'setup': 'Setup workspace',
+            'set-version': 'Set release version', 
+            'build': 'Build and verify',
+            'commit-release': 'Commit release version',
+            'tag': 'Create release tag',
+            'push': 'Push changes',
+            'docs': 'Trigger documentation deployment',
+            'javadoc': 'Trigger javadoc upload',
+            'maven-central': 'Trigger Maven Central release'
+        }
+        
         steps = [
             ("Setup workspace", self.setup_workspace),
             ("Set release version", self._set_release_version),
@@ -796,9 +810,35 @@ class ReleaseWorkflow:
             ("Trigger Maven Central release", self._trigger_maven_central_release),
         ]
         
+        # Find starting step index based on skip-to parameter
+        start_index = 0
+        if self.config.skip_to:
+            target_step = skip_to_mapping.get(self.config.skip_to)
+            if target_step:
+                for i, (step_name, _) in enumerate(steps):
+                    if step_name == target_step:
+                        start_index = i
+                        break
+                Logger.info(f"🚀 Skipping to step: {target_step}")
+                Logger.info(f"📝 Note: Make sure previous steps were completed successfully!")
+                
+                # If we're skipping setup, we still need to initialize helpers
+                if start_index > 0:
+                    Logger.info("🔧 Initializing helpers for skipped workflow...")
+                    # Minimal setup for skipped workflows - just initialize the helpers
+                    self.git_helper = ReleaseGitHelper(self.config.spring_ai_dir, self.config)
+                    self.maven_helper = MavenHelper(self.config.spring_ai_dir, self.config)
+                    self.github_helper = GitHubActionsHelper(self.config)
+        
         completed_steps = []
         
-        for step_name, step_func in steps:
+        for i, (step_name, step_func) in enumerate(steps):
+            # Skip steps before the target step
+            if i < start_index:
+                Logger.info(f"⏭️  Skipping: {step_name}")
+                completed_steps.append(step_name)  # Mark as completed for state tracking
+                continue
+                
             if not self.confirm_step(f"Execute: {step_name}"):
                 Logger.warn("Step cancelled by user")
                 return False
@@ -957,8 +997,14 @@ Examples:
   python3 spring-ai-point-release.py 1.0.1 --dry-run
   python3 spring-ai-point-release.py 1.0.1 --branch 1.0.x
   
+  # Skip to specific step (useful for resuming interrupted releases)
+  python3 spring-ai-point-release.py 1.0.1 --skip-to build
+  python3 spring-ai-point-release.py 1.0.1 --skip-to commit-release
+  
   # Post-Maven Central workflow (after deployment succeeds)
   python3 spring-ai-point-release.py 1.0.1 --post-maven-central
+
+Skip-to options: setup, set-version, build, commit-release, tag, push, docs, javadoc, maven-central
         """
     )
     
@@ -968,6 +1014,10 @@ Examples:
     parser.add_argument('--workspace', type=Path, help='Override workspace directory')
     parser.add_argument('--post-maven-central', action='store_true', 
                        help='Complete development version setup after Maven Central success')
+    parser.add_argument('--skip-to', choices=[
+        'setup', 'set-version', 'build', 'commit-release', 'tag', 'push', 
+        'docs', 'javadoc', 'maven-central'
+    ], help='Skip to specific workflow step (useful for resuming interrupted releases)')
     
     args = parser.parse_args()
     
@@ -981,7 +1031,8 @@ Examples:
         target_version=args.version,
         branch=args.branch,
         dry_run=args.dry_run,
-        post_maven_central=args.post_maven_central
+        post_maven_central=args.post_maven_central,
+        skip_to=args.skip_to
     )
     
     # Validate version format
