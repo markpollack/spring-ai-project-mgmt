@@ -631,7 +631,7 @@ class GitHubActionsHelper:
                 return True
             
             result = subprocess.run(cmd, capture_output=True, text=True, check=True)
-            Logger.success(f"GitHub workflow '{workflow_file}' triggered successfully on branch {self.config.branch}")
+            Logger.success(f"GitHub workflow '{workflow_file}' triggered successfully on branch {branch}")
             return True
             
         except subprocess.CalledProcessError as e:
@@ -808,15 +808,15 @@ class ReleaseWorkflow:
             ]
         elif step_name == "Trigger documentation deployment":
             commands = [
-                f"gh workflow run deploy-docs.yml --repo {self.config.spring_ai_repo} --ref {self.config.branch}"
+                f"gh workflow run deploy-docs.yml --repo {self.config.spring_ai_repo} --ref {self.config.release_branch}"
             ]
         elif step_name == "Trigger javadoc upload":
             commands = [
-                f"gh workflow run documentation-upload.yml --repo {self.config.spring_ai_repo} --ref {self.config.branch} -f releaseVersion={self.config.target_version}"
+                f"gh workflow run documentation-upload.yml --repo {self.config.spring_ai_repo} --ref {self.config.release_branch} -f releaseVersion={self.config.target_version}"
             ]
         elif step_name == "Trigger Maven Central release":
             commands = [
-                f"gh workflow run new-maven-central-release.yml --repo {self.config.spring_ai_repo} --ref {self.config.branch}"
+                f"gh workflow run new-maven-central-release.yml --repo {self.config.spring_ai_repo} --ref {self.config.release_branch}"
             ]
         
         return commands
