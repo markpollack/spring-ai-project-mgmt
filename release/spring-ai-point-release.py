@@ -802,9 +802,10 @@ class ReleaseWorkflow:
                 f"git push origin {self.config.branch}",
                 "# Pushes the release commit after Maven Central deployment succeeds"
             ]
-        elif step_name == "Push development version":
+        elif step_name == "Push all changes":
             commands = [
-                f"git push origin {self.config.branch}"
+                f"git push origin {self.config.branch}",
+                "# Pushes both release commit and development version commit"
             ]
         elif step_name == "Trigger documentation deployment":
             commands = [
@@ -987,10 +988,9 @@ class ReleaseWorkflow:
             return False
         
         steps = [
-            ("Push release commit", self._push_release_commit),
             ("Set next development version", self._set_next_dev_version),
             ("Commit development version", self._commit_dev_version),
-            ("Push development version", self._push_dev_changes),
+            ("Push all changes", self._push_dev_changes),
         ]
         
         completed_steps = state["completed_steps"].copy()
@@ -1068,9 +1068,10 @@ class ReleaseWorkflow:
         return self.git_helper.push_branch_only()
     
     def _push_dev_changes(self) -> bool:
-        """Push development version changes (no tags)"""
+        """Push both release commit and development version changes to maintenance branch"""
         try:
-            Logger.info(f"Pushing development version changes to {self.config.upstream_remote} {self.config.branch}")
+            Logger.info(f"Pushing release and development version changes to {self.config.upstream_remote} {self.config.branch}")
+            Logger.info("ℹ️  This includes both the release commit and development version commit")
             self.git_helper.run_git(["push", self.config.upstream_remote, self.config.branch])
             return True
         except subprocess.CalledProcessError:

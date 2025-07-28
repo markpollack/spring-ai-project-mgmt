@@ -55,7 +55,7 @@ Executes release steps up to Maven Central trigger and **stops**:
 python3 spring-ai-point-release.py 1.0.1
 ```
 
-### Phase 2: Post-Maven Central Workflow (4 steps)  
+### Phase 2: Post-Maven Central Workflow (3 steps)  
 Completes development version setup **only after Maven Central success**:
 ```bash
 python3 spring-ai-point-release.py 1.0.1 --post-maven-central
@@ -185,15 +185,7 @@ The main workflow executes steps 1-10 and stops at Maven Central trigger:
 
 After Maven Central deployment succeeds, run with `--post-maven-central`:
 
-### 11. Push Release Commit
-- **Action**: Push the release commit to the branch (redundant but harmless)
-- **Commands**:
-  ```bash
-  git push origin 1.0.x
-  ```
-- **Purpose**: Ensures release commit is on remote branch (already done in Phase 1)
-
-### 12. Set Next Development Version  
+### 11. Set Next Development Version  
 - **Action**: Updates POM files to next development version
 - **Commands**:
   ```bash
@@ -205,7 +197,7 @@ After Maven Central deployment succeeds, run with `--post-maven-central`:
   ```
 - **Purpose**: Prepares branch for continued development with proper BOM versioning
 
-### 13. Commit Development Version
+### 12. Commit Development Version
 - **Action**: Commits development version changes
 - **Commands**:
   ```bash
@@ -214,13 +206,14 @@ After Maven Central deployment succeeds, run with `--post-maven-central`:
   ```
 - **Purpose**: Records development version changes
 
-### 14. Push Development Version
-- **Action**: Pushes development version changes to remote
+### 13. Push All Changes
+- **Action**: Pushes both release commit and development version changes to remote
 - **Commands**:
   ```bash
   git push origin 1.0.x
   ```
-- **Purpose**: Makes development version available for continued work
+- **Purpose**: Makes both release commit and development version available on maintenance branch
+- **Note**: This pushes both commits that were accumulated locally during Phase 2
 
 ## Interactive Workflow
 
