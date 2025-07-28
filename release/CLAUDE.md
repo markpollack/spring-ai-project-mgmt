@@ -38,6 +38,11 @@ mvnd clean package -Dmaven.javadoc.skip=true -DskipTests
 git commit -m "Release version 1.0.1"
 git tag -a v1.0.1 -m "Release version 1.0.1"
 git push origin 1.0.x && git push origin v1.0.1
+
+# GitHub Actions automation (post-release)
+gh workflow run deploy-docs.yml --repo spring-projects/spring-ai --ref 1.0.x
+gh workflow run documentation-upload.yml --repo spring-projects/spring-ai --ref 1.0.x -f releaseVersion=1.0.1
+gh workflow run new-maven-central-release.yml --repo spring-projects/spring-ai --ref 1.0.x
 ```
 
 **Usage**:
@@ -56,6 +61,7 @@ python3 spring-ai-point-release.py 1.0.2 --branch 1.0.x
 - Python 3.7+
 - Git with push access to spring-projects/spring-ai
 - Maven or Maven Daemon (`mvnd`) for builds
+- GitHub CLI (`gh`) authenticated for post-release automation
 - Target version as required parameter (e.g., 1.0.1, 1.0.2)
 
 ### get-authors-2.sh
@@ -109,6 +115,7 @@ The `spring-ai-point-release.py` script specifically handles the technical relea
 - ✅ **Version Management**: Dual version setting (main + BOM module)
 - ✅ **Build Verification**: Fast compilation and documentation builds
 - ✅ **Git Operations**: Automated tagging and branch management
+- ✅ **GitHub Actions Integration**: Post-release automation (docs, javadocs, Maven Central)
 - ✅ **Interactive Workflow**: Step-by-step confirmations with dry-run mode
 - ✅ **Contributor Acknowledgment**: Author extraction with `get-authors-2.sh`
 

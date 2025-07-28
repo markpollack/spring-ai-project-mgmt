@@ -11,7 +11,7 @@ The `spring-ai-point-release.py` script automates the complete workflow for crea
 - Python 3.7+
 - Git configured with push access to `spring-projects/spring-ai`
 - Maven or Maven Daemon (`mvnd`) for builds
-- GitHub CLI (`gh`) authenticated (optional, for enhanced operations)
+- GitHub CLI (`gh`) authenticated for post-release automation
 
 ## Quick Start
 
@@ -127,6 +127,30 @@ The script executes the following steps in order, with user confirmation at each
   ```
 - **Purpose**: Makes release publicly available
 
+### 9. Trigger Documentation Deployment
+- **Action**: Triggers GitHub Actions workflow for reference documentation
+- **Commands**:
+  ```bash
+  gh workflow run deploy-docs.yml --repo spring-projects/spring-ai --ref 1.0.x
+  ```
+- **Purpose**: Deploys updated documentation for the release
+
+### 10. Trigger Javadoc Upload
+- **Action**: Triggers GitHub Actions workflow for API documentation
+- **Commands**:
+  ```bash
+  gh workflow run documentation-upload.yml --repo spring-projects/spring-ai --ref 1.0.x -f releaseVersion=1.0.1
+  ```
+- **Purpose**: Publishes javadocs for the specific release version
+
+### 11. Trigger Maven Central Release
+- **Action**: Triggers GitHub Actions workflow for artifact publishing
+- **Commands**:
+  ```bash
+  gh workflow run new-maven-central-release.yml --repo spring-projects/spring-ai --ref 1.0.x
+  ```
+- **Purpose**: Uploads build artifacts to Maven Central (final step)
+
 ## Interactive Workflow
 
 The script provides step-by-step confirmation:
@@ -148,7 +172,26 @@ Proceed? (Y/n): y
 
 [STEP] Execute: Setup workspace
 Proceed? (Y/n): y
-...
+[STEP] Execute: Set release version
+Proceed? (Y/n): y
+[STEP] Execute: Build and verify
+Proceed? (Y/n): y
+[STEP] Execute: Commit release version
+Proceed? (Y/n): y
+[STEP] Execute: Create release tag
+Proceed? (Y/n): y
+[STEP] Execute: Set next development version
+Proceed? (Y/n): y
+[STEP] Execute: Commit development version
+Proceed? (Y/n): y
+[STEP] Execute: Push changes
+Proceed? (Y/n): y
+[STEP] Execute: Trigger documentation deployment
+Proceed? (Y/n): y
+[STEP] Execute: Trigger javadoc upload
+Proceed? (Y/n): y
+[STEP] Execute: Trigger Maven Central release
+Proceed? (Y/n): y
 ```
 
 ## Safety Features
@@ -172,6 +215,12 @@ Proceed? (Y/n): y
 - **Non-interactive**: Prevents git editor popups
 - **Fresh Checkout**: Isolated workspace prevents conflicts
 - **Atomic Operations**: Each step can be confirmed individually
+
+### GitHub Actions Integration
+- **Branch-Specific**: All workflows triggered on correct branch (1.0.x)
+- **Authentication Check**: Validates GitHub CLI availability
+- **Graceful Fallback**: Continues if GitHub CLI unavailable
+- **Interactive Control**: Step-by-step confirmation for each workflow
 
 ## Error Handling
 
@@ -200,6 +249,11 @@ The script provides detailed error reporting:
 - Use format: `X.Y.Z` (e.g., `1.0.1`, `1.0.2`)
 - Avoid prefixes or suffixes
 - Numbers only for each component
+
+**GitHub CLI Issues**:
+- Ensure `gh` is installed and authenticated (`gh auth login`)
+- Check repository access permissions for workflow dispatch
+- Verify correct repository and branch access
 
 ## Workspace Management
 
@@ -231,17 +285,23 @@ The workspace directory (`spring-ai-release`) is automatically cleaned and recre
 
 ## Integration with Spring Release Process
 
-This script handles the **technical release steps** but does not include:
+This script handles the **technical release steps** and **automated post-release actions**:
 
-- **Release Notes**: Manual creation required
-- **Artifact Publishing**: Handled by CI/CD pipeline
-- **Announcement**: Manual communication required
-- **Documentation Updates**: May require manual updates
+**Automated by Script**:
+- Version management and Git operations
+- Build verification and documentation checks
+- GitHub Actions triggering for documentation and artifacts
+- Maven Central release initiation
+
+**Manual Steps Still Required**:
+- **Release Notes**: Manual creation and publishing
+- **Announcement**: Communication to community
+- **Verification**: Monitor GitHub Actions completion
 
 ## Development and Maintenance
 
 ### Script Architecture
-- **Modular Design**: Separate classes for Git, Maven, and workflow
+- **Modular Design**: Separate classes for Git, Maven, GitHub Actions, and workflow
 - **Proven Patterns**: Based on existing pr-review automation
 - **Error Recovery**: Robust error handling and reporting
 - **Extensible**: Easy to add new steps or modify existing ones
