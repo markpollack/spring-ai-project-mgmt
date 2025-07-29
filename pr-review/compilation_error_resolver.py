@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import List, Dict, Optional, Tuple
 from dataclasses import dataclass
 import json
+from claude_code_wrapper import ClaudeCodeWrapper
 
 # Simple logger implementation to avoid circular imports
 class Logger:
@@ -41,6 +42,7 @@ class CompilationErrorResolver:
     
     def __init__(self, spring_ai_dir: Path):
         self.spring_ai_dir = spring_ai_dir
+        self.claude_wrapper = ClaudeCodeWrapper()
         self.auto_fix_patterns = {
             'incorrect_override': {
                 'pattern': r'method does not override or implement a method from a supertype',
@@ -66,6 +68,11 @@ class CompilationErrorResolver:
                 'pattern': r'incompatible types: .* cannot be converted to .*',
                 'handler': self._fix_generic_types,
                 'description': 'Fix generic type mismatch'
+            },
+            'missing_semicolon': {
+                'pattern': r"';' expected",
+                'handler': self._fix_missing_semicolon,
+                'description': 'Add missing semicolon'
             }
         }
     
@@ -108,24 +115,47 @@ class CompilationErrorResolver:
         errors = []
         combined_output = stdout + "\n" + stderr
         
+        # Debug: Log the combined output to see what we're parsing
+        Logger.info(f"🔍 DEBUG: Parsing compilation output ({len(combined_output)} chars)")
+        Logger.info(f"🔍 DEBUG: stdout lines: {len(stdout.split(chr(10)))}")
+        Logger.info(f"🔍 DEBUG: stderr lines: {len(stderr.split(chr(10)))}")
+        
         # Maven error pattern: [ERROR] /path/to/file:[line,column] error message
         error_pattern = r'\[ERROR\]\s+([^:]+):?\[(\d+),(\d+)\]\s+(.+)'
         
-        for match in re.finditer(error_pattern, combined_output, re.MULTILINE):
+        matches = list(re.finditer(error_pattern, combined_output, re.MULTILINE))
+        Logger.info(f"🔍 DEBUG: Found {len(matches)} regex matches")
+        
+        # Use a set to track unique errors and avoid duplicates
+        seen_errors = set()
+        
+        for i, match in enumerate(matches):
             file_path = match.group(1).strip()
             line_num = int(match.group(2))
             column = int(match.group(3))
             message = match.group(4).strip()
             
+            Logger.info(f"🔍 DEBUG: Match {i+1}: {file_path}:{line_num}:{column} - {message}")
+            
+            # Make file path relative to spring_ai_dir for deduplication
+            relative_file_path = file_path
+            if self.spring_ai_dir.as_posix() in file_path:
+                relative_file_path = file_path.replace(self.spring_ai_dir.as_posix() + "/", "")
+            
+            # Create unique key for deduplication (file:line:column:message)
+            error_key = (relative_file_path, line_num, column, message)
+            
+            if error_key in seen_errors:
+                Logger.info(f"🔍 DEBUG: Skipping duplicate error: {relative_file_path}:{line_num}:{column}")
+                continue
+            
+            seen_errors.add(error_key)
+            
             # Determine error type and if it's auto-fixable
             error_type, auto_fixable, fix_desc = self._classify_error(message)
             
-            # Make file path relative to spring_ai_dir
-            if self.spring_ai_dir.as_posix() in file_path:
-                file_path = file_path.replace(self.spring_ai_dir.as_posix() + "/", "")
-            
             errors.append(CompilationError(
-                file_path=file_path,
+                file_path=relative_file_path,
                 line_number=line_num,
                 column=column,
                 error_type=error_type,
@@ -134,6 +164,7 @@ class CompilationErrorResolver:
                 fix_description=fix_desc
             ))
         
+        Logger.info(f"🔍 DEBUG: Created {len(errors)} unique CompilationError objects (filtered from {len(matches)} matches)")
         return errors
     
     def _classify_error(self, message: str) -> Tuple[str, bool, str]:
@@ -215,6 +246,73 @@ class CompilationErrorResolver:
         """Fix generic type mismatch (basic implementation)"""
         Logger.info(f"Generic type auto-fix not yet implemented for: {error.file_path}")
         return False
+    
+    def _fix_missing_semicolon(self, error: CompilationError) -> bool:
+        """Use Claude Code to intelligently fix missing semicolon"""
+        try:
+            # Create a prompt for Claude Code to fix the compilation error
+            prompt = f"""Fix the Java compilation error in {error.file_path} at line {error.line_number}.
+
+Error message: {error.message}
+Error type: Missing semicolon
+
+Please:
+1. Read the file {error.file_path} and understand the context around line {error.line_number}
+2. Fix the missing semicolon error by editing the file directly using the Edit tool
+3. Ensure the fix maintains proper Java syntax and code style
+4. DO NOT run the Java formatter yourself - this will be done separately
+
+The error indicates a semicolon is expected. Please analyze the code context and add the semicolon in the correct location.
+
+Working directory: {self.spring_ai_dir}"""
+
+            # Use ClaudeCodeWrapper for reliable execution
+            Logger.info(f"🤖 Using Claude Code to fix semicolon error in {error.file_path}")
+            
+            result = self.claude_wrapper.analyze_from_text(
+                prompt_text=prompt,
+                timeout=120,  # 2 minutes
+                use_json_output=False,  # Text output is fine for this
+                show_progress=True
+            )
+            
+            if result['success']:
+                Logger.success(f"Claude Code successfully processed semicolon fix for {error.file_path}")
+                
+                # Run Java formatter after the fix
+                self._apply_java_formatter()
+                
+                return True
+            else:
+                Logger.warn(f"Claude Code failed to fix semicolon error: {result['error']}")
+                if result.get('stderr'):
+                    Logger.warn(f"Claude stderr: {result['stderr']}")
+                return False
+                
+        except Exception as e:
+            Logger.warn(f"Error using Claude Code to fix semicolon in {error.file_path}: {e}")
+            return False
+    
+    def _apply_java_formatter(self):
+        """Apply Java formatter after code changes"""
+        try:
+            Logger.info("🎨 Applying Java formatter after code fix...")
+            result = subprocess.run([
+                "mvnd", "spring-javaformat:apply", "-q", "-Dmvnd.rollingWindowSize=0"
+            ], 
+            cwd=self.spring_ai_dir,
+            capture_output=True,
+            text=True,
+            timeout=60
+            )
+            
+            if result.returncode == 0:
+                Logger.success("✅ Java formatter applied successfully")
+            else:
+                Logger.warn(f"Java formatter warning: {result.stderr}")
+                
+        except Exception as e:
+            Logger.warn(f"Error applying Java formatter: {e}")
     
     def generate_error_report(self, errors: List[CompilationError], resolution_log: List[str]) -> str:
         """Generate detailed compilation error report"""

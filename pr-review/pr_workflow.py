@@ -270,7 +270,7 @@ class PRAnalyzer:
         except subprocess.CalledProcessError:
             return False
     
-    def generate_report(self, pr_number: str, dry_run: bool = False) -> Optional[Path]:
+    def generate_report(self, pr_number: str, dry_run: bool = False, force_fresh: bool = False) -> Optional[Path]:
         """Generate enhanced PR analysis report using context collection and AI-powered analysis"""
         
         # Check GitHub CLI authentication
@@ -335,8 +335,19 @@ class PRAnalyzer:
             # Execute enhanced report generator
             Logger.info("Generating enhanced PR analysis report...")
             # Run without capturing output so we can see real-time progress
-            result = subprocess.run(
-                ["python3", str(enhanced_generator), pr_number], 
+            
+            # Add --force-fresh flag for report-only mode to regenerate AI assessments
+            cmd = ["python3", str(enhanced_generator), pr_number]
+            
+            Logger.info(f"🔍 DEBUG: force_fresh parameter: {force_fresh}")
+            
+            if force_fresh:
+                cmd.append("--force-fresh")
+                Logger.info("🔄 Forcing fresh AI analysis (report-only mode)")
+            
+            Logger.info(f"🔍 DEBUG: Command being executed: {' '.join(cmd)}")
+            
+            result = subprocess.run(cmd, 
                 cwd=self.config.script_dir, 
                 timeout=600  # Increase to 10 minutes for debugging
             )
@@ -795,13 +806,15 @@ class PRWorkflow:
         
         return "\n".join(f"- {issue}" for issue in issues)
     
-    def cleanup_pr_workspace(self, pr_number: str, cleanup_mode: str = 'light', dry_run: bool = False) -> bool:
+    def cleanup_pr_workspace(self, pr_number: str, cleanup_mode: str = 'light', dry_run: bool = False, preserve_context: bool = False, force_ai_refresh: bool = False) -> bool:
         """Clean up PR workspace and generated files
         
         Args:
             pr_number: PR number to clean up
-            cleanup_mode: 'full' (remove everything) or 'light' (keep spring-ai repo)
+            cleanup_mode: 'full' (remove everything), 'light' (keep spring-ai repo), 'reports' (reports only), 'ai-cache' (AI cache only)
             dry_run: Show what would be done without executing
+            preserve_context: Skip cleaning context data (for batch processing)
+            force_ai_refresh: Force removal of AI assessment cache for fresh analysis
         """
         Logger.info(f"🧹 Cleaning up PR #{pr_number} workspace ({cleanup_mode} mode)...")
         
@@ -816,11 +829,13 @@ class PRWorkflow:
             # Generated plans
             self.config.plans_dir / f"plan-pr-{pr_number}.md",
             self.config.plans_dir / f"enhanced-plan-pr-{pr_number}.md",
-            # Log files directory
-            self.config.script_dir / "logs",
-            # Context files for this PR
-            self.config.script_dir / "context" / f"pr-{pr_number}",
         ]
+        
+        # Add context cleanup only if not preserving context for batch processing
+        if not preserve_context:
+            cleanup_items.append(self.config.script_dir / "context" / f"pr-{pr_number}")
+            # Also preserve logs directory during batch processing
+            cleanup_items.append(self.config.script_dir / "logs")
         
         # Add spring-ai repo only for full cleanup
         if cleanup_mode == 'full':
@@ -845,6 +860,17 @@ class PRWorkflow:
                 current_branch = self.git.run_git(["rev-parse", "--abbrev-ref", "HEAD"], capture_output=True).stdout.strip()
                 if current_branch != self.config.main_branch:
                     Logger.info(f"🔄 Switching from {current_branch} to main branch...")
+                    
+                    # Check for uncommitted changes before switching
+                    try:
+                        status_result = self.git.run_git(["status", "--porcelain"], capture_output=True)
+                        if status_result.stdout.strip():
+                            Logger.info("🔄 Found uncommitted changes - discarding them...")
+                            self.git.run_git(["reset", "--hard", "HEAD"])
+                            self.git.run_git(["clean", "-fd"])
+                    except Exception as reset_error:
+                        Logger.warn(f"Error resetting changes: {reset_error}")
+                    
                     self.git.run_git(["checkout", self.config.main_branch])
                     Logger.info("✅ Switched to main branch (keeping repository)")
             except Exception as e:
@@ -1131,6 +1157,17 @@ class PRWorkflow:
         if dry_run:
             Logger.info(f"[DRY RUN] Would rebase against {self.config.upstream_remote}/{self.config.main_branch}")
             return True
+        
+        # Check for uncommitted changes (e.g., from CompilationErrorResolver auto-fixes)
+        try:
+            status_result = self.git.run_git(["status", "--porcelain"], capture_output=True)
+            if status_result.stdout.strip():
+                Logger.info("🔧 Found uncommitted changes from auto-fixes - committing them...")
+                self.git.run_git(["add", "."])
+                self.git.run_git(["commit", "-m", f"Auto-fix compilation errors in PR #{pr_number}\n\n🤖 Automatically resolved compilation errors using Claude Code"])
+                Logger.success("✅ Committed auto-fix changes")
+        except Exception as e:
+            Logger.warn(f"Error checking/committing auto-fixes: {e}")
         
         # Fetch latest upstream changes
         self.git.run_git(["fetch", self.config.upstream_remote])
@@ -1519,6 +1556,8 @@ File content with conflicts:"""
         """Generate enhanced PR analysis report with AI-powered analysis (assumes PR is already prepared)"""
         Logger.info(f"📊 Generating PR analysis report for PR #{pr_number}")
         
+        # Report-only mode will force fresh AI analysis
+        
         if dry_run:
             Logger.warn("DRY RUN MODE - No actual report will be generated")
         
@@ -1556,7 +1595,7 @@ File content with conflicts:"""
             Logger.info(f"Current branch: '{current_branch}' - ensure this matches PR #{pr_number}")
         
         # Generate the enhanced report (now the only report)
-        report_file = self.pr_analyzer.generate_report(pr_number, dry_run)
+        report_file = self.pr_analyzer.generate_report(pr_number, dry_run, force_fresh=True)
         
         if report_file:
             Logger.success(f"📋 Enhanced PR analysis report generated: {report_file}")

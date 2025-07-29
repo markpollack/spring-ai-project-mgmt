@@ -28,6 +28,7 @@ import subprocess
 # Import the existing PR workflow
 from pr_workflow import PRWorkflow, WorkflowConfig
 from html_report_generator import LowHangingFruitReportGenerator
+from ai_failure_tracker import AIFailureTracker
 
 
 class RunSpecificWorkflowConfig(WorkflowConfig):
@@ -314,6 +315,13 @@ class BatchPRWorkflow:
         if self.config.generate_html_dashboard:
             self._generate_html_dashboard()
         
+        # Generate AI failure analysis for this batch
+        self._generate_ai_failure_analysis(pr_numbers)
+        
+        # Final cleanup of context data after dashboard generation
+        if self.config.cleanup_between_prs:
+            self._final_cleanup_after_dashboard(pr_numbers)
+        
         if self.monitor:
             self.monitor.finalize_batch()
         
@@ -387,18 +395,49 @@ class BatchPRWorkflow:
         return result
     
     def _cleanup_between_prs(self, pr_number: str):
-        """Cleanup state between PR processing"""
+        """Cleanup state between PR processing, preserving context for dashboard"""
         Logger.info(f"🧹 Cleaning up after PR #{pr_number}")
         
         try:
-            # Run cleanup for the current PR
+            # Run cleanup for the current PR, but preserve context for dashboard generation
             if not self.config.dry_run:
-                self.workflow.cleanup_pr_workspace(pr_number, cleanup_mode='light')
+                self.workflow.cleanup_pr_workspace(pr_number, cleanup_mode='light', preserve_context=True)
             else:
                 Logger.info("🎭 DRY RUN: Would run cleanup")
                 
         except Exception as e:
             Logger.warn(f"⚠️  Cleanup warning for PR #{pr_number}: {e}")
+    
+    def _final_cleanup_after_dashboard(self, pr_numbers: List[str]):
+        """Final cleanup of context data after dashboard has been generated"""
+        Logger.info("🧹 Final cleanup of context data after dashboard generation...")
+        
+        for pr_number in pr_numbers:
+            try:
+                if not self.config.dry_run:
+                    # Now clean up context data for each PR
+                    context_dir = self.config.script_dir / "context" / f"pr-{pr_number}"
+                    if context_dir.exists():
+                        import shutil
+                        shutil.rmtree(context_dir)
+                        Logger.info(f"🗑️  Removed context for PR #{pr_number}")
+                else:
+                    Logger.info(f"🎭 DRY RUN: Would remove context for PR #{pr_number}")
+            except Exception as e:
+                Logger.warn(f"⚠️  Context cleanup warning for PR #{pr_number}: {e}")
+        
+        # Clean up logs directory after all PRs are processed
+        try:
+            if not self.config.dry_run:
+                logs_dir = self.config.script_dir / "logs"
+                if logs_dir.exists():
+                    import shutil
+                    shutil.rmtree(logs_dir)
+                    Logger.info("🗑️  Removed accumulated logs directory")
+            else:
+                Logger.info("🎭 DRY RUN: Would remove logs directory")
+        except Exception as e:
+            Logger.warn(f"⚠️  Logs cleanup warning: {e}")
     
     def _generate_batch_summary(self):
         """Generate comprehensive batch processing summary"""
@@ -520,6 +559,47 @@ class BatchPRWorkflow:
             # Don't fail the entire batch process if HTML generation fails
             import traceback
             Logger.warn(f"Full error: {traceback.format_exc()}")
+    
+    def _generate_ai_failure_analysis(self, pr_numbers: List[str]):
+        """Generate AI failure analysis for batch processing debugging"""
+        try:
+            Logger.info("🔍 Analyzing AI assessment failures for this batch...")
+            
+            tracker = AIFailureTracker(self.batch_log_dir)
+            
+            # Get failures for this batch's PRs
+            batch_failures = []
+            for pr_number in pr_numbers:
+                pr_failures = tracker.get_failures(pr_number)
+                batch_failures.extend(pr_failures)
+            
+            if not batch_failures:
+                Logger.success("✅ No AI assessment failures in this batch")
+                return
+            
+            # Generate analysis report
+            analysis_report = tracker.generate_failure_report()
+            
+            # Save to batch logs
+            failure_report_file = self.batch_log_dir / "ai_failure_analysis.md"
+            with open(failure_report_file, 'w') as f:
+                f.write(f"# AI Assessment Failures - Batch Analysis\n\n")
+                f.write(f"**Batch PRs**: {', '.join(pr_numbers)}\n")
+                f.write(f"**Failures in this batch**: {len(batch_failures)}\n\n")
+                f.write(analysis_report)
+            
+            # Log summary
+            components_failed = set(f['component'] for f in batch_failures)
+            Logger.warn(f"⚠️  Found {len(batch_failures)} AI assessment failures in this batch")
+            Logger.warn(f"🔧 Components affected: {', '.join(components_failed)}")
+            Logger.warn(f"📋 Failure analysis saved: {failure_report_file}")
+            
+            # Show actionable information
+            prs_with_failures = set(f['pr_number'] for f in batch_failures)
+            Logger.warn(f"🎯 PRs needing AI assessment retry: {', '.join(prs_with_failures)}")
+            
+        except Exception as e:
+            Logger.warn(f"Error generating AI failure analysis: {e}")
 
 
 def main():

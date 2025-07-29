@@ -361,7 +361,7 @@ Please provide your assessment following the exact format specified in the templ
         
         return f"""**Total Comments**: {total_comments}
 **Participants**: {len(participants)} ({', '.join(list(participants)[:5])})
-**Latest Activity**: {conversation[-1].get('created_at', 'Unknown') if conversation else 'Unknown'}"""
+**Latest Activity**: {conversation[-1].get('created_at', 'Unknown') if conversation and len(conversation) > 0 else 'Unknown'}"""
     
     def _run_ai_analysis(self, pr_number: str, prompt_file: Path) -> Optional[Dict[str, Any]]:
         """Run AI analysis using Claude Code"""
