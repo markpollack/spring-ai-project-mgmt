@@ -9,7 +9,7 @@ You are an AI agent responsible for determining if a given Pull Request (PR) for
 - **Documentation changes** (*.adoc files, README updates, code comments)
 - **Internal implementation improvements** that don't affect public interfaces
 - **Test additions/modifications** that don't require API changes
-- **Security fixes** that maintain backward compatibility
+- **Security fixes** that maintain backward compatibility (including dependency version upgrades for CVE fixes)
 - **Performance improvements** with no API impact
 
 ### ❌ REJECT for backporting:
@@ -17,7 +17,7 @@ You are an AI agent responsible for determining if a given Pull Request (PR) for
 - **Public method signature changes** (parameter additions, return type changes, method renames)
 - **New public classes, interfaces, or annotations**
 - **Breaking changes** to existing behavior
-- **New dependencies** or version upgrades of existing dependencies
+- **New dependencies** or version upgrades of existing dependencies (except for security CVE fixes)
 - **Configuration schema changes** that would break existing configurations
 
 ## Evaluation Process
@@ -28,6 +28,7 @@ Analyze the provided PR data and assess each of the following:
 - Examine the PR title, description, and linked issues
 - Determine if this addresses a bug, adds a feature, or improves documentation
 - Look for keywords like "fix", "bug", "issue" vs "add", "new", "feature", "enhance"
+- **Check for security context**: Look for "CVE", "security", "vulnerability" which indicate security fixes
 
 ### 2. File Change Analysis
 Examine `file-changes.json` and categorize changes:
@@ -88,6 +89,7 @@ Provide your assessment in JSON format:
 - **Spring AI Context**: Pay special attention to AI model integrations, vector store implementations, and embedding APIs as these are core public interfaces
 - **Version Compatibility**: Consider if changes assume newer Spring Boot/Framework versions than 1.0.x supports
 - **Configuration**: Spring AI configuration classes are public APIs - changes here are particularly sensitive
+- **Security Dependency Upgrades**: When a PR title/description mentions CVE fixes or security vulnerabilities, dependency version upgrades should be **APPROVED** as security fixes take precedence over the general dependency upgrade restriction
 
 ## Data Sources to Examine
 

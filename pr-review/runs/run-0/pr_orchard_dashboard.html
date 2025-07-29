@@ -605,6 +605,91 @@
             transform: translateY(-2px);
         }
         
+        .btn-details {
+            background: var(--earth-tan);
+            color: var(--orchard-green);
+            border: 2px solid var(--orchard-green);
+        }
+        
+        .btn-details:hover {
+            background: var(--orchard-green);
+            color: white;
+            transform: translateY(-2px);
+        }
+        
+        /* === EXPANDABLE DETAILS === */
+        .pr-details-expandable {
+            margin-top: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+            animation: slideDownFade 0.3s ease-out;
+        }
+        
+        @keyframes slideDownFade {
+            from {
+                opacity: 0;
+                max-height: 0;
+                padding-top: 0;
+                padding-bottom: 0;
+            }
+            to {
+                opacity: 1;
+                max-height: 500px;
+                padding-top: 15px;
+                padding-bottom: 15px;
+            }
+        }
+        
+        .file-changes-summary h4 {
+            color: var(--orchard-green);
+            margin: 15px 0 10px 0;
+            font-size: 1rem;
+        }
+        
+        .file-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            margin: 5px 0;
+            background: white;
+            border-radius: 5px;
+            border-left: 3px solid var(--leaf-green);
+        }
+        
+        .file-status {
+            font-size: 1.1rem;
+            margin-right: 8px;
+        }
+        
+        .file-name {
+            flex: 1;
+            font-family: 'SF Mono', 'Monaco', monospace;
+            font-size: 0.85rem;
+            color: var(--orchard-green);
+        }
+        
+        .file-changes {
+            font-size: 0.8rem;
+            color: #666;
+            font-weight: 500;
+        }
+        
+        .file-more {
+            text-align: center;
+            color: #666;
+            font-style: italic;
+            padding: 10px;
+        }
+        
         /* === RESPONSIVE DESIGN === */
         @media (max-width: 768px) {
             .container {
@@ -660,6 +745,235 @@
         .pr-card:nth-child(4) { animation-delay: 0.3s; }
         .pr-card:nth-child(5) { animation-delay: 0.4s; }
         .pr-card:nth-child(6) { animation-delay: 0.5s; }
+        
+        /* === ASSESSMENT CARDS === */
+        .assessment-card {
+            margin: 20px 0;
+            background: white;
+            border-radius: 12px;
+            border: 1px solid #e9ecef;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+        
+        .assessment-title {
+            background: linear-gradient(135deg, var(--orchard-green), var(--leaf-green));
+            color: white;
+            margin: 0;
+            padding: 12px 16px;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+        
+        .assessment-content {
+            padding: 16px;
+        }
+        
+        .risk-level-display, .backport-decision-display {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        
+        .risk-explanation, .backport-classification {
+            font-size: 0.9rem;
+            color: #666;
+            font-weight: 500;
+        }
+        
+        .risk-details, .backport-details {
+            line-height: 1.6;
+        }
+        
+        .commit-message-content {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+        
+        .commit-message {
+            margin: 0;
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            color: var(--orchard-green);
+        }
+        
+        .commit-actions {
+            display: flex;
+            justify-content: flex-end;
+        }
+        
+        .btn-copy {
+            background: var(--earth-tan);
+            color: var(--orchard-green);
+            border: 2px solid var(--orchard-green);
+            padding: 8px 16px;
+            font-size: 0.85rem;
+        }
+        
+        .btn-copy:hover {
+            background: var(--orchard-green);
+            color: white;
+        }
+        
+        /* === EXPANDABLE DETAILS === */
+        .pr-details {
+            margin-top: 20px;
+            border-top: 1px solid #e1e5e9;
+            padding-top: 20px;
+        }
+        
+        /* === ASSESSMENT CARDS === */
+        .assessment-cards-container {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin-top: 16px;
+        }
+        
+        .assessment-card {
+            background: #fafbfc;
+            border: 1px solid #e1e5e9;
+            border-radius: 8px;
+            padding: 16px;
+            transition: all 0.2s ease;
+        }
+        
+        .assessment-card:hover {
+            border-color: #d0d7de;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        
+        .assessment-title {
+            margin: 0 0 12px 0;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #24292f;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .assessment-content {
+            color: #656d76;
+            line-height: 1.5;
+        }
+        
+        /* Risk Assessment Card */
+        .risk-assessment-card {
+            border-left: 4px solid var(--risk-color);
+        }
+        
+        .risk-level-display {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        
+        .risk-explanation {
+            font-size: 0.9rem;
+            color: #656d76;
+        }
+        
+        .risk-summary {
+            margin: 0 0 12px 0;
+            font-weight: 500;
+            color: #24292f;
+        }
+        
+        .risk-details ul {
+            margin: 8px 0;
+            padding-left: 20px;
+        }
+        
+        .risk-details li {
+            margin: 4px 0;
+        }
+        
+        /* Backport Assessment Card */
+        .backport-assessment-card {
+            border-left: 4px solid #0969da;
+        }
+        
+        .backport-decision {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+        
+        .backport-decision.approve {
+            background: #dcfce7;
+            color: #166534;
+        }
+        
+        .backport-decision.reject {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+        
+        .backport-reasoning {
+            margin: 12px 0;
+            font-style: italic;
+            color: #656d76;
+        }
+        
+        .backport-recommendations {
+            margin-top: 12px;
+            padding: 12px;
+            background: #f6f8fa;
+            border-radius: 6px;
+            border-left: 3px solid #0969da;
+        }
+        
+        /* Commit Message Card */
+        .commit-message-card {
+            border-left: 4px solid #8b5cf6;
+        }
+        
+        .commit-message-content {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 16px;
+            font-family: 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace;
+            font-size: 0.85rem;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            color: #334155;
+            position: relative;
+        }
+        
+        .copy-button {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: #0969da;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        
+        .copy-button:hover {
+            background: #0550ae;
+        }
+        
+        .copy-button:active {
+            background: #033d8b;
+        }
         </style>
         
 </head>
@@ -671,7 +985,7 @@
             <div class="header-info">
                 <span class="run-info">Run: run-0</span>
                 <span class="pr-count">PRs Analyzed: 10</span>
-                <span class="timestamp">Generated: 2025-07-29 03:18:55</span>
+                <span class="timestamp">Generated: 2025-07-29 17:11:30</span>
             </div>
         </header>
         
@@ -680,7 +994,7 @@
             <div class="stat-card backport-ready" data-filter="backport-ready" onclick="filterPRsByType('backport-ready')">
                 <div class="stat-icon">📦</div>
                 <div class="stat-content">
-                    <div class="stat-number">6</div>
+                    <div class="stat-number">9</div>
                     <div class="stat-label">Backport Ready</div>
                 </div>
             </div>
@@ -712,25 +1026,130 @@
             <div class="section-header">
                 <h2>📦 Spring AI 1.0.x Backport Candidates</h2>
                 <p class="section-description">
-                    6 PR(s) approved for backporting to the maintenance branch
+                    9 PR(s) approved for backporting to the maintenance branch
                 </p>
             </div>
             <div class="backport-grid">
                 
-        <div class="pr-card" data-risk="low" data-type="documentation" data-backport="approve">
+        <div class="pr-card" data-risk="low" data-type="bugfix" data-backport="approve">
+            <div class="pr-header">
+                <div class="pr-icon">🍃</div>
+                <div class="pr-title-section">
+                    <h3 class="pr-title">
+                        <a href="https://github.com/spring-projects/spring-ai/pull/3933" target="_blank" class="pr-link">
+                            #3933: Issue 3924 Fix MethodToolCallback enum argument handling
+                        </a>
+                    </h3>
+                    <div class="pr-meta">
+                        <span class="pr-author">by wilocu</span>
+                        <span class="pr-type">bugfix</span>
+                        <span class="risk-badge risk-low">LOW</span>
+                        <span class="backport-badge backport-approve">
+                            ✅ APPROVE
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="pr-stats">
+                <div class="stat">
+                    <span class="stat-label">Files:</span>
+                    <span class="stat-value">2</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Lines:</span>
+                    <span class="stat-value">+113/-1</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Effort:</span>
+                    <span class="stat-value">3/10</span>
+                </div>
+            </div>
+            
+            <div class="pr-summary">
+                <p class="risk-summary">The changes appear to be focused on fixing enum argument handling in tool callbacks with appropriate test coverage. The reflection usage is legitimate for Spring AI framework tool invocation patterns, and proper exception handling is implemented throughout.</p>
+                <ul class='positive-findings'><li>Proper exception handling with ToolExecutionException wrapping at lines 114 and 180</li><li>Good defensive programming with null checks and assertions throughout the code</li><li>Comprehensive test coverage including edge cases for invalid enum handling</li></ul>
+            </div>
+            
+            <div class="pr-actions">
+                <a href="https://github.com/spring-projects/spring-ai/pull/3933" target="_blank" class="btn btn-primary">View on GitHub</a>
+                <a href="https://github.com/spring-projects/spring-ai/pull/3933/files" target="_blank" class="btn btn-secondary">View Files</a>
+                <button class="btn btn-details expand-details-btn" onclick="togglePRDetails(this)">
+                    📋 Show Assessments
+                </button>
+            </div>
+            
+            <div class="pr-details-expandable" style="display: none;">
+                <div class="assessment-cards-container">
+                    <div class="assessment-card risk-assessment-card">
+                    <h4 class="assessment-title">🔍 Risk Assessment</h4>
+                    <div class="assessment-content">
+                        <div class="risk-level-display">
+                            <span class="risk-badge risk-low">LOW</span>
+                            <span class="risk-explanation">Risk Level</span>
+                        </div>
+                        <div class="risk-details">
+                            <p class="risk-summary">The changes appear to be focused on fixing enum argument handling in tool callbacks with appropriate test coverage. The reflection usage is legitimate for Spring AI framework tool invocation patterns, and proper exception handling is implemented throughout.</p>
+                            <ul class='positive-findings'><li>Proper exception handling with ToolExecutionException wrapping at lines 114 and 180</li><li>Good defensive programming with null checks and assertions throughout the code</li><li>Comprehensive test coverage including edge cases for invalid enum handling</li></ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="assessment-card backport-assessment-card">
+                    <h4 class="assessment-title">🔄 Backport Assessment</h4>
+                    <div class="assessment-content">
+                        <div class="backport-decision approve">✅ APPROVE</div>
+                        <p><strong>Classification:</strong> Bug Fix</p>
+                        <p><strong>Risk Level:</strong> Low - Well-contained bug fix with comprehensive test coverage</p>
+                        
+                        <div class="backport-reasoning">
+                            <strong>Reasoning:</strong><br>
+                            This is a clear bug fix that addresses graceful handling of invalid enum arguments in tool callbacks. The changes are internal-only, maintain backward compatibility, and follow existing Spring AI exception handling patterns. The fix prevents unhandled IllegalArgumentExceptions from bubbling up by converting them to the expected ToolExecutionException type.
+                        </div>
+                        
+                        <div class="backport-recommendations"><strong>Recommendations:</strong><br>Safe for backporting. Ensure the new test file is included and verify that existing MethodToolCallback usage patterns remain unchanged. The fix enhances robustness without any breaking changes.</div>
+                    </div>
+                </div>
+                
+                <div class="assessment-card commit-message-card">
+                    <h4 class="assessment-title">📝 Final Commit Message</h4>
+                    <div class="assessment-content">
+                        <div class="commit-message-content">
+                            <pre id="commit-message-3933" class="commit-message">fix(function): improve enum argument error handling in MethodToolCallback
+The MethodToolCallback class was throwing unhandled IllegalArgumentException
+when LLMs provided invalid enum values as tool arguments, preventing graceful
+error recovery and proper feedback to the model.
+Added try-catch block around buildMethodArguments() in MethodToolCallback.call()
+to catch IllegalArgumentException and convert it to ToolExecutionException with
+proper context and debug logging. Added comprehensive unit tests to verify both
+invalid enum handling and preservation of valid enum functionality.
+This enables LLMs to receive proper error feedback for invalid enum arguments
+instead of encountering unhandled exceptions, improving the robustness of
+tool-assisted AI workflows.
+Closes #3924</pre>
+                            <button class="copy-button" onclick="copyCommitMessage(3933)">Copy</button>
+                        </div>
+                    </div>
+                </div>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="pr-card" data-risk="low" data-type="bugfix" data-backport="approve">
             <div class="pr-header">
                 <div class="pr-icon">🍎</div>
                 <div class="pr-title-section">
                     <h3 class="pr-title">
-                        <a href="https://github.com/spring-projects/spring-ai/pull/3920" target="_blank" class="pr-link">
-                            #3920: docs: update getting-started.adoc for 1.0.0 release
+                        <a href="https://github.com/spring-projects/spring-ai/pull/3931" target="_blank" class="pr-link">
+                            #3931: fix: add strict option to ChatCompletionsJsonSchemaResponseFormat (#3…
                         </a>
                     </h3>
                     <div class="pr-meta">
-                        <span class="pr-author">by nahyukk</span>
-                        <span class="pr-type">documentation</span>
+                        <span class="pr-author">by FlorainB</span>
+                        <span class="pr-type">bugfix</span>
                         <span class="risk-badge risk-low">LOW</span>
-                        <span class="backport-badge backport-approve" title="This is a pure documentation update that changes version references and repository information wi...">
+                        <span class="backport-badge backport-approve">
                             ✅ APPROVE
                         </span>
                     </div>
@@ -744,32 +1163,72 @@
                 </div>
                 <div class="stat">
                     <span class="stat-label">Lines:</span>
-                    <span class="stat-value">+34/-7</span>
+                    <span class="stat-value">+1/-0</span>
                 </div>
                 <div class="stat">
                     <span class="stat-label">Effort:</span>
-                    <span class="stat-value">2/10</span>
+                    <span class="stat-value">1/10</span>
                 </div>
             </div>
             
             <div class="pr-summary">
-                <p class="risk-summary">This is a low-risk documentation update that changes version references from 1.0.0-SNAPSHOT to 1.0.0 release. The primary risk is ensuring the referenced version actually exists in Maven Central, but no security or functional code changes introduce vulnerabilities.</p>
-                <ul class='positive-findings'><li>Clear separation between release and snapshot repository configuration</li><li>Comprehensive Maven mirror configuration guidance to prevent common snapshot access issues</li><li>Well-structured documentation with proper tabbed examples for both Maven and Gradle</li></ul>
+                <p class="risk-summary">This appears to be a minimal fix adding a strict option to JSON schema response format. The change is very small (+1/-0 lines) and the existing codebase demonstrates good practices with proper error handling and validation patterns. Without seeing the specific change, the risk appears low as it&#x27;s likely a simple parameter addition to an existing Azure OpenAI integration.</p>
+                <ul class='positive-findings'><li>Code follows established Spring AI patterns and conventions</li><li>Proper use of Azure OpenAI SDK integration with appropriate error handling in most areas</li><li>Good separation of concerns with builder pattern implementation</li></ul>
             </div>
-            
-            <div class="backport-info">
-                <div class="backport-classification">
-                    <strong>Backport Classification:</strong> Documentation 
-                    <span class="backport-risk">(Low Risk)</span>
-                </div>
-                <div class="backport-reasoning">This is a pure documentation update that changes version references and repository information wi...</div>
-            </div>
-            
-            
             
             <div class="pr-actions">
-                <a href="https://github.com/spring-projects/spring-ai/pull/3920" target="_blank" class="btn btn-primary">View on GitHub</a>
-                <a href="https://github.com/spring-projects/spring-ai/pull/3920/files" target="_blank" class="btn btn-secondary">View Files</a>
+                <a href="https://github.com/spring-projects/spring-ai/pull/3931" target="_blank" class="btn btn-primary">View on GitHub</a>
+                <a href="https://github.com/spring-projects/spring-ai/pull/3931/files" target="_blank" class="btn btn-secondary">View Files</a>
+                <button class="btn btn-details expand-details-btn" onclick="togglePRDetails(this)">
+                    📋 Show Assessments
+                </button>
+            </div>
+            
+            <div class="pr-details-expandable" style="display: none;">
+                <div class="assessment-cards-container">
+                    <div class="assessment-card risk-assessment-card">
+                    <h4 class="assessment-title">🔍 Risk Assessment</h4>
+                    <div class="assessment-content">
+                        <div class="risk-level-display">
+                            <span class="risk-badge risk-low">LOW</span>
+                            <span class="risk-explanation">Risk Level</span>
+                        </div>
+                        <div class="risk-details">
+                            <p class="risk-summary">This appears to be a minimal fix adding a strict option to JSON schema response format. The change is very small (+1/-0 lines) and the existing codebase demonstrates good practices with proper error handling and validation patterns. Without seeing the specific change, the risk appears low as it&#x27;s likely a simple parameter addition to an existing Azure OpenAI integration.</p>
+                            <ul class='positive-findings'><li>Code follows established Spring AI patterns and conventions</li><li>Proper use of Azure OpenAI SDK integration with appropriate error handling in most areas</li><li>Good separation of concerns with builder pattern implementation</li></ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="assessment-card backport-assessment-card">
+                    <h4 class="assessment-title">🔄 Backport Assessment</h4>
+                    <div class="assessment-content">
+                        <div class="backport-decision approve">✅ APPROVE</div>
+                        <p><strong>Classification:</strong> Bug Fix</p>
+                        <p><strong>Risk Level:</strong> Low - single line addition that maps existing property</p>
+                        
+                        <div class="backport-reasoning">
+                            <strong>Reasoning:</strong><br>
+                            This is a straightforward bug fix that adds a missing property mapping in the Azure OpenAI integration. The change maintains backward compatibility and only affects internal implementation details without changing any public APIs.
+                        </div>
+                        
+                        <div class="backport-recommendations"><strong>Recommendations:</strong><br>Safe for backporting. Ensure the getStrict() method exists in the 1.0.x branch&#x27;s jsonSchema object. Test with Azure OpenAI strict mode to verify functionality.</div>
+                    </div>
+                </div>
+                
+                <div class="assessment-card commit-message-card">
+                    <h4 class="assessment-title">📝 Final Commit Message</h4>
+                    <div class="assessment-content">
+                        <div class="commit-message-content">
+                            <pre id="commit-message-3931" class="commit-message">fix(azure): add missing strict property mapping for JSON schema response format
+The Azure OpenAI integration was missing the mapping of the strict property when using JSON schema mode, causing the strict validation setting to be ignored and potentially leading to inconsistent response format behavior.
+Added the missing `setStrict(jsonSchema.getStrict())` call in the `toAzureResponseFormat` method within `AzureOpenAiChatModel.java` to properly map the strict property from the Spring AI JSON schema configuration to the Azure OpenAI client&#x27;s response format.
+Closes #3931</pre>
+                            <button class="copy-button" onclick="copyCommitMessage(3931)">Copy</button>
+                        </div>
+                    </div>
+                </div>
+                </div>
             </div>
         </div>
         
@@ -787,7 +1246,7 @@
                         <span class="pr-author">by jbj338033</span>
                         <span class="pr-type">documentation</span>
                         <span class="risk-badge risk-low">LOW</span>
-                        <span class="backport-badge backport-approve" title="This PR exclusively contains typo corrections in comments and documentation improvements. No publ...">
+                        <span class="backport-badge backport-approve">
                             ✅ APPROVE
                         </span>
                     </div>
@@ -814,418 +1273,67 @@
                 <ul class='positive-findings'><li>All changes are limited to documentation and comment improvements</li><li>No modifications to security-sensitive code patterns</li><li>Integration tests maintain proper credential handling with System.getenv() calls</li></ul>
             </div>
             
-            <div class="backport-info">
-                <div class="backport-classification">
-                    <strong>Backport Classification:</strong> Documentation 
-                    <span class="backport-risk">(Low - Only cosmetic changes to comments and documentation with no functional code impact Risk)</span>
-                </div>
-                <div class="backport-reasoning">This PR exclusively contains typo corrections in comments and documentation improvements. No publ...</div>
-            </div>
-            
-            
-            
             <div class="pr-actions">
                 <a href="https://github.com/spring-projects/spring-ai/pull/3936" target="_blank" class="btn btn-primary">View on GitHub</a>
                 <a href="https://github.com/spring-projects/spring-ai/pull/3936/files" target="_blank" class="btn btn-secondary">View Files</a>
+                <button class="btn btn-details expand-details-btn" onclick="togglePRDetails(this)">
+                    📋 Show Assessments
+                </button>
             </div>
-        </div>
-        
-
-        <div class="pr-card" data-risk="low" data-type="testing" data-backport="approve">
-            <div class="pr-header">
-                <div class="pr-icon">🍃</div>
-                <div class="pr-title-section">
-                    <h3 class="pr-title">
-                        <a href="https://github.com/spring-projects/spring-ai/pull/3922" target="_blank" class="pr-link">
-                            #3922: test: Add comprehensive test coverage for MilvusFilterExpressionConverter
-                        </a>
-                    </h3>
-                    <div class="pr-meta">
-                        <span class="pr-author">by alxkm</span>
-                        <span class="pr-type">testing</span>
-                        <span class="risk-badge risk-low">LOW</span>
-                        <span class="backport-badge backport-approve" title="This PR exclusively adds test methods to improve coverage of the MilvusFilterExpressionConverter....">
-                            ✅ APPROVE
-                        </span>
+            
+            <div class="pr-details-expandable" style="display: none;">
+                <div class="assessment-cards-container">
+                    <div class="assessment-card risk-assessment-card">
+                    <h4 class="assessment-title">🔍 Risk Assessment</h4>
+                    <div class="assessment-content">
+                        <div class="risk-level-display">
+                            <span class="risk-badge risk-low">LOW</span>
+                            <span class="risk-explanation">Risk Level</span>
+                        </div>
+                        <div class="risk-details">
+                            <p class="risk-summary">This PR contains only minor documentation and comment improvements with no functional code changes. All modifications are cosmetic typo fixes and documentation enhancements with minimal risk to system security or stability.</p>
+                            <ul class='positive-findings'><li>All changes are limited to documentation and comment improvements</li><li>No modifications to security-sensitive code patterns</li><li>Integration tests maintain proper credential handling with System.getenv() calls</li></ul>
+                        </div>
                     </div>
                 </div>
-            </div>
-            
-            <div class="pr-stats">
-                <div class="stat">
-                    <span class="stat-label">Files:</span>
-                    <span class="stat-value">1</span>
-                </div>
-                <div class="stat">
-                    <span class="stat-label">Lines:</span>
-                    <span class="stat-value">+179/-0</span>
-                </div>
-                <div class="stat">
-                    <span class="stat-label">Effort:</span>
-                    <span class="stat-value">3/10</span>
-                </div>
-            </div>
-            
-            <div class="pr-summary">
-                <p class="risk-summary">This PR adds comprehensive test coverage for the MilvusFilterExpressionConverter with no production code changes. The tests are well-structured and cover edge cases appropriately with no security concerns identified.</p>
-                <ul class='positive-findings'><li>Comprehensive test coverage for MilvusFilterExpressionConverter edge cases</li><li>Well-structured test methods with clear naming and documentation comments</li><li>Proper use of AssertJ assertions and Spring AI filter expression patterns</li></ul>
-            </div>
-            
-            <div class="backport-info">
-                <div class="backport-classification">
-                    <strong>Backport Classification:</strong> Other 
-                    <span class="backport-risk">(Low Risk)</span>
-                </div>
-                <div class="backport-reasoning">This PR exclusively adds test methods to improve coverage of the MilvusFilterExpressionConverter....</div>
-            </div>
-            
-            
-            
-            <div class="pr-actions">
-                <a href="https://github.com/spring-projects/spring-ai/pull/3922" target="_blank" class="btn btn-primary">View on GitHub</a>
-                <a href="https://github.com/spring-projects/spring-ai/pull/3922/files" target="_blank" class="btn btn-secondary">View Files</a>
-            </div>
-        </div>
-        
-
-        <div class="pr-card" data-risk="low" data-type="testing" data-backport="approve">
-            <div class="pr-header">
-                <div class="pr-icon">🍃</div>
-                <div class="pr-title-section">
-                    <h3 class="pr-title">
-                        <a href="https://github.com/spring-projects/spring-ai/pull/3919" target="_blank" class="pr-link">
-                            #3919: test: Add comprehensive test coverage for MongoDBAtlasFilterExpressionConverter
-                        </a>
-                    </h3>
-                    <div class="pr-meta">
-                        <span class="pr-author">by alxkm</span>
-                        <span class="pr-type">testing</span>
-                        <span class="risk-badge risk-low">LOW</span>
-                        <span class="backport-badge backport-approve" title="This PR only adds test methods to an existing test class without modifying any production code, p...">
-                            ✅ APPROVE
-                        </span>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="pr-stats">
-                <div class="stat">
-                    <span class="stat-label">Files:</span>
-                    <span class="stat-value">1</span>
-                </div>
-                <div class="stat">
-                    <span class="stat-label">Lines:</span>
-                    <span class="stat-value">+170/-0</span>
-                </div>
-                <div class="stat">
-                    <span class="stat-label">Effort:</span>
-                    <span class="stat-value">3/10</span>
-                </div>
-            </div>
-            
-            <div class="pr-summary">
-                <p class="risk-summary">This is a well-written test file that significantly improves test coverage for the MongoDB Atlas filter converter. The main risks are around missing performance and error handling validation rather than security vulnerabilities. The added tests properly validate core functionality without introducing security concerns.</p>
-                <ul class='positive-findings'><li>Comprehensive test coverage for all MongoDB filter operators (EQ, NE, LT, LTE, GT, GTE, IN, NIN)</li><li>Proper handling of edge cases including null values, empty strings, and mixed data types</li><li>Well-structured test cases covering complex nested expressions with multiple logical operators</li></ul>
-            </div>
-            
-            <div class="backport-info">
-                <div class="backport-classification">
-                    <strong>Backport Classification:</strong> Other 
-                    <span class="backport-risk">(Low Risk)</span>
-                </div>
-                <div class="backport-reasoning">This PR only adds test methods to an existing test class without modifying any production code, p...</div>
-            </div>
-            
-            
-            
-            <div class="pr-actions">
-                <a href="https://github.com/spring-projects/spring-ai/pull/3919" target="_blank" class="btn btn-primary">View on GitHub</a>
-                <a href="https://github.com/spring-projects/spring-ai/pull/3919/files" target="_blank" class="btn btn-secondary">View Files</a>
-            </div>
-        </div>
-        
-
-        <div class="pr-card" data-risk="low" data-type="cleanup" data-backport="approve">
-            <div class="pr-header">
-                <div class="pr-icon">🍃</div>
-                <div class="pr-title-section">
-                    <h3 class="pr-title">
-                        <a href="https://github.com/spring-projects/spring-ai/pull/3921" target="_blank" class="pr-link">
-                            #3921: Remove unused import
-                        </a>
-                    </h3>
-                    <div class="pr-meta">
-                        <span class="pr-author">by ngocnhan-tran1996</span>
-                        <span class="pr-type">cleanup</span>
-                        <span class="risk-badge risk-low">LOW</span>
-                        <span class="backport-badge backport-approve" title="This PR removes only unused imports across 8 files without modifying any functional code or publi...">
-                            ✅ APPROVE
-                        </span>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="pr-stats">
-                <div class="stat">
-                    <span class="stat-label">Files:</span>
-                    <span class="stat-value">8</span>
-                </div>
-                <div class="stat">
-                    <span class="stat-label">Lines:</span>
-                    <span class="stat-value">+2/-14</span>
-                </div>
-                <div class="stat">
-                    <span class="stat-label">Effort:</span>
-                    <span class="stat-value">3/10</span>
-                </div>
-            </div>
-            
-            <div class="pr-summary">
-                <p class="risk-summary">This is a low-risk maintenance PR that removes unused imports without modifying functionality. The changes are minimal and focused on code cleanliness with proper copyright updates where needed.</p>
-                <ul class='positive-findings'><li>Clean code maintenance approach removing unused imports across the codebase</li><li>Changes are limited in scope with minimal net change (+2/-14 lines)</li><li>Copyright year updates show proper license header maintenance</li></ul>
-            </div>
-            
-            <div class="backport-info">
-                <div class="backport-classification">
-                    <strong>Backport Classification:</strong> Other 
-                    <span class="backport-risk">(Low - cosmetic changes with no functional impact Risk)</span>
-                </div>
-                <div class="backport-reasoning">This PR removes only unused imports across 8 files without modifying any functional code or publi...</div>
-            </div>
-            
-            
-            
-            <div class="pr-actions">
-                <a href="https://github.com/spring-projects/spring-ai/pull/3921" target="_blank" class="btn btn-primary">View on GitHub</a>
-                <a href="https://github.com/spring-projects/spring-ai/pull/3921/files" target="_blank" class="btn btn-secondary">View Files</a>
-            </div>
-        </div>
-        
-
-        <div class="pr-card" data-risk="low" data-type="testing" data-backport="approve">
-            <div class="pr-header">
-                <div class="pr-icon">🍃</div>
-                <div class="pr-title-section">
-                    <h3 class="pr-title">
-                        <a href="https://github.com/spring-projects/spring-ai/pull/3932" target="_blank" class="pr-link">
-                            #3932: test: Add comprehensive test coverage for PineconeFilterExpressionConverter
-                        </a>
-                    </h3>
-                    <div class="pr-meta">
-                        <span class="pr-author">by alxkm</span>
-                        <span class="pr-type">testing</span>
-                        <span class="risk-badge risk-low">LOW</span>
-                        <span class="backport-badge backport-approve" title="This PR meets the criteria for backporting as it only adds test coverage without modifying any pu...">
-                            ✅ APPROVE
-                        </span>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="pr-stats">
-                <div class="stat">
-                    <span class="stat-label">Files:</span>
-                    <span class="stat-value">1</span>
-                </div>
-                <div class="stat">
-                    <span class="stat-label">Lines:</span>
-                    <span class="stat-value">+138/-0</span>
-                </div>
-                <div class="stat">
-                    <span class="stat-label">Effort:</span>
-                    <span class="stat-value">3/10</span>
-                </div>
-            </div>
-            
-            <div class="pr-summary">
-                <p class="risk-summary">This is a well-written test class that adds comprehensive coverage for the PineconeFilterExpressionConverter. The main risk is potential gaps in negative testing scenarios, but the overall implementation follows good testing practices with no security concerns.</p>
-                <ul class='positive-findings'><li>Comprehensive test coverage for PineconeFilterExpressionConverter across multiple data types and operators</li><li>Well-structured test cases covering boolean, numeric, string, and mixed data type scenarios</li><li>Proper testing of complex nested expressions and grouping logic</li></ul>
-            </div>
-            
-            <div class="backport-info">
-                <div class="backport-classification">
-                    <strong>Backport Classification:</strong> Test additions 
-                    <span class="backport-risk">(Low - Test-only changes with no impact on production code or public interfaces Risk)</span>
-                </div>
-                <div class="backport-reasoning">This PR meets the criteria for backporting as it only adds test coverage without modifying any pu...</div>
-            </div>
-            
-            
-            
-            <div class="pr-actions">
-                <a href="https://github.com/spring-projects/spring-ai/pull/3932" target="_blank" class="btn btn-primary">View on GitHub</a>
-                <a href="https://github.com/spring-projects/spring-ai/pull/3932/files" target="_blank" class="btn btn-secondary">View Files</a>
-            </div>
-        </div>
-        
-            </div>
-        </section>
-        
-        
-                <section class="orchard-section ready-harvest">
-                    <div class="section-header">
-                        <h2>🍎 Ready to Harvest</h2>
-                        <p class="section-subtitle">Low Hanging Fruit - Quick Wins (3 PRs)</p>
-                    </div>
-                    <div class="pr-grid">
+                
+                <div class="assessment-card backport-assessment-card">
+                    <h4 class="assessment-title">🔄 Backport Assessment</h4>
+                    <div class="assessment-content">
+                        <div class="backport-decision approve">✅ APPROVE</div>
+                        <p><strong>Classification:</strong> Documentation</p>
+                        <p><strong>Risk Level:</strong> Low - Only cosmetic changes to comments and documentation with no functional code impact</p>
                         
-        <div class="pr-card" data-risk="low" data-type="bugfix" data-backport="unknown">
-            <div class="pr-header">
-                <div class="pr-icon">🍎</div>
-                <div class="pr-title-section">
-                    <h3 class="pr-title">
-                        <a href="https://github.com/spring-projects/spring-ai/pull/3931" target="_blank" class="pr-link">
-                            #3931: fix: add strict option to ChatCompletionsJsonSchemaResponseFormat (#3…
-                        </a>
-                    </h3>
-                    <div class="pr-meta">
-                        <span class="pr-author">by FlorainB</span>
-                        <span class="pr-type">bugfix</span>
-                        <span class="risk-badge risk-low">LOW</span>
-                        <span class="backport-badge backport-unknown" title="Backport assessment not available">
-                            ❓ UNKNOWN
-                        </span>
+                        <div class="backport-reasoning">
+                            <strong>Reasoning:</strong><br>
+                            This PR exclusively contains typo corrections in comments and documentation improvements. No public APIs, method signatures, class definitions, or functional behavior are modified, making it an ideal candidate for backporting with zero compatibility risk.
+                        </div>
+                        
+                        <div class="backport-recommendations"><strong>Recommendations:</strong><br>Safe for backporting. Consider applying these documentation improvements to maintain consistency across versions. No special precautions needed during backport process.</div>
                     </div>
                 </div>
-            </div>
-            
-            <div class="pr-stats">
-                <div class="stat">
-                    <span class="stat-label">Files:</span>
-                    <span class="stat-value">1</span>
-                </div>
-                <div class="stat">
-                    <span class="stat-label">Lines:</span>
-                    <span class="stat-value">+1/-0</span>
-                </div>
-                <div class="stat">
-                    <span class="stat-label">Effort:</span>
-                    <span class="stat-value">1/10</span>
-                </div>
-            </div>
-            
-            <div class="pr-summary">
-                <p class="risk-summary">This appears to be a minimal fix adding a strict option to JSON schema response format handling. The change is isolated and the existing codebase demonstrates good security practices and proper error handling patterns.</p>
-                <ul class='positive-findings'><li>Comprehensive input validation with Assert.notNull() checks throughout constructors</li><li>Proper error handling and exception management for unknown message types</li><li>Well-structured separation of concerns with dedicated methods for different operations</li></ul>
-            </div>
-            
-            <div class="backport-info">
-                <div class="backport-classification">
-                    <strong>Backport Classification:</strong> Assessment Missing 
-                    <span class="backport-risk">(Unknown Risk)</span>
-                </div>
-                <div class="backport-reasoning">Backport assessment not available</div>
-            </div>
-            
-            
-            <div class="diff-preview" style="display: none;">
-                <div class="diff-header">
-                    <h4>📋 Quick Preview</h4>
-                    <button class="toggle-diff">Hide Preview</button>
-                </div>
-                <div class="diff-files">
-                    
-                <div class="file-diff">
-                    <div class="file-header">models/spring-ai-azure-openai/src/main/java/org/springframework/ai/azure/openai/AzureOpenAiChatModel.java</div>
-                    <pre class="diff-content">@@ -959,6 +959,7 @@ private ChatCompletionsResponseFormat toAzureResponseFormat(AzureOpenAiResponseF
- 			var responseFormatJsonSchema = new ChatCompletionsJsonSchemaResponseFormatJsonSchema(jsonSchema.getName());
- 			String jsonString = ModelOptionsUtils.toJsonString(jsonSchema.getSchema());
- 			responseFormatJsonSchema.setSchema(BinaryData.fromString(jsonString));
-+			responseFormatJsonSchema.setStrict(jsonSchema.getStrict());
- 			return new ChatCompletionsJsonSchemaResponseFormat(responseFormatJsonSchema);
- 		}
- 		return new ChatCompletionsTextResponseFormat();</pre>
-                </div>
                 
-                </div>
-            </div>
-            <button class="show-diff-btn">🔍 Show Diff Preview</button>
-            
-            
-            <div class="pr-actions">
-                <a href="https://github.com/spring-projects/spring-ai/pull/3931" target="_blank" class="btn btn-primary">View on GitHub</a>
-                <a href="https://github.com/spring-projects/spring-ai/pull/3931/files" target="_blank" class="btn btn-secondary">View Files</a>
-            </div>
-        </div>
-        
-
-        <div class="pr-card" data-risk="low" data-type="feature" data-backport="reject">
-            <div class="pr-header">
-                <div class="pr-icon">🍎</div>
-                <div class="pr-title-section">
-                    <h3 class="pr-title">
-                        <a href="https://github.com/spring-projects/spring-ai/pull/3934" target="_blank" class="pr-link">
-                            #3934: Bump postgresql JDBC driver from 42.7.5 to 42.7.7
-                        </a>
-                    </h3>
-                    <div class="pr-meta">
-                        <span class="pr-author">by dafriz</span>
-                        <span class="pr-type">feature</span>
-                        <span class="risk-badge risk-low">LOW</span>
-                        <span class="backport-badge backport-reject" title="While this addresses a security vulnerability (CVE-2025-49146), it constitutes a dependency versi...">
-                            ❌ REJECT
-                        </span>
+                <div class="assessment-card commit-message-card">
+                    <h4 class="assessment-title">📝 Final Commit Message</h4>
+                    <div class="assessment-content">
+                        <div class="commit-message-content">
+                            <pre id="commit-message-3936" class="commit-message">docs(multiple): fix typos in comments and add comprehensive spring-ai-test documentation
+Several comment typos were scattered across the codebase causing minor
+readability issues in TODO comments and documentation. The spring-ai-test
+module also lacked proper documentation for developers wanting to use
+the evaluation testing utilities.
+Fixed typos including &#x27;wrapps&#x27; → &#x27;wraps&#x27; in TODO comments across multiple
+test files, &#x27;uitlity&#x27; → &#x27;utility&#x27; in AnthropicChatModel, and &#x27;occasionall&#x27;
+→ &#x27;occasionally&#x27; in OpenAiChatModelObservationIT. Added comprehensive
+README documentation for spring-ai-test with usage examples, configuration
+requirements, and evaluation types for the BasicEvaluationTest framework.
+Improves code readability and provides clear guidance for developers
+using the Spring AI testing utilities.</pre>
+                            <button class="copy-button" onclick="copyCommitMessage(3936)">Copy</button>
+                        </div>
                     </div>
                 </div>
-            </div>
-            
-            <div class="pr-stats">
-                <div class="stat">
-                    <span class="stat-label">Files:</span>
-                    <span class="stat-value">1</span>
                 </div>
-                <div class="stat">
-                    <span class="stat-label">Lines:</span>
-                    <span class="stat-value">+1/-1</span>
-                </div>
-                <div class="stat">
-                    <span class="stat-label">Effort:</span>
-                    <span class="stat-value">1/10</span>
-                </div>
-            </div>
-            
-            <div class="pr-summary">
-                <p class="risk-summary">This is a minor version update of the PostgreSQL JDBC driver that poses minimal risk. The change is isolated to a single property update and PostgreSQL driver updates typically include stability improvements and security fixes.</p>
-                <ul class='positive-findings'><li>Single dependency version update follows standard dependency management practices</li><li>Change is minimal and isolated to version property update only</li><li>PostgreSQL JDBC driver updates typically include bug fixes and security patches</li></ul>
-            </div>
-            
-            <div class="backport-info">
-                <div class="backport-classification">
-                    <strong>Backport Classification:</strong> Other 
-                    <span class="backport-risk">(Low - minimal isolated dependency change Risk)</span>
-                </div>
-                <div class="backport-reasoning">While this addresses a security vulnerability (CVE-2025-49146), it constitutes a dependency versi...</div>
-            </div>
-            
-            
-            <div class="diff-preview" style="display: none;">
-                <div class="diff-header">
-                    <h4>📋 Quick Preview</h4>
-                    <button class="toggle-diff">Hide Preview</button>
-                </div>
-                <div class="diff-files">
-                    
-                <div class="file-diff">
-                    <div class="file-header">pom.xml</div>
-                    <pre class="diff-content">@@ -309,7 +309,7 @@
- 		&lt;qdrant.version&gt;1.13.0&lt;/qdrant.version&gt;
- 		&lt;typesense.version&gt;1.3.0&lt;/typesense.version&gt;
- 		&lt;opensearch-client.version&gt;2.23.0&lt;/opensearch-client.version&gt;
--		&lt;postgresql.version&gt;42.7.5&lt;/postgresql.version&gt;
-+		&lt;postgresql.version&gt;42.7.7&lt;/postgresql.version&gt;
- 		&lt;mariadb.version&gt;3.5.3&lt;/mariadb.version&gt;
- 		&lt;mysql.version&gt;9.2.0&lt;/mysql.version&gt;
- 		&lt;commonmark.version&gt;0.22.0&lt;/commonmark.version&gt;</pre>
-                </div>
-                
-                </div>
-            </div>
-            <button class="show-diff-btn">🔍 Show Diff Preview</button>
-            
-            
-            <div class="pr-actions">
-                <a href="https://github.com/spring-projects/spring-ai/pull/3934" target="_blank" class="btn btn-primary">View on GitHub</a>
-                <a href="https://github.com/spring-projects/spring-ai/pull/3934/files" target="_blank" class="btn btn-secondary">View Files</a>
             </div>
         </div>
         
@@ -1243,7 +1351,7 @@
                         <span class="pr-author">by nahyukk</span>
                         <span class="pr-type">documentation</span>
                         <span class="risk-badge risk-low">LOW</span>
-                        <span class="backport-badge backport-approve" title="This is a pure documentation update that changes version references and repository information wi...">
+                        <span class="backport-badge backport-approve">
                             ✅ APPROVE
                         </span>
                     </div>
@@ -1270,19 +1378,871 @@
                 <ul class='positive-findings'><li>Clear separation between release and snapshot repository configuration</li><li>Comprehensive Maven mirror configuration guidance to prevent common snapshot access issues</li><li>Well-structured documentation with proper tabbed examples for both Maven and Gradle</li></ul>
             </div>
             
-            <div class="backport-info">
-                <div class="backport-classification">
-                    <strong>Backport Classification:</strong> Documentation 
-                    <span class="backport-risk">(Low Risk)</span>
-                </div>
-                <div class="backport-reasoning">This is a pure documentation update that changes version references and repository information wi...</div>
+            <div class="pr-actions">
+                <a href="https://github.com/spring-projects/spring-ai/pull/3920" target="_blank" class="btn btn-primary">View on GitHub</a>
+                <a href="https://github.com/spring-projects/spring-ai/pull/3920/files" target="_blank" class="btn btn-secondary">View Files</a>
+                <button class="btn btn-details expand-details-btn" onclick="togglePRDetails(this)">
+                    📋 Show Assessments
+                </button>
             </div>
             
+            <div class="pr-details-expandable" style="display: none;">
+                <div class="assessment-cards-container">
+                    <div class="assessment-card risk-assessment-card">
+                    <h4 class="assessment-title">🔍 Risk Assessment</h4>
+                    <div class="assessment-content">
+                        <div class="risk-level-display">
+                            <span class="risk-badge risk-low">LOW</span>
+                            <span class="risk-explanation">Risk Level</span>
+                        </div>
+                        <div class="risk-details">
+                            <p class="risk-summary">This is a low-risk documentation update that changes version references from 1.0.0-SNAPSHOT to 1.0.0 release. The primary risk is ensuring the referenced version actually exists in Maven Central, but no security or functional code changes introduce vulnerabilities.</p>
+                            <ul class='positive-findings'><li>Clear separation between release and snapshot repository configuration</li><li>Comprehensive Maven mirror configuration guidance to prevent common snapshot access issues</li><li>Well-structured documentation with proper tabbed examples for both Maven and Gradle</li></ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="assessment-card backport-assessment-card">
+                    <h4 class="assessment-title">🔄 Backport Assessment</h4>
+                    <div class="assessment-content">
+                        <div class="backport-decision approve">✅ APPROVE</div>
+                        <p><strong>Classification:</strong> Documentation</p>
+                        <p><strong>Risk Level:</strong> Low - documentation-only changes with no impact on code or behavior</p>
+                        
+                        <div class="backport-reasoning">
+                            <strong>Reasoning:</strong><br>
+                            This PR only updates documentation to reflect the 1.0.0 release by changing version references and clarifying Maven Central usage. Documentation changes are explicitly approved for backporting and pose no risk to backward compatibility.
+                        </div>
+                        
+                        <div class="backport-recommendations"><strong>Recommendations:</strong><br>Safe to backport - ensure the version references in the backported documentation match the actual 1.0.x branch version numbers rather than using 1.0.0 exactly if backporting to a specific 1.0.x version.</div>
+                    </div>
+                </div>
+                
+                <div class="assessment-card commit-message-card">
+                    <h4 class="assessment-title">📝 Final Commit Message</h4>
+                    <div class="assessment-content">
+                        <div class="commit-message-content">
+                            <pre id="commit-message-3920" class="commit-message">docs(docs): update getting-started guide for 1.0.0 release
+The Spring AI getting-started documentation was referencing the outdated 1.0.0-SNAPSHOT version instead of the released 1.0.0 version, causing confusion for new users trying to follow the official documentation with incorrect version information.
+Updated the BOM version references from 1.0.0-SNAPSHOT to 1.0.0 throughout the getting-started.adoc file and enhanced the Maven Central repository configuration section with clearer explanations and comprehensive examples for both Maven and Gradle users.
+Ensures new users have accurate version information and proper repository configuration guidance for adopting Spring AI 1.0.0 release.</pre>
+                            <button class="copy-button" onclick="copyCommitMessage(3920)">Copy</button>
+                        </div>
+                    </div>
+                </div>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="pr-card" data-risk="low" data-type="testing" data-backport="approve">
+            <div class="pr-header">
+                <div class="pr-icon">🍃</div>
+                <div class="pr-title-section">
+                    <h3 class="pr-title">
+                        <a href="https://github.com/spring-projects/spring-ai/pull/3919" target="_blank" class="pr-link">
+                            #3919: test: Add comprehensive test coverage for MongoDBAtlasFilterExpressionConverter
+                        </a>
+                    </h3>
+                    <div class="pr-meta">
+                        <span class="pr-author">by alxkm</span>
+                        <span class="pr-type">testing</span>
+                        <span class="risk-badge risk-low">LOW</span>
+                        <span class="backport-badge backport-approve">
+                            ✅ APPROVE
+                        </span>
+                    </div>
+                </div>
+            </div>
             
+            <div class="pr-stats">
+                <div class="stat">
+                    <span class="stat-label">Files:</span>
+                    <span class="stat-value">1</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Lines:</span>
+                    <span class="stat-value">+170/-0</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Effort:</span>
+                    <span class="stat-value">3/10</span>
+                </div>
+            </div>
+            
+            <div class="pr-summary">
+                <p class="risk-summary">This is a well-written test file that significantly improves test coverage for the MongoDB Atlas filter converter. The main risks are around missing performance and error handling validation rather than security vulnerabilities. The added tests properly validate core functionality without introducing security concerns.</p>
+                <ul class='positive-findings'><li>Comprehensive test coverage for all MongoDB filter operators (EQ, NE, LT, LTE, GT, GTE, IN, NIN)</li><li>Proper handling of edge cases including null values, empty strings, and mixed data types</li><li>Well-structured test cases covering complex nested expressions with multiple logical operators</li></ul>
+            </div>
+            
+            <div class="pr-actions">
+                <a href="https://github.com/spring-projects/spring-ai/pull/3919" target="_blank" class="btn btn-primary">View on GitHub</a>
+                <a href="https://github.com/spring-projects/spring-ai/pull/3919/files" target="_blank" class="btn btn-secondary">View Files</a>
+                <button class="btn btn-details expand-details-btn" onclick="togglePRDetails(this)">
+                    📋 Show Assessments
+                </button>
+            </div>
+            
+            <div class="pr-details-expandable" style="display: none;">
+                <div class="assessment-cards-container">
+                    <div class="assessment-card risk-assessment-card">
+                    <h4 class="assessment-title">🔍 Risk Assessment</h4>
+                    <div class="assessment-content">
+                        <div class="risk-level-display">
+                            <span class="risk-badge risk-low">LOW</span>
+                            <span class="risk-explanation">Risk Level</span>
+                        </div>
+                        <div class="risk-details">
+                            <p class="risk-summary">This is a well-written test file that significantly improves test coverage for the MongoDB Atlas filter converter. The main risks are around missing performance and error handling validation rather than security vulnerabilities. The added tests properly validate core functionality without introducing security concerns.</p>
+                            <ul class='positive-findings'><li>Comprehensive test coverage for all MongoDB filter operators (EQ, NE, LT, LTE, GT, GTE, IN, NIN)</li><li>Proper handling of edge cases including null values, empty strings, and mixed data types</li><li>Well-structured test cases covering complex nested expressions with multiple logical operators</li></ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="assessment-card backport-assessment-card">
+                    <h4 class="assessment-title">🔄 Backport Assessment</h4>
+                    <div class="assessment-content">
+                        <div class="backport-decision approve">✅ APPROVE</div>
+                        <p><strong>Classification:</strong> Other</p>
+                        <p><strong>Risk Level:</strong> Low</p>
+                        
+                        <div class="backport-reasoning">
+                            <strong>Reasoning:</strong><br>
+                            This PR only adds test methods to an existing test class without modifying any production code, public APIs, or configuration. Test additions that don&#x27;t require API changes are explicitly approved for backporting according to the criteria.
+                        </div>
+                        
+                        <div class="backport-recommendations"><strong>Recommendations:</strong><br>Safe for backporting. Consider running the full test suite to ensure the new tests pass in the 1.0.x environment and don&#x27;t reveal any behavioral differences in the MongoDB Atlas filter converter between versions.</div>
+                    </div>
+                </div>
+                
+                <div class="assessment-card commit-message-card">
+                    <h4 class="assessment-title">📝 Final Commit Message</h4>
+                    <div class="assessment-content">
+                        <div class="commit-message-content">
+                            <pre id="commit-message-3919" class="commit-message">test(vectorstore): add comprehensive test coverage for MongoDBAtlasFilterExpressionConverter
+The MongoDBAtlasFilterExpressionConverter lacked sufficient test coverage for missing operators (LT, GT, NIN), edge cases with null values and special characters, various data types, and complex nested expressions, creating potential reliability risks for the MongoDB Atlas integration.
+Added 25 comprehensive test methods covering all missing comparison operators, edge cases including null values and empty strings, data type validation for long/float/boolean values, list operations with empty and mixed-type scenarios, complex nested expression handling, and key variations with dots and special characters. Tests follow Spring AI testing patterns with proper AssertJ assertions and domain-neutral terminology.
+Improves reliability and maintainability of the MongoDB Atlas vector store integration by ensuring robust filter expression conversion across all supported scenarios and edge cases.</pre>
+                            <button class="copy-button" onclick="copyCommitMessage(3919)">Copy</button>
+                        </div>
+                    </div>
+                </div>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="pr-card" data-risk="low" data-type="cleanup" data-backport="approve">
+            <div class="pr-header">
+                <div class="pr-icon">🍃</div>
+                <div class="pr-title-section">
+                    <h3 class="pr-title">
+                        <a href="https://github.com/spring-projects/spring-ai/pull/3921" target="_blank" class="pr-link">
+                            #3921: Remove unused import
+                        </a>
+                    </h3>
+                    <div class="pr-meta">
+                        <span class="pr-author">by ngocnhan-tran1996</span>
+                        <span class="pr-type">cleanup</span>
+                        <span class="risk-badge risk-low">LOW</span>
+                        <span class="backport-badge backport-approve">
+                            ✅ APPROVE
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="pr-stats">
+                <div class="stat">
+                    <span class="stat-label">Files:</span>
+                    <span class="stat-value">8</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Lines:</span>
+                    <span class="stat-value">+2/-14</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Effort:</span>
+                    <span class="stat-value">3/10</span>
+                </div>
+            </div>
+            
+            <div class="pr-summary">
+                <p class="risk-summary">This is a low-risk maintenance PR that removes unused imports without modifying functionality. The changes are minimal and focused on code cleanliness with proper copyright updates where needed.</p>
+                <ul class='positive-findings'><li>Clean code maintenance approach removing unused imports across the codebase</li><li>Changes are limited in scope with minimal net change (+2/-14 lines)</li><li>Copyright year updates show proper license header maintenance</li></ul>
+            </div>
+            
+            <div class="pr-actions">
+                <a href="https://github.com/spring-projects/spring-ai/pull/3921" target="_blank" class="btn btn-primary">View on GitHub</a>
+                <a href="https://github.com/spring-projects/spring-ai/pull/3921/files" target="_blank" class="btn btn-secondary">View Files</a>
+                <button class="btn btn-details expand-details-btn" onclick="togglePRDetails(this)">
+                    📋 Show Assessments
+                </button>
+            </div>
+            
+            <div class="pr-details-expandable" style="display: none;">
+                <div class="assessment-cards-container">
+                    <div class="assessment-card risk-assessment-card">
+                    <h4 class="assessment-title">🔍 Risk Assessment</h4>
+                    <div class="assessment-content">
+                        <div class="risk-level-display">
+                            <span class="risk-badge risk-low">LOW</span>
+                            <span class="risk-explanation">Risk Level</span>
+                        </div>
+                        <div class="risk-details">
+                            <p class="risk-summary">This is a low-risk maintenance PR that removes unused imports without modifying functionality. The changes are minimal and focused on code cleanliness with proper copyright updates where needed.</p>
+                            <ul class='positive-findings'><li>Clean code maintenance approach removing unused imports across the codebase</li><li>Changes are limited in scope with minimal net change (+2/-14 lines)</li><li>Copyright year updates show proper license header maintenance</li></ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="assessment-card backport-assessment-card">
+                    <h4 class="assessment-title">🔄 Backport Assessment</h4>
+                    <div class="assessment-content">
+                        <div class="backport-decision approve">✅ APPROVE</div>
+                        <p><strong>Classification:</strong> Other</p>
+                        <p><strong>Risk Level:</strong> Low - cosmetic changes with no functional impact</p>
+                        
+                        <div class="backport-reasoning">
+                            <strong>Reasoning:</strong><br>
+                            This PR removes only unused imports across 8 files without modifying any functional code or public APIs. The changes are purely cosmetic code cleanup that improves code quality without affecting system behavior or backward compatibility.
+                        </div>
+                        
+                        <div class="backport-recommendations"><strong>Recommendations:</strong><br>Safe for backporting. Verify that removed imports are indeed unused in the 1.0.x branch context, as import dependencies may differ between branches.</div>
+                    </div>
+                </div>
+                
+                <div class="assessment-card commit-message-card">
+                    <h4 class="assessment-title">📝 Final Commit Message</h4>
+                    <div class="assessment-content">
+                        <div class="commit-message-content">
+                            <pre id="commit-message-3921" class="commit-message">chore(multiple): remove unused imports and update copyright years
+Several files across the Spring AI codebase contained unused import
+statements that were identified during code maintenance review.
+This cleanup effort improves code hygiene and reduces unnecessary
+dependency indications in affected modules.
+Removed unused imports from 8 files spanning MCP client transport,
+PDF document reader, test classes for Ollama multimodal integration,
+ElevenLabs text-to-speech, Google GenAI retry logic, ZhiPu AI API,
+and Chroma vector store components. Updated copyright years from
+2023-2024 to 2023-2025 in Google GenAI and Ollama test files.</pre>
+                            <button class="copy-button" onclick="copyCommitMessage(3921)">Copy</button>
+                        </div>
+                    </div>
+                </div>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="pr-card" data-risk="low" data-type="feature" data-backport="approve">
+            <div class="pr-header">
+                <div class="pr-icon">🍎</div>
+                <div class="pr-title-section">
+                    <h3 class="pr-title">
+                        <a href="https://github.com/spring-projects/spring-ai/pull/3934" target="_blank" class="pr-link">
+                            #3934: Bump postgresql JDBC driver from 42.7.5 to 42.7.7
+                        </a>
+                    </h3>
+                    <div class="pr-meta">
+                        <span class="pr-author">by dafriz</span>
+                        <span class="pr-type">feature</span>
+                        <span class="risk-badge risk-low">LOW</span>
+                        <span class="backport-badge backport-approve">
+                            ✅ APPROVE
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="pr-stats">
+                <div class="stat">
+                    <span class="stat-label">Files:</span>
+                    <span class="stat-value">1</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Lines:</span>
+                    <span class="stat-value">+1/-1</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Effort:</span>
+                    <span class="stat-value">1/10</span>
+                </div>
+            </div>
+            
+            <div class="pr-summary">
+                <p class="risk-summary">This is a minor version update of the PostgreSQL JDBC driver that poses minimal risk. The change is isolated to a single property update and PostgreSQL driver updates typically include stability improvements and security fixes.</p>
+                <ul class='positive-findings'><li>Single dependency version update follows standard dependency management practices</li><li>Change is minimal and isolated to version property update only</li><li>PostgreSQL JDBC driver updates typically include bug fixes and security patches</li></ul>
+            </div>
+            
+            <div class="pr-actions">
+                <a href="https://github.com/spring-projects/spring-ai/pull/3934" target="_blank" class="btn btn-primary">View on GitHub</a>
+                <a href="https://github.com/spring-projects/spring-ai/pull/3934/files" target="_blank" class="btn btn-secondary">View Files</a>
+                <button class="btn btn-details expand-details-btn" onclick="togglePRDetails(this)">
+                    📋 Show Assessments
+                </button>
+            </div>
+            
+            <div class="pr-details-expandable" style="display: none;">
+                <div class="assessment-cards-container">
+                    <div class="assessment-card risk-assessment-card">
+                    <h4 class="assessment-title">🔍 Risk Assessment</h4>
+                    <div class="assessment-content">
+                        <div class="risk-level-display">
+                            <span class="risk-badge risk-low">LOW</span>
+                            <span class="risk-explanation">Risk Level</span>
+                        </div>
+                        <div class="risk-details">
+                            <p class="risk-summary">This is a minor version update of the PostgreSQL JDBC driver that poses minimal risk. The change is isolated to a single property update and PostgreSQL driver updates typically include stability improvements and security fixes.</p>
+                            <ul class='positive-findings'><li>Single dependency version update follows standard dependency management practices</li><li>Change is minimal and isolated to version property update only</li><li>PostgreSQL JDBC driver updates typically include bug fixes and security patches</li></ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="assessment-card backport-assessment-card">
+                    <h4 class="assessment-title">🔄 Backport Assessment</h4>
+                    <div class="assessment-content">
+                        <div class="backport-decision approve">✅ APPROVE</div>
+                        <p><strong>Classification:</strong> Security Fix</p>
+                        <p><strong>Risk Level:</strong> Low - Isolated dependency version update with security benefit</p>
+                        
+                        <div class="backport-reasoning">
+                            <strong>Reasoning:</strong><br>
+                            This PR qualifies for backporting under the security fix exception. It updates a dependency to resolve a CVE with no API impact or breaking changes. The change is minimal, isolated, and maintains backward compatibility.
+                        </div>
+                        
+                        <div class="backport-recommendations"><strong>Recommendations:</strong><br>Approve for backporting. Verify that the 1.0.x branch supports PostgreSQL JDBC driver 42.7.7 and test database connectivity after the upgrade to ensure no compatibility issues.</div>
+                    </div>
+                </div>
+                
+                <div class="assessment-card commit-message-card">
+                    <h4 class="assessment-title">📝 Final Commit Message</h4>
+                    <div class="assessment-content">
+                        <div class="commit-message-content">
+                            <pre id="commit-message-3934" class="commit-message">chore(build): bump postgresql JDBC driver from 42.7.5 to 42.7.7
+The project was using PostgreSQL JDBC driver version 42.7.5 which
+contained security vulnerability CVE-2025-49146, requiring an
+immediate update to maintain security compliance.
+Updated the postgresql.version property in pom.xml from 42.7.5 to
+42.7.7 to resolve the security vulnerability while maintaining
+compatibility with existing PostgreSQL vector store functionality.
+Resolves critical security vulnerability affecting PostgreSQL
+database connections used by Spring AI vector store implementations.</pre>
+                            <button class="copy-button" onclick="copyCommitMessage(3934)">Copy</button>
+                        </div>
+                    </div>
+                </div>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="pr-card" data-risk="low" data-type="testing" data-backport="approve">
+            <div class="pr-header">
+                <div class="pr-icon">🍃</div>
+                <div class="pr-title-section">
+                    <h3 class="pr-title">
+                        <a href="https://github.com/spring-projects/spring-ai/pull/3922" target="_blank" class="pr-link">
+                            #3922: test: Add comprehensive test coverage for MilvusFilterExpressionConverter
+                        </a>
+                    </h3>
+                    <div class="pr-meta">
+                        <span class="pr-author">by alxkm</span>
+                        <span class="pr-type">testing</span>
+                        <span class="risk-badge risk-low">LOW</span>
+                        <span class="backport-badge backport-approve">
+                            ✅ APPROVE
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="pr-stats">
+                <div class="stat">
+                    <span class="stat-label">Files:</span>
+                    <span class="stat-value">1</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Lines:</span>
+                    <span class="stat-value">+179/-0</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Effort:</span>
+                    <span class="stat-value">3/10</span>
+                </div>
+            </div>
+            
+            <div class="pr-summary">
+                <p class="risk-summary">This PR adds comprehensive test coverage for the MilvusFilterExpressionConverter with no production code changes. The tests are well-structured and cover edge cases appropriately with no security concerns identified.</p>
+                <ul class='positive-findings'><li>Comprehensive test coverage for MilvusFilterExpressionConverter edge cases</li><li>Well-structured test methods with clear naming and documentation comments</li><li>Proper use of AssertJ assertions and Spring AI filter expression patterns</li></ul>
+            </div>
+            
+            <div class="pr-actions">
+                <a href="https://github.com/spring-projects/spring-ai/pull/3922" target="_blank" class="btn btn-primary">View on GitHub</a>
+                <a href="https://github.com/spring-projects/spring-ai/pull/3922/files" target="_blank" class="btn btn-secondary">View Files</a>
+                <button class="btn btn-details expand-details-btn" onclick="togglePRDetails(this)">
+                    📋 Show Assessments
+                </button>
+            </div>
+            
+            <div class="pr-details-expandable" style="display: none;">
+                <div class="assessment-cards-container">
+                    <div class="assessment-card risk-assessment-card">
+                    <h4 class="assessment-title">🔍 Risk Assessment</h4>
+                    <div class="assessment-content">
+                        <div class="risk-level-display">
+                            <span class="risk-badge risk-low">LOW</span>
+                            <span class="risk-explanation">Risk Level</span>
+                        </div>
+                        <div class="risk-details">
+                            <p class="risk-summary">This PR adds comprehensive test coverage for the MilvusFilterExpressionConverter with no production code changes. The tests are well-structured and cover edge cases appropriately with no security concerns identified.</p>
+                            <ul class='positive-findings'><li>Comprehensive test coverage for MilvusFilterExpressionConverter edge cases</li><li>Well-structured test methods with clear naming and documentation comments</li><li>Proper use of AssertJ assertions and Spring AI filter expression patterns</li></ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="assessment-card backport-assessment-card">
+                    <h4 class="assessment-title">🔄 Backport Assessment</h4>
+                    <div class="assessment-content">
+                        <div class="backport-decision approve">✅ APPROVE</div>
+                        <p><strong>Classification:</strong> Test Enhancement</p>
+                        <p><strong>Risk Level:</strong> Low - purely additive test coverage with no production code impact</p>
+                        
+                        <div class="backport-reasoning">
+                            <strong>Reasoning:</strong><br>
+                            This PR exclusively adds test coverage for existing functionality without any changes to production code or public APIs. Test additions that don&#x27;t require API changes are explicitly approved for backporting according to the criteria.
+                        </div>
+                        
+                        <div class="backport-recommendations"><strong>Recommendations:</strong><br>Safe for backporting. Ensure the existing MilvusFilterExpressionConverter implementation in 1.0.x supports all the test scenarios being added. Consider running the new tests against the 1.0.x codebase to verify compatibility before merging.</div>
+                    </div>
+                </div>
+                
+                <div class="assessment-card commit-message-card">
+                    <h4 class="assessment-title">📝 Final Commit Message</h4>
+                    <div class="assessment-content">
+                        <div class="commit-message-content">
+                            <pre id="commit-message-3922" class="commit-message">test(vectorstore): add comprehensive test coverage for MilvusFilterExpressionConverter
+The existing MilvusFilterExpressionConverterTests lacked thorough coverage
+for edge cases, data types, and complex expression scenarios, potentially
+allowing bugs in filter expression handling to go undetected.
+Added 19 new test methods covering missing operators (NIN), edge cases
+(null values, empty strings, special characters), various data types
+(long, float, boolean), list operations, complex nested expressions,
+and range queries. Enhanced test coverage includes key variations with
+dots and special characters, mixed-type lists, and negative numbers.</pre>
+                            <button class="copy-button" onclick="copyCommitMessage(3922)">Copy</button>
+                        </div>
+                    </div>
+                </div>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="pr-card" data-risk="low" data-type="testing" data-backport="approve">
+            <div class="pr-header">
+                <div class="pr-icon">🍃</div>
+                <div class="pr-title-section">
+                    <h3 class="pr-title">
+                        <a href="https://github.com/spring-projects/spring-ai/pull/3932" target="_blank" class="pr-link">
+                            #3932: test: Add comprehensive test coverage for PineconeFilterExpressionConverter
+                        </a>
+                    </h3>
+                    <div class="pr-meta">
+                        <span class="pr-author">by alxkm</span>
+                        <span class="pr-type">testing</span>
+                        <span class="risk-badge risk-low">LOW</span>
+                        <span class="backport-badge backport-approve">
+                            ✅ APPROVE
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="pr-stats">
+                <div class="stat">
+                    <span class="stat-label">Files:</span>
+                    <span class="stat-value">1</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Lines:</span>
+                    <span class="stat-value">+138/-0</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Effort:</span>
+                    <span class="stat-value">3/10</span>
+                </div>
+            </div>
+            
+            <div class="pr-summary">
+                <p class="risk-summary">This is a well-written test class that adds comprehensive coverage for the PineconeFilterExpressionConverter. The main risk is potential gaps in negative testing scenarios, but the overall implementation follows good testing practices with no security concerns.</p>
+                <ul class='positive-findings'><li>Comprehensive test coverage for PineconeFilterExpressionConverter across multiple data types and operators</li><li>Well-structured test cases covering boolean, numeric, string, and mixed data type scenarios</li><li>Proper testing of complex nested expressions and grouping logic</li></ul>
+            </div>
+            
+            <div class="pr-actions">
+                <a href="https://github.com/spring-projects/spring-ai/pull/3932" target="_blank" class="btn btn-primary">View on GitHub</a>
+                <a href="https://github.com/spring-projects/spring-ai/pull/3932/files" target="_blank" class="btn btn-secondary">View Files</a>
+                <button class="btn btn-details expand-details-btn" onclick="togglePRDetails(this)">
+                    📋 Show Assessments
+                </button>
+            </div>
+            
+            <div class="pr-details-expandable" style="display: none;">
+                <div class="assessment-cards-container">
+                    <div class="assessment-card risk-assessment-card">
+                    <h4 class="assessment-title">🔍 Risk Assessment</h4>
+                    <div class="assessment-content">
+                        <div class="risk-level-display">
+                            <span class="risk-badge risk-low">LOW</span>
+                            <span class="risk-explanation">Risk Level</span>
+                        </div>
+                        <div class="risk-details">
+                            <p class="risk-summary">This is a well-written test class that adds comprehensive coverage for the PineconeFilterExpressionConverter. The main risk is potential gaps in negative testing scenarios, but the overall implementation follows good testing practices with no security concerns.</p>
+                            <ul class='positive-findings'><li>Comprehensive test coverage for PineconeFilterExpressionConverter across multiple data types and operators</li><li>Well-structured test cases covering boolean, numeric, string, and mixed data type scenarios</li><li>Proper testing of complex nested expressions and grouping logic</li></ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="assessment-card backport-assessment-card">
+                    <h4 class="assessment-title">🔄 Backport Assessment</h4>
+                    <div class="assessment-content">
+                        <div class="backport-decision approve">✅ APPROVE</div>
+                        <p><strong>Classification:</strong> Test additions</p>
+                        <p><strong>Risk Level:</strong> Low - Test-only changes with no impact on production code or public interfaces</p>
+                        
+                        <div class="backport-reasoning">
+                            <strong>Reasoning:</strong><br>
+                            This PR meets the criteria for backporting as it only adds test coverage without modifying any public APIs or production code. The changes enhance test coverage for the PineconeFilterExpressionConverter component, which improves code quality and confidence in the existing functionality. All additions are pure test code that validates existing behavior rather than introducing new features.
+                        </div>
+                        
+                        <div class="backport-recommendations"><strong>Recommendations:</strong><br>Safe for backporting. Ensure the target 1.0.x branch has the same PineconeFilterExpressionConverter implementation to avoid test failures. Consider running the full test suite to verify compatibility with the 1.0.x codebase before merging.</div>
+                    </div>
+                </div>
+                
+                <div class="assessment-card commit-message-card">
+                    <h4 class="assessment-title">📝 Final Commit Message</h4>
+                    <div class="assessment-content">
+                        <div class="commit-message-content">
+                            <pre id="commit-message-3932" class="commit-message">test(vectorstore): add comprehensive test coverage for PineconeFilterExpressionConverter
+The existing PineconeFilterExpressionConverter test suite had limited coverage
+for edge cases and complex filtering scenarios, making it difficult to ensure
+robustness across various data types and nested expressions.
+Added 12 new test cases covering GT/LT operations with numeric values, complex
+nested groupings with mixed data types, edge cases for zero and negative values,
+single-element lists, multiple OR conditions, and special characters in values.
+Enhanced test coverage includes proper validation of JSON output formatting
+and comprehensive expression tree handling.</pre>
+                            <button class="copy-button" onclick="copyCommitMessage(3932)">Copy</button>
+                        </div>
+                    </div>
+                </div>
+                </div>
+            </div>
+        </div>
+        
+            </div>
+        </section>
+        
+        
+                <section class="orchard-section ready-harvest">
+                    <div class="section-header">
+                        <h2>🍎 Ready to Harvest</h2>
+                        <p class="section-subtitle">Low Hanging Fruit - Quick Wins (3 PRs)</p>
+                    </div>
+                    <div class="pr-grid">
+                        
+        <div class="pr-card" data-risk="low" data-type="bugfix" data-backport="approve">
+            <div class="pr-header">
+                <div class="pr-icon">🍎</div>
+                <div class="pr-title-section">
+                    <h3 class="pr-title">
+                        <a href="https://github.com/spring-projects/spring-ai/pull/3931" target="_blank" class="pr-link">
+                            #3931: fix: add strict option to ChatCompletionsJsonSchemaResponseFormat (#3…
+                        </a>
+                    </h3>
+                    <div class="pr-meta">
+                        <span class="pr-author">by FlorainB</span>
+                        <span class="pr-type">bugfix</span>
+                        <span class="risk-badge risk-low">LOW</span>
+                        <span class="backport-badge backport-approve">
+                            ✅ APPROVE
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="pr-stats">
+                <div class="stat">
+                    <span class="stat-label">Files:</span>
+                    <span class="stat-value">1</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Lines:</span>
+                    <span class="stat-value">+1/-0</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Effort:</span>
+                    <span class="stat-value">1/10</span>
+                </div>
+            </div>
+            
+            <div class="pr-summary">
+                <p class="risk-summary">This appears to be a minimal fix adding a strict option to JSON schema response format. The change is very small (+1/-0 lines) and the existing codebase demonstrates good practices with proper error handling and validation patterns. Without seeing the specific change, the risk appears low as it&#x27;s likely a simple parameter addition to an existing Azure OpenAI integration.</p>
+                <ul class='positive-findings'><li>Code follows established Spring AI patterns and conventions</li><li>Proper use of Azure OpenAI SDK integration with appropriate error handling in most areas</li><li>Good separation of concerns with builder pattern implementation</li></ul>
+            </div>
+            
+            <div class="pr-actions">
+                <a href="https://github.com/spring-projects/spring-ai/pull/3931" target="_blank" class="btn btn-primary">View on GitHub</a>
+                <a href="https://github.com/spring-projects/spring-ai/pull/3931/files" target="_blank" class="btn btn-secondary">View Files</a>
+                <button class="btn btn-details expand-details-btn" onclick="togglePRDetails(this)">
+                    📋 Show Assessments
+                </button>
+            </div>
+            
+            <div class="pr-details-expandable" style="display: none;">
+                <div class="assessment-cards-container">
+                    <div class="assessment-card risk-assessment-card">
+                    <h4 class="assessment-title">🔍 Risk Assessment</h4>
+                    <div class="assessment-content">
+                        <div class="risk-level-display">
+                            <span class="risk-badge risk-low">LOW</span>
+                            <span class="risk-explanation">Risk Level</span>
+                        </div>
+                        <div class="risk-details">
+                            <p class="risk-summary">This appears to be a minimal fix adding a strict option to JSON schema response format. The change is very small (+1/-0 lines) and the existing codebase demonstrates good practices with proper error handling and validation patterns. Without seeing the specific change, the risk appears low as it&#x27;s likely a simple parameter addition to an existing Azure OpenAI integration.</p>
+                            <ul class='positive-findings'><li>Code follows established Spring AI patterns and conventions</li><li>Proper use of Azure OpenAI SDK integration with appropriate error handling in most areas</li><li>Good separation of concerns with builder pattern implementation</li></ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="assessment-card backport-assessment-card">
+                    <h4 class="assessment-title">🔄 Backport Assessment</h4>
+                    <div class="assessment-content">
+                        <div class="backport-decision approve">✅ APPROVE</div>
+                        <p><strong>Classification:</strong> Bug Fix</p>
+                        <p><strong>Risk Level:</strong> Low - single line addition that maps existing property</p>
+                        
+                        <div class="backport-reasoning">
+                            <strong>Reasoning:</strong><br>
+                            This is a straightforward bug fix that adds a missing property mapping in the Azure OpenAI integration. The change maintains backward compatibility and only affects internal implementation details without changing any public APIs.
+                        </div>
+                        
+                        <div class="backport-recommendations"><strong>Recommendations:</strong><br>Safe for backporting. Ensure the getStrict() method exists in the 1.0.x branch&#x27;s jsonSchema object. Test with Azure OpenAI strict mode to verify functionality.</div>
+                    </div>
+                </div>
+                
+                <div class="assessment-card commit-message-card">
+                    <h4 class="assessment-title">📝 Final Commit Message</h4>
+                    <div class="assessment-content">
+                        <div class="commit-message-content">
+                            <pre id="commit-message-3931" class="commit-message">fix(azure): add missing strict property mapping for JSON schema response format
+The Azure OpenAI integration was missing the mapping of the strict property when using JSON schema mode, causing the strict validation setting to be ignored and potentially leading to inconsistent response format behavior.
+Added the missing `setStrict(jsonSchema.getStrict())` call in the `toAzureResponseFormat` method within `AzureOpenAiChatModel.java` to properly map the strict property from the Spring AI JSON schema configuration to the Azure OpenAI client&#x27;s response format.
+Closes #3931</pre>
+                            <button class="copy-button" onclick="copyCommitMessage(3931)">Copy</button>
+                        </div>
+                    </div>
+                </div>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="pr-card" data-risk="low" data-type="feature" data-backport="approve">
+            <div class="pr-header">
+                <div class="pr-icon">🍎</div>
+                <div class="pr-title-section">
+                    <h3 class="pr-title">
+                        <a href="https://github.com/spring-projects/spring-ai/pull/3934" target="_blank" class="pr-link">
+                            #3934: Bump postgresql JDBC driver from 42.7.5 to 42.7.7
+                        </a>
+                    </h3>
+                    <div class="pr-meta">
+                        <span class="pr-author">by dafriz</span>
+                        <span class="pr-type">feature</span>
+                        <span class="risk-badge risk-low">LOW</span>
+                        <span class="backport-badge backport-approve">
+                            ✅ APPROVE
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="pr-stats">
+                <div class="stat">
+                    <span class="stat-label">Files:</span>
+                    <span class="stat-value">1</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Lines:</span>
+                    <span class="stat-value">+1/-1</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Effort:</span>
+                    <span class="stat-value">1/10</span>
+                </div>
+            </div>
+            
+            <div class="pr-summary">
+                <p class="risk-summary">This is a minor version update of the PostgreSQL JDBC driver that poses minimal risk. The change is isolated to a single property update and PostgreSQL driver updates typically include stability improvements and security fixes.</p>
+                <ul class='positive-findings'><li>Single dependency version update follows standard dependency management practices</li><li>Change is minimal and isolated to version property update only</li><li>PostgreSQL JDBC driver updates typically include bug fixes and security patches</li></ul>
+            </div>
+            
+            <div class="pr-actions">
+                <a href="https://github.com/spring-projects/spring-ai/pull/3934" target="_blank" class="btn btn-primary">View on GitHub</a>
+                <a href="https://github.com/spring-projects/spring-ai/pull/3934/files" target="_blank" class="btn btn-secondary">View Files</a>
+                <button class="btn btn-details expand-details-btn" onclick="togglePRDetails(this)">
+                    📋 Show Assessments
+                </button>
+            </div>
+            
+            <div class="pr-details-expandable" style="display: none;">
+                <div class="assessment-cards-container">
+                    <div class="assessment-card risk-assessment-card">
+                    <h4 class="assessment-title">🔍 Risk Assessment</h4>
+                    <div class="assessment-content">
+                        <div class="risk-level-display">
+                            <span class="risk-badge risk-low">LOW</span>
+                            <span class="risk-explanation">Risk Level</span>
+                        </div>
+                        <div class="risk-details">
+                            <p class="risk-summary">This is a minor version update of the PostgreSQL JDBC driver that poses minimal risk. The change is isolated to a single property update and PostgreSQL driver updates typically include stability improvements and security fixes.</p>
+                            <ul class='positive-findings'><li>Single dependency version update follows standard dependency management practices</li><li>Change is minimal and isolated to version property update only</li><li>PostgreSQL JDBC driver updates typically include bug fixes and security patches</li></ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="assessment-card backport-assessment-card">
+                    <h4 class="assessment-title">🔄 Backport Assessment</h4>
+                    <div class="assessment-content">
+                        <div class="backport-decision approve">✅ APPROVE</div>
+                        <p><strong>Classification:</strong> Security Fix</p>
+                        <p><strong>Risk Level:</strong> Low - Isolated dependency version update with security benefit</p>
+                        
+                        <div class="backport-reasoning">
+                            <strong>Reasoning:</strong><br>
+                            This PR qualifies for backporting under the security fix exception. It updates a dependency to resolve a CVE with no API impact or breaking changes. The change is minimal, isolated, and maintains backward compatibility.
+                        </div>
+                        
+                        <div class="backport-recommendations"><strong>Recommendations:</strong><br>Approve for backporting. Verify that the 1.0.x branch supports PostgreSQL JDBC driver 42.7.7 and test database connectivity after the upgrade to ensure no compatibility issues.</div>
+                    </div>
+                </div>
+                
+                <div class="assessment-card commit-message-card">
+                    <h4 class="assessment-title">📝 Final Commit Message</h4>
+                    <div class="assessment-content">
+                        <div class="commit-message-content">
+                            <pre id="commit-message-3934" class="commit-message">chore(build): bump postgresql JDBC driver from 42.7.5 to 42.7.7
+The project was using PostgreSQL JDBC driver version 42.7.5 which
+contained security vulnerability CVE-2025-49146, requiring an
+immediate update to maintain security compliance.
+Updated the postgresql.version property in pom.xml from 42.7.5 to
+42.7.7 to resolve the security vulnerability while maintaining
+compatibility with existing PostgreSQL vector store functionality.
+Resolves critical security vulnerability affecting PostgreSQL
+database connections used by Spring AI vector store implementations.</pre>
+                            <button class="copy-button" onclick="copyCommitMessage(3934)">Copy</button>
+                        </div>
+                    </div>
+                </div>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="pr-card" data-risk="low" data-type="documentation" data-backport="approve">
+            <div class="pr-header">
+                <div class="pr-icon">🍎</div>
+                <div class="pr-title-section">
+                    <h3 class="pr-title">
+                        <a href="https://github.com/spring-projects/spring-ai/pull/3920" target="_blank" class="pr-link">
+                            #3920: docs: update getting-started.adoc for 1.0.0 release
+                        </a>
+                    </h3>
+                    <div class="pr-meta">
+                        <span class="pr-author">by nahyukk</span>
+                        <span class="pr-type">documentation</span>
+                        <span class="risk-badge risk-low">LOW</span>
+                        <span class="backport-badge backport-approve">
+                            ✅ APPROVE
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="pr-stats">
+                <div class="stat">
+                    <span class="stat-label">Files:</span>
+                    <span class="stat-value">1</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Lines:</span>
+                    <span class="stat-value">+34/-7</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Effort:</span>
+                    <span class="stat-value">2/10</span>
+                </div>
+            </div>
+            
+            <div class="pr-summary">
+                <p class="risk-summary">This is a low-risk documentation update that changes version references from 1.0.0-SNAPSHOT to 1.0.0 release. The primary risk is ensuring the referenced version actually exists in Maven Central, but no security or functional code changes introduce vulnerabilities.</p>
+                <ul class='positive-findings'><li>Clear separation between release and snapshot repository configuration</li><li>Comprehensive Maven mirror configuration guidance to prevent common snapshot access issues</li><li>Well-structured documentation with proper tabbed examples for both Maven and Gradle</li></ul>
+            </div>
             
             <div class="pr-actions">
                 <a href="https://github.com/spring-projects/spring-ai/pull/3920" target="_blank" class="btn btn-primary">View on GitHub</a>
                 <a href="https://github.com/spring-projects/spring-ai/pull/3920/files" target="_blank" class="btn btn-secondary">View Files</a>
+                <button class="btn btn-details expand-details-btn" onclick="togglePRDetails(this)">
+                    📋 Show Assessments
+                </button>
+            </div>
+            
+            <div class="pr-details-expandable" style="display: none;">
+                <div class="assessment-cards-container">
+                    <div class="assessment-card risk-assessment-card">
+                    <h4 class="assessment-title">🔍 Risk Assessment</h4>
+                    <div class="assessment-content">
+                        <div class="risk-level-display">
+                            <span class="risk-badge risk-low">LOW</span>
+                            <span class="risk-explanation">Risk Level</span>
+                        </div>
+                        <div class="risk-details">
+                            <p class="risk-summary">This is a low-risk documentation update that changes version references from 1.0.0-SNAPSHOT to 1.0.0 release. The primary risk is ensuring the referenced version actually exists in Maven Central, but no security or functional code changes introduce vulnerabilities.</p>
+                            <ul class='positive-findings'><li>Clear separation between release and snapshot repository configuration</li><li>Comprehensive Maven mirror configuration guidance to prevent common snapshot access issues</li><li>Well-structured documentation with proper tabbed examples for both Maven and Gradle</li></ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="assessment-card backport-assessment-card">
+                    <h4 class="assessment-title">🔄 Backport Assessment</h4>
+                    <div class="assessment-content">
+                        <div class="backport-decision approve">✅ APPROVE</div>
+                        <p><strong>Classification:</strong> Documentation</p>
+                        <p><strong>Risk Level:</strong> Low - documentation-only changes with no impact on code or behavior</p>
+                        
+                        <div class="backport-reasoning">
+                            <strong>Reasoning:</strong><br>
+                            This PR only updates documentation to reflect the 1.0.0 release by changing version references and clarifying Maven Central usage. Documentation changes are explicitly approved for backporting and pose no risk to backward compatibility.
+                        </div>
+                        
+                        <div class="backport-recommendations"><strong>Recommendations:</strong><br>Safe to backport - ensure the version references in the backported documentation match the actual 1.0.x branch version numbers rather than using 1.0.0 exactly if backporting to a specific 1.0.x version.</div>
+                    </div>
+                </div>
+                
+                <div class="assessment-card commit-message-card">
+                    <h4 class="assessment-title">📝 Final Commit Message</h4>
+                    <div class="assessment-content">
+                        <div class="commit-message-content">
+                            <pre id="commit-message-3920" class="commit-message">docs(docs): update getting-started guide for 1.0.0 release
+The Spring AI getting-started documentation was referencing the outdated 1.0.0-SNAPSHOT version instead of the released 1.0.0 version, causing confusion for new users trying to follow the official documentation with incorrect version information.
+Updated the BOM version references from 1.0.0-SNAPSHOT to 1.0.0 throughout the getting-started.adoc file and enhanced the Maven Central repository configuration section with clearer explanations and comprehensive examples for both Maven and Gradle users.
+Ensures new users have accurate version information and proper repository configuration guidance for adopting Spring AI 1.0.0 release.</pre>
+                            <button class="copy-button" onclick="copyCommitMessage(3920)">Copy</button>
+                        </div>
+                    </div>
+                </div>
+                </div>
             </div>
         </div>
         
@@ -1310,7 +2270,7 @@
                         <span class="pr-author">by alxkm</span>
                         <span class="pr-type">testing</span>
                         <span class="risk-badge risk-low">LOW</span>
-                        <span class="backport-badge backport-approve" title="This PR exclusively adds test methods to improve coverage of the MilvusFilterExpressionConverter....">
+                        <span class="backport-badge backport-approve">
                             ✅ APPROVE
                         </span>
                     </div>
@@ -1337,19 +2297,64 @@
                 <ul class='positive-findings'><li>Comprehensive test coverage for MilvusFilterExpressionConverter edge cases</li><li>Well-structured test methods with clear naming and documentation comments</li><li>Proper use of AssertJ assertions and Spring AI filter expression patterns</li></ul>
             </div>
             
-            <div class="backport-info">
-                <div class="backport-classification">
-                    <strong>Backport Classification:</strong> Other 
-                    <span class="backport-risk">(Low Risk)</span>
-                </div>
-                <div class="backport-reasoning">This PR exclusively adds test methods to improve coverage of the MilvusFilterExpressionConverter....</div>
-            </div>
-            
-            
-            
             <div class="pr-actions">
                 <a href="https://github.com/spring-projects/spring-ai/pull/3922" target="_blank" class="btn btn-primary">View on GitHub</a>
                 <a href="https://github.com/spring-projects/spring-ai/pull/3922/files" target="_blank" class="btn btn-secondary">View Files</a>
+                <button class="btn btn-details expand-details-btn" onclick="togglePRDetails(this)">
+                    📋 Show Assessments
+                </button>
+            </div>
+            
+            <div class="pr-details-expandable" style="display: none;">
+                <div class="assessment-cards-container">
+                    <div class="assessment-card risk-assessment-card">
+                    <h4 class="assessment-title">🔍 Risk Assessment</h4>
+                    <div class="assessment-content">
+                        <div class="risk-level-display">
+                            <span class="risk-badge risk-low">LOW</span>
+                            <span class="risk-explanation">Risk Level</span>
+                        </div>
+                        <div class="risk-details">
+                            <p class="risk-summary">This PR adds comprehensive test coverage for the MilvusFilterExpressionConverter with no production code changes. The tests are well-structured and cover edge cases appropriately with no security concerns identified.</p>
+                            <ul class='positive-findings'><li>Comprehensive test coverage for MilvusFilterExpressionConverter edge cases</li><li>Well-structured test methods with clear naming and documentation comments</li><li>Proper use of AssertJ assertions and Spring AI filter expression patterns</li></ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="assessment-card backport-assessment-card">
+                    <h4 class="assessment-title">🔄 Backport Assessment</h4>
+                    <div class="assessment-content">
+                        <div class="backport-decision approve">✅ APPROVE</div>
+                        <p><strong>Classification:</strong> Test Enhancement</p>
+                        <p><strong>Risk Level:</strong> Low - purely additive test coverage with no production code impact</p>
+                        
+                        <div class="backport-reasoning">
+                            <strong>Reasoning:</strong><br>
+                            This PR exclusively adds test coverage for existing functionality without any changes to production code or public APIs. Test additions that don&#x27;t require API changes are explicitly approved for backporting according to the criteria.
+                        </div>
+                        
+                        <div class="backport-recommendations"><strong>Recommendations:</strong><br>Safe for backporting. Ensure the existing MilvusFilterExpressionConverter implementation in 1.0.x supports all the test scenarios being added. Consider running the new tests against the 1.0.x codebase to verify compatibility before merging.</div>
+                    </div>
+                </div>
+                
+                <div class="assessment-card commit-message-card">
+                    <h4 class="assessment-title">📝 Final Commit Message</h4>
+                    <div class="assessment-content">
+                        <div class="commit-message-content">
+                            <pre id="commit-message-3922" class="commit-message">test(vectorstore): add comprehensive test coverage for MilvusFilterExpressionConverter
+The existing MilvusFilterExpressionConverterTests lacked thorough coverage
+for edge cases, data types, and complex expression scenarios, potentially
+allowing bugs in filter expression handling to go undetected.
+Added 19 new test methods covering missing operators (NIN), edge cases
+(null values, empty strings, special characters), various data types
+(long, float, boolean), list operations, complex nested expressions,
+and range queries. Enhanced test coverage includes key variations with
+dots and special characters, mixed-type lists, and negative numbers.</pre>
+                            <button class="copy-button" onclick="copyCommitMessage(3922)">Copy</button>
+                        </div>
+                    </div>
+                </div>
+                </div>
             </div>
         </div>
         
@@ -1367,7 +2372,7 @@
                         <span class="pr-author">by alxkm</span>
                         <span class="pr-type">testing</span>
                         <span class="risk-badge risk-low">LOW</span>
-                        <span class="backport-badge backport-approve" title="This PR meets the criteria for backporting as it only adds test coverage without modifying any pu...">
+                        <span class="backport-badge backport-approve">
                             ✅ APPROVE
                         </span>
                     </div>
@@ -1394,19 +2399,64 @@
                 <ul class='positive-findings'><li>Comprehensive test coverage for PineconeFilterExpressionConverter across multiple data types and operators</li><li>Well-structured test cases covering boolean, numeric, string, and mixed data type scenarios</li><li>Proper testing of complex nested expressions and grouping logic</li></ul>
             </div>
             
-            <div class="backport-info">
-                <div class="backport-classification">
-                    <strong>Backport Classification:</strong> Test additions 
-                    <span class="backport-risk">(Low - Test-only changes with no impact on production code or public interfaces Risk)</span>
-                </div>
-                <div class="backport-reasoning">This PR meets the criteria for backporting as it only adds test coverage without modifying any pu...</div>
-            </div>
-            
-            
-            
             <div class="pr-actions">
                 <a href="https://github.com/spring-projects/spring-ai/pull/3932" target="_blank" class="btn btn-primary">View on GitHub</a>
                 <a href="https://github.com/spring-projects/spring-ai/pull/3932/files" target="_blank" class="btn btn-secondary">View Files</a>
+                <button class="btn btn-details expand-details-btn" onclick="togglePRDetails(this)">
+                    📋 Show Assessments
+                </button>
+            </div>
+            
+            <div class="pr-details-expandable" style="display: none;">
+                <div class="assessment-cards-container">
+                    <div class="assessment-card risk-assessment-card">
+                    <h4 class="assessment-title">🔍 Risk Assessment</h4>
+                    <div class="assessment-content">
+                        <div class="risk-level-display">
+                            <span class="risk-badge risk-low">LOW</span>
+                            <span class="risk-explanation">Risk Level</span>
+                        </div>
+                        <div class="risk-details">
+                            <p class="risk-summary">This is a well-written test class that adds comprehensive coverage for the PineconeFilterExpressionConverter. The main risk is potential gaps in negative testing scenarios, but the overall implementation follows good testing practices with no security concerns.</p>
+                            <ul class='positive-findings'><li>Comprehensive test coverage for PineconeFilterExpressionConverter across multiple data types and operators</li><li>Well-structured test cases covering boolean, numeric, string, and mixed data type scenarios</li><li>Proper testing of complex nested expressions and grouping logic</li></ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="assessment-card backport-assessment-card">
+                    <h4 class="assessment-title">🔄 Backport Assessment</h4>
+                    <div class="assessment-content">
+                        <div class="backport-decision approve">✅ APPROVE</div>
+                        <p><strong>Classification:</strong> Test additions</p>
+                        <p><strong>Risk Level:</strong> Low - Test-only changes with no impact on production code or public interfaces</p>
+                        
+                        <div class="backport-reasoning">
+                            <strong>Reasoning:</strong><br>
+                            This PR meets the criteria for backporting as it only adds test coverage without modifying any public APIs or production code. The changes enhance test coverage for the PineconeFilterExpressionConverter component, which improves code quality and confidence in the existing functionality. All additions are pure test code that validates existing behavior rather than introducing new features.
+                        </div>
+                        
+                        <div class="backport-recommendations"><strong>Recommendations:</strong><br>Safe for backporting. Ensure the target 1.0.x branch has the same PineconeFilterExpressionConverter implementation to avoid test failures. Consider running the full test suite to verify compatibility with the 1.0.x codebase before merging.</div>
+                    </div>
+                </div>
+                
+                <div class="assessment-card commit-message-card">
+                    <h4 class="assessment-title">📝 Final Commit Message</h4>
+                    <div class="assessment-content">
+                        <div class="commit-message-content">
+                            <pre id="commit-message-3932" class="commit-message">test(vectorstore): add comprehensive test coverage for PineconeFilterExpressionConverter
+The existing PineconeFilterExpressionConverter test suite had limited coverage
+for edge cases and complex filtering scenarios, making it difficult to ensure
+robustness across various data types and nested expressions.
+Added 12 new test cases covering GT/LT operations with numeric values, complex
+nested groupings with mixed data types, edge cases for zero and negative values,
+single-element lists, multiple OR conditions, and special characters in values.
+Enhanced test coverage includes proper validation of JSON output formatting
+and comprehensive expression tree handling.</pre>
+                            <button class="copy-button" onclick="copyCommitMessage(3932)">Copy</button>
+                        </div>
+                    </div>
+                </div>
+                </div>
             </div>
         </div>
         
@@ -1424,7 +2474,7 @@
                         <span class="pr-author">by alxkm</span>
                         <span class="pr-type">testing</span>
                         <span class="risk-badge risk-low">LOW</span>
-                        <span class="backport-badge backport-approve" title="This PR only adds test methods to an existing test class without modifying any production code, p...">
+                        <span class="backport-badge backport-approve">
                             ✅ APPROVE
                         </span>
                     </div>
@@ -1451,24 +2501,64 @@
                 <ul class='positive-findings'><li>Comprehensive test coverage for all MongoDB filter operators (EQ, NE, LT, LTE, GT, GTE, IN, NIN)</li><li>Proper handling of edge cases including null values, empty strings, and mixed data types</li><li>Well-structured test cases covering complex nested expressions with multiple logical operators</li></ul>
             </div>
             
-            <div class="backport-info">
-                <div class="backport-classification">
-                    <strong>Backport Classification:</strong> Other 
-                    <span class="backport-risk">(Low Risk)</span>
-                </div>
-                <div class="backport-reasoning">This PR only adds test methods to an existing test class without modifying any production code, p...</div>
-            </div>
-            
-            
-            
             <div class="pr-actions">
                 <a href="https://github.com/spring-projects/spring-ai/pull/3919" target="_blank" class="btn btn-primary">View on GitHub</a>
                 <a href="https://github.com/spring-projects/spring-ai/pull/3919/files" target="_blank" class="btn btn-secondary">View Files</a>
+                <button class="btn btn-details expand-details-btn" onclick="togglePRDetails(this)">
+                    📋 Show Assessments
+                </button>
+            </div>
+            
+            <div class="pr-details-expandable" style="display: none;">
+                <div class="assessment-cards-container">
+                    <div class="assessment-card risk-assessment-card">
+                    <h4 class="assessment-title">🔍 Risk Assessment</h4>
+                    <div class="assessment-content">
+                        <div class="risk-level-display">
+                            <span class="risk-badge risk-low">LOW</span>
+                            <span class="risk-explanation">Risk Level</span>
+                        </div>
+                        <div class="risk-details">
+                            <p class="risk-summary">This is a well-written test file that significantly improves test coverage for the MongoDB Atlas filter converter. The main risks are around missing performance and error handling validation rather than security vulnerabilities. The added tests properly validate core functionality without introducing security concerns.</p>
+                            <ul class='positive-findings'><li>Comprehensive test coverage for all MongoDB filter operators (EQ, NE, LT, LTE, GT, GTE, IN, NIN)</li><li>Proper handling of edge cases including null values, empty strings, and mixed data types</li><li>Well-structured test cases covering complex nested expressions with multiple logical operators</li></ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="assessment-card backport-assessment-card">
+                    <h4 class="assessment-title">🔄 Backport Assessment</h4>
+                    <div class="assessment-content">
+                        <div class="backport-decision approve">✅ APPROVE</div>
+                        <p><strong>Classification:</strong> Other</p>
+                        <p><strong>Risk Level:</strong> Low</p>
+                        
+                        <div class="backport-reasoning">
+                            <strong>Reasoning:</strong><br>
+                            This PR only adds test methods to an existing test class without modifying any production code, public APIs, or configuration. Test additions that don&#x27;t require API changes are explicitly approved for backporting according to the criteria.
+                        </div>
+                        
+                        <div class="backport-recommendations"><strong>Recommendations:</strong><br>Safe for backporting. Consider running the full test suite to ensure the new tests pass in the 1.0.x environment and don&#x27;t reveal any behavioral differences in the MongoDB Atlas filter converter between versions.</div>
+                    </div>
+                </div>
+                
+                <div class="assessment-card commit-message-card">
+                    <h4 class="assessment-title">📝 Final Commit Message</h4>
+                    <div class="assessment-content">
+                        <div class="commit-message-content">
+                            <pre id="commit-message-3919" class="commit-message">test(vectorstore): add comprehensive test coverage for MongoDBAtlasFilterExpressionConverter
+The MongoDBAtlasFilterExpressionConverter lacked sufficient test coverage for missing operators (LT, GT, NIN), edge cases with null values and special characters, various data types, and complex nested expressions, creating potential reliability risks for the MongoDB Atlas integration.
+Added 25 comprehensive test methods covering all missing comparison operators, edge cases including null values and empty strings, data type validation for long/float/boolean values, list operations with empty and mixed-type scenarios, complex nested expression handling, and key variations with dots and special characters. Tests follow Spring AI testing patterns with proper AssertJ assertions and domain-neutral terminology.
+Improves reliability and maintainability of the MongoDB Atlas vector store integration by ensuring robust filter expression conversion across all supported scenarios and edge cases.</pre>
+                            <button class="copy-button" onclick="copyCommitMessage(3919)">Copy</button>
+                        </div>
+                    </div>
+                </div>
+                </div>
             </div>
         </div>
         
 
-        <div class="pr-card" data-risk="low" data-type="bugfix" data-backport="unknown">
+        <div class="pr-card" data-risk="low" data-type="bugfix" data-backport="approve">
             <div class="pr-header">
                 <div class="pr-icon">🍃</div>
                 <div class="pr-title-section">
@@ -1481,8 +2571,8 @@
                         <span class="pr-author">by wilocu</span>
                         <span class="pr-type">bugfix</span>
                         <span class="risk-badge risk-low">LOW</span>
-                        <span class="backport-badge backport-unknown" title="Backport assessment not available">
-                            ❓ UNKNOWN
+                        <span class="backport-badge backport-approve">
+                            ✅ APPROVE
                         </span>
                     </div>
                 </div>
@@ -1504,55 +2594,71 @@
             </div>
             
             <div class="pr-summary">
-                <p class="risk-summary">This is a well-implemented Spring AI tool callback with proper exception handling and input validation. The main risks are related to reflection usage and JSON deserialization, but these are appropriately controlled within the Spring framework context and follow established patterns.</p>
-                <ul class='positive-findings'><li>Proper exception handling with IllegalArgumentException being caught and wrapped in ToolExecutionException (lines 111-115)</li><li>Good input validation with Assert.hasText check for toolInput (line 99)</li><li>Comprehensive test coverage for both valid and invalid enum arguments in the test class</li></ul>
+                <p class="risk-summary">The changes appear to be focused on fixing enum argument handling in tool callbacks with appropriate test coverage. The reflection usage is legitimate for Spring AI framework tool invocation patterns, and proper exception handling is implemented throughout.</p>
+                <ul class='positive-findings'><li>Proper exception handling with ToolExecutionException wrapping at lines 114 and 180</li><li>Good defensive programming with null checks and assertions throughout the code</li><li>Comprehensive test coverage including edge cases for invalid enum handling</li></ul>
             </div>
-            
-            <div class="backport-info">
-                <div class="backport-classification">
-                    <strong>Backport Classification:</strong> Assessment Missing 
-                    <span class="backport-risk">(Unknown Risk)</span>
-                </div>
-                <div class="backport-reasoning">Backport assessment not available</div>
-            </div>
-            
-            
-            <div class="diff-preview" style="display: none;">
-                <div class="diff-header">
-                    <h4>📋 Quick Preview</h4>
-                    <button class="toggle-diff">Hide Preview</button>
-                </div>
-                <div class="diff-files">
-                    
-                <div class="file-diff">
-                    <div class="file-header">spring-ai-model/src/main/java/org/springframework/ai/tool/method/MethodToolCallback.java</div>
-                    <pre class="diff-content">@@ -104,7 +104,15 @@ public String call(String toolInput, @Nullable ToolContext toolContext) {
- 
- 		Map&lt;String, Object&gt; toolArguments = extractToolArguments(toolInput);
- 
--		Object[] methodArguments = buildMethodArguments(toolArguments, toolContext);
-+		Object[] methodArguments;
-+		try {
-+			methodArguments = buildMethodArguments(toolArguments, toolContext);
-+		}
-+		catch (IllegalArgumentException ex) {
-+			logger.debug(&quot;Failed to build method arguments for tool: {}. Error: {}&quot;, this.toolDefinition.name(),
-+					ex.getMessage());
-+			throw new ToolExecutionException(this.toolDefinition, ex);
-+		}
- 
- 		Object result = callMethod(methodArguments);
- </pre>
-                </div>
-                
-                </div>
-            </div>
-            <button class="show-diff-btn">🔍 Show Diff Preview</button>
-            
             
             <div class="pr-actions">
                 <a href="https://github.com/spring-projects/spring-ai/pull/3933" target="_blank" class="btn btn-primary">View on GitHub</a>
                 <a href="https://github.com/spring-projects/spring-ai/pull/3933/files" target="_blank" class="btn btn-secondary">View Files</a>
+                <button class="btn btn-details expand-details-btn" onclick="togglePRDetails(this)">
+                    📋 Show Assessments
+                </button>
+            </div>
+            
+            <div class="pr-details-expandable" style="display: none;">
+                <div class="assessment-cards-container">
+                    <div class="assessment-card risk-assessment-card">
+                    <h4 class="assessment-title">🔍 Risk Assessment</h4>
+                    <div class="assessment-content">
+                        <div class="risk-level-display">
+                            <span class="risk-badge risk-low">LOW</span>
+                            <span class="risk-explanation">Risk Level</span>
+                        </div>
+                        <div class="risk-details">
+                            <p class="risk-summary">The changes appear to be focused on fixing enum argument handling in tool callbacks with appropriate test coverage. The reflection usage is legitimate for Spring AI framework tool invocation patterns, and proper exception handling is implemented throughout.</p>
+                            <ul class='positive-findings'><li>Proper exception handling with ToolExecutionException wrapping at lines 114 and 180</li><li>Good defensive programming with null checks and assertions throughout the code</li><li>Comprehensive test coverage including edge cases for invalid enum handling</li></ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="assessment-card backport-assessment-card">
+                    <h4 class="assessment-title">🔄 Backport Assessment</h4>
+                    <div class="assessment-content">
+                        <div class="backport-decision approve">✅ APPROVE</div>
+                        <p><strong>Classification:</strong> Bug Fix</p>
+                        <p><strong>Risk Level:</strong> Low - Well-contained bug fix with comprehensive test coverage</p>
+                        
+                        <div class="backport-reasoning">
+                            <strong>Reasoning:</strong><br>
+                            This is a clear bug fix that addresses graceful handling of invalid enum arguments in tool callbacks. The changes are internal-only, maintain backward compatibility, and follow existing Spring AI exception handling patterns. The fix prevents unhandled IllegalArgumentExceptions from bubbling up by converting them to the expected ToolExecutionException type.
+                        </div>
+                        
+                        <div class="backport-recommendations"><strong>Recommendations:</strong><br>Safe for backporting. Ensure the new test file is included and verify that existing MethodToolCallback usage patterns remain unchanged. The fix enhances robustness without any breaking changes.</div>
+                    </div>
+                </div>
+                
+                <div class="assessment-card commit-message-card">
+                    <h4 class="assessment-title">📝 Final Commit Message</h4>
+                    <div class="assessment-content">
+                        <div class="commit-message-content">
+                            <pre id="commit-message-3933" class="commit-message">fix(function): improve enum argument error handling in MethodToolCallback
+The MethodToolCallback class was throwing unhandled IllegalArgumentException
+when LLMs provided invalid enum values as tool arguments, preventing graceful
+error recovery and proper feedback to the model.
+Added try-catch block around buildMethodArguments() in MethodToolCallback.call()
+to catch IllegalArgumentException and convert it to ToolExecutionException with
+proper context and debug logging. Added comprehensive unit tests to verify both
+invalid enum handling and preservation of valid enum functionality.
+This enables LLMs to receive proper error feedback for invalid enum arguments
+instead of encountering unhandled exceptions, improving the robustness of
+tool-assisted AI workflows.
+Closes #3924</pre>
+                            <button class="copy-button" onclick="copyCommitMessage(3933)">Copy</button>
+                        </div>
+                    </div>
+                </div>
+                </div>
             </div>
         </div>
         
@@ -1570,7 +2676,7 @@
                         <span class="pr-author">by ngocnhan-tran1996</span>
                         <span class="pr-type">cleanup</span>
                         <span class="risk-badge risk-low">LOW</span>
-                        <span class="backport-badge backport-approve" title="This PR removes only unused imports across 8 files without modifying any functional code or publi...">
+                        <span class="backport-badge backport-approve">
                             ✅ APPROVE
                         </span>
                     </div>
@@ -1597,19 +2703,65 @@
                 <ul class='positive-findings'><li>Clean code maintenance approach removing unused imports across the codebase</li><li>Changes are limited in scope with minimal net change (+2/-14 lines)</li><li>Copyright year updates show proper license header maintenance</li></ul>
             </div>
             
-            <div class="backport-info">
-                <div class="backport-classification">
-                    <strong>Backport Classification:</strong> Other 
-                    <span class="backport-risk">(Low - cosmetic changes with no functional impact Risk)</span>
-                </div>
-                <div class="backport-reasoning">This PR removes only unused imports across 8 files without modifying any functional code or publi...</div>
-            </div>
-            
-            
-            
             <div class="pr-actions">
                 <a href="https://github.com/spring-projects/spring-ai/pull/3921" target="_blank" class="btn btn-primary">View on GitHub</a>
                 <a href="https://github.com/spring-projects/spring-ai/pull/3921/files" target="_blank" class="btn btn-secondary">View Files</a>
+                <button class="btn btn-details expand-details-btn" onclick="togglePRDetails(this)">
+                    📋 Show Assessments
+                </button>
+            </div>
+            
+            <div class="pr-details-expandable" style="display: none;">
+                <div class="assessment-cards-container">
+                    <div class="assessment-card risk-assessment-card">
+                    <h4 class="assessment-title">🔍 Risk Assessment</h4>
+                    <div class="assessment-content">
+                        <div class="risk-level-display">
+                            <span class="risk-badge risk-low">LOW</span>
+                            <span class="risk-explanation">Risk Level</span>
+                        </div>
+                        <div class="risk-details">
+                            <p class="risk-summary">This is a low-risk maintenance PR that removes unused imports without modifying functionality. The changes are minimal and focused on code cleanliness with proper copyright updates where needed.</p>
+                            <ul class='positive-findings'><li>Clean code maintenance approach removing unused imports across the codebase</li><li>Changes are limited in scope with minimal net change (+2/-14 lines)</li><li>Copyright year updates show proper license header maintenance</li></ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="assessment-card backport-assessment-card">
+                    <h4 class="assessment-title">🔄 Backport Assessment</h4>
+                    <div class="assessment-content">
+                        <div class="backport-decision approve">✅ APPROVE</div>
+                        <p><strong>Classification:</strong> Other</p>
+                        <p><strong>Risk Level:</strong> Low - cosmetic changes with no functional impact</p>
+                        
+                        <div class="backport-reasoning">
+                            <strong>Reasoning:</strong><br>
+                            This PR removes only unused imports across 8 files without modifying any functional code or public APIs. The changes are purely cosmetic code cleanup that improves code quality without affecting system behavior or backward compatibility.
+                        </div>
+                        
+                        <div class="backport-recommendations"><strong>Recommendations:</strong><br>Safe for backporting. Verify that removed imports are indeed unused in the 1.0.x branch context, as import dependencies may differ between branches.</div>
+                    </div>
+                </div>
+                
+                <div class="assessment-card commit-message-card">
+                    <h4 class="assessment-title">📝 Final Commit Message</h4>
+                    <div class="assessment-content">
+                        <div class="commit-message-content">
+                            <pre id="commit-message-3921" class="commit-message">chore(multiple): remove unused imports and update copyright years
+Several files across the Spring AI codebase contained unused import
+statements that were identified during code maintenance review.
+This cleanup effort improves code hygiene and reduces unnecessary
+dependency indications in affected modules.
+Removed unused imports from 8 files spanning MCP client transport,
+PDF document reader, test classes for Ollama multimodal integration,
+ElevenLabs text-to-speech, Google GenAI retry logic, ZhiPu AI API,
+and Chroma vector store components. Updated copyright years from
+2023-2024 to 2023-2025 in Google GenAI and Ollama test files.</pre>
+                            <button class="copy-button" onclick="copyCommitMessage(3921)">Copy</button>
+                        </div>
+                    </div>
+                </div>
+                </div>
             </div>
         </div>
         
@@ -1627,7 +2779,7 @@
                         <span class="pr-author">by jbj338033</span>
                         <span class="pr-type">documentation</span>
                         <span class="risk-badge risk-low">LOW</span>
-                        <span class="backport-badge backport-approve" title="This PR exclusively contains typo corrections in comments and documentation improvements. No publ...">
+                        <span class="backport-badge backport-approve">
                             ✅ APPROVE
                         </span>
                     </div>
@@ -1654,19 +2806,67 @@
                 <ul class='positive-findings'><li>All changes are limited to documentation and comment improvements</li><li>No modifications to security-sensitive code patterns</li><li>Integration tests maintain proper credential handling with System.getenv() calls</li></ul>
             </div>
             
-            <div class="backport-info">
-                <div class="backport-classification">
-                    <strong>Backport Classification:</strong> Documentation 
-                    <span class="backport-risk">(Low - Only cosmetic changes to comments and documentation with no functional code impact Risk)</span>
-                </div>
-                <div class="backport-reasoning">This PR exclusively contains typo corrections in comments and documentation improvements. No publ...</div>
-            </div>
-            
-            
-            
             <div class="pr-actions">
                 <a href="https://github.com/spring-projects/spring-ai/pull/3936" target="_blank" class="btn btn-primary">View on GitHub</a>
                 <a href="https://github.com/spring-projects/spring-ai/pull/3936/files" target="_blank" class="btn btn-secondary">View Files</a>
+                <button class="btn btn-details expand-details-btn" onclick="togglePRDetails(this)">
+                    📋 Show Assessments
+                </button>
+            </div>
+            
+            <div class="pr-details-expandable" style="display: none;">
+                <div class="assessment-cards-container">
+                    <div class="assessment-card risk-assessment-card">
+                    <h4 class="assessment-title">🔍 Risk Assessment</h4>
+                    <div class="assessment-content">
+                        <div class="risk-level-display">
+                            <span class="risk-badge risk-low">LOW</span>
+                            <span class="risk-explanation">Risk Level</span>
+                        </div>
+                        <div class="risk-details">
+                            <p class="risk-summary">This PR contains only minor documentation and comment improvements with no functional code changes. All modifications are cosmetic typo fixes and documentation enhancements with minimal risk to system security or stability.</p>
+                            <ul class='positive-findings'><li>All changes are limited to documentation and comment improvements</li><li>No modifications to security-sensitive code patterns</li><li>Integration tests maintain proper credential handling with System.getenv() calls</li></ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="assessment-card backport-assessment-card">
+                    <h4 class="assessment-title">🔄 Backport Assessment</h4>
+                    <div class="assessment-content">
+                        <div class="backport-decision approve">✅ APPROVE</div>
+                        <p><strong>Classification:</strong> Documentation</p>
+                        <p><strong>Risk Level:</strong> Low - Only cosmetic changes to comments and documentation with no functional code impact</p>
+                        
+                        <div class="backport-reasoning">
+                            <strong>Reasoning:</strong><br>
+                            This PR exclusively contains typo corrections in comments and documentation improvements. No public APIs, method signatures, class definitions, or functional behavior are modified, making it an ideal candidate for backporting with zero compatibility risk.
+                        </div>
+                        
+                        <div class="backport-recommendations"><strong>Recommendations:</strong><br>Safe for backporting. Consider applying these documentation improvements to maintain consistency across versions. No special precautions needed during backport process.</div>
+                    </div>
+                </div>
+                
+                <div class="assessment-card commit-message-card">
+                    <h4 class="assessment-title">📝 Final Commit Message</h4>
+                    <div class="assessment-content">
+                        <div class="commit-message-content">
+                            <pre id="commit-message-3936" class="commit-message">docs(multiple): fix typos in comments and add comprehensive spring-ai-test documentation
+Several comment typos were scattered across the codebase causing minor
+readability issues in TODO comments and documentation. The spring-ai-test
+module also lacked proper documentation for developers wanting to use
+the evaluation testing utilities.
+Fixed typos including &#x27;wrapps&#x27; → &#x27;wraps&#x27; in TODO comments across multiple
+test files, &#x27;uitlity&#x27; → &#x27;utility&#x27; in AnthropicChatModel, and &#x27;occasionall&#x27;
+→ &#x27;occasionally&#x27; in OpenAiChatModelObservationIT. Added comprehensive
+README documentation for spring-ai-test with usage examples, configuration
+requirements, and evaluation types for the BasicEvaluationTest framework.
+Improves code readability and provides clear guidance for developers
+using the Spring AI testing utilities.</pre>
+                            <button class="copy-button" onclick="copyCommitMessage(3936)">Copy</button>
+                        </div>
+                    </div>
+                </div>
+                </div>
             </div>
         </div>
         
@@ -1684,7 +2884,7 @@
                         <span class="pr-author">by chang6666</span>
                         <span class="pr-type">feature</span>
                         <span class="risk-badge risk-medium">MEDIUM</span>
-                        <span class="backport-badge backport-reject" title="While this appears to be a legitimate bug fix for Ollama integration without API changes, the imp...">
+                        <span class="backport-badge backport-reject">
                             ❌ REJECT
                         </span>
                     </div>
@@ -1711,42 +2911,63 @@
                 <ul class='positive-findings'><li>Proper error handling with specific exception catching and logging for JSON processing errors</li><li>Uses configured ObjectMapper with FAIL_ON_UNKNOWN_PROPERTIES=false for safer deserialization</li><li>Sensitive data logging is properly marked with SENSITIVE_DATA_MARKER for log filtering</li></ul>
             </div>
             
-            <div class="backport-info">
-                <div class="backport-classification">
-                    <strong>Backport Classification:</strong> Bug Fix 
-                    <span class="backport-risk">(Medium Risk)</span>
-                </div>
-                <div class="backport-reasoning">While this appears to be a legitimate bug fix for Ollama integration without API changes, the imp...</div>
-            </div>
-            
-            
-            <div class="diff-preview" style="display: none;">
-                <div class="diff-header">
-                    <h4>📋 Quick Preview</h4>
-                    <button class="toggle-diff">Hide Preview</button>
-                </div>
-                <div class="diff-files">
-                    
-                <div class="file-diff">
-                    <div class="file-header">spring-ai-model/src/main/java/org/springframework/ai/converter/BeanOutputConverter.java</div>
-                    <pre class="diff-content">@@ -159,6 +159,7 @@ private void generateSchema() {
- 	@Override
- 	public T convert(@NonNull String text) {
- 		try {
-+			text = text.replaceAll(&quot;&lt;think&gt;[\\s\\s]*?&lt;/think&gt;&quot;,&quot;&quot;)
- 			// Remove leading and trailing whitespace
- 			text = text.trim();
- </pre>
-                </div>
-                
-                </div>
-            </div>
-            <button class="show-diff-btn">🔍 Show Diff Preview</button>
-            
-            
             <div class="pr-actions">
                 <a href="https://github.com/spring-projects/spring-ai/pull/3927" target="_blank" class="btn btn-primary">View on GitHub</a>
                 <a href="https://github.com/spring-projects/spring-ai/pull/3927/files" target="_blank" class="btn btn-secondary">View Files</a>
+                <button class="btn btn-details expand-details-btn" onclick="togglePRDetails(this)">
+                    📋 Show Assessments
+                </button>
+            </div>
+            
+            <div class="pr-details-expandable" style="display: none;">
+                <div class="assessment-cards-container">
+                    <div class="assessment-card risk-assessment-card">
+                    <h4 class="assessment-title">🔍 Risk Assessment</h4>
+                    <div class="assessment-content">
+                        <div class="risk-level-display">
+                            <span class="risk-badge risk-medium">MEDIUM</span>
+                            <span class="risk-explanation">Risk Level</span>
+                        </div>
+                        <div class="risk-details">
+                            <p class="risk-summary">The change appears to be a single line addition to handle &lt;think&gt; tag removal, but the regex pattern used introduces potential ReDoS vulnerability. The overall codebase follows good security practices with proper error handling and logging, but the regex efficiency issue should be addressed.</p>
+                            <ul class='positive-findings'><li>Proper error handling with specific exception catching and logging for JSON processing errors</li><li>Uses configured ObjectMapper with FAIL_ON_UNKNOWN_PROPERTIES=false for safer deserialization</li><li>Sensitive data logging is properly marked with SENSITIVE_DATA_MARKER for log filtering</li></ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="assessment-card backport-assessment-card">
+                    <h4 class="assessment-title">🔄 Backport Assessment</h4>
+                    <div class="assessment-content">
+                        <div class="backport-decision reject">❌ REJECT</div>
+                        <p><strong>Classification:</strong> Bug Fix</p>
+                        <p><strong>Risk Level:</strong> Medium</p>
+                        
+                        <div class="backport-reasoning">
+                            <strong>Reasoning:</strong><br>
+                            While this appears to be a legitimate bug fix for Ollama integration without API changes, the implementation introduces a medium-risk security vulnerability through an inefficient regex pattern that could be exploited for ReDoS attacks. The security risk makes this unsuitable for backporting without remediation.
+                        </div>
+                        
+                        <div class="backport-recommendations"><strong>Recommendations:</strong><br>To make this suitable for backporting: Replace the regex `&lt;think&gt;[\s\s]*?&lt;/think&gt;` with a more efficient parsing approach or add input length limits and timeout constraints to prevent ReDoS exploitation. Consider using a simple string replacement or proper XML/HTML parsing instead of regex with nested quantifiers.</div>
+                    </div>
+                </div>
+                
+                <div class="assessment-card commit-message-card">
+                    <h4 class="assessment-title">📝 Final Commit Message</h4>
+                    <div class="assessment-content">
+                        <div class="commit-message-content">
+                            <pre id="commit-message-3927" class="commit-message">fix(core): remove thinking tags from model output in BeanOutputConverter
+Local Ollama model deployments were including `&lt;think&gt;...&lt;/think&gt;` tags in their
+output responses, causing JSON parsing failures when converting responses to
+Java beans through the BeanOutputConverter.
+Added regex-based preprocessing to strip thinking tags from text before JSON
+parsing in the convert method. This change ensures clean JSON extraction by
+removing the model&#x27;s internal reasoning artifacts that were interfering with
+the bean conversion process.</pre>
+                            <button class="copy-button" onclick="copyCommitMessage(3927)">Copy</button>
+                        </div>
+                    </div>
+                </div>
+                </div>
             </div>
         </div>
         
@@ -1767,6 +2988,8 @@
             
             // Add card hover effects
             addCardInteractions();
+            
+            // Tooltips removed - using expandable assessment cards
             
             console.log('✅ Dashboard initialization complete');
         });
@@ -1963,6 +3186,199 @@
                 document.body.style.opacity = '1';
             }, 100);
         });
+        
+        // Custom tooltip functionality
+        function initializeCustomTooltips() {
+            // Remove any existing tooltips first
+            document.querySelectorAll('.custom-tooltip').forEach(tooltip => tooltip.remove());
+            
+            // Find all elements with data-tooltip attribute
+            const tooltipElements = document.querySelectorAll('[data-tooltip]');
+            
+            if (tooltipElements.length === 0) {
+                return;
+            }
+            
+            tooltipElements.forEach(element => {
+                element.addEventListener('mouseenter', function(e) {
+                    showTooltip(e.target, e.target.getAttribute('data-tooltip'));
+                });
+                
+                element.addEventListener('mouseleave', function() {
+                    hideTooltip();
+                });
+                
+                // Handle keyboard accessibility
+                element.addEventListener('focus', function(e) {
+                    showTooltip(e.target, e.target.getAttribute('data-tooltip'));
+                });
+                
+                element.addEventListener('blur', function() {
+                    hideTooltip();
+                });
+            });
+        }
+
+        function showTooltip(element, content) {
+            if (!content) {
+                return;
+            }
+            
+            // Remove any existing tooltip
+            hideTooltip();
+            
+            // Create tooltip element
+            const tooltip = document.createElement('div');
+            tooltip.className = 'custom-tooltip';
+            tooltip.textContent = content;
+            
+            // Add to document
+            document.body.appendChild(tooltip);
+            
+            // Position tooltip
+            positionTooltip(element, tooltip);
+            
+            // Show with animation
+            requestAnimationFrame(() => {
+                tooltip.classList.add('show');
+            });
+        }
+
+        function hideTooltip() {
+            const existingTooltip = document.querySelector('.custom-tooltip');
+            if (existingTooltip) {
+                existingTooltip.classList.remove('show');
+                setTimeout(() => {
+                    if (existingTooltip.parentNode) {
+                        existingTooltip.parentNode.removeChild(existingTooltip);
+                    }
+                }, 200); // Match the CSS transition duration
+            }
+        }
+
+        function positionTooltip(element, tooltip) {
+            const elementRect = element.getBoundingClientRect();
+            const tooltipRect = tooltip.getBoundingClientRect();
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+            
+            // Default position: above the element, centered
+            let left = elementRect.left + (elementRect.width / 2) - (tooltipRect.width / 2);
+            let top = elementRect.top - tooltipRect.height - 10;
+            
+            // Adjust horizontal position if tooltip would go off-screen
+            if (left < 10) {
+                left = 10; // Left edge padding
+            } else if (left + tooltipRect.width > viewportWidth - 10) {
+                left = viewportWidth - tooltipRect.width - 10; // Right edge padding
+            }
+            
+            // If tooltip would go above viewport, position it below the element
+            if (top < 10) {
+                top = elementRect.bottom + 10;
+                tooltip.classList.add('tooltip-below');
+            } else {
+                tooltip.classList.remove('tooltip-below');
+            }
+            
+            // Final position
+            tooltip.style.left = left + 'px';
+            tooltip.style.top = top + 'px';
+        }
+        
+        // Toggle PR details expansion
+        function togglePRDetails(button) {
+            const card = button.closest('.pr-card');
+            const detailsSection = card.querySelector('.pr-details-expandable');
+            
+            if (detailsSection.style.display === 'none' || detailsSection.style.display === '') {
+                // Show details
+                detailsSection.style.display = 'block';
+                button.innerHTML = '📋 Hide Details';
+                button.style.background = 'var(--orchard-green)';
+                button.style.color = 'white';
+                
+                // Smooth scroll to show the expanded content
+                setTimeout(() => {
+                    detailsSection.scrollIntoView({ 
+                        behavior: 'smooth', 
+                        block: 'nearest'
+                    });
+                }, 100);
+            } else {
+                // Hide details
+                detailsSection.style.display = 'none';
+                button.innerHTML = '📋 Show Details';
+                button.style.background = 'var(--earth-tan)';
+                button.style.color = 'var(--orchard-green)';
+            }
+        }
+        
+        // Copy commit message functionality
+        function copyCommitMessage(prNumber) {
+            const commitContent = document.querySelector(`#commit-message-${prNumber}`);
+            if (!commitContent) {
+                console.error(`Commit message element not found for PR ${prNumber}`);
+                return;
+            }
+            
+            const text = commitContent.textContent.trim();
+            
+            // Use modern clipboard API if available
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(text).then(() => {
+                    showCopySuccess(prNumber);
+                }).catch(err => {
+                    console.error('Failed to copy commit message:', err);
+                    fallbackCopyTextToClipboard(text, prNumber);
+                });
+            } else {
+                // Fallback for older browsers
+                fallbackCopyTextToClipboard(text, prNumber);
+            }
+        }
+        
+        function fallbackCopyTextToClipboard(text, prNumber) {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            
+            // Avoid scrolling to bottom
+            textArea.style.top = "0";
+            textArea.style.left = "0";
+            textArea.style.position = "fixed";
+            textArea.style.opacity = "0";
+            
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            
+            try {
+                const successful = document.execCommand('copy');
+                if (successful) {
+                    showCopySuccess(prNumber);
+                } else {
+                    console.error('Fallback copy command failed');
+                }
+            } catch (err) {
+                console.error('Fallback copy failed:', err);
+            }
+            
+            document.body.removeChild(textArea);
+        }
+        
+        function showCopySuccess(prNumber) {
+            const button = document.querySelector(`button[onclick="copyCommitMessage(${prNumber})"]`);
+            if (button) {
+                const originalText = button.textContent;
+                button.textContent = 'Copied!';
+                button.style.background = '#10b981';
+                
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.style.background = '#0969da';
+                }, 2000);
+            }
+        }
         </script>
         
 </body>

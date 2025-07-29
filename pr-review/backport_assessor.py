@@ -327,6 +327,22 @@ Please provide your assessment following the exact format specified in the templ
             Logger.error(f"❌ Could not save prompt file: {e}")
             return None
     
+    def _is_security_related(self, pr_data: Dict[str, Any]) -> bool:
+        """Detect if PR is security-related based on title/description"""
+        if not pr_data:
+            return False
+            
+        title = pr_data.get('title', '').lower()
+        body = pr_data.get('body', '').lower()
+        
+        security_keywords = ['cve', 'security', 'vulnerability', 'exploit', 'security fix', 'sec fix']
+        
+        for keyword in security_keywords:
+            if keyword in title or keyword in body:
+                return True
+        
+        return False
+    
     def _format_pr_summary(self, pr_data: Dict[str, Any]) -> str:
         """Format PR data into readable summary"""
         if not pr_data:
@@ -337,10 +353,15 @@ Please provide your assessment following the exact format specified in the templ
         state = pr_data.get('state', 'Unknown')
         body = pr_data.get('body', '')[:500] + ('...' if len(pr_data.get('body', '')) > 500 else '')
         
+        # Add security context if detected
+        security_note = ""
+        if self._is_security_related(pr_data):
+            security_note = "\n**⚠️ SECURITY CONTEXT DETECTED**: This PR appears to address a security issue/CVE - consider security exception for dependency upgrades"
+        
         return f"""**Title**: {title}
 **Author**: {author}
 **State**: {state}
-**Description**: {body}"""
+**Description**: {body}{security_note}"""
     
     def _format_files_summary(self, file_changes: List[Dict[str, Any]]) -> str:
         """Format file changes into readable summary"""

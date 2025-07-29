@@ -61,11 +61,15 @@ class PRSummary:
     backport_classification: str  # Bug Fix/Documentation/Feature/etc.
     backport_risk_level: str  # Low/Medium/High backport risk
     backport_reasoning: str  # Brief reasoning for decision
+    backport_recommendations: str  # Recommendations for backporting
     backport_badge_color: str  # CSS color class for badge
     backport_icon: str  # Icon for backport status
     
     # Diff data for previews
     file_changes: List[Dict[str, Any]]
+    
+    # AI-generated commit message
+    commit_message: str
 
 
 class LowHangingFruitReportGenerator:
@@ -157,6 +161,9 @@ class LowHangingFruitReportGenerator:
         # Process backport assessment data
         backport_info = self._process_backport_data(backport_data)
         
+        # Load commit message
+        commit_message = self._load_commit_message(str(pr_data["number"]))
+        
         return PRSummary(
             number=str(pr_data["number"]),
             title=pr_data["title"],
@@ -184,9 +191,11 @@ class LowHangingFruitReportGenerator:
             backport_classification=backport_info["classification"],
             backport_risk_level=backport_info["risk_level"],
             backport_reasoning=backport_info["reasoning"],
+            backport_recommendations=backport_info["recommendations"],
             backport_badge_color=backport_info["badge_color"],
             backport_icon=backport_info["icon"],
-            file_changes=file_changes[:5]  # Limit to first 5 files for preview
+            file_changes=file_changes[:5],  # Limit to first 5 files for preview
+            commit_message=commit_message
         )
     
     def _classify_pr_type(self, pr_data: Dict, risk_data: Dict, file_changes: List) -> str:
@@ -215,6 +224,8 @@ class LowHangingFruitReportGenerator:
         # Clean up the content
         enhanced = content.strip()
         
+        # Debug removed - tooltip content processing working correctly
+        
         # Format based on tooltip type
         if tooltip_type == "risk":
             # Risk tooltips: Add structure for better readability
@@ -238,14 +249,60 @@ class LowHangingFruitReportGenerator:
         if enhanced and not enhanced.endswith('.'):
             enhanced += '.'
         
-        # Limit length for better display (break at reasonable points)
-        if len(enhanced) > 300:
-            # Find a good break point near 250 characters
-            break_point = enhanced[:250].rfind('. ')
-            if break_point > 150:  # Only truncate if we found a reasonable break point
-                enhanced = enhanced[:break_point + 1] + "..."
+        # Temporarily remove truncation to debug tooltip issues
+        # TODO: Re-add sensible limits after debugging
+        # max_length = 500 if tooltip_type == "backport" else 300
+        # break_length = 450 if tooltip_type == "backport" else 250
+        # min_break = 300 if tooltip_type == "backport" else 150
+        
+        # if len(enhanced) > max_length:
+        #     # Find a good break point
+        #     break_point = enhanced[:break_length].rfind('. ')
+        #     if break_point > min_break:  # Only truncate if we found a reasonable break point
+        #         enhanced = enhanced[:break_point + 1] + "..."
         
         return enhanced
+    
+    def _load_commit_message(self, pr_number: str) -> str:
+        """Load the AI-generated commit message for a PR"""
+        # Check run-specific logs first, then fallback to main logs directory
+        commit_file_paths = [
+            self.run_dir / "logs" / f"claude-response-commit-message-{pr_number}.txt",
+            Path("logs") / f"claude-response-commit-message-{pr_number}.txt"
+        ]
+        
+        for commit_file in commit_file_paths:
+            if commit_file.exists():
+                try:
+                    with open(commit_file, 'r', encoding='utf-8') as f:
+                        content = f.read()
+                    
+                    # Extract commit message from Claude response
+                    # Look for the actual commit message after "Response:" line
+                    lines = content.split('\n')
+                    commit_lines = []
+                    in_commit = False
+                    
+                    for line in lines:
+                        if line.startswith('Response:'):
+                            in_commit = True
+                            continue
+                        elif in_commit and line.strip():
+                            # Skip the descriptive text before the actual commit
+                            if not any(skip_phrase in line for skip_phrase in [
+                                "Based on", "I'll generate", "Here's", "The commit message"
+                            ]):
+                                commit_lines.append(line)
+                    
+                    if commit_lines:
+                        # Join lines and clean up
+                        commit_message = '\n'.join(commit_lines).strip()
+                        return commit_message
+                        
+                except Exception as e:
+                    print(f"⚠️  Error loading commit message for PR #{pr_number}: {e}")
+        
+        return f"Commit message not available for PR #{pr_number}"
     
     def _generate_file_list(self, file_changes: List[Dict[str, Any]]) -> str:
         """Generate a formatted list of file changes"""
@@ -338,6 +395,7 @@ class LowHangingFruitReportGenerator:
                 "classification": "Assessment Missing",
                 "risk_level": "Unknown",
                 "reasoning": "Backport assessment not available",
+                "recommendations": "",
                 "badge_color": "unknown",
                 "icon": "❓"
             }
@@ -346,6 +404,7 @@ class LowHangingFruitReportGenerator:
         classification = backport_data.get("classification", "Unknown")
         risk_level = backport_data.get("risk_level", "Unknown")
         reasoning = backport_data.get("reasoning", "No reasoning provided")
+        recommendations = backport_data.get("recommendations", "")
         
         # Determine badge color and icon based on decision
         if decision == "APPROVE":
@@ -361,9 +420,10 @@ class LowHangingFruitReportGenerator:
             icon = "❓"
             eligible = False
         
-        # Truncate reasoning for display
-        if len(reasoning) > 100:
-            reasoning = reasoning[:97] + "..."
+        # Keep full reasoning for tooltips
+        # Truncation was causing tooltip display issues
+        # if len(reasoning) > 100:
+        #     reasoning = reasoning[:97] + "..."
         
         return {
             "eligible": eligible,
@@ -371,6 +431,7 @@ class LowHangingFruitReportGenerator:
             "classification": classification,
             "risk_level": risk_level,
             "reasoning": reasoning,
+            "recommendations": recommendations,
             "badge_color": badge_color,
             "icon": icon
         }
@@ -569,8 +630,8 @@ class LowHangingFruitReportGenerator:
                     <div class="pr-meta">
                         <span class="pr-author">by {author}</span>
                         <span class="pr-type">{pr.pr_type}</span>
-                        <span class="risk-badge risk-{pr.risk_level.lower()}" data-tooltip="{html.escape(self._enhance_tooltip_content(pr.risk_summary, 'risk'))}">{pr.risk_level}</span>
-                        <span class="backport-badge backport-{pr.backport_badge_color}" data-tooltip="{html.escape(self._enhance_tooltip_content(pr.backport_reasoning, 'backport'))}">
+                        <span class="risk-badge risk-{pr.risk_level.lower()}">{pr.risk_level}</span>
+                        <span class="backport-badge backport-{pr.backport_badge_color}">
                             {pr.backport_icon} {pr.backport_decision}
                         </span>
                     </div>
@@ -601,26 +662,51 @@ class LowHangingFruitReportGenerator:
                 <a href="{pr.url}" target="_blank" class="btn btn-primary">View on GitHub</a>
                 <a href="{pr.url}/files" target="_blank" class="btn btn-secondary">View Files</a>
                 <button class="btn btn-details expand-details-btn" onclick="togglePRDetails(this)">
-                    📋 Show Details
+                    📋 Show Assessments
                 </button>
             </div>
             
             <div class="pr-details-expandable" style="display: none;">
-                <div class="backport-info">
-                    <div class="backport-classification">
-                        <strong>Backport Classification:</strong> {pr.backport_classification} 
-                        <span class="backport-risk">({pr.backport_risk_level} Risk)</span>
+                <div class="assessment-cards-container">
+                    <div class="assessment-card risk-assessment-card">
+                    <h4 class="assessment-title">🔍 Risk Assessment</h4>
+                    <div class="assessment-content">
+                        <div class="risk-level-display">
+                            <span class="risk-badge risk-{pr.risk_level.lower()}">{pr.risk_level}</span>
+                            <span class="risk-explanation">Risk Level</span>
+                        </div>
+                        <div class="risk-details">
+                            <p class="risk-summary">{html.escape(pr.risk_summary)}</p>
+                            {positive_list}
+                        </div>
                     </div>
-                    <div class="backport-reasoning">{html.escape(pr.backport_reasoning)}</div>
                 </div>
                 
-                {diff_preview}
+                <div class="assessment-card backport-assessment-card">
+                    <h4 class="assessment-title">🔄 Backport Assessment</h4>
+                    <div class="assessment-content">
+                        <div class="backport-decision {pr.backport_decision.lower()}">{pr.backport_icon} {pr.backport_decision}</div>
+                        <p><strong>Classification:</strong> {pr.backport_classification}</p>
+                        <p><strong>Risk Level:</strong> {pr.backport_risk_level}</p>
+                        
+                        <div class="backport-reasoning">
+                            <strong>Reasoning:</strong><br>
+                            {html.escape(pr.backport_reasoning)}
+                        </div>
+                        
+                        {f'<div class="backport-recommendations"><strong>Recommendations:</strong><br>{html.escape(pr.backport_recommendations)}</div>' if pr.backport_recommendations else ''}
+                    </div>
+                </div>
                 
-                <div class="file-changes-summary">
-                    <h4>📁 File Changes Summary</h4>
-                    <ul class="file-list">
-                        {self._generate_file_list(pr.file_changes)}
-                    </ul>
+                <div class="assessment-card commit-message-card">
+                    <h4 class="assessment-title">📝 Final Commit Message</h4>
+                    <div class="assessment-content">
+                        <div class="commit-message-content">
+                            <pre id="commit-message-{pr.number}" class="commit-message">{html.escape(pr.commit_message)}</pre>
+                            <button class="copy-button" onclick="copyCommitMessage({pr.number})">Copy</button>
+                        </div>
+                    </div>
+                </div>
                 </div>
             </div>
         </div>
@@ -1402,73 +1488,233 @@ class LowHangingFruitReportGenerator:
         .pr-card:nth-child(5) { animation-delay: 0.4s; }
         .pr-card:nth-child(6) { animation-delay: 0.5s; }
         
-        /* === CUSTOM TOOLTIP SYSTEM === */
-        .custom-tooltip {
-            position: absolute;
-            background: rgba(45, 80, 22, 0.95);
+        /* === ASSESSMENT CARDS === */
+        .assessment-card {
+            margin: 20px 0;
+            background: white;
+            border-radius: 12px;
+            border: 1px solid #e9ecef;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+        
+        .assessment-title {
+            background: linear-gradient(135deg, var(--orchard-green), var(--leaf-green));
             color: white;
+            margin: 0;
             padding: 12px 16px;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+        
+        .assessment-content {
+            padding: 16px;
+        }
+        
+        .risk-level-display, .backport-decision-display {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        
+        .risk-explanation, .backport-classification {
+            font-size: 0.9rem;
+            color: #666;
+            font-weight: 500;
+        }
+        
+        .risk-details, .backport-details {
+            line-height: 1.6;
+        }
+        
+        .commit-message-content {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
             border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+        
+        .commit-message {
+            margin: 0;
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            color: var(--orchard-green);
+        }
+        
+        .commit-actions {
+            display: flex;
+            justify-content: flex-end;
+        }
+        
+        .btn-copy {
+            background: var(--earth-tan);
+            color: var(--orchard-green);
+            border: 2px solid var(--orchard-green);
+            padding: 8px 16px;
             font-size: 0.85rem;
-            line-height: 1.4;
-            max-width: 400px;
-            min-width: 200px;
-            z-index: 10000;
-            opacity: 0;
-            pointer-events: none;
-            transform: translateY(10px);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
         }
         
-        .custom-tooltip.show {
-            opacity: 1;
-            transform: translateY(0);
+        .btn-copy:hover {
+            background: var(--orchard-green);
+            color: white;
         }
         
-        .custom-tooltip::before {
-            content: '';
-            position: absolute;
-            top: -6px;
-            left: 50%;
-            transform: translateX(-50%);
-            border-left: 6px solid transparent;
-            border-right: 6px solid transparent;
-            border-bottom: 6px solid rgba(45, 80, 22, 0.95);
+        /* === EXPANDABLE DETAILS === */
+        .pr-details {
+            margin-top: 20px;
+            border-top: 1px solid #e1e5e9;
+            padding-top: 20px;
         }
         
-        /* Tooltip positioning variants */
-        .custom-tooltip.tooltip-bottom::before {
-            top: -6px;
-            border-bottom: 6px solid rgba(45, 80, 22, 0.95);
-            border-top: none;
+        /* === ASSESSMENT CARDS === */
+        .assessment-cards-container {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin-top: 16px;
         }
         
-        .custom-tooltip.tooltip-top::before {
-            top: auto;
-            bottom: -6px;
-            border-top: 6px solid rgba(45, 80, 22, 0.95);
-            border-bottom: none;
-        }
-        
-        /* Enhanced badge styling for tooltips */
-        .risk-badge[data-tooltip], .backport-badge[data-tooltip] {
-            cursor: help;
-            position: relative;
+        .assessment-card {
+            background: #fafbfc;
+            border: 1px solid #e1e5e9;
+            border-radius: 8px;
+            padding: 16px;
             transition: all 0.2s ease;
         }
         
-        .risk-badge[data-tooltip]:hover, .backport-badge[data-tooltip]:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        .assessment-card:hover {
+            border-color: #d0d7de;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         }
         
-        /* Keyboard accessibility */
-        .risk-badge[data-tooltip]:focus, .backport-badge[data-tooltip]:focus {
-            outline: 2px solid var(--leaf-green);
-            outline-offset: 2px;
+        .assessment-title {
+            margin: 0 0 12px 0;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #24292f;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .assessment-content {
+            color: #656d76;
+            line-height: 1.5;
+        }
+        
+        /* Risk Assessment Card */
+        .risk-assessment-card {
+            border-left: 4px solid var(--risk-color);
+        }
+        
+        .risk-level-display {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        
+        .risk-explanation {
+            font-size: 0.9rem;
+            color: #656d76;
+        }
+        
+        .risk-summary {
+            margin: 0 0 12px 0;
+            font-weight: 500;
+            color: #24292f;
+        }
+        
+        .risk-details ul {
+            margin: 8px 0;
+            padding-left: 20px;
+        }
+        
+        .risk-details li {
+            margin: 4px 0;
+        }
+        
+        /* Backport Assessment Card */
+        .backport-assessment-card {
+            border-left: 4px solid #0969da;
+        }
+        
+        .backport-decision {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+        
+        .backport-decision.approve {
+            background: #dcfce7;
+            color: #166534;
+        }
+        
+        .backport-decision.reject {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+        
+        .backport-reasoning {
+            margin: 12px 0;
+            font-style: italic;
+            color: #656d76;
+        }
+        
+        .backport-recommendations {
+            margin-top: 12px;
+            padding: 12px;
+            background: #f6f8fa;
+            border-radius: 6px;
+            border-left: 3px solid #0969da;
+        }
+        
+        /* Commit Message Card */
+        .commit-message-card {
+            border-left: 4px solid #8b5cf6;
+        }
+        
+        .commit-message-content {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 16px;
+            font-family: 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace;
+            font-size: 0.85rem;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            color: #334155;
+            position: relative;
+        }
+        
+        .copy-button {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: #0969da;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        
+        .copy-button:hover {
+            background: #0550ae;
+        }
+        
+        .copy-button:active {
+            background: #033d8b;
         }
         </style>
         """
@@ -1489,8 +1735,7 @@ class LowHangingFruitReportGenerator:
             // Add card hover effects
             addCardInteractions();
             
-            // Initialize custom tooltips
-            initializeCustomTooltips();
+            // Tooltips removed - using expandable assessment cards
             
             console.log('✅ Dashboard initialization complete');
         });
@@ -1696,6 +1941,10 @@ class LowHangingFruitReportGenerator:
             // Find all elements with data-tooltip attribute
             const tooltipElements = document.querySelectorAll('[data-tooltip]');
             
+            if (tooltipElements.length === 0) {
+                return;
+            }
+            
             tooltipElements.forEach(element => {
                 element.addEventListener('mouseenter', function(e) {
                     showTooltip(e.target, e.target.getAttribute('data-tooltip'));
@@ -1717,13 +1966,17 @@ class LowHangingFruitReportGenerator:
         }
 
         function showTooltip(element, content) {
+            if (!content) {
+                return;
+            }
+            
             // Remove any existing tooltip
             hideTooltip();
             
             // Create tooltip element
             const tooltip = document.createElement('div');
             tooltip.className = 'custom-tooltip';
-            tooltip.innerHTML = content;
+            tooltip.textContent = content;
             
             // Add to document
             document.body.appendChild(tooltip);
@@ -1804,6 +2057,72 @@ class LowHangingFruitReportGenerator:
                 button.innerHTML = '📋 Show Details';
                 button.style.background = 'var(--earth-tan)';
                 button.style.color = 'var(--orchard-green)';
+            }
+        }
+        
+        // Copy commit message functionality
+        function copyCommitMessage(prNumber) {
+            const commitContent = document.querySelector(`#commit-message-${prNumber}`);
+            if (!commitContent) {
+                console.error(`Commit message element not found for PR ${prNumber}`);
+                return;
+            }
+            
+            const text = commitContent.textContent.trim();
+            
+            // Use modern clipboard API if available
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(text).then(() => {
+                    showCopySuccess(prNumber);
+                }).catch(err => {
+                    console.error('Failed to copy commit message:', err);
+                    fallbackCopyTextToClipboard(text, prNumber);
+                });
+            } else {
+                // Fallback for older browsers
+                fallbackCopyTextToClipboard(text, prNumber);
+            }
+        }
+        
+        function fallbackCopyTextToClipboard(text, prNumber) {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            
+            // Avoid scrolling to bottom
+            textArea.style.top = "0";
+            textArea.style.left = "0";
+            textArea.style.position = "fixed";
+            textArea.style.opacity = "0";
+            
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            
+            try {
+                const successful = document.execCommand('copy');
+                if (successful) {
+                    showCopySuccess(prNumber);
+                } else {
+                    console.error('Fallback copy command failed');
+                }
+            } catch (err) {
+                console.error('Fallback copy failed:', err);
+            }
+            
+            document.body.removeChild(textArea);
+        }
+        
+        function showCopySuccess(prNumber) {
+            const button = document.querySelector(`button[onclick="copyCommitMessage(${prNumber})"]`);
+            if (button) {
+                const originalText = button.textContent;
+                button.textContent = 'Copied!';
+                button.style.background = '#10b981';
+                
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.style.background = '#0969da';
+                }, 2000);
             }
         }
         </script>
