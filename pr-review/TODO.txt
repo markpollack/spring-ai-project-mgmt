@@ -2,6 +2,11 @@
 
 ## High Priority
 
+
+### REporting
+
+- When looking at the report, i see 'LOW' and 'APPROVE' or 'REJECT' and hovering over gives a tooltip for some but not other that explain why that decision was made.  the tooltip doesn't show all the info.  maybe a larger tooltip area is needed or some other representation.
+
 ### Fix CLAUDE.md Improvement Process
 - **Issue**: The improve_claude_md.py script has a content extraction bug that truncates the output file
 - **Impact**: CLAUDE.md file was corrupted during improvement, lost most content
