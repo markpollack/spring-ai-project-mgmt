@@ -473,6 +473,7 @@ class LowHangingFruitReportGenerator:
         {self._generate_backport_section(backport_categories)}
         {self._generate_orchard_sections(categories)}
     </div>
+    {self._generate_modal_html()}
     {self._generate_javascript()}
 </body>
 </html>"""
@@ -618,7 +619,7 @@ class LowHangingFruitReportGenerator:
             positive_list = f"<ul class='positive-findings'>{''.join(items)}</ul>"
         
         return f"""
-        <div class="pr-card" data-risk="{pr.risk_level.lower()}" data-type="{pr.pr_type}" data-backport="{pr.backport_badge_color}">
+        <div class="pr-card" data-pr-number="{pr.number}" data-risk="{pr.risk_level.lower()}" data-type="{pr.pr_type}" data-backport="{pr.backport_badge_color}">
             <div class="pr-header">
                 <div class="pr-icon">{pr.fruit_icon}</div>
                 <div class="pr-title-section">
@@ -661,15 +662,14 @@ class LowHangingFruitReportGenerator:
             <div class="pr-actions">
                 <a href="{pr.url}" target="_blank" class="btn btn-primary">View on GitHub</a>
                 <a href="{pr.url}/files" target="_blank" class="btn btn-secondary">View Files</a>
-                <button class="btn btn-details expand-details-btn" onclick="togglePRDetails(this)">
-                    📋 Show Assessments
+                <button class="btn btn-details modal-details-btn" onclick="openAssessmentModal({pr.number})">
+                    🔍 View Assessments
                 </button>
             </div>
             
-            <div class="pr-details-expandable" style="display: none;">
-                <div class="assessment-cards-container">
-                    <div class="assessment-card risk-assessment-card">
-                    <h4 class="assessment-title">🔍 Risk Assessment</h4>
+            <!-- Hidden assessment data for modal population -->
+            <div class="assessment-data" style="display: none;" data-pr="{pr.number}">
+                <div class="risk-assessment-card">
                     <div class="assessment-content">
                         <div class="risk-level-display">
                             <span class="risk-badge risk-{pr.risk_level.lower()}">{pr.risk_level}</span>
@@ -682,8 +682,7 @@ class LowHangingFruitReportGenerator:
                     </div>
                 </div>
                 
-                <div class="assessment-card backport-assessment-card">
-                    <h4 class="assessment-title">🔄 Backport Assessment</h4>
+                <div class="backport-assessment-card">
                     <div class="assessment-content">
                         <div class="backport-decision {pr.backport_decision.lower()}">{pr.backport_icon} {pr.backport_decision}</div>
                         <p><strong>Classification:</strong> {pr.backport_classification}</p>
@@ -698,15 +697,13 @@ class LowHangingFruitReportGenerator:
                     </div>
                 </div>
                 
-                <div class="assessment-card commit-message-card">
-                    <h4 class="assessment-title">📝 Final Commit Message</h4>
+                <div class="commit-message-card">
                     <div class="assessment-content">
                         <div class="commit-message-content">
                             <pre id="commit-message-{pr.number}" class="commit-message">{html.escape(pr.commit_message)}</pre>
                             <button class="copy-button" onclick="copyCommitMessage({pr.number})">Copy</button>
                         </div>
                     </div>
-                </div>
                 </div>
             </div>
         </div>
@@ -743,6 +740,46 @@ class LowHangingFruitReportGenerator:
             <button class="show-diff-btn">🔍 Show Diff Preview</button>
             """
         return ""
+    
+    def _generate_modal_html(self) -> str:
+        """Generate modal HTML structure for detailed assessment view"""
+        return """
+        <!-- Assessment Details Modal -->
+        <div id="assessment-modal" class="modal-overlay" style="display: none;">
+            <div class="modal-container">
+                <div class="modal-header">
+                    <h2 id="modal-pr-title">PR Assessment Details</h2>
+                    <button class="modal-close" onclick="closeAssessmentModal()">×</button>
+                </div>
+                <div class="modal-content">
+                    <div class="modal-assessment-layout">
+                        <div class="modal-top-row">
+                            <div class="modal-assessment-card modal-risk-card">
+                                <h3>🔍 Risk Assessment</h3>
+                                <div id="modal-risk-content">
+                                    <!-- Risk content will be populated by JavaScript -->
+                                </div>
+                            </div>
+                            <div class="modal-assessment-card modal-backport-card">
+                                <h3>🔄 Backport Assessment</h3>
+                                <div id="modal-backport-content">
+                                    <!-- Backport content will be populated by JavaScript -->
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-bottom-row">
+                            <div class="modal-assessment-card modal-commit-card">
+                                <h3>📝 Final Commit Message</h3>
+                                <div id="modal-commit-content">
+                                    <!-- Commit message content will be populated by JavaScript -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        """
     
     def _generate_css(self) -> str:
         """Generate CSS styles with orchard/garden theme"""
@@ -960,14 +997,14 @@ class LowHangingFruitReportGenerator:
         
         .backport-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
             gap: 25px;
         }
         
         /* === PR GRID === */
         .pr-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
             gap: 25px;
         }
         
@@ -1359,6 +1396,19 @@ class LowHangingFruitReportGenerator:
             transform: translateY(-2px);
         }
         
+        .modal-details-btn {
+            background: var(--leaf-green);
+            color: white;
+            border: 2px solid var(--leaf-green);
+        }
+        
+        .modal-details-btn:hover {
+            background: var(--orchard-green);
+            border-color: var(--orchard-green);
+            color: white;
+            transform: translateY(-2px);
+        }
+        
         /* === EXPANDABLE DETAILS === */
         .pr-details-expandable {
             margin-top: 15px;
@@ -1433,6 +1483,23 @@ class LowHangingFruitReportGenerator:
         }
         
         /* === RESPONSIVE DESIGN === */
+        
+        /* Large screens: 2 cards per row for better readability */
+        @media (min-width: 1200px) {
+            .pr-grid, .backport-grid {
+                grid-template-columns: repeat(2, 1fr);
+                max-width: 1200px;
+                margin: 0 auto;
+            }
+        }
+        
+        /* Medium screens: maintain flexible layout */
+        @media (min-width: 769px) and (max-width: 1199px) {
+            .pr-grid, .backport-grid {
+                grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
+            }
+        }
+        
         @media (max-width: 768px) {
             .container {
                 padding: 15px;
@@ -1447,7 +1514,7 @@ class LowHangingFruitReportGenerator:
                 gap: 10px;
             }
             
-            .pr-grid {
+            .pr-grid, .backport-grid {
                 grid-template-columns: 1fr;
             }
             
@@ -1686,13 +1753,14 @@ class LowHangingFruitReportGenerator:
             background: #f8fafc;
             border: 1px solid #e2e8f0;
             border-radius: 6px;
-            padding: 16px;
+            padding: 20px;
             font-family: 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace;
-            font-size: 0.85rem;
-            line-height: 1.5;
+            font-size: 0.9rem;
+            line-height: 1.6;
             white-space: pre-wrap;
             color: #334155;
             position: relative;
+            min-height: 120px;
         }
         
         .copy-button {
@@ -1715,6 +1783,172 @@ class LowHangingFruitReportGenerator:
         
         .copy-button:active {
             background: #033d8b;
+        }
+        
+        /* === MODAL STYLES === */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(4px);
+        }
+        
+        .modal-container {
+            background: white;
+            border-radius: 12px;
+            width: 95%;
+            max-width: 1200px;
+            max-height: 90vh;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: modalSlideIn 0.3s ease-out;
+        }
+        
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-50px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 30px;
+            border-bottom: 1px solid #e1e5e9;
+            background: #f8f9fa;
+        }
+        
+        .modal-header h2 {
+            margin: 0;
+            color: var(--orchard-green);
+            font-size: 1.5rem;
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 2rem;
+            color: #6c757d;
+            cursor: pointer;
+            padding: 0;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.2s ease;
+        }
+        
+        .modal-close:hover {
+            background: #e9ecef;
+            color: #495057;
+        }
+        
+        .modal-content {
+            padding: 30px;
+            overflow-y: auto;
+            max-height: calc(90vh - 100px);
+        }
+        
+        .modal-assessment-layout {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+        
+        .modal-top-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+        
+        .modal-bottom-row {
+            display: flex;
+            width: 100%;
+        }
+        
+        .modal-assessment-card {
+            background: #fafbfc;
+            border: 1px solid #e1e5e9;
+            border-radius: 8px;
+            padding: 24px;
+            min-height: 300px;
+        }
+        
+        .modal-assessment-card h3 {
+            margin: 0 0 20px 0;
+            color: #24292f;
+            font-size: 1.2rem;
+            border-bottom: 2px solid #e1e5e9;
+            padding-bottom: 12px;
+        }
+        
+        .modal-risk-card {
+            border-left: 4px solid var(--apple-red);
+        }
+        
+        .modal-backport-card {
+            border-left: 4px solid #0969da;
+        }
+        
+        .modal-commit-card {
+            border-left: 4px solid #8b5cf6;
+        }
+        
+        .modal-commit-card .commit-message-content {
+            font-size: 1rem;
+            line-height: 1.7;
+            padding: 24px;
+            min-height: 200px;
+        }
+        
+        /* Responsive modal */
+        @media (max-width: 1024px) {
+            .modal-top-row {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .modal-assessment-layout {
+                gap: 20px;
+            }
+            
+            .modal-container {
+                width: 98%;
+                margin: 10px;
+            }
+            
+            .modal-content {
+                padding: 20px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .modal-header {
+                padding: 15px 20px;
+            }
+            
+            .modal-header h2 {
+                font-size: 1.2rem;
+            }
+            
+            .modal-content {
+                padding: 15px;
+            }
         }
         </style>
         """
@@ -2125,6 +2359,77 @@ class LowHangingFruitReportGenerator:
                 }, 2000);
             }
         }
+        
+        // Modal functionality for assessment details
+        function openAssessmentModal(prNumber) {
+            const assessmentData = document.querySelector(`[data-pr="${prNumber}"]`);
+            if (!assessmentData) {
+                console.error(`Assessment data not found for PR ${prNumber}`);
+                return;
+            }
+            
+            // Get PR title from the main card
+            const prCard = document.querySelector(`[data-pr-number="${prNumber}"]`);
+            const prTitle = prCard ? prCard.querySelector('.pr-title a').textContent : `PR #${prNumber}`;
+            
+            // Get assessment content from hidden data
+            const riskContent = assessmentData.querySelector('.risk-assessment-card .assessment-content');
+            const backportContent = assessmentData.querySelector('.backport-assessment-card .assessment-content');
+            const commitContent = assessmentData.querySelector('.commit-message-card .assessment-content');
+            
+            // Update modal title
+            document.getElementById('modal-pr-title').textContent = prTitle;
+            
+            // Populate modal content
+            if (riskContent) {
+                document.getElementById('modal-risk-content').innerHTML = riskContent.innerHTML;
+            }
+            if (backportContent) {
+                document.getElementById('modal-backport-content').innerHTML = backportContent.innerHTML;
+            }
+            if (commitContent) {
+                const modalCommitContent = document.getElementById('modal-commit-content');
+                modalCommitContent.innerHTML = commitContent.innerHTML;
+                
+                // Update copy button for modal context
+                const copyButton = modalCommitContent.querySelector('.copy-button');
+                if (copyButton) {
+                    copyButton.setAttribute('onclick', `copyCommitMessage(${prNumber})`);
+                }
+            }
+            
+            // Show modal
+            const modal = document.getElementById('assessment-modal');
+            modal.style.display = 'flex';
+            document.body.style.overflow = 'hidden'; // Prevent background scrolling
+            
+            // Focus trap for accessibility
+            modal.focus();
+        }
+        
+        function closeAssessmentModal() {
+            const modal = document.getElementById('assessment-modal');
+            modal.style.display = 'none';
+            document.body.style.overflow = ''; // Restore scrolling
+        }
+        
+        // ESC key support for modal
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                const modal = document.getElementById('assessment-modal');
+                if (modal.style.display === 'flex') {
+                    closeAssessmentModal();
+                }
+            }
+        });
+        
+        // Click outside modal to close
+        document.addEventListener('click', function(e) {
+            const modal = document.getElementById('assessment-modal');
+            if (e.target === modal) {
+                closeAssessmentModal();
+            }
+        });
         </script>
         """
 
