@@ -690,6 +690,13 @@ class MavenStatusChecker:
         if warnings.get('critical'):
             return False
         
+        # Check if any publishing services have issues
+        if warnings.get('publishing_services'):
+            for service in warnings['publishing_services']:
+                # Any publishing service issue makes publishing unhealthy
+                if any(status in service.lower() for status in ['under maintenance', 'outage', 'degraded']):
+                    return False
+        
         if warnings.get('incidents'):
             for incident in warnings['incidents']:
                 if '🔴 CRITICAL' in incident:
@@ -703,7 +710,8 @@ class MavenStatusChecker:
             'critical': [],      # Services that directly affect publishing
             'important': [],     # Services that may affect publishing
             'incidents': [],     # Active incidents
-            'overall': None      # Overall system status
+            'overall': None,     # Overall system status
+            'publishing_services': []  # Specific publishing service statuses
         }
         
         if not status_data:
@@ -734,12 +742,21 @@ class MavenStatusChecker:
                     }.get(impact, f'({impact.upper()})')
                     warnings['incidents'].append(f"{impact_desc}: {name}")
             
-            # Categorize component statuses by publishing impact
-            publishing_critical = [
-                'publishing', 'upload', 'artifact', 'deploy', 'central repository',
-                'nexus', 'sonatype', 'staging', 'release'
+            # Check specific publishing services that directly impact Maven Central deployment
+            publishing_services = [
+                'Publishing - s01.oss.sonatype.org',
+                'Publishing - oss.sonatype.org',
+                'Nexus Repository Manager',
+                'Central Repository',
+                'Staging Repositories'
             ]
             
+            # Other critical services that block publishing
+            publishing_critical = [
+                'upload', 'artifact', 'deploy', 'nexus', 'staging', 'release'
+            ]
+            
+            # Important services that may affect publishing
             publishing_important = [
                 'portal', 'api', 'search', 'sync', 'cdn', 'repo1.maven.org'
             ]
@@ -753,14 +770,28 @@ class MavenStatusChecker:
                     status_display = status.replace('_', ' ').title()
                     component_msg = f"{name}: {status_display}"
                     
-                    # Categorize by impact on publishing
-                    name_lower = name.lower()
-                    if any(keyword in name_lower for keyword in publishing_critical):
-                        warnings['critical'].append(f"🔴 {component_msg} (blocks publishing)")
-                    elif any(keyword in name_lower for keyword in publishing_important):
-                        warnings['important'].append(f"🟠 {component_msg} (may affect publishing)")
+                    # Check if this is a specific publishing service
+                    if name in publishing_services:
+                        status_icon = {
+                            'under_maintenance': '🔧',
+                            'degraded_performance': '⚠️',
+                            'partial_outage': '🟠', 
+                            'major_outage': '🔴'
+                        }.get(status, '❌')
+                        warnings['publishing_services'].append(f"{status_icon} {component_msg}")
+                        
+                        # Also add to critical if it's a publishing service having issues
+                        if 'under_maintenance' in status or 'outage' in status:
+                            warnings['critical'].append(f"🔴 {component_msg} (blocks publishing)")
                     else:
-                        warnings['important'].append(f"🟡 {component_msg}")
+                        # Categorize other components by impact on publishing
+                        name_lower = name.lower()
+                        if any(keyword in name_lower for keyword in publishing_critical):
+                            warnings['critical'].append(f"🔴 {component_msg} (blocks publishing)")
+                        elif any(keyword in name_lower for keyword in publishing_important):
+                            warnings['important'].append(f"🟠 {component_msg} (may affect publishing)")
+                        else:
+                            warnings['important'].append(f"🟡 {component_msg}")
         
         except Exception as e:
             Logger.warn(f"Error parsing Maven status: {e}")
@@ -770,8 +801,9 @@ class MavenStatusChecker:
     def format_status_message(self, warnings: dict) -> str:
         """Format status warnings into a user-friendly message"""
         if not any([warnings.get('critical'), warnings.get('important'), 
-                   warnings.get('incidents'), warnings.get('overall')]):
-            return "✅ Maven Central infrastructure appears healthy"
+                   warnings.get('incidents'), warnings.get('overall'), 
+                   warnings.get('publishing_services')]):
+            return "✅ Maven Central infrastructure appears healthy\n✅ Maven Central appears ready for deployment"
         
         message = "⚠️  MAVEN CENTRAL STATUS WARNINGS:\n"
         
@@ -779,23 +811,30 @@ class MavenStatusChecker:
         if warnings.get('overall'):
             message += f"🌐 {warnings['overall']}\n\n"
         
-        # Show critical publishing issues first
+        # Show publishing services status prominently
+        if warnings.get('publishing_services'):
+            message += "📦 PUBLISHING SERVICES STATUS:\n"
+            for service in warnings['publishing_services']:
+                message += f"  {service}\n"
+            message += "\n"
+        
+        # Show critical publishing issues
         if warnings.get('critical'):
-            message += "CRITICAL - Publishing Blocked:\n"
+            message += "🚫 CRITICAL - Publishing Blocked:\n"
             for warning in warnings['critical']:
                 message += f"  {warning}\n"
             message += "\n"
         
         # Show active incidents
         if warnings.get('incidents'):
-            message += "Active Incidents:\n"
+            message += "🚨 Active Incidents:\n"
             for incident in warnings['incidents']:
                 message += f"  {incident}\n"
             message += "\n"
         
         # Show other important issues
         if warnings.get('important'):
-            message += "Other Service Issues:\n"
+            message += "⚠️  Other Service Issues:\n"
             for warning in warnings['important']:
                 message += f"  {warning}\n"
             message += "\n"
@@ -803,12 +842,23 @@ class MavenStatusChecker:
         # Add guidance based on severity
         if warnings.get('critical'):
             message += "🚫 RECOMMENDATION: Publishing will likely fail - wait for resolution\n"
+        elif warnings.get('publishing_services'):
+            # Check if any publishing services are under maintenance or have outages
+            has_maintenance = any('under maintenance' in service.lower() for service in warnings.get('publishing_services', []))
+            has_outage = any('outage' in service.lower() for service in warnings.get('publishing_services', []))
+            
+            if has_outage:
+                message += "🚫 RECOMMENDATION: Publishing services unavailable - deployment will fail\n"
+            elif has_maintenance:
+                message += "⚠️  RECOMMENDATION: Publishing services under maintenance - deployment may fail\n"
+            else:
+                message += "💡 RECOMMENDATION: Publishing services degraded - monitor deployment closely\n"
         elif warnings.get('incidents') and any('CRITICAL' in inc for inc in warnings['incidents']):
             message += "⚠️  RECOMMENDATION: High risk of publishing failure - consider waiting\n"
         elif warnings.get('important') or warnings.get('incidents'):
             message += "💡 RECOMMENDATION: Publishing may be slower or fail - monitor closely\n"
         
-        message += "📍 Live status: https://status.maven.org/"
+        message += "\n📍 Live status: https://status.maven.org/"
         
         return message
 
@@ -988,6 +1038,241 @@ This change makes Spring AI {self.config.target_version} available in Spring Ini
             subprocess.run([
                 "gh", "pr", "create",
                 "--repo", "spring-io/start.spring.io",
+                "--title", pr_title,
+                "--body", pr_body,
+                "--head", self.branch_name,
+                "--base", "main"
+            ], cwd=str(self.repo_dir), check=True, capture_output=True, text=True)
+            
+            Logger.success("Pull request created successfully!")
+            return True
+            
+        except subprocess.CalledProcessError as e:
+            Logger.error(f"Failed to create pull request: {e}")
+            if e.stderr:
+                Logger.error(f"Error details: {e.stderr}")
+            return False
+    
+    def cleanup_repository(self) -> bool:
+        """Remove the cloned repository"""
+        try:
+            if self.repo_dir.exists():
+                Logger.info(f"Cleaning up repository: {self.repo_dir}")
+                import shutil
+                shutil.rmtree(self.repo_dir)
+            return True
+        except Exception as e:
+            Logger.error(f"Error cleaning up repository: {e}")
+            return False
+
+
+class SpringWebsiteUpdater:
+    """Handles updates to spring-website-content repository"""
+    
+    def __init__(self, config: ReleaseConfig):
+        self.config = config
+        self.repo_dir = config.script_dir / "spring-website-content"
+        self.branch_name = f"update-spring-ai-{config.target_version}"
+    
+    def update_documentation(self) -> bool:
+        """Update documentation.json for Spring AI point release"""
+        Logger.info("🌐 Updating Spring website documentation...")
+        
+        if not self._clone_repository():
+            return False
+        
+        if not self._create_branch():
+            return False
+        
+        if not self._update_documentation_json():
+            return False
+        
+        if not self._commit_changes():
+            return False
+        
+        if not self._create_pull_request():
+            return False
+        
+        return True
+    
+    def _clone_repository(self) -> bool:
+        """Clone spring-website-content repository"""
+        try:
+            # Clean up existing directory first
+            if self.repo_dir.exists():
+                Logger.info(f"Removing existing repository: {self.repo_dir}")
+                import shutil
+                shutil.rmtree(self.repo_dir)
+            
+            Logger.info("Cloning spring-website-content repository...")
+            
+            if self.config.dry_run:
+                Logger.warn("DRY RUN: Would clone spring-website-content repository")
+                return True
+            
+            subprocess.run([
+                "git", "clone", 
+                "https://github.com/spring-io/spring-website-content.git",
+                str(self.repo_dir)
+            ], check=True, capture_output=True, text=True)
+            
+            Logger.success("Repository cloned successfully")
+            return True
+            
+        except subprocess.CalledProcessError as e:
+            Logger.error(f"Failed to clone repository: {e}")
+            return False
+    
+    def _create_branch(self) -> bool:
+        """Create feature branch for documentation update"""
+        try:
+            Logger.info(f"Creating branch: {self.branch_name}")
+            
+            if self.config.dry_run:
+                Logger.warn(f"DRY RUN: Would create branch {self.branch_name}")
+                return True
+            
+            subprocess.run([
+                "git", "-C", str(self.repo_dir), "checkout", "-b", self.branch_name
+            ], check=True, capture_output=True, text=True)
+            
+            return True
+            
+        except subprocess.CalledProcessError as e:
+            Logger.error(f"Failed to create branch: {e}")
+            return False
+    
+    def _update_documentation_json(self) -> bool:
+        """Update documentation.json for point release"""
+        try:
+            import json
+            from packaging import version
+            
+            doc_file = self.repo_dir / "content" / "projects" / "spring-ai" / "documentation.json"
+            
+            if not doc_file.exists():
+                Logger.error(f"Documentation file not found: {doc_file}")
+                return False
+            
+            Logger.info("Reading documentation.json...")
+            
+            # Read current content
+            with open(doc_file, 'r') as f:
+                doc_data = json.load(f)
+            
+            # Find current version and calculate updates
+            current_version = doc_data.get('version', '')
+            if not current_version:
+                Logger.error("No version field found in documentation.json")
+                return False
+            
+            Logger.info(f"Current version in documentation.json: {current_version}")
+            Logger.info(f"Target version: {self.config.target_version}")
+            
+            # Check if already updated
+            if current_version == self.config.target_version:
+                Logger.warn(f"Documentation already shows version {self.config.target_version}")
+                return False
+            
+            # Update version field
+            old_version = current_version
+            doc_data['version'] = self.config.target_version
+            
+            # Update API docs URL (point release specific)
+            if 'api' in doc_data and 'url' in doc_data['api']:
+                old_api_url = doc_data['api']['url']
+                new_api_url = old_api_url.replace(f"/{old_version}/", f"/{self.config.target_version}/")
+                doc_data['api']['url'] = new_api_url
+                Logger.info(f"Updated API docs URL: {old_api_url} → {new_api_url}")
+            
+            # Note: Reference docs URL stays at major.minor level for point releases
+            # e.g., https://docs.spring.io/spring-ai/reference/1.0/index.html (unchanged)
+            
+            # Show preview of changes
+            Logger.info("\n📋 SPRING WEBSITE CHANGES PREVIEW:")
+            Logger.info(f"File: {doc_file.relative_to(self.repo_dir)}")
+            Logger.info(f"  version: {old_version} → {self.config.target_version}")
+            if 'api' in doc_data:
+                Logger.info(f"  api.url: updated to reference {self.config.target_version}")
+            Logger.info(f"  reference.url: unchanged (stays at major.minor level)")
+            
+            if self.config.dry_run:
+                Logger.warn("DRY RUN: Would update documentation.json")
+                return True
+            
+            # Ask for confirmation
+            if not Logger.confirm("Proceed with documentation.json update?"):
+                Logger.info("Documentation update cancelled by user")
+                return False
+            
+            # Write updated content
+            with open(doc_file, 'w') as f:
+                json.dump(doc_data, f, indent=2, ensure_ascii=False)
+                f.write('\n')  # Add trailing newline
+            
+            Logger.success("documentation.json updated successfully")
+            return True
+            
+        except json.JSONDecodeError as e:
+            Logger.error(f"Invalid JSON in documentation.json: {e}")
+            return False
+        except Exception as e:
+            Logger.error(f"Error updating documentation.json: {e}")
+            return False
+    
+    def _commit_changes(self) -> bool:
+        """Commit documentation changes"""
+        try:
+            commit_msg = f"Update Spring AI documentation to {self.config.target_version}"
+            
+            Logger.info(f"Committing changes: {commit_msg}")
+            
+            if self.config.dry_run:
+                Logger.warn("DRY RUN: Would commit documentation changes")
+                return True
+            
+            subprocess.run([
+                "git", "-C", str(self.repo_dir), "add", "content/projects/spring-ai/documentation.json"
+            ], check=True, capture_output=True, text=True)
+            
+            subprocess.run([
+                "git", "-C", str(self.repo_dir), "commit", "-m", commit_msg
+            ], check=True, capture_output=True, text=True)
+            
+            return True
+            
+        except subprocess.CalledProcessError as e:
+            Logger.error(f"Failed to commit changes: {e}")
+            return False
+    
+    def _create_pull_request(self) -> bool:
+        """Create pull request for documentation update"""
+        try:
+            pr_title = f"Update Spring AI documentation to {self.config.target_version}"
+            pr_body = f"""Updates Spring AI project documentation for point release {self.config.target_version}.
+
+**Changes:**
+- Updated version field from previous version to {self.config.target_version}
+- Updated API documentation URL to reference {self.config.target_version}
+- Reference documentation URL unchanged (stays at major.minor level)
+
+This change ensures the Spring AI project page reflects the latest point release information."""
+            
+            Logger.info("Creating pull request...")
+            
+            if self.config.dry_run:
+                Logger.warn("DRY RUN: Would create pull request")
+                return True
+            
+            # Push branch first
+            subprocess.run([
+                "git", "-C", str(self.repo_dir), "push", "-u", "origin", self.branch_name
+            ], check=True, capture_output=True, text=True)
+            
+            # Create PR
+            subprocess.run([
+                "gh", "pr", "create",
+                "--repo", "spring-io/spring-website-content",
                 "--title", pr_title,
                 "--body", pr_body,
                 "--head", self.branch_name,
@@ -1351,16 +1636,37 @@ class ReleaseWorkflow:
         if not self.setup_workspace():
             return False
         
+        # Skip-to mapping for post-Maven Central workflow
+        post_maven_skip_to_mapping = {
+            'start-spring-io': 'Update start.spring.io',
+            'spring-website': 'Update spring-website-content',
+        }
+        
         steps = [
             ("Set next development version", self._set_next_dev_version),
             ("Commit development version", self._commit_dev_version),
             ("Push all changes", self._push_dev_changes),
             ("Update start.spring.io", self._update_start_spring_io),
+            ("Update spring-website-content", self._update_spring_website),
         ]
+        
+        # Find starting step index based on skip-to parameter
+        start_index = 0
+        if self.config.skip_to and self.config.skip_to in ['start-spring-io', 'spring-website']:
+            target_step = post_maven_skip_to_mapping.get(self.config.skip_to)
+            if target_step:
+                for i, (step_name, _) in enumerate(steps):
+                    if step_name == target_step:
+                        start_index = i
+                        Logger.info(f"Skipping to step: {target_step}")
+                        break
+                else:
+                    Logger.error(f"Skip-to step not found: {self.config.skip_to}")
+                    return False
         
         completed_steps = state["completed_steps"].copy()
         
-        for step_name, step_func in steps:
+        for step_name, step_func in steps[start_index:]:
             if not self.confirm_step(f"Execute: {step_name}"):
                 Logger.warn("Step cancelled by user")
                 return False
@@ -1503,6 +1809,37 @@ class ReleaseWorkflow:
             # Always cleanup the repository
             updater.cleanup_repository()
     
+    def _update_spring_website(self) -> bool:
+        """Update spring-website-content with new Spring AI documentation"""
+        # Skip if user requested to skip this step
+        if getattr(self.config, 'skip_spring_website', False):
+            Logger.info("Skipping spring-website-content update (--skip-spring-website specified)")
+            return True
+        
+        # Check if GitHub CLI is available
+        if not self.github_helper.is_gh_available():
+            Logger.warn("GitHub CLI not available - skipping spring-website-content update")
+            return True
+        
+        updater = SpringWebsiteUpdater(self.config)
+        
+        try:
+            # Update documentation
+            success = updater.update_documentation()
+            if success:
+                Logger.success("✅ spring-website-content update completed successfully!")
+                return True
+            else:
+                Logger.error("❌ spring-website-content update failed")
+                return False
+                
+        except Exception as e:
+            Logger.error(f"Unexpected error updating spring-website-content: {e}")
+            return False
+        finally:
+            # Always cleanup the repository
+            updater.cleanup_repository()
+    
     def _trigger_deploy_docs(self) -> bool:
         """Trigger documentation deployment on target branch"""
         if not self.github_helper.is_gh_available():
@@ -1531,17 +1868,22 @@ class ReleaseWorkflow:
             warnings = status_checker.get_status_warnings(status_data)
             
             if any([warnings.get('critical'), warnings.get('important'), 
-                   warnings.get('incidents'), warnings.get('overall')]):
+                   warnings.get('incidents'), warnings.get('overall'),
+                   warnings.get('publishing_services')]):
                 Logger.warn(status_checker.format_status_message(warnings))
                 
                 if not status_checker.is_publishing_healthy(warnings):
                     Logger.warn("⚠️  Publishing services may be affected - deployment could fail")
                 
-                # Ask user if they want to proceed despite warnings
-                proceed = input(f"\n{Colors.YELLOW}Proceed with Maven Central deployment anyway? (y/N): {Colors.NC}").strip().lower()
-                if proceed not in ['y', 'yes']:
-                    Logger.info("Maven Central deployment cancelled by user")
-                    return False
+                # Ask user if they want to proceed despite warnings (skip in dry-run)
+                if self.config.dry_run:
+                    Logger.warn("DRY RUN: Would ask user to proceed despite Maven Central warnings")
+                    Logger.warn("DRY RUN: Assuming user would proceed")
+                else:
+                    proceed = input(f"\n{Colors.YELLOW}Proceed with Maven Central deployment anyway? (y/N): {Colors.NC}").strip().lower()
+                    if proceed not in ['y', 'yes']:
+                        Logger.info("Maven Central deployment cancelled by user")
+                        return False
             else:
                 Logger.info(status_checker.format_status_message(warnings))
         
@@ -1582,7 +1924,7 @@ Skip-to options: setup, set-version, build, commit-release, tag, push, docs, jav
                        help='Complete development version setup after Maven Central success')
     parser.add_argument('--skip-to', choices=[
         'setup', 'set-version', 'build', 'commit-release', 'tag', 'branch', 'push', 
-        'docs', 'javadoc', 'maven-central', 'start-spring-io'
+        'docs', 'javadoc', 'maven-central', 'start-spring-io', 'spring-website'
     ], help='Skip to specific workflow step (useful for resuming interrupted releases)')
     parser.add_argument('--cleanup', action='store_true',
                        help='Clean up state files and workspace directory before starting (fresh start)')
@@ -1594,6 +1936,10 @@ Skip-to options: setup, set-version, build, commit-release, tag, push, docs, jav
                        help='Skip start.spring.io update in post-Maven Central workflow')
     parser.add_argument('--cleanup-start-spring-io', action='store_true',
                        help='Clean up start.spring.io repository and exit')
+    parser.add_argument('--skip-spring-website', action='store_true',
+                       help='Skip spring-website-content update in post-Maven Central workflow')
+    parser.add_argument('--cleanup-spring-website', action='store_true',
+                       help='Clean up spring-website-content repository and exit')
     
     args = parser.parse_args()
     
@@ -1617,6 +1963,8 @@ Skip-to options: setup, set-version, build, commit-release, tag, push, docs, jav
     config.skip_maven_status_check = args.skip_maven_status_check
     config.skip_start_spring_io = args.skip_start_spring_io
     config.cleanup_start_spring_io = args.cleanup_start_spring_io
+    config.skip_spring_website = args.skip_spring_website
+    config.cleanup_spring_website = args.cleanup_spring_website
     
     # Validate version format
     if not config.validate_version():
@@ -1671,6 +2019,28 @@ Skip-to options: setup, set-version, build, commit-release, tag, push, docs, jav
             Logger.error(f"\nUnexpected error during start.spring.io cleanup: {e}")
             sys.exit(1)
     
+    # Handle spring-website-content cleanup if requested
+    if config.cleanup_spring_website:
+        Logger.bold("\n🧹 SPRING-WEBSITE-CONTENT CLEANUP")
+        Logger.bold("=" * 40)
+        
+        if not workflow.confirm_step("Clean up spring-website-content repository"):
+            Logger.info("spring-website-content cleanup cancelled by user")
+            sys.exit(0)
+        
+        try:
+            updater = SpringWebsiteUpdater(config)
+            success = updater.cleanup_repository()
+            if success:
+                Logger.success("\n✅ spring-website-content repository cleaned up successfully!")
+            else:
+                Logger.error("\nspring-website-content cleanup failed!")
+                sys.exit(1)
+            sys.exit(0)
+        except Exception as e:
+            Logger.error(f"\nUnexpected error during spring-website-content cleanup: {e}")
+            sys.exit(1)
+    
     # Handle manual Maven status check if requested
     if config.check_maven_status:
         Logger.bold("\n🔍 MAVEN CENTRAL STATUS CHECK")
@@ -1683,7 +2053,8 @@ Skip-to options: setup, set-version, build, commit-release, tag, push, docs, jav
         print(status_checker.format_status_message(warnings))
         
         if any([warnings.get('critical'), warnings.get('important'), 
-               warnings.get('incidents'), warnings.get('overall')]) and not status_checker.is_publishing_healthy(warnings):
+               warnings.get('incidents'), warnings.get('overall'),
+               warnings.get('publishing_services')]) and not status_checker.is_publishing_healthy(warnings):
             Logger.warn("\n⚠️  Publishing services may be affected - consider waiting before deployment")
             sys.exit(1)
         else:

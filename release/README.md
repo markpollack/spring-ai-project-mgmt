@@ -44,10 +44,12 @@ Options:
   --post-maven-central         Complete development version setup after Maven Central success
   --check-maven-status         Check Maven Central infrastructure status and exit
   --skip-maven-status-check    Skip Maven Central status check before deployment
-  --skip-to STEP              Skip to specific workflow step (setup, set-version, build, start-spring-io, etc.)
+  --skip-to STEP              Skip to specific workflow step (setup, set-version, build, start-spring-io, spring-website, etc.)
   --cleanup                   Clean up state files and workspace directory before starting
   --skip-start-spring-io      Skip start.spring.io update in post-Maven Central workflow
   --cleanup-start-spring-io   Clean up start.spring.io repository and exit
+  --skip-spring-website       Skip spring-website-content update in post-Maven Central workflow
+  --cleanup-spring-website    Clean up spring-website-content repository and exit
   --help                      Show help message and exit
 ```
 
@@ -61,7 +63,7 @@ Executes release steps up to Maven Central trigger and **stops**:
 python3 spring-ai-point-release.py 1.0.1
 ```
 
-### Phase 2: Post-Maven Central Workflow (4 steps)  
+### Phase 2: Post-Maven Central Workflow (5 steps)  
 Completes development version setup **only after Maven Central success**:
 ```bash
 python3 spring-ai-point-release.py 1.0.1 --post-maven-central
@@ -233,6 +235,22 @@ After Maven Central deployment succeeds, run with `--post-maven-central`:
   ```
 - **Purpose**: Makes new Spring AI version available in Spring Initializr for new projects
 - **Interactive**: Shows diff preview and PR details before creating pull request
+
+### 15. Update spring-website-content
+- **Action**: Updates Spring AI project documentation on the Spring website
+- **Commands**:
+  ```bash
+  git clone https://github.com/spring-io/spring-website-content.git ./spring-website-content
+  cd ./spring-website-content && git checkout -b update-spring-ai-1.0.1
+  # Update content/projects/spring-ai/documentation.json:
+  #   - version: 1.0.0 → 1.0.1
+  #   - api.url: updated to reference 1.0.1
+  #   - reference.url: unchanged (stays at major.minor level)
+  git add content/projects/spring-ai/documentation.json && git commit -m "Update Spring AI documentation to 1.0.1"
+  gh pr create --title "Update Spring AI documentation to 1.0.1" --body "..."
+  ```
+- **Purpose**: Updates Spring AI project page to reflect latest point release information
+- **Interactive**: Shows changes preview and confirmation before creating pull request
 
 ## Interactive Workflow
 
@@ -459,6 +477,9 @@ python3 spring-ai-point-release.py 1.0.1 --skip-to docs
 
 # Skip to start.spring.io update (Phase 2 only)
 python3 spring-ai-point-release.py 1.0.1 --skip-to start-spring-io
+
+# Skip to spring-website-content update (Phase 2 only)
+python3 spring-ai-point-release.py 1.0.1 --skip-to spring-website
 ```
 
 ## Maven Central Status Monitoring
@@ -589,6 +610,77 @@ python3 spring-ai-point-release.py 1.0.1 --cleanup-start-spring-io
 - **Immediate Availability**: New releases instantly available in Spring Initializr
 - **Consistent PRs**: Standardized commit messages and PR descriptions
 - **User Control**: Full transparency with diff preview before submission
+- **Error Recovery**: Automatic cleanup and clear error reporting
+
+## spring-website-content Integration
+
+The script automatically updates spring-website-content to update Spring AI project documentation after releases.
+
+### Automatic Update Process
+
+**Part of Phase 2 Workflow:**
+After Maven Central deployment succeeds, the script automatically:
+1. Clones https://github.com/spring-io/spring-website-content repository
+2. Creates feature branch `update-spring-ai-{version}`
+3. Updates `content/projects/spring-ai/documentation.json` for point releases:
+   - Updates `version` field (e.g., `1.0.0` → `1.0.1`)
+   - Updates `api.url` to reference new version
+   - Keeps `reference.url` unchanged (stays at major.minor level)
+4. Shows interactive changes preview for user confirmation
+5. Creates pull request with standardized title and description
+
+**Example Interactive Preview:**
+```
+📋 SPRING WEBSITE CHANGES PREVIEW:
+File: content/projects/spring-ai/documentation.json
+  version: 1.0.0 → 1.0.1
+  api.url: updated to reference 1.0.1
+  reference.url: unchanged (stays at major.minor level)
+
+Proceed with documentation.json update? (Y/n):
+```
+
+### Manual Operation
+
+**Run only spring-website-content update:**
+```bash
+python3 spring-ai-point-release.py 1.0.1 --skip-to spring-website
+```
+
+**Skip spring-website-content update in Phase 2:**
+```bash
+python3 spring-ai-point-release.py 1.0.1 --post-maven-central --skip-spring-website
+```
+
+**Clean up repository:**
+```bash
+python3 spring-ai-point-release.py 1.0.1 --cleanup-spring-website
+```
+
+### Point Release Documentation Updates
+
+For Spring AI point releases, the documentation.json file is updated with:
+- **Version Field**: Updated to new point release version
+- **API Documentation URL**: Updated to point to new version-specific javadocs
+- **Reference Documentation URL**: Unchanged (remains at major.minor level)
+
+This ensures the Spring AI project page shows the latest point release while maintaining stable reference documentation links.
+
+### Error Handling
+
+- **Repository Issues**: Automatic cleanup of existing directory before clone
+- **Version Already Updated**: Detects if version is already current, skips gracefully
+- **JSON Parsing**: Robust handling of documentation.json structure changes
+- **GitHub CLI Issues**: Clear error messages about authentication or permissions
+- **Network Problems**: Robust handling of clone and push failures
+- **User Cancellation**: Allows canceling at any confirmation prompt
+
+### Benefits
+
+- **Immediate Documentation Updates**: Project page reflects new releases instantly
+- **Consistent PRs**: Standardized commit messages and PR descriptions
+- **Point Release Optimization**: Specialized handling for point vs major releases
+- **User Control**: Full transparency with changes preview before submission
 - **Error Recovery**: Automatic cleanup and clear error reporting
 
 ### Getting Help
