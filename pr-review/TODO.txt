@@ -38,6 +38,12 @@
 
 ## Low Priority
 
+### Add Mobile Tooltip Support for HTML Dashboard
+- **Goal**: Implement mobile-friendly tooltip interactions for touch devices
+- **Components**: Touch event handlers, responsive tooltip positioning, accessibility features
+- **Status**: Desktop tooltip system completed, mobile enhancement deferred
+- **Implementation**: Custom touch events for show/hide, better positioning for small screens
+
 ### Create Reusable CLAUDE.md Improvement Workflow
 - **Goal**: Make the CLAUDE.md improvement process more reliable and reusable
 - **Components**: improve_claude_md.py script + claude-md-improvement-prompt.md template

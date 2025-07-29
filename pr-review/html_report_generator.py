@@ -207,6 +207,80 @@ class LowHangingFruitReportGenerator:
         else:
             return "feature"
     
+    def _enhance_tooltip_content(self, content: str, tooltip_type: str = "general") -> str:
+        """Enhance tooltip content for better readability and formatting"""
+        if not content:
+            return content
+        
+        # Clean up the content
+        enhanced = content.strip()
+        
+        # Format based on tooltip type
+        if tooltip_type == "risk":
+            # Risk tooltips: Add structure for better readability
+            if "Low risk" in enhanced:
+                enhanced = f"🟢 {enhanced}"
+            elif "Medium risk" in enhanced:
+                enhanced = f"🟡 {enhanced}"
+            elif "High risk" in enhanced:
+                enhanced = f"🔴 {enhanced}"
+                
+        elif tooltip_type == "backport":
+            # Backport tooltips: Add structure and icons
+            if "APPROVE" in enhanced or "recommended" in enhanced.lower():
+                enhanced = f"✅ {enhanced}"
+            elif "REJECT" in enhanced or "not recommended" in enhanced.lower():
+                enhanced = f"❌ {enhanced}"
+            elif "CONSIDER" in enhanced or "consider" in enhanced.lower():
+                enhanced = f"⚠️ {enhanced}"
+        
+        # Ensure proper sentence structure
+        if enhanced and not enhanced.endswith('.'):
+            enhanced += '.'
+        
+        # Limit length for better display (break at reasonable points)
+        if len(enhanced) > 300:
+            # Find a good break point near 250 characters
+            break_point = enhanced[:250].rfind('. ')
+            if break_point > 150:  # Only truncate if we found a reasonable break point
+                enhanced = enhanced[:break_point + 1] + "..."
+        
+        return enhanced
+    
+    def _generate_file_list(self, file_changes: List[Dict[str, Any]]) -> str:
+        """Generate a formatted list of file changes"""
+        if not file_changes:
+            return "<li>No file information available</li>"
+        
+        file_items = []
+        for file_change in file_changes[:10]:  # Limit to first 10 files
+            filename = file_change.get('filename', 'Unknown file')
+            status = file_change.get('status', 'modified')
+            additions = file_change.get('additions', 0)
+            deletions = file_change.get('deletions', 0)
+            
+            # Status icon
+            status_icon = {
+                'added': '➕',
+                'modified': '📝',
+                'removed': '🗑️',
+                'renamed': '📂'
+            }.get(status, '📝')
+            
+            # Build file item
+            file_items.append(f"""
+                <li class="file-item">
+                    <span class="file-status">{status_icon}</span>
+                    <span class="file-name">{html.escape(filename)}</span>
+                    <span class="file-changes">+{additions}/-{deletions}</span>
+                </li>
+            """)
+        
+        if len(file_changes) > 10:
+            file_items.append(f"<li class='file-more'>... and {len(file_changes) - 10} more files</li>")
+        
+        return ''.join(file_items)
+    
     def _calculate_harvest_metrics(self, risk_data: Dict, pr_data: Dict, 
                                  file_changes: List) -> Tuple[str, int, str]:
         """Calculate harvest difficulty, effort score, and fruit icon"""
@@ -495,8 +569,8 @@ class LowHangingFruitReportGenerator:
                     <div class="pr-meta">
                         <span class="pr-author">by {author}</span>
                         <span class="pr-type">{pr.pr_type}</span>
-                        <span class="risk-badge risk-{pr.risk_level.lower()}">{pr.risk_level}</span>
-                        <span class="backport-badge backport-{pr.backport_badge_color}" title="{html.escape(pr.backport_reasoning)}">
+                        <span class="risk-badge risk-{pr.risk_level.lower()}" data-tooltip="{html.escape(self._enhance_tooltip_content(pr.risk_summary, 'risk'))}">{pr.risk_level}</span>
+                        <span class="backport-badge backport-{pr.backport_badge_color}" data-tooltip="{html.escape(self._enhance_tooltip_content(pr.backport_reasoning, 'backport'))}">
                             {pr.backport_icon} {pr.backport_decision}
                         </span>
                     </div>
@@ -523,19 +597,31 @@ class LowHangingFruitReportGenerator:
                 {positive_list}
             </div>
             
-            <div class="backport-info">
-                <div class="backport-classification">
-                    <strong>Backport Classification:</strong> {pr.backport_classification} 
-                    <span class="backport-risk">({pr.backport_risk_level} Risk)</span>
-                </div>
-                <div class="backport-reasoning">{html.escape(pr.backport_reasoning)}</div>
-            </div>
-            
-            {diff_preview}
-            
             <div class="pr-actions">
                 <a href="{pr.url}" target="_blank" class="btn btn-primary">View on GitHub</a>
                 <a href="{pr.url}/files" target="_blank" class="btn btn-secondary">View Files</a>
+                <button class="btn btn-details expand-details-btn" onclick="togglePRDetails(this)">
+                    📋 Show Details
+                </button>
+            </div>
+            
+            <div class="pr-details-expandable" style="display: none;">
+                <div class="backport-info">
+                    <div class="backport-classification">
+                        <strong>Backport Classification:</strong> {pr.backport_classification} 
+                        <span class="backport-risk">({pr.backport_risk_level} Risk)</span>
+                    </div>
+                    <div class="backport-reasoning">{html.escape(pr.backport_reasoning)}</div>
+                </div>
+                
+                {diff_preview}
+                
+                <div class="file-changes-summary">
+                    <h4>📁 File Changes Summary</h4>
+                    <ul class="file-list">
+                        {self._generate_file_list(pr.file_changes)}
+                    </ul>
+                </div>
             </div>
         </div>
         """
@@ -1175,6 +1261,91 @@ class LowHangingFruitReportGenerator:
             transform: translateY(-2px);
         }
         
+        .btn-details {
+            background: var(--earth-tan);
+            color: var(--orchard-green);
+            border: 2px solid var(--orchard-green);
+        }
+        
+        .btn-details:hover {
+            background: var(--orchard-green);
+            color: white;
+            transform: translateY(-2px);
+        }
+        
+        /* === EXPANDABLE DETAILS === */
+        .pr-details-expandable {
+            margin-top: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+            animation: slideDownFade 0.3s ease-out;
+        }
+        
+        @keyframes slideDownFade {
+            from {
+                opacity: 0;
+                max-height: 0;
+                padding-top: 0;
+                padding-bottom: 0;
+            }
+            to {
+                opacity: 1;
+                max-height: 500px;
+                padding-top: 15px;
+                padding-bottom: 15px;
+            }
+        }
+        
+        .file-changes-summary h4 {
+            color: var(--orchard-green);
+            margin: 15px 0 10px 0;
+            font-size: 1rem;
+        }
+        
+        .file-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            margin: 5px 0;
+            background: white;
+            border-radius: 5px;
+            border-left: 3px solid var(--leaf-green);
+        }
+        
+        .file-status {
+            font-size: 1.1rem;
+            margin-right: 8px;
+        }
+        
+        .file-name {
+            flex: 1;
+            font-family: 'SF Mono', 'Monaco', monospace;
+            font-size: 0.85rem;
+            color: var(--orchard-green);
+        }
+        
+        .file-changes {
+            font-size: 0.8rem;
+            color: #666;
+            font-weight: 500;
+        }
+        
+        .file-more {
+            text-align: center;
+            color: #666;
+            font-style: italic;
+            padding: 10px;
+        }
+        
         /* === RESPONSIVE DESIGN === */
         @media (max-width: 768px) {
             .container {
@@ -1230,6 +1401,75 @@ class LowHangingFruitReportGenerator:
         .pr-card:nth-child(4) { animation-delay: 0.3s; }
         .pr-card:nth-child(5) { animation-delay: 0.4s; }
         .pr-card:nth-child(6) { animation-delay: 0.5s; }
+        
+        /* === CUSTOM TOOLTIP SYSTEM === */
+        .custom-tooltip {
+            position: absolute;
+            background: rgba(45, 80, 22, 0.95);
+            color: white;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            line-height: 1.4;
+            max-width: 400px;
+            min-width: 200px;
+            z-index: 10000;
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(10px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+        }
+        
+        .custom-tooltip.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .custom-tooltip::before {
+            content: '';
+            position: absolute;
+            top: -6px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-bottom: 6px solid rgba(45, 80, 22, 0.95);
+        }
+        
+        /* Tooltip positioning variants */
+        .custom-tooltip.tooltip-bottom::before {
+            top: -6px;
+            border-bottom: 6px solid rgba(45, 80, 22, 0.95);
+            border-top: none;
+        }
+        
+        .custom-tooltip.tooltip-top::before {
+            top: auto;
+            bottom: -6px;
+            border-top: 6px solid rgba(45, 80, 22, 0.95);
+            border-bottom: none;
+        }
+        
+        /* Enhanced badge styling for tooltips */
+        .risk-badge[data-tooltip], .backport-badge[data-tooltip] {
+            cursor: help;
+            position: relative;
+            transition: all 0.2s ease;
+        }
+        
+        .risk-badge[data-tooltip]:hover, .backport-badge[data-tooltip]:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        /* Keyboard accessibility */
+        .risk-badge[data-tooltip]:focus, .backport-badge[data-tooltip]:focus {
+            outline: 2px solid var(--leaf-green);
+            outline-offset: 2px;
+        }
         </style>
         """
     
@@ -1248,6 +1488,9 @@ class LowHangingFruitReportGenerator:
             
             // Add card hover effects
             addCardInteractions();
+            
+            // Initialize custom tooltips
+            initializeCustomTooltips();
             
             console.log('✅ Dashboard initialization complete');
         });
@@ -1444,6 +1687,125 @@ class LowHangingFruitReportGenerator:
                 document.body.style.opacity = '1';
             }, 100);
         });
+        
+        // Custom tooltip functionality
+        function initializeCustomTooltips() {
+            // Remove any existing tooltips first
+            document.querySelectorAll('.custom-tooltip').forEach(tooltip => tooltip.remove());
+            
+            // Find all elements with data-tooltip attribute
+            const tooltipElements = document.querySelectorAll('[data-tooltip]');
+            
+            tooltipElements.forEach(element => {
+                element.addEventListener('mouseenter', function(e) {
+                    showTooltip(e.target, e.target.getAttribute('data-tooltip'));
+                });
+                
+                element.addEventListener('mouseleave', function() {
+                    hideTooltip();
+                });
+                
+                // Handle keyboard accessibility
+                element.addEventListener('focus', function(e) {
+                    showTooltip(e.target, e.target.getAttribute('data-tooltip'));
+                });
+                
+                element.addEventListener('blur', function() {
+                    hideTooltip();
+                });
+            });
+        }
+
+        function showTooltip(element, content) {
+            // Remove any existing tooltip
+            hideTooltip();
+            
+            // Create tooltip element
+            const tooltip = document.createElement('div');
+            tooltip.className = 'custom-tooltip';
+            tooltip.innerHTML = content;
+            
+            // Add to document
+            document.body.appendChild(tooltip);
+            
+            // Position tooltip
+            positionTooltip(element, tooltip);
+            
+            // Show with animation
+            requestAnimationFrame(() => {
+                tooltip.classList.add('show');
+            });
+        }
+
+        function hideTooltip() {
+            const existingTooltip = document.querySelector('.custom-tooltip');
+            if (existingTooltip) {
+                existingTooltip.classList.remove('show');
+                setTimeout(() => {
+                    if (existingTooltip.parentNode) {
+                        existingTooltip.parentNode.removeChild(existingTooltip);
+                    }
+                }, 200); // Match the CSS transition duration
+            }
+        }
+
+        function positionTooltip(element, tooltip) {
+            const elementRect = element.getBoundingClientRect();
+            const tooltipRect = tooltip.getBoundingClientRect();
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+            
+            // Default position: above the element, centered
+            let left = elementRect.left + (elementRect.width / 2) - (tooltipRect.width / 2);
+            let top = elementRect.top - tooltipRect.height - 10;
+            
+            // Adjust horizontal position if tooltip would go off-screen
+            if (left < 10) {
+                left = 10; // Left edge padding
+            } else if (left + tooltipRect.width > viewportWidth - 10) {
+                left = viewportWidth - tooltipRect.width - 10; // Right edge padding
+            }
+            
+            // If tooltip would go above viewport, position it below the element
+            if (top < 10) {
+                top = elementRect.bottom + 10;
+                tooltip.classList.add('tooltip-below');
+            } else {
+                tooltip.classList.remove('tooltip-below');
+            }
+            
+            // Final position
+            tooltip.style.left = left + 'px';
+            tooltip.style.top = top + 'px';
+        }
+        
+        // Toggle PR details expansion
+        function togglePRDetails(button) {
+            const card = button.closest('.pr-card');
+            const detailsSection = card.querySelector('.pr-details-expandable');
+            
+            if (detailsSection.style.display === 'none' || detailsSection.style.display === '') {
+                // Show details
+                detailsSection.style.display = 'block';
+                button.innerHTML = '📋 Hide Details';
+                button.style.background = 'var(--orchard-green)';
+                button.style.color = 'white';
+                
+                // Smooth scroll to show the expanded content
+                setTimeout(() => {
+                    detailsSection.scrollIntoView({ 
+                        behavior: 'smooth', 
+                        block: 'nearest'
+                    });
+                }, 100);
+            } else {
+                // Hide details
+                detailsSection.style.display = 'none';
+                button.innerHTML = '📋 Show Details';
+                button.style.background = 'var(--earth-tan)';
+                button.style.color = 'var(--orchard-green)';
+            }
+        }
         </script>
         """
 
