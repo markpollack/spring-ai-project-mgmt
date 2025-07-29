@@ -25,6 +25,13 @@
 
 ## Medium Priority
 
+### Investigate Run Directory Numbering System
+- **Issue**: Currently always creating run-0 directory instead of incrementing run numbers
+- **Expected Behavior**: Should create run-0, run-1, run-2, etc. for consecutive runs
+- **Current Logic**: Uses `_get_next_run_directory()` method in batch_pr_workflow.py
+- **Investigation Needed**: Check if BATCH_PROCESSING_SUMMARY.md completion marker is being created properly
+- **Impact**: Multiple runs overwrite each other's data instead of preserving historical run data
+
 ### Test Backport Assessment Functionality
 - **Goal**: Test backport assessment and other AI functionality across multiple PRs
 - **PRs to Test**: 3920 3919 3921 3922 3927 3929

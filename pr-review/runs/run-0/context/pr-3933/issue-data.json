@@ -1,0 +1,34 @@
+[
+  {
+    "number": 3924,
+    "title": "MethodToolCallback does not handle invalid arg gracefully",
+    "body": "**Bug description**\n\nSimilar to: https://github.com/spring-projects/spring-ai/issues/2857 (but this is the `MethodToolCallback` impl)\n\nWhen LLM intent to call a tool, there is possibility that the provided argument is invalid.\nFor example:\n- The tool argument is an enum\n- The LLM provide invalid enum\n\nWhen this occur it should throw `ToolExecutionException` instead of `IllegalArgumentException`. Or it might even be a good idea to change `ToolExecutionExceptionProcessor` process to all Exception instead of `ToolExecutionException` so other possible edge cases can be handled gracefully easily\n\nStack trace:\n```\njava.lang.IllegalArgumentException: No enum constant __INVALID_ENUM_NAME__\n\tat java.base/java.lang.Enum.valueOf(Enum.java:293)\n\tat org.springframework.ai.util.json.JsonParser.toTypedObject(JsonParser.java:152)\n\tat org.springframework.ai.tool.method.MethodToolCallback.buildTypedArgument(MethodToolCallback.java:150)\n\tat org.springframework.ai.tool.method.MethodToolCallback.lambda$buildMethodArguments$1(MethodToolCallback.java:139)\n\tat java.base/java.util.stream.ReferencePipeline$3$1.accept(ReferencePipeline.java:197)\n\tat java.base/java.util.Spliterators$ArraySpliterator.forEachRemaining(Spliterators.java:1024)\n\tat java.base/java.util.stream.AbstractPipeline.copyInto(AbstractPipeline.java:509)\n\tat java.base/java.util.stream.AbstractPipeline.wrapAndCopyInto(AbstractPipeline.java:499)\n\tat java.base/java.util.stream.AbstractPipeline.evaluate(AbstractPipeline.java:575)\n```\n\n**Environment**\nSpring AI 1.0.0\nJava 17\nAzure OpenAI gpt-4o\n\n**Steps to reproduce**\nCreate a tool that accepts an enum as a parameter, let's say:\n- ONE_DAY\n- TWO_DAY\n- THREE_DAY\n\nIf you ask LLM for FOUR_DAY or similar, it might try to call the tool, even if the input schema doesn't list it so\n\n**Expected behavior**\nIt should throw `ToolExecutionException` so it can be sent back to model, or handle gracefully at `ToolExecutionExceptionProcessor`.\n\nWorkaround (create a custom `MethodToolCallback` with a delegate):\n\n```\n\n@RequiredArgsConstructor\npublic class CustomMethodToolCallback implements ToolCallback {\n\n    @Delegate\n    private final MethodToolCallback delegate;\n\n    @Override\n    public String call(String toolInput) {\n        return call(toolInput, null);\n    }\n\n    @Override\n    public String call(String toolInput, @Nullable ToolContext toolContext) {\n        try {\n            return delegate.call(toolInput, toolContext); // Not perfect, but acceptable\n        } catch (IllegalArgumentException iae) {\n            throw new ToolExecutionException(getToolDefinition(), iae);\n        }\n    }\n}\n```\n\n",
+    "state": "OPEN",
+    "labels": [
+      "status: waiting-for-triage"
+    ],
+    "assignees": [],
+    "created_at": "2025-07-28T06:58:38Z",
+    "updated_at": "2025-07-28T14:39:19Z",
+    "author": "ls-rein-martha",
+    "url": "https://github.com/spring-projects/spring-ai/issues/3924",
+    "comments_count": 1,
+    "comments": [
+      {
+        "id": "IC_kwDOJ02wfs66apnt",
+        "author": {
+          "login": "wilocu"
+        },
+        "authorAssociation": "NONE",
+        "body": "take",
+        "createdAt": "2025-07-28T14:39:19Z",
+        "includesCreatedEdit": false,
+        "isMinimized": false,
+        "minimizedReason": "",
+        "reactionGroups": [],
+        "url": "https://github.com/spring-projects/spring-ai/issues/3924#issuecomment-3127548397",
+        "viewerDidAuthor": false
+      }
+    ]
+  }
+]

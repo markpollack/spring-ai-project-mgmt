@@ -1,0 +1,170 @@
+{
+  "pr_data": {
+    "number": 3931,
+    "title": "fix: add strict option to ChatCompletionsJsonSchemaResponseFormat (#3…",
+    "body": "Fixes the missing mapping of the strict property when using json schema mode for Azure Open AI.",
+    "state": "OPEN",
+    "draft": false,
+    "labels": [],
+    "assignees": [],
+    "reviewers": [],
+    "created_at": "2025-07-28T15:03:18Z",
+    "updated_at": "2025-07-29T01:22:52Z",
+    "author": "FlorainB",
+    "url": "https://github.com/spring-projects/spring-ai/pull/3931",
+    "base_branch": "main",
+    "head_branch": "GH-3928",
+    "commits_count": 1,
+    "changed_files": 1,
+    "additions": 1,
+    "deletions": 0,
+    "linked_issues": [
+      3931
+    ],
+    "comments": [
+      {
+        "id": "IC_kwDOJ02wfs66bFHZ",
+        "author": {
+          "login": "FlorainB"
+        },
+        "authorAssociation": "NONE",
+        "body": "Fixes #3931 ",
+        "createdAt": "2025-07-28T15:04:45Z",
+        "includesCreatedEdit": true,
+        "isMinimized": false,
+        "minimizedReason": "",
+        "reactionGroups": [],
+        "url": "https://github.com/spring-projects/spring-ai/pull/3931#issuecomment-3127661017",
+        "viewerDidAuthor": false
+      }
+    ],
+    "reviews": [
+      {
+        "id": 3064923753,
+        "node_id": "PRR_kwDOJ02wfs62rwZp",
+        "user": {
+          "login": "sunyuhan1998",
+          "id": 20242118,
+          "node_id": "MDQ6VXNlcjIwMjQyMTE4",
+          "avatar_url": "https://avatars.githubusercontent.com/u/20242118?u=159274b4f3302db4f25317289f0fa3459e32a381&v=4",
+          "gravatar_id": "",
+          "url": "https://api.github.com/users/sunyuhan1998",
+          "html_url": "https://github.com/sunyuhan1998",
+          "followers_url": "https://api.github.com/users/sunyuhan1998/followers",
+          "following_url": "https://api.github.com/users/sunyuhan1998/following{/other_user}",
+          "gists_url": "https://api.github.com/users/sunyuhan1998/gists{/gist_id}",
+          "starred_url": "https://api.github.com/users/sunyuhan1998/starred{/owner}{/repo}",
+          "subscriptions_url": "https://api.github.com/users/sunyuhan1998/subscriptions",
+          "organizations_url": "https://api.github.com/users/sunyuhan1998/orgs",
+          "repos_url": "https://api.github.com/users/sunyuhan1998/repos",
+          "events_url": "https://api.github.com/users/sunyuhan1998/events{/privacy}",
+          "received_events_url": "https://api.github.com/users/sunyuhan1998/received_events",
+          "type": "User",
+          "user_view_type": "public",
+          "site_admin": false
+        },
+        "body": "Looks good!",
+        "state": "APPROVED",
+        "html_url": "https://github.com/spring-projects/spring-ai/pull/3931#pullrequestreview-3064923753",
+        "pull_request_url": "https://api.github.com/repos/spring-projects/spring-ai/pulls/3931",
+        "author_association": "CONTRIBUTOR",
+        "_links": {
+          "html": {
+            "href": "https://github.com/spring-projects/spring-ai/pull/3931#pullrequestreview-3064923753"
+          },
+          "pull_request": {
+            "href": "https://api.github.com/repos/spring-projects/spring-ai/pulls/3931"
+          }
+        },
+        "submitted_at": "2025-07-29T01:22:52Z",
+        "commit_id": "8480b5360ca2aa8e580f7facba05123dd7db2208"
+      }
+    ]
+  },
+  "issues_data": [
+    {
+      "number": 3931,
+      "title": "fix: add strict option to ChatCompletionsJsonSchemaResponseFormat (#3…",
+      "body": "Fixes the missing mapping of the strict property when using json schema mode for Azure Open AI.",
+      "state": "OPEN",
+      "labels": [],
+      "assignees": [],
+      "created_at": "2025-07-28T15:03:18Z",
+      "updated_at": "2025-07-29T01:22:52Z",
+      "author": "FlorainB",
+      "url": "https://github.com/spring-projects/spring-ai/pull/3931",
+      "comments_count": 1,
+      "comments": [
+        {
+          "id": "IC_kwDOJ02wfs66bFHZ",
+          "author": {
+            "login": "FlorainB"
+          },
+          "authorAssociation": "NONE",
+          "body": "Fixes #3931 ",
+          "createdAt": "2025-07-28T15:04:45Z",
+          "includesCreatedEdit": true,
+          "isMinimized": false,
+          "minimizedReason": "",
+          "reactionGroups": [],
+          "url": "https://github.com/spring-projects/spring-ai/pull/3931#issuecomment-3127661017",
+          "viewerDidAuthor": false
+        }
+      ]
+    }
+  ],
+  "file_changes": [
+    {
+      "filename": "models/spring-ai-azure-openai/src/main/java/org/springframework/ai/azure/openai/AzureOpenAiChatModel.java",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "changes": 1,
+      "patch": "@@ -959,6 +959,7 @@ private ChatCompletionsResponseFormat toAzureResponseFormat(AzureOpenAiResponseF\n \t\t\tvar responseFormatJsonSchema = new ChatCompletionsJsonSchemaResponseFormatJsonSchema(jsonSchema.getName());\n \t\t\tString jsonString = ModelOptionsUtils.toJsonString(jsonSchema.getSchema());\n \t\t\tresponseFormatJsonSchema.setSchema(BinaryData.fromString(jsonString));\n+\t\t\tresponseFormatJsonSchema.setStrict(jsonSchema.getStrict());\n \t\t\treturn new ChatCompletionsJsonSchemaResponseFormat(responseFormatJsonSchema);\n \t\t}\n \t\treturn new ChatCompletionsTextResponseFormat();"
+    }
+  ],
+  "commits_data": [
+    {
+      "sha": "8480b5360ca2aa8e580f7facba05123dd7db2208",
+      "message": "fix: add strict option to ChatCompletionsJsonSchemaResponseFormat (#3928)\n\nSigned-off-by: Florian Beek <41722366+FlorainB@users.noreply.github.com>",
+      "author": "Florian Beek",
+      "date": "2025-07-28T14:58:53Z",
+      "url": "https://github.com/spring-projects/spring-ai/commit/8480b5360ca2aa8e580f7facba05123dd7db2208"
+    }
+  ],
+  "conversation": [
+    {
+      "type": "issue_comment",
+      "author": "FlorainB",
+      "created_at": "2025-07-28T15:04:45Z",
+      "body": "Fixes #3931 ",
+      "url": "https://github.com/spring-projects/spring-ai/pull/3931#issuecomment-3127661017",
+      "metadata": {
+        "issue_number": 3931
+      }
+    },
+    {
+      "type": "pr_comment",
+      "author": "FlorainB",
+      "created_at": "2025-07-28T15:04:45Z",
+      "body": "Fixes #3931 ",
+      "url": "https://github.com/spring-projects/spring-ai/pull/3931#issuecomment-3127661017",
+      "metadata": {
+        "pr_number": 3931
+      }
+    },
+    {
+      "type": "review",
+      "author": "sunyuhan1998",
+      "created_at": "2025-07-29T01:22:52Z",
+      "body": "Looks good!",
+      "url": "https://github.com/spring-projects/spring-ai/pull/3931#pullrequestreview-3064923753",
+      "metadata": {
+        "pr_number": 3931,
+        "review_state": "APPROVED"
+      }
+    }
+  ],
+  "collection_timestamp": "2025-07-29T02:58:53.214538",
+  "repository": "spring-projects/spring-ai"
+}

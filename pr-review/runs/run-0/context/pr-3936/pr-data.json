@@ -1,0 +1,23 @@
+{
+  "number": 3936,
+  "title": "Fix typos in comments and improve documentation",
+  "body": "- Fix typo: 'wrapps' → 'wraps' in TODO comments across multiple files\r\n- Fix typo: 'uitlity' → 'utility' in AnthropicChatModel comment\r\n- Fix typo: 'occasionall' → 'occasionally' in OpenAiChatModelObservationIT comment\r\n- Add comprehensive documentation to spring-ai-test README with usage examples\r\n\r\nThank you for taking time to contribute this pull request!\r\nYou might have already read the [contributor guide][1], but as a reminder, please make sure to:\r\n\r\n* Add a Signed-off-by line to each commit (`git commit -s`) per the [DCO](https://spring.io/blog/2025/01/06/hello-dco-goodbye-cla-simplifying-contributions-to-spring#how-to-use-developer-certificate-of-origin)\r\n* Rebase your changes on the latest `main` branch and squash your commits\r\n* Add/Update unit tests as needed\r\n* Run a build and make sure all tests pass prior to submission\r\n\r\nFor more details, please check the [contributor guide][1].\r\nThank you upfront!\r\n\r\n[1]: https://github.com/spring-projects/spring-ai/blob/main/CONTRIBUTING.adoc",
+  "state": "OPEN",
+  "draft": false,
+  "labels": [],
+  "assignees": [],
+  "reviewers": [],
+  "created_at": "2025-07-29T04:49:09Z",
+  "updated_at": "2025-07-29T04:50:01Z",
+  "author": "jbj338033",
+  "url": "https://github.com/spring-projects/spring-ai/pull/3936",
+  "base_branch": "main",
+  "head_branch": "fix-typos-and-docs",
+  "commits_count": 1,
+  "changed_files": 7,
+  "additions": 57,
+  "deletions": 11,
+  "linked_issues": [],
+  "comments": [],
+  "reviews": []
+}

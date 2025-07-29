@@ -1,0 +1,25 @@
+{
+  "number": 3933,
+  "title": "Issue 3924 Fix MethodToolCallback enum argument handling",
+  "body": "## Summary\r\n  Fixes MethodToolCallback not handling invalid enum arguments gracefully by converting\r\n  IllegalArgumentException to ToolExecutionException.\r\n\r\n  Closes #3924\r\n  ## Changes Made\r\n  - **Exception Handling**: Added try-catch block around `buildMethodArguments()` in\r\n  `MethodToolCallback.call()`\r\n  - **Exception Conversion**: Convert `IllegalArgumentException` to `ToolExecutionException` with\r\n  proper context\r\n  - **Logging**: Added debug logging for argument conversion failures following existing patterns\r\n  - **Test Coverage**: Added comprehensive unit tests for both invalid and valid enum scenarios  \r\n\r\n  ## Technical Details\r\n  - **Root Cause**: `IllegalArgumentException` was thrown during enum conversion in\r\n  `JsonParser.toTypedObject()` but not caught by `MethodToolCallback`\r\n  - **Solution**: Wrap argument building phase with exception handling at lines 108-115 in\r\n  `MethodToolCallback.java`\r\n  - **Integration**: Maintains compatibility with existing `ToolExecutionExceptionProcessor` pipeline \r\n\r\n## Test Results\r\n  - ✅ New unit tests pass (invalid enum throws `ToolExecutionException`)\r\n  - ✅ Existing functionality preserved (valid enum values work normally)\r\n  - ✅ No regressions in `MethodToolCallbackProviderTests` and `DefaultToolCallingManagerTests`\r\n\r\n  ## Files Modified\r\n  - `spring-ai-model/src/main/java/org/springframework/ai/tool/method/MethodToolCallback.java`\r\n  - `spring-ai-model/src/test/java/org/springframework/ai/tool/method/MethodToolCallbackTests.java`       \r\n  (new file)\r\n\r\n  This change allows LLMs that provide invalid enum values to receive graceful error responses\r\n  instead of unhandled exceptions.\r\nSigned-off-by:  Mattia Pasetto matpat17@gmail.com\r\n\r\nPlease make sure to double check and let me know if anything is wrong, this is my first contribution.",
+  "state": "OPEN",
+  "draft": false,
+  "labels": [],
+  "assignees": [],
+  "reviewers": [],
+  "created_at": "2025-07-28T19:29:14Z",
+  "updated_at": "2025-07-28T19:41:32Z",
+  "author": "wilocu",
+  "url": "https://github.com/spring-projects/spring-ai/pull/3933",
+  "base_branch": "main",
+  "head_branch": "GH-3924",
+  "commits_count": 1,
+  "changed_files": 2,
+  "additions": 113,
+  "deletions": 1,
+  "linked_issues": [
+    3924
+  ],
+  "comments": [],
+  "reviews": []
+}

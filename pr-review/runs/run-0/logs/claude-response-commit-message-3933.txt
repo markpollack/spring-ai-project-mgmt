@@ -1,0 +1,20 @@
+Return code: 0
+Stdout length: 784
+Stderr: None
+Response:
+fix(function): improve enum argument error handling in MethodToolCallback
+
+The MethodToolCallback class was throwing unhandled IllegalArgumentException
+when LLMs provided invalid enum values as tool arguments, preventing graceful
+error recovery and proper feedback to the model.
+
+Added try-catch block around buildMethodArguments() in MethodToolCallback.call()
+to catch IllegalArgumentException and convert it to ToolExecutionException with
+proper context and debug logging. Added comprehensive unit tests to verify both
+invalid enum handling and preservation of valid enum functionality.
+
+This enables LLMs to receive proper error feedback for invalid enum arguments
+instead of encountering unhandled exceptions, improving the robustness of
+tool-assisted AI workflows.
+
+Closes #3924

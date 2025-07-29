@@ -1,0 +1,17 @@
+Return code: 0
+Stdout length: 775
+Stderr: None
+Response:
+Based on the template guidelines and PR context data for Spring AI PR #3932, here is the commit message:
+
+test(vectorstore): add comprehensive test coverage for PineconeFilterExpressionConverter
+
+The existing PineconeFilterExpressionConverter test suite had limited coverage
+for edge cases and complex filtering scenarios, making it difficult to ensure
+robustness across various data types and nested expressions.
+
+Added 12 new test cases covering GT/LT operations with numeric values, complex
+nested groupings with mixed data types, edge cases for zero and negative values,
+single-element lists, multiple OR conditions, and special characters in values.
+Enhanced test coverage includes proper validation of JSON output formatting
+and comprehensive expression tree handling.

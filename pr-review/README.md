@@ -166,6 +166,24 @@ Long-running AI operations now include visual progress indicators to show the sy
 - Visual confirmation that complex analysis is progressing
 - Professional appearance with Unicode-based animations
 
+### AI Failure Tracking & Debugging
+The system now includes comprehensive debugging capabilities for AI analysis issues:
+
+**AI Failure Tracker** (`ai_failure_tracker.py`):
+- Tracks and categorizes AI component failures during batch processing
+- Provides detailed debugging recommendations for common issues
+- Generates failure analysis reports to identify patterns and root causes
+
+**Claude Code Wrapper Test Suite** (`test_claude_code_wrapper.py`):
+- Comprehensive test suite for systematic Claude Code integration debugging
+- Tests availability, simple prompts, JSON output, file reading, and complex scenarios
+- Reproduces and isolates specific "Execution error" issues
+
+**Enhanced Error Handling**:
+- Improved CompilationErrorResolver with semicolon error patterns and Claude Code integration
+- Better JSON parsing from Claude Code markdown responses
+- File-based prompt handling to avoid temporary file issues in debugging
+
 ## 🔧 Prerequisites
 
 1. **GitHub CLI**: Authenticated with Spring AI repository access
@@ -215,7 +233,10 @@ pr-review/
 
 ### Batch Processing
 ```bash
-# Process multiple PRs overnight
+# Use dedicated batch processing script (recommended)
+python batch_pr_workflow.py --cleanup --prs 3386 3387 3388
+
+# Manual batch processing
 for pr in 3386 3387 3388; do
     python pr_workflow.py --cleanup $pr
     python pr_workflow.py $pr
@@ -254,6 +275,40 @@ done
    # Check comprehensive AI-powered analysis report
    cat reports/review-pr-3386.md
    ```
+
+## 🛠️ Troubleshooting
+
+### AI Analysis Issues
+
+**Problem**: AI assessments show "Manual assessment required due to AI parsing failure"
+**Solution**: Use fresh analysis mode to clear cached data:
+```bash
+python pr_workflow.py --report-only --force-fresh 3386
+```
+
+**Problem**: Claude Code returns "Execution error"
+**Solution**: Run the diagnostic test suite:
+```bash
+python test_claude_code_wrapper.py
+```
+
+### Batch Processing Issues
+
+**Problem**: Dashboard shows fewer PRs than processed
+**Solution**: This was fixed in recent updates. Context data is now preserved during batch processing.
+
+**Problem**: Compilation errors not being auto-fixed
+**Solution**: The CompilationErrorResolver now includes enhanced patterns for common errors like missing semicolons. Re-run the workflow:
+```bash
+python pr_workflow.py --cleanup 3386 && python pr_workflow.py 3386
+```
+
+### Debug Information
+
+All AI prompts and responses are saved to the `logs/` directory for debugging:
+- `claude-prompt-*.txt` - Prompts sent to Claude Code
+- `claude-response-*.txt` - Raw responses from Claude Code
+- Debug logs include token estimation and performance metrics
 
 ---
 

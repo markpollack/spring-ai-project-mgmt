@@ -1,0 +1,96 @@
+{
+  "pr_data": {
+    "number": 3936,
+    "title": "Fix typos in comments and improve documentation",
+    "body": "- Fix typo: 'wrapps' → 'wraps' in TODO comments across multiple files\r\n- Fix typo: 'uitlity' → 'utility' in AnthropicChatModel comment\r\n- Fix typo: 'occasionall' → 'occasionally' in OpenAiChatModelObservationIT comment\r\n- Add comprehensive documentation to spring-ai-test README with usage examples\r\n\r\nThank you for taking time to contribute this pull request!\r\nYou might have already read the [contributor guide][1], but as a reminder, please make sure to:\r\n\r\n* Add a Signed-off-by line to each commit (`git commit -s`) per the [DCO](https://spring.io/blog/2025/01/06/hello-dco-goodbye-cla-simplifying-contributions-to-spring#how-to-use-developer-certificate-of-origin)\r\n* Rebase your changes on the latest `main` branch and squash your commits\r\n* Add/Update unit tests as needed\r\n* Run a build and make sure all tests pass prior to submission\r\n\r\nFor more details, please check the [contributor guide][1].\r\nThank you upfront!\r\n\r\n[1]: https://github.com/spring-projects/spring-ai/blob/main/CONTRIBUTING.adoc",
+    "state": "OPEN",
+    "draft": false,
+    "labels": [],
+    "assignees": [],
+    "reviewers": [],
+    "created_at": "2025-07-29T04:49:09Z",
+    "updated_at": "2025-07-29T04:50:01Z",
+    "author": "jbj338033",
+    "url": "https://github.com/spring-projects/spring-ai/pull/3936",
+    "base_branch": "main",
+    "head_branch": "fix-typos-and-docs",
+    "commits_count": 1,
+    "changed_files": 7,
+    "additions": 57,
+    "deletions": 11,
+    "linked_issues": [],
+    "comments": [],
+    "reviews": []
+  },
+  "issues_data": [],
+  "file_changes": [
+    {
+      "filename": "models/spring-ai-anthropic/src/main/java/org/springframework/ai/anthropic/AnthropicChatModel.java",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "changes": 2,
+      "patch": "@@ -267,7 +267,7 @@ public Flux<ChatResponse> internalStream(Prompt prompt, ChatResponse previousCha\n \t\t\t\t\t\t// FIXME: bounded elastic needs to be used since tool calling\n \t\t\t\t\t\t//  is currently only synchronous\n \t\t\t\t\t\treturn Flux.deferContextual((ctx) -> {\n-\t\t\t\t\t\t\t// TODO: factor out the tool execution logic with setting context into a uitlity.\n+\t\t\t\t\t\t\t// TODO: factor out the tool execution logic with setting context into a utility.\n \t\t\t\t\t\t\tToolExecutionResult toolExecutionResult;\n \t\t\t\t\t\t\ttry {\n \t\t\t\t\t\t\t\tToolCallReactiveContextHolder.setContext(ctx);"
+    },
+    {
+      "filename": "models/spring-ai-anthropic/src/test/java/org/springframework/ai/anthropic/client/AnthropicChatClientIT.java",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "changes": 2,
+      "patch": "@@ -306,7 +306,7 @@ void multiModalityEmbeddedImage(String modelName) throws IOException {\n \t@ValueSource(strings = { \"claude-3-7-sonnet-latest\", \"claude-sonnet-4-0\" })\n \tvoid multiModalityImageUrl(String modelName) throws IOException {\n \n-\t\t// TODO: add url method that wrapps the checked exception.\n+\t\t// TODO: add url method that wraps the checked exception.\n \t\tURL url = new URL(\"https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png\");\n \n \t\t// @formatter:off"
+    },
+    {
+      "filename": "models/spring-ai-azure-openai/src/test/java/org/springframework/ai/azure/openai/AzureOpenAiChatModelIT.java",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "changes": 2,
+      "patch": "@@ -251,7 +251,7 @@ void beanStreamOutputConverterRecords() {\n \t@Test\n \tvoid multiModalityImageUrl() throws IOException {\n \n-\t\t// TODO: add url method that wrapps the checked exception.\n+\t\t// TODO: add url method that wraps the checked exception.\n \t\tURL url = new URL(\"https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png\");\n \n \t\t// @formatter:off"
+    },
+    {
+      "filename": "models/spring-ai-bedrock-converse/src/test/java/org/springframework/ai/bedrock/converse/BedrockConverseChatClientIT.java",
+      "status": "modified",
+      "additions": 3,
+      "deletions": 3,
+      "changes": 6,
+      "patch": "@@ -381,7 +381,7 @@ void multiModalityEmbeddedImage(String modelName) throws IOException {\n \t@ValueSource(strings = { \"anthropic.claude-3-5-sonnet-20240620-v1:0\" })\n \tvoid multiModalityImageUrl2(String modelName) throws IOException {\n \n-\t\t// TODO: add url method that wrapps the checked exception.\n+\t\t// TODO: add url method that wraps the checked exception.\n \t\tURL url = new URL(\"https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png\");\n \n \t\t// @formatter:off\n@@ -401,7 +401,7 @@ void multiModalityImageUrl2(String modelName) throws IOException {\n \t@ValueSource(strings = { \"anthropic.claude-3-5-sonnet-20240620-v1:0\" })\n \tvoid multiModalityImageUrl(String modelName) throws IOException {\n \n-\t\t// TODO: add url method that wrapps the checked exception.\n+\t\t// TODO: add url method that wraps the checked exception.\n \t\tURL url = new URL(\"https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png\");\n \n \t\t// @formatter:off\n@@ -420,7 +420,7 @@ void multiModalityImageUrl(String modelName) throws IOException {\n \t@Test\n \tvoid streamingMultiModalityImageUrl() throws IOException {\n \n-\t\t// TODO: add url method that wrapps the checked exception.\n+\t\t// TODO: add url method that wraps the checked exception.\n \t\tURL url = new URL(\"https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png\");\n \n \t\t// @formatter:off"
+    },
+    {
+      "filename": "models/spring-ai-openai/src/test/java/org/springframework/ai/openai/chat/OpenAiChatModelObservationIT.java",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 1,
+      "changes": 2,
+      "patch": "@@ -130,7 +130,7 @@ private void validate(ChatResponseMetadata responseMetadata) {\n \t\t\t.doesNotHaveAnyRemainingCurrentObservation()\n \t\t\t.hasObservationWithNameEqualTo(DefaultChatModelObservationConvention.DEFAULT_NAME)\n \t\t\t.that()\n-\t\t\t// TODO - this condition occasionall fails.\n+\t\t\t// TODO - this condition occasionally fails.\n \t\t\t// .hasContextualNameEqualTo(\"chat \" +\n \t\t\t// OpenAiApi.ChatModel.GPT_4_O_MINI.getValue())\n \t\t\t.hasLowCardinalityKeyValue(LowCardinalityKeyNames.AI_OPERATION_TYPE.asString(),"
+    },
+    {
+      "filename": "models/spring-ai-openai/src/test/java/org/springframework/ai/openai/chat/client/OpenAiChatClientIT.java",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 2,
+      "changes": 4,
+      "patch": "@@ -324,7 +324,7 @@ void multiModalityEmbeddedImage(String modelName) throws IOException {\n \t@ValueSource(strings = { \"gpt-4o\" })\n \tvoid multiModalityImageUrl(String modelName) throws IOException {\n \n-\t\t// TODO: add url method that wrapps the checked exception.\n+\t\t// TODO: add url method that wraps the checked exception.\n \t\tURL url = new URL(\"https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png\");\n \n \t\t// @formatter:off\n@@ -343,7 +343,7 @@ void multiModalityImageUrl(String modelName) throws IOException {\n \t@Test\n \tvoid streamingMultiModalityImageUrl() throws IOException {\n \n-\t\t// TODO: add url method that wrapps the checked exception.\n+\t\t// TODO: add url method that wraps the checked exception.\n \t\tURL url = new URL(\"https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png\");\n \n \t\t// @formatter:off"
+    },
+    {
+      "filename": "spring-ai-test/README.md",
+      "status": "modified",
+      "additions": 48,
+      "deletions": 2,
+      "changes": 50,
+      "patch": "@@ -1,2 +1,48 @@\n-TODO:\n-\tDocumentation and sample tests using the `BasicEvaluationTest`.\n\\ No newline at end of file\n+# Spring AI Test\n+\n+The Spring AI Test module provides utilities and base classes for testing AI applications built with Spring AI.\n+\n+## Features\n+\n+- **BasicEvaluationTest**: A base test class for evaluating question-answer quality using AI models\n+- **Vector Store Testing**: Utilities for testing vector store implementations\n+- **Audio Testing**: Utilities for testing audio-related functionality\n+\n+## BasicEvaluationTest\n+\n+The `BasicEvaluationTest` class provides a framework for evaluating the quality and relevance of AI-generated answers to questions.\n+\n+### Usage\n+\n+Extend the `BasicEvaluationTest` class in your test classes:\n+\n+```java\n+@SpringBootTest\n+public class MyAiEvaluationTest extends BasicEvaluationTest {\n+\n+    @Test\n+    public void testQuestionAnswerAccuracy() {\n+        String question = \"What is the capital of France?\";\n+        String answer = \"The capital of France is Paris.\";\n+        \n+        // Evaluate if the answer is accurate and related to the question\n+        evaluateQuestionAndAnswer(question, answer, true);\n+    }\n+}\n+```\n+\n+### Configuration\n+\n+The test requires:\n+- A `ChatModel` bean (typically OpenAI)\n+- Evaluation prompt templates located in `classpath:/prompts/spring/test/evaluation/`\n+\n+### Evaluation Types\n+\n+- **Fact-based evaluation**: Use `factBased = true` for questions requiring factual accuracy\n+- **General evaluation**: Use `factBased = false` for more subjective questions\n+\n+The evaluation process:\n+1. Checks if the answer is related to the question\n+2. Evaluates the accuracy/appropriateness of the answer\n+3. Fails the test with detailed feedback if the answer is inadequate\n\\ No newline at end of file"
+    }
+  ],
+  "commits_data": [
+    {
+      "sha": "a0be91dee1ef2c18533fb2730ea64a02bb94f30a",
+      "message": "Fix typos in comments and improve documentation\n\n- Fix typo: 'wrapps' → 'wraps' in TODO comments across multiple files\n- Fix typo: 'uitlity' → 'utility' in AnthropicChatModel comment\n- Fix typo: 'occasionall' → 'occasionally' in OpenAiChatModelObservationIT comment\n- Add comprehensive documentation to spring-ai-test README with usage examples\n\nSigned-off-by: 전민오 <jbj338033@gmail.com>",
+      "author": "전민오",
+      "date": "2025-07-29T04:46:01Z",
+      "url": "https://github.com/spring-projects/spring-ai/commit/a0be91dee1ef2c18533fb2730ea64a02bb94f30a"
+    }
+  ],
+  "conversation": [],
+  "collection_timestamp": "2025-07-29T03:11:24.337457",
+  "repository": "spring-projects/spring-ai"
+}

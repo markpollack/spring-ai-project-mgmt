@@ -1,0 +1,10 @@
+[
+  {
+    "filename": "models/spring-ai-azure-openai/src/main/java/org/springframework/ai/azure/openai/AzureOpenAiChatModel.java",
+    "status": "modified",
+    "additions": 1,
+    "deletions": 0,
+    "changes": 1,
+    "patch": "@@ -959,6 +959,7 @@ private ChatCompletionsResponseFormat toAzureResponseFormat(AzureOpenAiResponseF\n \t\t\tvar responseFormatJsonSchema = new ChatCompletionsJsonSchemaResponseFormatJsonSchema(jsonSchema.getName());\n \t\t\tString jsonString = ModelOptionsUtils.toJsonString(jsonSchema.getSchema());\n \t\t\tresponseFormatJsonSchema.setSchema(BinaryData.fromString(jsonString));\n+\t\t\tresponseFormatJsonSchema.setStrict(jsonSchema.getStrict());\n \t\t\treturn new ChatCompletionsJsonSchemaResponseFormat(responseFormatJsonSchema);\n \t\t}\n \t\treturn new ChatCompletionsTextResponseFormat();"
+  }
+]

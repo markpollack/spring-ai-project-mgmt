@@ -1,0 +1,89 @@
+{
+  "pr_data": {
+    "number": 3927,
+    "title": "Update BeanOutputConverter.java",
+    "body": "Resolved the exceptional issue of converting the large model deployed locally with Ollama into a Java Bean.",
+    "state": "OPEN",
+    "draft": false,
+    "labels": [],
+    "assignees": [],
+    "reviewers": [],
+    "created_at": "2025-07-28T12:39:50Z",
+    "updated_at": "2025-07-29T02:34:08Z",
+    "author": "chang6666",
+    "url": "https://github.com/spring-projects/spring-ai/pull/3927",
+    "base_branch": "main",
+    "head_branch": "main",
+    "commits_count": 1,
+    "changed_files": 1,
+    "additions": 1,
+    "deletions": 0,
+    "linked_issues": [],
+    "comments": [],
+    "reviews": [
+      {
+        "id": 3065023630,
+        "node_id": "PRR_kwDOJ02wfs62sIyO",
+        "user": {
+          "login": "markpollack",
+          "id": 247466,
+          "node_id": "MDQ6VXNlcjI0NzQ2Ng==",
+          "avatar_url": "https://avatars.githubusercontent.com/u/247466?v=4",
+          "gravatar_id": "",
+          "url": "https://api.github.com/users/markpollack",
+          "html_url": "https://github.com/markpollack",
+          "followers_url": "https://api.github.com/users/markpollack/followers",
+          "following_url": "https://api.github.com/users/markpollack/following{/other_user}",
+          "gists_url": "https://api.github.com/users/markpollack/gists{/gist_id}",
+          "starred_url": "https://api.github.com/users/markpollack/starred{/owner}{/repo}",
+          "subscriptions_url": "https://api.github.com/users/markpollack/subscriptions",
+          "organizations_url": "https://api.github.com/users/markpollack/orgs",
+          "repos_url": "https://api.github.com/users/markpollack/repos",
+          "events_url": "https://api.github.com/users/markpollack/events{/privacy}",
+          "received_events_url": "https://api.github.com/users/markpollack/received_events",
+          "type": "User",
+          "user_view_type": "public",
+          "site_admin": false
+        },
+        "body": "",
+        "state": "COMMENTED",
+        "html_url": "https://github.com/spring-projects/spring-ai/pull/3927#pullrequestreview-3065023630",
+        "pull_request_url": "https://api.github.com/repos/spring-projects/spring-ai/pulls/3927",
+        "author_association": "MEMBER",
+        "_links": {
+          "html": {
+            "href": "https://github.com/spring-projects/spring-ai/pull/3927#pullrequestreview-3065023630"
+          },
+          "pull_request": {
+            "href": "https://api.github.com/repos/spring-projects/spring-ai/pulls/3927"
+          }
+        },
+        "submitted_at": "2025-07-29T02:34:08Z",
+        "commit_id": "281b6524934d68f1a403056cf77287c449c00d90"
+      }
+    ]
+  },
+  "issues_data": [],
+  "file_changes": [
+    {
+      "filename": "spring-ai-model/src/main/java/org/springframework/ai/converter/BeanOutputConverter.java",
+      "status": "modified",
+      "additions": 1,
+      "deletions": 0,
+      "changes": 1,
+      "patch": "@@ -159,6 +159,7 @@ private void generateSchema() {\n \t@Override\n \tpublic T convert(@NonNull String text) {\n \t\ttry {\n+\t\t\ttext = text.replaceAll(\"<think>[\\\\s\\\\s]*?</think>\",\"\")\n \t\t\t// Remove leading and trailing whitespace\n \t\t\ttext = text.trim();\n "
+    }
+  ],
+  "commits_data": [
+    {
+      "sha": "281b6524934d68f1a403056cf77287c449c00d90",
+      "message": "Update BeanOutputConverter.java\n\nResolved the exceptional issue of converting the large model deployed locally with Ollama into a Java Bean.\n\nSigned-off-by: James <changningbo1995@gmail.com>",
+      "author": "James",
+      "date": "2025-07-28T12:38:20Z",
+      "url": "https://github.com/spring-projects/spring-ai/commit/281b6524934d68f1a403056cf77287c449c00d90"
+    }
+  ],
+  "conversation": [],
+  "collection_timestamp": "2025-07-29T02:54:01.064156",
+  "repository": "spring-projects/spring-ai"
+}

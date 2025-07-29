@@ -49,6 +49,14 @@ class WorkflowConfig:
     @property
     def prompt_file(self) -> Path:
         return self.script_dir / "prompt-pr-review.md"
+    
+    @property
+    def context_dir(self) -> Path:
+        return self.script_dir / "context"
+    
+    @property
+    def logs_dir(self) -> Path:
+        return self.script_dir / "logs"
 
 
 class Colors:
@@ -289,41 +297,15 @@ class PRAnalyzer:
         Logger.info("Using enhanced analysis with context collection...")
         
         try:
-            # First collect context data
-            context_collector = self.config.script_dir / "pr_context_collector.py"
-            Logger.info("Collecting context data for enhanced report generation...")
-            context_result = subprocess.run(
-                ["python3", str(context_collector), pr_number], 
-                cwd=self.config.script_dir,  # Fixed: run from script_dir, not spring_ai_dir
-                capture_output=True, 
-                text=True, 
-                timeout=120
-            )
-
-            # Debug: Log context collection output
-            Logger.info(f"🔍 Context collection return code: {context_result.returncode}")
-            if context_result.stdout:
-                Logger.info(f"🔍 Context collection stdout: {context_result.stdout.strip()}")
-            if context_result.stderr:
-                Logger.warn(f"🔍 Context collection stderr: {context_result.stderr.strip()}")
-
-            if context_result.returncode != 0:
-                Logger.error("Context collection failed - cannot generate enhanced report")
-                Logger.error(f"Context collection error: {context_result.stderr}")
-                return None
-            
-            # Verify context data was actually created
-            context_dir = self.config.script_dir / "context" / f"pr-{pr_number}"
+            # Verify context data exists (should have been collected in earlier phase)
+            context_dir = self.config.context_dir / f"pr-{pr_number}"
             if not context_dir.exists():
-                Logger.error(f"❌ Context directory not created: {context_dir}")
-                return None
-            
-            context_files = list(context_dir.glob("*.json"))
-            Logger.info(f"🔍 Context files created: {len(context_files)} files")
-            for file in context_files:
-                Logger.info(f"   - {file.name}")
-            
-            Logger.success("✅ Context data collection completed")
+                Logger.warn("⚠️  Context data not found, collecting now...")
+                if not self.collect_pr_context(pr_number):
+                    raise RuntimeError(f"Context collection failed for PR #{pr_number}")
+            else:
+                context_files = list(context_dir.glob("*.json"))
+                Logger.info(f"✅ Using existing context data: {len(context_files)} files")
             
             # Then generate enhanced report
             enhanced_generator = self.config.script_dir / "enhanced_report_generator.py"
@@ -344,6 +326,14 @@ class PRAnalyzer:
             if force_fresh:
                 cmd.append("--force-fresh")
                 Logger.info("🔄 Forcing fresh AI analysis (report-only mode)")
+            
+            # Pass the context directory to the enhanced report generator
+            cmd.extend(["--context-dir", str(self.config.context_dir)])
+            
+            # Pass reports and logs directories for batch processing
+            cmd.extend(["--reports-dir", str(self.config.reports_dir)])
+            cmd.extend(["--logs-dir", str(self.config.logs_dir)])
+            Logger.info(f"🔍 Using context directory: {self.config.context_dir}")
             
             Logger.info(f"🔍 DEBUG: Command being executed: {' '.join(cmd)}")
             
@@ -411,6 +401,10 @@ class PRWorkflow:
     """Main PR workflow implementation"""
     
     def __init__(self, config: WorkflowConfig):
+        # Log startup timestamp for debugging correlation
+        startup_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
+        Logger.info(f"🚀 PRWorkflow starting at {startup_time}")
+        
         self.config = config
         self.git = GitHelper(config.spring_ai_dir)
         self.build_cache = BuildCache(config.script_dir, config.spring_ai_dir)
@@ -614,7 +608,7 @@ class PRWorkflow:
         
         # Create log file for formatter output
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        log_file = self.config.script_dir / "logs" / f"java-formatter-{timestamp}.log"
+        log_file = self.config.logs_dir / f"java-formatter-{timestamp}.log"
         
         # Use mvnd for fastest formatting
         formatter_commands = [
@@ -833,9 +827,9 @@ class PRWorkflow:
         
         # Add context cleanup only if not preserving context for batch processing
         if not preserve_context:
-            cleanup_items.append(self.config.script_dir / "context" / f"pr-{pr_number}")
+            cleanup_items.append(self.config.context_dir / f"pr-{pr_number}")
             # Also preserve logs directory during batch processing
-            cleanup_items.append(self.config.script_dir / "logs")
+            cleanup_items.append(self.config.logs_dir)
         
         # Add spring-ai repo only for full cleanup
         if cleanup_mode == 'full':
@@ -966,7 +960,7 @@ class PRWorkflow:
             
             # Create timestamped log file for build output
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-            build_log_file = self.config.script_dir / "logs" / f"build-check-{timestamp}.log"
+            build_log_file = self.config.logs_dir / f"build-check-{timestamp}.log"
             
             if self.run_command(cmd, description, cwd=self.config.spring_ai_dir, 
                                suppress_output=True, log_file=build_log_file):
@@ -1014,7 +1008,7 @@ class PRWorkflow:
         
         # Create timestamped log file for documentation build output
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        docs_log_file = self.config.script_dir / "logs" / f"antora-docs-{timestamp}.log"
+        docs_log_file = self.config.logs_dir / f"antora-docs-{timestamp}.log"
         
         # Ensure logs directory exists
         docs_log_file.parent.mkdir(exist_ok=True)
@@ -1109,46 +1103,107 @@ class PRWorkflow:
             Logger.info(f"🤖 Generating comprehensive commit message for PR #{pr_number}")
             
             # Get PR context directory
-            pr_context_dir = self.config.script_dir / "context" / f"pr-{pr_number}"
+            pr_context_dir = self.config.context_dir / f"pr-{pr_number}"
             
-            # Load basic PR data for fallback title
-            fallback_title = None
-            pr_data_file = pr_context_dir / "pr-data.json"
-            if pr_data_file.exists():
-                try:
-                    with open(pr_data_file, 'r') as f:
-                        pr_data = json.load(f)
-                        fallback_title = pr_data.get('title', f"PR #{pr_number}")
-                except Exception as e:
-                    Logger.warn(f"Could not load PR data for fallback: {e}")
+            # Validate that context directory exists and has required data
+            if not pr_context_dir.exists():
+                error_msg = f"❌ CRITICAL ERROR: Context directory not found for PR #{pr_number}"
+                Logger.error(error_msg)
+                Logger.error(f"Expected: {pr_context_dir}")
+                Logger.error("Context collection must run successfully before commit message generation")
+                raise RuntimeError(f"Context directory not found: {pr_context_dir}")
+            
+            # Check for essential context files
+            required_files = ["pr-data.json"]
+            missing_files = []
+            for file_name in required_files:
+                if not (pr_context_dir / file_name).exists():
+                    missing_files.append(file_name)
+            
+            if missing_files:
+                error_msg = f"❌ CRITICAL ERROR: Missing context files for PR #{pr_number}: {missing_files}"
+                Logger.error(error_msg)
+                Logger.error(f"Context directory: {pr_context_dir}")
+                Logger.error("All required context files must be present for commit message generation")
+                raise RuntimeError(f"Missing required context files: {missing_files}")
+            
+            Logger.info(f"✅ Context validation passed for PR #{pr_number}")
             
             # Initialize commit message generator
-            generator = CommitMessageGenerator(self.config.script_dir)
+            generator = CommitMessageGenerator(self.config.script_dir, logs_dir=self.config.logs_dir)
             
-            # Generate the commit message
+            # Generate the commit message (now error-raising, no fallback)
             result = generator.generate_commit_message(
                 pr_number=pr_number,
                 pr_context_dir=pr_context_dir,
-                fallback_title=fallback_title
+                fallback_title=None  # No longer needed since no fallback
             )
             
-            if result.success:
-                if result.fallback_used:
-                    Logger.warn(f"⚠️  Using fallback commit message: {result.error}")
-                else:
-                    Logger.success(f"✅ Generated AI-powered commit message ({result.processing_time:.1f}s)")
-                
-                return result.message
-            else:
-                Logger.error(f"❌ Failed to generate commit message: {result.error}")
-                # Return a basic fallback
-                title = fallback_title or f"PR #{pr_number}"
-                return f"{title}\n\nSquashed commits from PR #{pr_number}"
+            # The generator now always raises on error, so result.success should always be True
+            Logger.success(f"✅ Generated AI-powered commit message ({result.processing_time:.1f}s)")
+            return result.message
                 
         except Exception as e:
-            Logger.error(f"❌ Error in commit message generation: {e}")
-            # Return a basic fallback
-            return f"Squashed commits from PR #{pr_number}"
+            Logger.error(f"❌ CRITICAL ERROR: Commit message generation failed for PR #{pr_number}: {e}")
+            Logger.error("This indicates a problem with context collection, Claude Code availability, or template files")
+            raise  # Re-raise instead of falling back
+    
+    def collect_pr_context(self, pr_number: str, dry_run: bool = False) -> bool:
+        """Collect PR context data for AI analysis"""
+        if dry_run:
+            Logger.info("🎭 DRY RUN: Would collect PR context data")
+            return True
+        
+        try:
+            # Collect context data
+            context_collector = self.config.script_dir / "pr_context_collector.py"
+            Logger.info("📋 Collecting context data for AI analysis...")
+            context_result = subprocess.run(
+                ["python3", str(context_collector), pr_number, "--context-dir", str(self.config.context_dir)], 
+                cwd=self.config.script_dir,
+                capture_output=True, 
+                text=True, 
+                timeout=120
+            )
+
+            # Debug: Log context collection output
+            Logger.info(f"🔍 Context collection return code: {context_result.returncode}")
+            if context_result.stdout:
+                Logger.info(f"🔍 Context collection stdout: {context_result.stdout.strip()}")
+            if context_result.stderr:
+                Logger.warn(f"🔍 Context collection stderr: {context_result.stderr.strip()}")
+
+            if context_result.returncode != 0:
+                error_msg = f"❌ CRITICAL ERROR: Context collection failed for PR #{pr_number}"
+                Logger.error(error_msg)
+                Logger.error(f"Return code: {context_result.returncode}")
+                Logger.error(f"Command: python3 pr_context_collector.py {pr_number} --context-dir {self.config.context_dir}")
+                Logger.error(f"Error output: {context_result.stderr}")
+                Logger.error(f"Standard output: {context_result.stdout}")
+                Logger.error("Context collection must succeed before any downstream AI analysis")
+                return False
+            
+            # Verify context data was actually created
+            context_dir = self.config.context_dir / f"pr-{pr_number}"
+            if not context_dir.exists():
+                error_msg = f"❌ CRITICAL ERROR: Context directory not created for PR #{pr_number}"
+                Logger.error(error_msg)
+                Logger.error(f"Expected directory: {context_dir}")
+                Logger.error(f"Context collection completed with return code 0 but directory is missing")
+                Logger.error("This indicates an issue with the pr_context_collector.py script")
+                return False
+            
+            context_files = list(context_dir.glob("*.json"))
+            Logger.info(f"🔍 Context files created: {len(context_files)} files")
+            for file in context_files:
+                Logger.info(f"   - {file.name}")
+            
+            Logger.success("✅ Context data collection completed")
+            return True
+            
+        except Exception as e:
+            Logger.error(f"❌ Error during context collection for PR #{pr_number}: {e}")
+            return False
     
     def rebase_against_upstream(self, pr_number: str, auto_resolve: bool = False, dry_run: bool = False) -> bool:
         """Rebase against upstream main"""
@@ -1325,7 +1380,7 @@ class PRWorkflow:
             Logger.info(f"🤖 Using Claude Code AI to resolve conflicts in: {file_path.name}")
             
             # Save conflicted file for debugging
-            debug_file = self.config.script_dir / "logs" / f"conflict-debug-{file_path.name}"
+            debug_file = self.config.logs_dir / f"conflict-debug-{file_path.name}"
             debug_file.parent.mkdir(exist_ok=True)
             with open(debug_file, 'w', encoding='utf-8') as f:
                 f.write(content)
@@ -1351,7 +1406,7 @@ File content with conflicts:"""
             Logger.info(f"🔍 File size: {len(content)} chars, {len(content.split(chr(10)))} lines")
             
             # Save full prompt sent to Claude Code for debugging
-            prompt_debug_file = self.config.script_dir / "logs" / f"claude-prompt-{file_path.name}.txt"
+            prompt_debug_file = self.config.logs_dir / f"claude-prompt-{file_path.name}.txt"
             with open(prompt_debug_file, 'w', encoding='utf-8') as f:
                 f.write(claude_prompt + '\n\n')
                 f.write(content)
@@ -1373,14 +1428,16 @@ File content with conflicts:"""
                 Logger.info(f"🔍 Claude Code version stderr: {version_check.stderr.strip() if version_check.stderr else 'No stderr'}")
                 
                 # Use ClaudeCodeWrapper with permissions skip for temp files
-                claude = ClaudeCodeWrapper()
+                logs_dir = self.config.logs_dir
+                logs_dir.mkdir(exist_ok=True)
+                claude = ClaudeCodeWrapper(logs_dir=logs_dir)
                 
                 if not claude.is_available():
                     Logger.error("❌ Claude Code is not available")
                     return None
                 
                 # Use wrapper to analyze from file (conflict resolution doesn't need JSON output)
-                logs_dir = self.config.script_dir / "logs"
+                logs_dir = self.config.logs_dir
                 logs_dir.mkdir(exist_ok=True)
                 debug_response_file = logs_dir / f"claude-response-conflict-resolution-{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
                 result = claude.analyze_from_file(str(input_file_path), str(debug_response_file), timeout=300, use_json_output=False)
@@ -1494,7 +1551,14 @@ File content with conflicts:"""
             Logger.error("❌ Squash commits failed - cannot proceed with multi-commit rebase")
             return False
         
-        # Phase 4.5: Generate comprehensive commit message
+        # Phase 4.5: Collect PR context for AI analysis
+        if not skip_commit_message or generate_report:
+            Logger.info("📋 Collecting PR context for AI analysis...")
+            if not self.collect_pr_context(pr_number, dry_run):
+                Logger.error("❌ Context collection failed")
+                return False
+        
+        # Phase 4.6: Generate comprehensive commit message
         commit_message = self.generate_commit_message(pr_number, skip_commit_message, dry_run)
         if commit_message and not dry_run:
             # Update the commit message if we generated one
@@ -1783,7 +1847,7 @@ File content with conflicts:"""
         
         # Create timestamped log file for build output
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        build_log_file = self.config.script_dir / "logs" / f"full-build-{timestamp}.log"
+        build_log_file = self.config.logs_dir / f"full-build-{timestamp}.log"
         build_log_file.parent.mkdir(exist_ok=True)
         
         full_build_cmd = [

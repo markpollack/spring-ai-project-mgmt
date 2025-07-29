@@ -44,6 +44,14 @@ class RunSpecificWorkflowConfig(WorkflowConfig):
     @property
     def reports_dir(self) -> Path:
         return self.run_dir / "reports"
+    
+    @property
+    def context_dir(self) -> Path:
+        return self.run_dir / "context"
+    
+    @property
+    def logs_dir(self) -> Path:
+        return self.run_dir / "logs"
 
 
 class Logger:
@@ -82,12 +90,13 @@ class PRProcessingResult:
 @dataclass
 class BatchProcessingConfig:
     """Configuration for batch processing"""
-    cleanup_between_prs: bool = True
+    cleanup_between_prs: bool = True  # Only workspace cleanup (build cache, git branches)
     continue_on_error: bool = True
     max_parallel_jobs: int = 1  # Start with sequential processing
     dry_run: bool = False
     report_only: bool = False
     force_reprocess: bool = False
+    from_scratch: bool = False  # Complete fresh start
     
     # Performance monitoring
     collect_metrics: bool = True
@@ -227,6 +236,10 @@ class BatchPRWorkflow:
     """Manages batch processing of multiple PRs"""
     
     def __init__(self, config: BatchProcessingConfig):
+        # Log startup timestamp for debugging correlation
+        startup_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
+        Logger.info(f"🚀 BatchPRWorkflow starting at {startup_time}")
+        
         self.config = config
         self.script_dir = Path(__file__).parent.absolute()
         
@@ -279,6 +292,9 @@ class BatchPRWorkflow:
     
     def process_pr_list(self, pr_numbers: List[str]) -> bool:
         """Process a list of PRs through the complete workflow"""
+        # Perform fresh start cleanup if requested
+        self._initial_fresh_start_cleanup()
+        
         Logger.info(f"🚀 Starting batch processing of {len(pr_numbers)} PRs")
         Logger.info(f"📋 PRs to process: {', '.join(pr_numbers)}")
         
@@ -317,10 +333,6 @@ class BatchPRWorkflow:
         
         # Generate AI failure analysis for this batch
         self._generate_ai_failure_analysis(pr_numbers)
-        
-        # Final cleanup of context data after dashboard generation
-        if self.config.cleanup_between_prs:
-            self._final_cleanup_after_dashboard(pr_numbers)
         
         if self.monitor:
             self.monitor.finalize_batch()
@@ -408,39 +420,52 @@ class BatchPRWorkflow:
         except Exception as e:
             Logger.warn(f"⚠️  Cleanup warning for PR #{pr_number}: {e}")
     
-    def _final_cleanup_after_dashboard(self, pr_numbers: List[str]):
-        """Final cleanup of context data after dashboard has been generated"""
-        Logger.info("🧹 Final cleanup of context data after dashboard generation...")
+    def _initial_fresh_start_cleanup(self):
+        """Complete fresh start cleanup before beginning batch processing"""
+        if not self.config.from_scratch:
+            return
+            
+        Logger.info("🧹 Performing fresh start cleanup - removing all context data and logs...")
         
-        for pr_number in pr_numbers:
-            try:
-                if not self.config.dry_run:
-                    # Now clean up context data for each PR
-                    context_dir = self.config.script_dir / "context" / f"pr-{pr_number}"
-                    if context_dir.exists():
-                        import shutil
-                        shutil.rmtree(context_dir)
-                        Logger.info(f"🗑️  Removed context for PR #{pr_number}")
-                else:
-                    Logger.info(f"🎭 DRY RUN: Would remove context for PR #{pr_number}")
-            except Exception as e:
-                Logger.warn(f"⚠️  Context cleanup warning for PR #{pr_number}: {e}")
-        
-        # Clean up logs directory after all PRs are processed
         try:
             if not self.config.dry_run:
-                logs_dir = self.config.script_dir / "logs"
+                # Remove context directory
+                context_dir = self.script_dir / "context"
+                if context_dir.exists():
+                    import shutil
+                    shutil.rmtree(context_dir)
+                    Logger.info("🗑️  Removed all context data")
+                
+                # Remove logs directory
+                logs_dir = self.script_dir / "logs"
                 if logs_dir.exists():
                     import shutil
                     shutil.rmtree(logs_dir)
-                    Logger.info("🗑️  Removed accumulated logs directory")
+                    Logger.info("🗑️  Removed all logs")
+                
+                # Remove reports directory
+                reports_dir = self.script_dir / "reports"
+                if reports_dir.exists():
+                    import shutil
+                    shutil.rmtree(reports_dir)
+                    Logger.info("🗑️  Removed all reports")
+                
+                # Remove previous runs directory
+                runs_dir = self.script_dir / "runs"
+                if runs_dir.exists():
+                    import shutil
+                    shutil.rmtree(runs_dir)
+                    Logger.info("🗑️  Removed all previous runs")
+                
             else:
-                Logger.info("🎭 DRY RUN: Would remove logs directory")
+                Logger.info("🎭 DRY RUN: Would remove all context data, logs, reports, and previous runs")
         except Exception as e:
-            Logger.warn(f"⚠️  Logs cleanup warning: {e}")
+            Logger.warn(f"⚠️  Fresh start cleanup warning: {e}")
     
     def _generate_batch_summary(self):
         """Generate comprehensive batch processing summary"""
+        # Ensure batch log directory exists
+        self.batch_log_dir.mkdir(parents=True, exist_ok=True)
         summary_file = self.batch_log_dir / "batch-summary.md"
         
         successful = [r for r in self.results if r.success]
@@ -565,6 +590,8 @@ class BatchPRWorkflow:
         try:
             Logger.info("🔍 Analyzing AI assessment failures for this batch...")
             
+            # Ensure batch log directory exists
+            self.batch_log_dir.mkdir(parents=True, exist_ok=True)
             tracker = AIFailureTracker(self.batch_log_dir)
             
             # Get failures for this batch's PRs
@@ -616,6 +643,7 @@ Examples:
   python3 batch_pr_workflow.py --stop-on-error 3922 3921 3920    # Stop on first error
   python3 batch_pr_workflow.py --open-browser 3922 3921 3920     # Auto-open HTML dashboard in browser
   python3 batch_pr_workflow.py --no-html 3922 3921 3920          # Skip HTML dashboard generation
+  python3 batch_pr_workflow.py --from-scratch 3922 3921 3920     # Complete fresh start - remove all data first
         """
     )
     
@@ -628,6 +656,7 @@ Examples:
     parser.add_argument('--no-metrics', action='store_true', help='Disable performance metrics collection')
     parser.add_argument('--no-html', action='store_true', help='Skip HTML dashboard generation')
     parser.add_argument('--open-browser', action='store_true', help='Automatically open HTML dashboard in browser')
+    parser.add_argument('--from-scratch', action='store_true', help='Complete fresh start - remove all context data, logs, and reports before processing')
     
     args = parser.parse_args()
     
@@ -646,7 +675,8 @@ Examples:
         force_reprocess=args.force_reprocess,
         collect_metrics=not args.no_metrics,
         generate_html_dashboard=not args.no_html,
-        open_browser=args.open_browser
+        open_browser=args.open_browser,
+        from_scratch=args.from_scratch
     )
     
     # Create batch processor

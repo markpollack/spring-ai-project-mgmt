@@ -1,0 +1,18 @@
+Return code: 0
+Stdout length: 753
+Stderr: None
+Response:
+Based on the template and PR context data, I'll generate a comprehensive commit message for Spring AI PR #3921.
+
+chore(multiple): remove unused imports and update copyright years
+
+Several files across the Spring AI codebase contained unused import
+statements that were identified during code maintenance review.
+This cleanup effort improves code hygiene and reduces unnecessary
+dependency indications in affected modules.
+
+Removed unused imports from 8 files spanning MCP client transport,
+PDF document reader, test classes for Ollama multimodal integration,
+ElevenLabs text-to-speech, Google GenAI retry logic, ZhiPu AI API,
+and Chroma vector store components. Updated copyright years from
+2023-2024 to 2023-2025 in Google GenAI and Ollama test files.

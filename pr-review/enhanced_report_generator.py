@@ -56,7 +56,7 @@ class EnhancedReportData:
 class EnhancedReportGenerator:
     """Generates comprehensive reports integrating all AI analysis components"""
     
-    def __init__(self, working_dir: Path = None, spring_ai_dir: Path = None):
+    def __init__(self, working_dir: Path = None, spring_ai_dir: Path = None, context_dir: Path = None, reports_dir: Path = None, logs_dir: Path = None):
         # Default to script directory if not provided (most robust approach)
         if working_dir is None:
             working_dir = Path(__file__).parent.absolute()
@@ -66,9 +66,26 @@ class EnhancedReportGenerator:
         self.working_dir = working_dir.absolute()
         self.spring_ai_dir = spring_ai_dir.absolute()
         self.script_dir = self.working_dir  # Scripts are in the same directory as working_dir
-        self.context_dir = self.working_dir / "context"
-        self.reports_dir = self.working_dir / "reports"
-        self.reports_dir.mkdir(exist_ok=True)
+        
+        # Use provided context directory or default to working_dir/context
+        if context_dir is None:
+            self.context_dir = self.working_dir / "context"
+        else:
+            self.context_dir = Path(context_dir).absolute()
+            
+        # Use provided logs directory or default to working_dir/logs
+        if logs_dir is None:
+            self.logs_dir = self.working_dir / "logs"
+        else:
+            self.logs_dir = Path(logs_dir).absolute()
+        self.logs_dir.mkdir(parents=True, exist_ok=True)
+            
+        # Use provided reports directory or default to working_dir/reports
+        if reports_dir is None:
+            self.reports_dir = self.working_dir / "reports"
+        else:
+            self.reports_dir = Path(reports_dir).absolute()
+        self.reports_dir.mkdir(parents=True, exist_ok=True)
     
     def generate_enhanced_report(self, pr_number: str) -> bool:
         """Generate comprehensive enhanced PR report"""
@@ -210,7 +227,9 @@ class EnhancedReportGenerator:
             analyzer_script = self.script_dir / "ai_conversation_analyzer.py"
             
             result = subprocess.run([
-                "python3", str(analyzer_script), pr_number
+                "python3", str(analyzer_script), pr_number,
+                "--context-dir", str(self.context_dir),
+                "--logs-dir", str(self.logs_dir)
             ], capture_output=True, text=True, timeout=300)
             
             if result.returncode == 0 and analysis_file.exists():
@@ -253,7 +272,9 @@ class EnhancedReportGenerator:
             assessor_script = self.script_dir / "solution_assessor.py"
             
             result = subprocess.run([
-                "python3", str(assessor_script), pr_number
+                "python3", str(assessor_script), pr_number,
+                "--context-dir", str(self.context_dir),
+                "--logs-dir", str(self.logs_dir)
             ], text=True, timeout=300)  # Removed capture_output to show progress animation
             
             if result.returncode == 0 and assessment_file.exists():
@@ -290,7 +311,9 @@ class EnhancedReportGenerator:
             assessor_script = self.script_dir / "backport_assessor.py"
             
             result = subprocess.run([
-                "python3", str(assessor_script), pr_number
+                "python3", str(assessor_script), pr_number,
+                "--context-dir", str(self.context_dir),
+                "--logs-dir", str(self.logs_dir)
             ], text=True, timeout=300)  # Removed capture_output to show progress animation
             
             if result.returncode == 0 and assessment_file.exists():
@@ -317,7 +340,7 @@ class EnhancedReportGenerator:
             # Use AI-powered risk assessment instead of hardcoded patterns
             from ai_risk_assessor import AIRiskAssessor
             
-            assessor = AIRiskAssessor(self.working_dir, self.spring_ai_dir)
+            assessor = AIRiskAssessor(self.working_dir, self.spring_ai_dir, context_dir=self.context_dir, logs_dir=self.logs_dir)
             assessment_result = assessor.run_ai_risk_assessment(pr_number)
             
             if assessment_result:
@@ -1040,22 +1063,44 @@ def main():
     parser.add_argument("pr_number", help="GitHub PR number to generate report for")
     parser.add_argument("--force-fresh", action="store_true", 
                        help="Force fresh AI analysis (ignore cached assessments)")
+    parser.add_argument("--context-dir", type=str,
+                       help="Directory containing PR context data (default: working_dir/context)")
+    parser.add_argument("--reports-dir", type=str,
+                       help="Directory for output reports (default: working_dir/reports)")
+    parser.add_argument("--logs-dir", type=str,
+                       help="Directory for logs (default: working_dir/logs)")
     
     args = parser.parse_args()
     pr_number = args.pr_number
     force_fresh = args.force_fresh
+    context_dir = args.context_dir
     
-    # Use script directory for report generation (robust regardless of where script is called from)
+    # Use script directory as base working directory
     working_dir = Path(__file__).parent.absolute()
     spring_ai_dir = working_dir / "spring-ai"
     
-    generator = EnhancedReportGenerator(working_dir, spring_ai_dir)
+    # Parse context directory if provided
+    context_dir_path = None
+    if context_dir:
+        context_dir_path = Path(context_dir)
+    
+    # Determine reports and logs directories
+    reports_dir_path = Path(args.reports_dir) if args.reports_dir else None
+    logs_dir_path = Path(args.logs_dir) if args.logs_dir else None
+    
+    generator = EnhancedReportGenerator(
+        working_dir=working_dir,
+        spring_ai_dir=spring_ai_dir,
+        context_dir=context_dir_path,
+        reports_dir=reports_dir_path,
+        logs_dir=logs_dir_path
+    )
     
     # Clear AI assessment cache if force-fresh is requested
     if force_fresh:
         print(f"🔄 Forcing fresh AI analysis for PR #{pr_number}")
-        context_dir = working_dir / "context" / f"pr-{pr_number}"
-        if context_dir.exists():
+        pr_context_dir = generator.context_dir / f"pr-{pr_number}"
+        if pr_context_dir.exists():
             # Remove AI assessment cache files
             ai_cache_files = [
                 "ai-risk-assessment.json",
@@ -1064,7 +1109,7 @@ def main():
                 "backport-assessment.json"
             ]
             for cache_file in ai_cache_files:
-                cache_path = context_dir / cache_file
+                cache_path = pr_context_dir / cache_file
                 if cache_path.exists():
                     cache_path.unlink()
                     print(f"🗑️  Removed cached {cache_file}")

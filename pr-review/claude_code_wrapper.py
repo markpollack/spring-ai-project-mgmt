@@ -10,6 +10,7 @@ import subprocess
 import os
 import tempfile
 import time
+from datetime import datetime
 from pathlib import Path
 from typing import Dict, Any, Optional
 from animated_progress import AnimatedProgress
@@ -17,7 +18,7 @@ from animated_progress import AnimatedProgress
 class ClaudeCodeWrapper:
     """Robust wrapper for Claude Code CLI interactions"""
     
-    def __init__(self, claude_binary_path: str = None):
+    def __init__(self, claude_binary_path: str = None, logs_dir: Path = None):
         if claude_binary_path is None:
             # Try to find Claude Code in PATH
             try:
@@ -28,6 +29,16 @@ class ClaudeCodeWrapper:
                 self.claude_binary_path = '/home/mark/.nvm/versions/node/v22.15.0/bin/claude'
         else:
             self.claude_binary_path = claude_binary_path
+        
+        # Set up logs directory for debugging
+        if logs_dir is None:
+            # Default to current working directory logs
+            self.logs_dir = Path.cwd() / "logs"
+        else:
+            self.logs_dir = Path(logs_dir)
+        
+        # Ensure logs directory exists
+        self.logs_dir.mkdir(parents=True, exist_ok=True)
     
     def is_available(self) -> bool:
         """Check if Claude Code is available"""
@@ -506,21 +517,26 @@ class ClaudeCodeWrapper:
         Returns:
             Dict containing success status, response, error info, etc.
         """
-        # Create temporary file with prompt
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False) as temp_file:
-            temp_file.write(prompt_text)
-            temp_file_path = temp_file.name
+        # Create persistent prompt file for debugging
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        prompt_file_path = self.logs_dir / f"claude-prompt-{timestamp}.md"
+        
+        with open(prompt_file_path, 'w', encoding='utf-8') as f:
+            f.write(prompt_text)
+        
+        temp_file_path = str(prompt_file_path)
         
         try:
             # Use the file-based analysis
             result = self.analyze_from_file(temp_file_path, output_file_path, timeout, use_json_output, show_progress)
+            # Keep the prompt file for debugging - don't delete it
             return result
-        finally:
-            # Clean up temp file
-            try:
-                os.unlink(temp_file_path)
-            except Exception:
-                pass
+        except Exception as e:
+            # Log error but keep prompt file for debugging
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error in analyze_from_text, prompt saved to: {prompt_file_path}")
+            raise
 
 
 # Test function when run directly

@@ -110,11 +110,11 @@ class ConversationEntry:
 class PRContextCollector:
     """Collects comprehensive PR and related issue context from GitHub"""
     
-    def __init__(self, working_dir: Path, repository: str = "spring-projects/spring-ai"):
+    def __init__(self, working_dir: Path, repository: str = "spring-projects/spring-ai", context_dir: Optional[Path] = None):
         self.working_dir = working_dir
         self.repository = repository
-        self.context_dir = working_dir / "context"
-        self.context_dir.mkdir(exist_ok=True)
+        self.context_dir = context_dir if context_dir else working_dir / "context"
+        self.context_dir.mkdir(parents=True, exist_ok=True)
         
         # Rate limiting and caching
         self.request_count = 0
@@ -464,18 +464,32 @@ def main():
     import sys
     
     if len(sys.argv) < 2:
-        print("Usage: python3 pr_context_collector.py <pr_number> [--force-refresh]")
+        print("Usage: python3 pr_context_collector.py <pr_number> [--force-refresh] [--context-dir <path>]")
         print("\nExamples:")
         print("  python3 pr_context_collector.py 3386")
         print("  python3 pr_context_collector.py 3386 --force-refresh")
+        print("  python3 pr_context_collector.py 3386 --context-dir /path/to/context")
         sys.exit(1)
     
     pr_number = sys.argv[1]
     force_refresh = "--force-refresh" in sys.argv
     
+    # Parse context directory argument
+    context_dir = None
+    if "--context-dir" in sys.argv:
+        try:
+            idx = sys.argv.index("--context-dir")
+            if idx + 1 < len(sys.argv):
+                context_dir = Path(sys.argv[idx + 1])
+            else:
+                print("Error: --context-dir requires a path argument")
+                sys.exit(1)
+        except ValueError:
+            pass
+    
     # Use script directory for context collection (robust regardless of where script is called from)
     working_dir = Path(__file__).parent.absolute()
-    collector = PRContextCollector(working_dir)
+    collector = PRContextCollector(working_dir, context_dir=context_dir)
     
     # Collect context data
     context_data = collector.collect_all_context(pr_number, force_refresh)

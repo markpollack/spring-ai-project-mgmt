@@ -1,0 +1,10 @@
+[
+  {
+    "filename": "spring-ai-model/src/main/java/org/springframework/ai/converter/BeanOutputConverter.java",
+    "status": "modified",
+    "additions": 1,
+    "deletions": 0,
+    "changes": 1,
+    "patch": "@@ -159,6 +159,7 @@ private void generateSchema() {\n \t@Override\n \tpublic T convert(@NonNull String text) {\n \t\ttry {\n+\t\t\ttext = text.replaceAll(\"<think>[\\\\s\\\\s]*?</think>\",\"\")\n \t\t\t// Remove leading and trailing whitespace\n \t\t\ttext = text.trim();\n "
+  }
+]

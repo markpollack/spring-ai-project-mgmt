@@ -1,0 +1,250 @@
+{
+  "batch_start_time": "2025-07-29T02:39:40.045148",
+  "batch_end_time": "2025-07-29T03:18:55.806661",
+  "total_processing_time": null,
+  "prs_processed": [
+    {
+      "pr_number": "3919",
+      "success": true,
+      "start_time": "2025-07-29 02:39:40.045250",
+      "end_time": "2025-07-29 02:41:12.401624",
+      "processing_time": "0:01:32.356374",
+      "workflow_phase": "complete_workflow",
+      "error_message": null,
+      "prompt_size_bytes": null,
+      "token_count": null,
+      "files_analyzed": null,
+      "phases_completed": [
+        "setup",
+        "checkout",
+        "build",
+        "squash",
+        "rebase",
+        "report",
+        "tests"
+      ],
+      "report_generated": true,
+      "tests_passed": null
+    },
+    {
+      "pr_number": "3920",
+      "success": true,
+      "start_time": "2025-07-29 02:41:12.465673",
+      "end_time": "2025-07-29 02:42:43.502150",
+      "processing_time": "0:01:31.036477",
+      "workflow_phase": "complete_workflow",
+      "error_message": null,
+      "prompt_size_bytes": null,
+      "token_count": null,
+      "files_analyzed": null,
+      "phases_completed": [
+        "setup",
+        "checkout",
+        "build",
+        "squash",
+        "rebase",
+        "report",
+        "tests"
+      ],
+      "report_generated": true,
+      "tests_passed": null
+    },
+    {
+      "pr_number": "3921",
+      "success": true,
+      "start_time": "2025-07-29 02:42:43.556572",
+      "end_time": "2025-07-29 02:46:42.531391",
+      "processing_time": "0:03:58.974819",
+      "workflow_phase": "complete_workflow",
+      "error_message": null,
+      "prompt_size_bytes": null,
+      "token_count": null,
+      "files_analyzed": null,
+      "phases_completed": [
+        "setup",
+        "checkout",
+        "build",
+        "squash",
+        "rebase",
+        "report",
+        "tests"
+      ],
+      "report_generated": true,
+      "tests_passed": null
+    },
+    {
+      "pr_number": "3922",
+      "success": true,
+      "start_time": "2025-07-29 02:46:42.576133",
+      "end_time": "2025-07-29 02:53:42.370587",
+      "processing_time": "0:06:59.794454",
+      "workflow_phase": "complete_workflow",
+      "error_message": null,
+      "prompt_size_bytes": null,
+      "token_count": null,
+      "files_analyzed": null,
+      "phases_completed": [
+        "setup",
+        "checkout",
+        "build",
+        "squash",
+        "rebase",
+        "report",
+        "tests"
+      ],
+      "report_generated": true,
+      "tests_passed": null
+    },
+    {
+      "pr_number": "3927",
+      "success": true,
+      "start_time": "2025-07-29 02:53:42.431744",
+      "end_time": "2025-07-29 02:58:20.664980",
+      "processing_time": "0:04:38.233236",
+      "workflow_phase": "complete_workflow",
+      "error_message": null,
+      "prompt_size_bytes": null,
+      "token_count": null,
+      "files_analyzed": null,
+      "phases_completed": [
+        "setup",
+        "checkout",
+        "build",
+        "squash",
+        "rebase",
+        "report",
+        "tests"
+      ],
+      "report_generated": true,
+      "tests_passed": null
+    },
+    {
+      "pr_number": "3931",
+      "success": true,
+      "start_time": "2025-07-29 02:58:20.725991",
+      "end_time": "2025-07-29 03:01:28.609827",
+      "processing_time": "0:03:07.883836",
+      "workflow_phase": "complete_workflow",
+      "error_message": null,
+      "prompt_size_bytes": null,
+      "token_count": null,
+      "files_analyzed": null,
+      "phases_completed": [
+        "setup",
+        "checkout",
+        "build",
+        "squash",
+        "rebase",
+        "report",
+        "tests"
+      ],
+      "report_generated": false,
+      "tests_passed": null
+    },
+    {
+      "pr_number": "3932",
+      "success": true,
+      "start_time": "2025-07-29 03:01:28.660381",
+      "end_time": "2025-07-29 03:05:36.268492",
+      "processing_time": "0:04:07.608111",
+      "workflow_phase": "complete_workflow",
+      "error_message": null,
+      "prompt_size_bytes": null,
+      "token_count": null,
+      "files_analyzed": null,
+      "phases_completed": [
+        "setup",
+        "checkout",
+        "build",
+        "squash",
+        "rebase",
+        "report",
+        "tests"
+      ],
+      "report_generated": true,
+      "tests_passed": null
+    },
+    {
+      "pr_number": "3933",
+      "success": true,
+      "start_time": "2025-07-29 03:05:36.313871",
+      "end_time": "2025-07-29 03:08:28.034842",
+      "processing_time": "0:02:51.720971",
+      "workflow_phase": "complete_workflow",
+      "error_message": null,
+      "prompt_size_bytes": null,
+      "token_count": null,
+      "files_analyzed": null,
+      "phases_completed": [
+        "setup",
+        "checkout",
+        "build",
+        "squash",
+        "rebase",
+        "report",
+        "tests"
+      ],
+      "report_generated": false,
+      "tests_passed": null
+    },
+    {
+      "pr_number": "3934",
+      "success": true,
+      "start_time": "2025-07-29 03:08:28.131163",
+      "end_time": "2025-07-29 03:10:54.269404",
+      "processing_time": "0:02:26.138241",
+      "workflow_phase": "complete_workflow",
+      "error_message": null,
+      "prompt_size_bytes": null,
+      "token_count": null,
+      "files_analyzed": null,
+      "phases_completed": [
+        "setup",
+        "checkout",
+        "build",
+        "squash",
+        "rebase",
+        "report",
+        "tests"
+      ],
+      "report_generated": true,
+      "tests_passed": null
+    },
+    {
+      "pr_number": "3936",
+      "success": true,
+      "start_time": "2025-07-29 03:10:54.324227",
+      "end_time": "2025-07-29 03:18:55.802815",
+      "processing_time": "0:08:01.478588",
+      "workflow_phase": "complete_workflow",
+      "error_message": null,
+      "prompt_size_bytes": null,
+      "token_count": null,
+      "files_analyzed": null,
+      "phases_completed": [
+        "setup",
+        "checkout",
+        "build",
+        "squash",
+        "rebase",
+        "report",
+        "tests"
+      ],
+      "report_generated": true,
+      "tests_passed": null
+    }
+  ],
+  "summary_stats": {
+    "total_prs": 10,
+    "successful_prs": 10,
+    "failed_prs": 0,
+    "success_rate": 100.0,
+    "avg_processing_time": 235.52251069999997,
+    "total_batch_time": 2355.761513
+  },
+  "smart_prompt_performance": {},
+  "system_info": {
+    "python_version": "3.12.3 (main, Jun 18 2025, 17:59:45) [GCC 13.3.0]",
+    "working_directory": "/home/mark/project-mgmt/spring-ai-project-mgmt/pr-review"
+  }
+}

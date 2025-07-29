@@ -91,11 +91,19 @@
             box-shadow: 0 4px 20px var(--shadow-soft);
             transition: transform 0.3s ease, box-shadow 0.3s ease;
             border-left: 5px solid;
+            cursor: pointer;
+            user-select: none;
         }
         
         .stat-card:hover {
             transform: translateY(-5px);
             box-shadow: 0 8px 30px var(--shadow-medium);
+        }
+        
+        .stat-card.active {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 40px var(--shadow-medium);
+            border-left-width: 8px;
         }
         
         .stat-card.low-hanging {
@@ -111,6 +119,11 @@
         .stat-card.total {
             border-left-color: var(--sky-blue);
             background: linear-gradient(135deg, #fff 0%, #e6f7ff 100%);
+        }
+        
+        .stat-card.backport-ready {
+            border-left-color: #17a2b8;
+            background: linear-gradient(135deg, #fff 0%, #e6f8fb 100%);
         }
         
         .stat-icon {
@@ -176,6 +189,37 @@
             margin: 0;
             color: #666;
             font-size: 1.1rem;
+        }
+        
+        .section-description {
+            margin: 0;
+            color: #666;
+            font-size: 1.1rem;
+        }
+        
+        /* === BACKPORT SECTION === */
+        .backport-section {
+            margin-bottom: 50px;
+            padding: 30px;
+            background: linear-gradient(135deg, #e6f8fb 0%, #b3e5fc 100%);
+            border-radius: 20px;
+            border: 2px solid #17a2b8;
+            box-shadow: 0 8px 32px rgba(23, 162, 184, 0.2);
+        }
+        
+        .backport-section .section-header {
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            border-left: 5px solid #17a2b8;
+        }
+        
+        .backport-section .section-header h2 {
+            color: #17a2b8;
+        }
+        
+        .backport-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            gap: 25px;
         }
         
         /* === PR GRID === */
@@ -311,6 +355,36 @@
             border: 1px solid #f5c6cb;
         }
         
+        /* === BACKPORT BADGES === */
+        .backport-badge {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-left: 8px;
+            cursor: help;
+        }
+        
+        .backport-approve {
+            background: #d1f2eb;
+            color: #0c5460;
+            border: 1px solid #7bdcb5;
+        }
+        
+        .backport-reject {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .backport-unknown {
+            background: #e2e3e5;
+            color: #495057;
+            border: 1px solid #d6d8db;
+        }
+        
         /* === PR STATS === */
         .pr-stats {
             display: flex;
@@ -376,6 +450,43 @@
             position: absolute;
             left: 0;
             top: 0;
+        }
+        
+        /* === BACKPORT INFO === */
+        .backport-info {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 12px;
+            border-left: 4px solid #6c757d;
+        }
+        
+        .backport-info .backport-classification {
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+        
+        .backport-info .backport-risk {
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .backport-info .backport-reasoning {
+            font-size: 0.85rem;
+            color: #6c757d;
+            line-height: 1.4;
+            font-style: italic;
+        }
+        
+        /* Update backport-info based on approval status */
+        .pr-card[data-backport="approve"] .backport-info {
+            border-left-color: #28a745;
+            background: linear-gradient(135deg, #d1f2eb 0%, #a3e4d7 100%);
+        }
+        
+        .pr-card[data-backport="reject"] .backport-info {
+            border-left-color: #dc3545;
+            background: linear-gradient(135deg, #f8d7da 0%, #f1aeb5 100%);
         }
         
         /* === DIFF PREVIEW === */
@@ -559,45 +670,54 @@
             <h1>🌳 Spring AI PR Orchard Dashboard</h1>
             <div class="header-info">
                 <span class="run-info">Run: run-0</span>
-                <span class="pr-count">PRs Analyzed: 5</span>
-                <span class="timestamp">Generated: 2025-07-27 15:18:05</span>
+                <span class="pr-count">PRs Analyzed: 10</span>
+                <span class="timestamp">Generated: 2025-07-29 03:18:55</span>
             </div>
         </header>
         
         
         <section class="summary-stats">
-            <div class="stat-card low-hanging">
+            <div class="stat-card backport-ready" data-filter="backport-ready" onclick="filterPRsByType('backport-ready')">
+                <div class="stat-icon">📦</div>
+                <div class="stat-content">
+                    <div class="stat-number">6</div>
+                    <div class="stat-label">Backport Ready</div>
+                </div>
+            </div>
+            <div class="stat-card low-hanging" data-filter="ready-harvest" onclick="filterPRsByType('ready-harvest')">
                 <div class="stat-icon">🍎</div>
                 <div class="stat-content">
-                    <div class="stat-number">1</div>
+                    <div class="stat-number">3</div>
                     <div class="stat-label">Ready to Harvest</div>
                 </div>
             </div>
-            <div class="stat-card low-risk">
+            <div class="stat-card low-risk" data-filter="low-risk" onclick="filterPRsByType('low-risk')">
                 <div class="stat-icon">✅</div>
                 <div class="stat-content">
-                    <div class="stat-number">4</div>
+                    <div class="stat-number">9</div>
                     <div class="stat-label">Low Risk PRs</div>
                 </div>
             </div>
-            <div class="stat-card total">
+            <div class="stat-card total" data-filter="all" onclick="filterPRsByType('all')">
                 <div class="stat-icon">📊</div>
                 <div class="stat-content">
-                    <div class="stat-number">5</div>
+                    <div class="stat-number">10</div>
                     <div class="stat-label">Total PRs</div>
                 </div>
             </div>
         </section>
         
         
-                <section class="orchard-section ready-harvest">
-                    <div class="section-header">
-                        <h2>🍎 Ready to Harvest</h2>
-                        <p class="section-subtitle">Low Hanging Fruit - Quick Wins (1 PRs)</p>
-                    </div>
-                    <div class="pr-grid">
-                        
-        <div class="pr-card" data-risk="low" data-type="documentation">
+        <section class="backport-section">
+            <div class="section-header">
+                <h2>📦 Spring AI 1.0.x Backport Candidates</h2>
+                <p class="section-description">
+                    6 PR(s) approved for backporting to the maintenance branch
+                </p>
+            </div>
+            <div class="backport-grid">
+                
+        <div class="pr-card" data-risk="low" data-type="documentation" data-backport="approve">
             <div class="pr-header">
                 <div class="pr-icon">🍎</div>
                 <div class="pr-title-section">
@@ -610,6 +730,9 @@
                         <span class="pr-author">by nahyukk</span>
                         <span class="pr-type">documentation</span>
                         <span class="risk-badge risk-low">LOW</span>
+                        <span class="backport-badge backport-approve" title="This is a pure documentation update that changes version references and repository information wi...">
+                            ✅ APPROVE
+                        </span>
                     </div>
                 </div>
             </div>
@@ -630,8 +753,16 @@
             </div>
             
             <div class="pr-summary">
-                <p class="risk-summary">This is a documentation-only change updating getting-started.adoc for the 1.0.0 release with no code modifications. The changes appear to be straightforward version updates and repository configuration improvements with no security, performance, or integration risks.</p>
-                <ul class='positive-findings'><li>Documentation updates properly reflect the 1.0.0 release milestone</li><li>Clear repository configuration guidance for both Maven Central and snapshot repositories</li><li>Proper Maven mirror configuration warning helps prevent common dependency resolution issues</li></ul>
+                <p class="risk-summary">This is a low-risk documentation update that changes version references from 1.0.0-SNAPSHOT to 1.0.0 release. The primary risk is ensuring the referenced version actually exists in Maven Central, but no security or functional code changes introduce vulnerabilities.</p>
+                <ul class='positive-findings'><li>Clear separation between release and snapshot repository configuration</li><li>Comprehensive Maven mirror configuration guidance to prevent common snapshot access issues</li><li>Well-structured documentation with proper tabbed examples for both Maven and Gradle</li></ul>
+            </div>
+            
+            <div class="backport-info">
+                <div class="backport-classification">
+                    <strong>Backport Classification:</strong> Documentation 
+                    <span class="backport-risk">(Low Risk)</span>
+                </div>
+                <div class="backport-reasoning">This is a pure documentation update that changes version references and repository information wi...</div>
             </div>
             
             
@@ -642,18 +773,179 @@
             </div>
         </div>
         
-                    </div>
-                </section>
-                
 
-                <section class="orchard-section easy-picks">
-                    <div class="section-header">
-                        <h2>🍃 Easy Picks</h2>
-                        <p class="section-subtitle">Simple Reach - Low-Medium Effort (1 PRs)</p>
+        <div class="pr-card" data-risk="low" data-type="documentation" data-backport="approve">
+            <div class="pr-header">
+                <div class="pr-icon">🍃</div>
+                <div class="pr-title-section">
+                    <h3 class="pr-title">
+                        <a href="https://github.com/spring-projects/spring-ai/pull/3936" target="_blank" class="pr-link">
+                            #3936: Fix typos in comments and improve documentation
+                        </a>
+                    </h3>
+                    <div class="pr-meta">
+                        <span class="pr-author">by jbj338033</span>
+                        <span class="pr-type">documentation</span>
+                        <span class="risk-badge risk-low">LOW</span>
+                        <span class="backport-badge backport-approve" title="This PR exclusively contains typo corrections in comments and documentation improvements. No publ...">
+                            ✅ APPROVE
+                        </span>
                     </div>
-                    <div class="pr-grid">
-                        
-        <div class="pr-card" data-risk="low" data-type="cleanup">
+                </div>
+            </div>
+            
+            <div class="pr-stats">
+                <div class="stat">
+                    <span class="stat-label">Files:</span>
+                    <span class="stat-value">7</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Lines:</span>
+                    <span class="stat-value">+57/-11</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Effort:</span>
+                    <span class="stat-value">4/10</span>
+                </div>
+            </div>
+            
+            <div class="pr-summary">
+                <p class="risk-summary">This PR contains only minor documentation and comment improvements with no functional code changes. All modifications are cosmetic typo fixes and documentation enhancements with minimal risk to system security or stability.</p>
+                <ul class='positive-findings'><li>All changes are limited to documentation and comment improvements</li><li>No modifications to security-sensitive code patterns</li><li>Integration tests maintain proper credential handling with System.getenv() calls</li></ul>
+            </div>
+            
+            <div class="backport-info">
+                <div class="backport-classification">
+                    <strong>Backport Classification:</strong> Documentation 
+                    <span class="backport-risk">(Low - Only cosmetic changes to comments and documentation with no functional code impact Risk)</span>
+                </div>
+                <div class="backport-reasoning">This PR exclusively contains typo corrections in comments and documentation improvements. No publ...</div>
+            </div>
+            
+            
+            
+            <div class="pr-actions">
+                <a href="https://github.com/spring-projects/spring-ai/pull/3936" target="_blank" class="btn btn-primary">View on GitHub</a>
+                <a href="https://github.com/spring-projects/spring-ai/pull/3936/files" target="_blank" class="btn btn-secondary">View Files</a>
+            </div>
+        </div>
+        
+
+        <div class="pr-card" data-risk="low" data-type="testing" data-backport="approve">
+            <div class="pr-header">
+                <div class="pr-icon">🍃</div>
+                <div class="pr-title-section">
+                    <h3 class="pr-title">
+                        <a href="https://github.com/spring-projects/spring-ai/pull/3922" target="_blank" class="pr-link">
+                            #3922: test: Add comprehensive test coverage for MilvusFilterExpressionConverter
+                        </a>
+                    </h3>
+                    <div class="pr-meta">
+                        <span class="pr-author">by alxkm</span>
+                        <span class="pr-type">testing</span>
+                        <span class="risk-badge risk-low">LOW</span>
+                        <span class="backport-badge backport-approve" title="This PR exclusively adds test methods to improve coverage of the MilvusFilterExpressionConverter....">
+                            ✅ APPROVE
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="pr-stats">
+                <div class="stat">
+                    <span class="stat-label">Files:</span>
+                    <span class="stat-value">1</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Lines:</span>
+                    <span class="stat-value">+179/-0</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Effort:</span>
+                    <span class="stat-value">3/10</span>
+                </div>
+            </div>
+            
+            <div class="pr-summary">
+                <p class="risk-summary">This PR adds comprehensive test coverage for the MilvusFilterExpressionConverter with no production code changes. The tests are well-structured and cover edge cases appropriately with no security concerns identified.</p>
+                <ul class='positive-findings'><li>Comprehensive test coverage for MilvusFilterExpressionConverter edge cases</li><li>Well-structured test methods with clear naming and documentation comments</li><li>Proper use of AssertJ assertions and Spring AI filter expression patterns</li></ul>
+            </div>
+            
+            <div class="backport-info">
+                <div class="backport-classification">
+                    <strong>Backport Classification:</strong> Other 
+                    <span class="backport-risk">(Low Risk)</span>
+                </div>
+                <div class="backport-reasoning">This PR exclusively adds test methods to improve coverage of the MilvusFilterExpressionConverter....</div>
+            </div>
+            
+            
+            
+            <div class="pr-actions">
+                <a href="https://github.com/spring-projects/spring-ai/pull/3922" target="_blank" class="btn btn-primary">View on GitHub</a>
+                <a href="https://github.com/spring-projects/spring-ai/pull/3922/files" target="_blank" class="btn btn-secondary">View Files</a>
+            </div>
+        </div>
+        
+
+        <div class="pr-card" data-risk="low" data-type="testing" data-backport="approve">
+            <div class="pr-header">
+                <div class="pr-icon">🍃</div>
+                <div class="pr-title-section">
+                    <h3 class="pr-title">
+                        <a href="https://github.com/spring-projects/spring-ai/pull/3919" target="_blank" class="pr-link">
+                            #3919: test: Add comprehensive test coverage for MongoDBAtlasFilterExpressionConverter
+                        </a>
+                    </h3>
+                    <div class="pr-meta">
+                        <span class="pr-author">by alxkm</span>
+                        <span class="pr-type">testing</span>
+                        <span class="risk-badge risk-low">LOW</span>
+                        <span class="backport-badge backport-approve" title="This PR only adds test methods to an existing test class without modifying any production code, p...">
+                            ✅ APPROVE
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="pr-stats">
+                <div class="stat">
+                    <span class="stat-label">Files:</span>
+                    <span class="stat-value">1</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Lines:</span>
+                    <span class="stat-value">+170/-0</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Effort:</span>
+                    <span class="stat-value">3/10</span>
+                </div>
+            </div>
+            
+            <div class="pr-summary">
+                <p class="risk-summary">This is a well-written test file that significantly improves test coverage for the MongoDB Atlas filter converter. The main risks are around missing performance and error handling validation rather than security vulnerabilities. The added tests properly validate core functionality without introducing security concerns.</p>
+                <ul class='positive-findings'><li>Comprehensive test coverage for all MongoDB filter operators (EQ, NE, LT, LTE, GT, GTE, IN, NIN)</li><li>Proper handling of edge cases including null values, empty strings, and mixed data types</li><li>Well-structured test cases covering complex nested expressions with multiple logical operators</li></ul>
+            </div>
+            
+            <div class="backport-info">
+                <div class="backport-classification">
+                    <strong>Backport Classification:</strong> Other 
+                    <span class="backport-risk">(Low Risk)</span>
+                </div>
+                <div class="backport-reasoning">This PR only adds test methods to an existing test class without modifying any production code, p...</div>
+            </div>
+            
+            
+            
+            <div class="pr-actions">
+                <a href="https://github.com/spring-projects/spring-ai/pull/3919" target="_blank" class="btn btn-primary">View on GitHub</a>
+                <a href="https://github.com/spring-projects/spring-ai/pull/3919/files" target="_blank" class="btn btn-secondary">View Files</a>
+            </div>
+        </div>
+        
+
+        <div class="pr-card" data-risk="low" data-type="cleanup" data-backport="approve">
             <div class="pr-header">
                 <div class="pr-icon">🍃</div>
                 <div class="pr-title-section">
@@ -666,6 +958,9 @@
                         <span class="pr-author">by ngocnhan-tran1996</span>
                         <span class="pr-type">cleanup</span>
                         <span class="risk-badge risk-low">LOW</span>
+                        <span class="backport-badge backport-approve" title="This PR removes only unused imports across 8 files without modifying any functional code or publi...">
+                            ✅ APPROVE
+                        </span>
                     </div>
                 </div>
             </div>
@@ -686,8 +981,16 @@
             </div>
             
             <div class="pr-summary">
-                <p class="risk-summary">This PR contains only unused import removal and copyright year updates with no functional changes. The changes improve code cleanliness and have minimal risk impact.</p>
-                <ul class='positive-findings'><li>All changes are only removing unused imports - a clean maintenance practice</li><li>Copyright headers are properly updated to 2025 in affected files</li><li>No functional code changes that could introduce new risks</li></ul>
+                <p class="risk-summary">This is a low-risk maintenance PR that removes unused imports without modifying functionality. The changes are minimal and focused on code cleanliness with proper copyright updates where needed.</p>
+                <ul class='positive-findings'><li>Clean code maintenance approach removing unused imports across the codebase</li><li>Changes are limited in scope with minimal net change (+2/-14 lines)</li><li>Copyright year updates show proper license header maintenance</li></ul>
+            </div>
+            
+            <div class="backport-info">
+                <div class="backport-classification">
+                    <strong>Backport Classification:</strong> Other 
+                    <span class="backport-risk">(Low - cosmetic changes with no functional impact Risk)</span>
+                </div>
+                <div class="backport-reasoning">This PR removes only unused imports across 8 files without modifying any functional code or publi...</div>
             </div>
             
             
@@ -698,30 +1001,489 @@
             </div>
         </div>
         
+
+        <div class="pr-card" data-risk="low" data-type="testing" data-backport="approve">
+            <div class="pr-header">
+                <div class="pr-icon">🍃</div>
+                <div class="pr-title-section">
+                    <h3 class="pr-title">
+                        <a href="https://github.com/spring-projects/spring-ai/pull/3932" target="_blank" class="pr-link">
+                            #3932: test: Add comprehensive test coverage for PineconeFilterExpressionConverter
+                        </a>
+                    </h3>
+                    <div class="pr-meta">
+                        <span class="pr-author">by alxkm</span>
+                        <span class="pr-type">testing</span>
+                        <span class="risk-badge risk-low">LOW</span>
+                        <span class="backport-badge backport-approve" title="This PR meets the criteria for backporting as it only adds test coverage without modifying any pu...">
+                            ✅ APPROVE
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="pr-stats">
+                <div class="stat">
+                    <span class="stat-label">Files:</span>
+                    <span class="stat-value">1</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Lines:</span>
+                    <span class="stat-value">+138/-0</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Effort:</span>
+                    <span class="stat-value">3/10</span>
+                </div>
+            </div>
+            
+            <div class="pr-summary">
+                <p class="risk-summary">This is a well-written test class that adds comprehensive coverage for the PineconeFilterExpressionConverter. The main risk is potential gaps in negative testing scenarios, but the overall implementation follows good testing practices with no security concerns.</p>
+                <ul class='positive-findings'><li>Comprehensive test coverage for PineconeFilterExpressionConverter across multiple data types and operators</li><li>Well-structured test cases covering boolean, numeric, string, and mixed data type scenarios</li><li>Proper testing of complex nested expressions and grouping logic</li></ul>
+            </div>
+            
+            <div class="backport-info">
+                <div class="backport-classification">
+                    <strong>Backport Classification:</strong> Test additions 
+                    <span class="backport-risk">(Low - Test-only changes with no impact on production code or public interfaces Risk)</span>
+                </div>
+                <div class="backport-reasoning">This PR meets the criteria for backporting as it only adds test coverage without modifying any pu...</div>
+            </div>
+            
+            
+            
+            <div class="pr-actions">
+                <a href="https://github.com/spring-projects/spring-ai/pull/3932" target="_blank" class="btn btn-primary">View on GitHub</a>
+                <a href="https://github.com/spring-projects/spring-ai/pull/3932/files" target="_blank" class="btn btn-secondary">View Files</a>
+            </div>
+        </div>
+        
+            </div>
+        </section>
+        
+        
+                <section class="orchard-section ready-harvest">
+                    <div class="section-header">
+                        <h2>🍎 Ready to Harvest</h2>
+                        <p class="section-subtitle">Low Hanging Fruit - Quick Wins (3 PRs)</p>
+                    </div>
+                    <div class="pr-grid">
+                        
+        <div class="pr-card" data-risk="low" data-type="bugfix" data-backport="unknown">
+            <div class="pr-header">
+                <div class="pr-icon">🍎</div>
+                <div class="pr-title-section">
+                    <h3 class="pr-title">
+                        <a href="https://github.com/spring-projects/spring-ai/pull/3931" target="_blank" class="pr-link">
+                            #3931: fix: add strict option to ChatCompletionsJsonSchemaResponseFormat (#3…
+                        </a>
+                    </h3>
+                    <div class="pr-meta">
+                        <span class="pr-author">by FlorainB</span>
+                        <span class="pr-type">bugfix</span>
+                        <span class="risk-badge risk-low">LOW</span>
+                        <span class="backport-badge backport-unknown" title="Backport assessment not available">
+                            ❓ UNKNOWN
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="pr-stats">
+                <div class="stat">
+                    <span class="stat-label">Files:</span>
+                    <span class="stat-value">1</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Lines:</span>
+                    <span class="stat-value">+1/-0</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Effort:</span>
+                    <span class="stat-value">1/10</span>
+                </div>
+            </div>
+            
+            <div class="pr-summary">
+                <p class="risk-summary">This appears to be a minimal fix adding a strict option to JSON schema response format handling. The change is isolated and the existing codebase demonstrates good security practices and proper error handling patterns.</p>
+                <ul class='positive-findings'><li>Comprehensive input validation with Assert.notNull() checks throughout constructors</li><li>Proper error handling and exception management for unknown message types</li><li>Well-structured separation of concerns with dedicated methods for different operations</li></ul>
+            </div>
+            
+            <div class="backport-info">
+                <div class="backport-classification">
+                    <strong>Backport Classification:</strong> Assessment Missing 
+                    <span class="backport-risk">(Unknown Risk)</span>
+                </div>
+                <div class="backport-reasoning">Backport assessment not available</div>
+            </div>
+            
+            
+            <div class="diff-preview" style="display: none;">
+                <div class="diff-header">
+                    <h4>📋 Quick Preview</h4>
+                    <button class="toggle-diff">Hide Preview</button>
+                </div>
+                <div class="diff-files">
+                    
+                <div class="file-diff">
+                    <div class="file-header">models/spring-ai-azure-openai/src/main/java/org/springframework/ai/azure/openai/AzureOpenAiChatModel.java</div>
+                    <pre class="diff-content">@@ -959,6 +959,7 @@ private ChatCompletionsResponseFormat toAzureResponseFormat(AzureOpenAiResponseF
+ 			var responseFormatJsonSchema = new ChatCompletionsJsonSchemaResponseFormatJsonSchema(jsonSchema.getName());
+ 			String jsonString = ModelOptionsUtils.toJsonString(jsonSchema.getSchema());
+ 			responseFormatJsonSchema.setSchema(BinaryData.fromString(jsonString));
++			responseFormatJsonSchema.setStrict(jsonSchema.getStrict());
+ 			return new ChatCompletionsJsonSchemaResponseFormat(responseFormatJsonSchema);
+ 		}
+ 		return new ChatCompletionsTextResponseFormat();</pre>
+                </div>
+                
+                </div>
+            </div>
+            <button class="show-diff-btn">🔍 Show Diff Preview</button>
+            
+            
+            <div class="pr-actions">
+                <a href="https://github.com/spring-projects/spring-ai/pull/3931" target="_blank" class="btn btn-primary">View on GitHub</a>
+                <a href="https://github.com/spring-projects/spring-ai/pull/3931/files" target="_blank" class="btn btn-secondary">View Files</a>
+            </div>
+        </div>
+        
+
+        <div class="pr-card" data-risk="low" data-type="feature" data-backport="reject">
+            <div class="pr-header">
+                <div class="pr-icon">🍎</div>
+                <div class="pr-title-section">
+                    <h3 class="pr-title">
+                        <a href="https://github.com/spring-projects/spring-ai/pull/3934" target="_blank" class="pr-link">
+                            #3934: Bump postgresql JDBC driver from 42.7.5 to 42.7.7
+                        </a>
+                    </h3>
+                    <div class="pr-meta">
+                        <span class="pr-author">by dafriz</span>
+                        <span class="pr-type">feature</span>
+                        <span class="risk-badge risk-low">LOW</span>
+                        <span class="backport-badge backport-reject" title="While this addresses a security vulnerability (CVE-2025-49146), it constitutes a dependency versi...">
+                            ❌ REJECT
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="pr-stats">
+                <div class="stat">
+                    <span class="stat-label">Files:</span>
+                    <span class="stat-value">1</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Lines:</span>
+                    <span class="stat-value">+1/-1</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Effort:</span>
+                    <span class="stat-value">1/10</span>
+                </div>
+            </div>
+            
+            <div class="pr-summary">
+                <p class="risk-summary">This is a minor version update of the PostgreSQL JDBC driver that poses minimal risk. The change is isolated to a single property update and PostgreSQL driver updates typically include stability improvements and security fixes.</p>
+                <ul class='positive-findings'><li>Single dependency version update follows standard dependency management practices</li><li>Change is minimal and isolated to version property update only</li><li>PostgreSQL JDBC driver updates typically include bug fixes and security patches</li></ul>
+            </div>
+            
+            <div class="backport-info">
+                <div class="backport-classification">
+                    <strong>Backport Classification:</strong> Other 
+                    <span class="backport-risk">(Low - minimal isolated dependency change Risk)</span>
+                </div>
+                <div class="backport-reasoning">While this addresses a security vulnerability (CVE-2025-49146), it constitutes a dependency versi...</div>
+            </div>
+            
+            
+            <div class="diff-preview" style="display: none;">
+                <div class="diff-header">
+                    <h4>📋 Quick Preview</h4>
+                    <button class="toggle-diff">Hide Preview</button>
+                </div>
+                <div class="diff-files">
+                    
+                <div class="file-diff">
+                    <div class="file-header">pom.xml</div>
+                    <pre class="diff-content">@@ -309,7 +309,7 @@
+ 		&lt;qdrant.version&gt;1.13.0&lt;/qdrant.version&gt;
+ 		&lt;typesense.version&gt;1.3.0&lt;/typesense.version&gt;
+ 		&lt;opensearch-client.version&gt;2.23.0&lt;/opensearch-client.version&gt;
+-		&lt;postgresql.version&gt;42.7.5&lt;/postgresql.version&gt;
++		&lt;postgresql.version&gt;42.7.7&lt;/postgresql.version&gt;
+ 		&lt;mariadb.version&gt;3.5.3&lt;/mariadb.version&gt;
+ 		&lt;mysql.version&gt;9.2.0&lt;/mysql.version&gt;
+ 		&lt;commonmark.version&gt;0.22.0&lt;/commonmark.version&gt;</pre>
+                </div>
+                
+                </div>
+            </div>
+            <button class="show-diff-btn">🔍 Show Diff Preview</button>
+            
+            
+            <div class="pr-actions">
+                <a href="https://github.com/spring-projects/spring-ai/pull/3934" target="_blank" class="btn btn-primary">View on GitHub</a>
+                <a href="https://github.com/spring-projects/spring-ai/pull/3934/files" target="_blank" class="btn btn-secondary">View Files</a>
+            </div>
+        </div>
+        
+
+        <div class="pr-card" data-risk="low" data-type="documentation" data-backport="approve">
+            <div class="pr-header">
+                <div class="pr-icon">🍎</div>
+                <div class="pr-title-section">
+                    <h3 class="pr-title">
+                        <a href="https://github.com/spring-projects/spring-ai/pull/3920" target="_blank" class="pr-link">
+                            #3920: docs: update getting-started.adoc for 1.0.0 release
+                        </a>
+                    </h3>
+                    <div class="pr-meta">
+                        <span class="pr-author">by nahyukk</span>
+                        <span class="pr-type">documentation</span>
+                        <span class="risk-badge risk-low">LOW</span>
+                        <span class="backport-badge backport-approve" title="This is a pure documentation update that changes version references and repository information wi...">
+                            ✅ APPROVE
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="pr-stats">
+                <div class="stat">
+                    <span class="stat-label">Files:</span>
+                    <span class="stat-value">1</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Lines:</span>
+                    <span class="stat-value">+34/-7</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Effort:</span>
+                    <span class="stat-value">2/10</span>
+                </div>
+            </div>
+            
+            <div class="pr-summary">
+                <p class="risk-summary">This is a low-risk documentation update that changes version references from 1.0.0-SNAPSHOT to 1.0.0 release. The primary risk is ensuring the referenced version actually exists in Maven Central, but no security or functional code changes introduce vulnerabilities.</p>
+                <ul class='positive-findings'><li>Clear separation between release and snapshot repository configuration</li><li>Comprehensive Maven mirror configuration guidance to prevent common snapshot access issues</li><li>Well-structured documentation with proper tabbed examples for both Maven and Gradle</li></ul>
+            </div>
+            
+            <div class="backport-info">
+                <div class="backport-classification">
+                    <strong>Backport Classification:</strong> Documentation 
+                    <span class="backport-risk">(Low Risk)</span>
+                </div>
+                <div class="backport-reasoning">This is a pure documentation update that changes version references and repository information wi...</div>
+            </div>
+            
+            
+            
+            <div class="pr-actions">
+                <a href="https://github.com/spring-projects/spring-ai/pull/3920" target="_blank" class="btn btn-primary">View on GitHub</a>
+                <a href="https://github.com/spring-projects/spring-ai/pull/3920/files" target="_blank" class="btn btn-secondary">View Files</a>
+            </div>
+        </div>
+        
                     </div>
                 </section>
                 
 
-                <section class="orchard-section requires-ladder">
+                <section class="orchard-section easy-picks">
                     <div class="section-header">
-                        <h2>🌿 Requires Ladder</h2>
-                        <p class="section-subtitle">Medium Risk/Effort (1 PRs)</p>
+                        <h2>🍃 Easy Picks</h2>
+                        <p class="section-subtitle">Simple Reach - Low-Medium Effort (7 PRs)</p>
                     </div>
                     <div class="pr-grid">
                         
-        <div class="pr-card" data-risk="low" data-type="feature">
+        <div class="pr-card" data-risk="low" data-type="testing" data-backport="approve">
             <div class="pr-header">
-                <div class="pr-icon">🌿</div>
+                <div class="pr-icon">🍃</div>
                 <div class="pr-title-section">
                     <h3 class="pr-title">
-                        <a href="https://github.com/spring-projects/spring-ai/pull/3918" target="_blank" class="pr-link">
-                            #3918: Wrap RuntimeExceptions from toolFunction in ToolExecutionException and rethrow
+                        <a href="https://github.com/spring-projects/spring-ai/pull/3922" target="_blank" class="pr-link">
+                            #3922: test: Add comprehensive test coverage for MilvusFilterExpressionConverter
                         </a>
                     </h3>
                     <div class="pr-meta">
-                        <span class="pr-author">by YunKuiLu</span>
-                        <span class="pr-type">feature</span>
+                        <span class="pr-author">by alxkm</span>
+                        <span class="pr-type">testing</span>
                         <span class="risk-badge risk-low">LOW</span>
+                        <span class="backport-badge backport-approve" title="This PR exclusively adds test methods to improve coverage of the MilvusFilterExpressionConverter....">
+                            ✅ APPROVE
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="pr-stats">
+                <div class="stat">
+                    <span class="stat-label">Files:</span>
+                    <span class="stat-value">1</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Lines:</span>
+                    <span class="stat-value">+179/-0</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Effort:</span>
+                    <span class="stat-value">3/10</span>
+                </div>
+            </div>
+            
+            <div class="pr-summary">
+                <p class="risk-summary">This PR adds comprehensive test coverage for the MilvusFilterExpressionConverter with no production code changes. The tests are well-structured and cover edge cases appropriately with no security concerns identified.</p>
+                <ul class='positive-findings'><li>Comprehensive test coverage for MilvusFilterExpressionConverter edge cases</li><li>Well-structured test methods with clear naming and documentation comments</li><li>Proper use of AssertJ assertions and Spring AI filter expression patterns</li></ul>
+            </div>
+            
+            <div class="backport-info">
+                <div class="backport-classification">
+                    <strong>Backport Classification:</strong> Other 
+                    <span class="backport-risk">(Low Risk)</span>
+                </div>
+                <div class="backport-reasoning">This PR exclusively adds test methods to improve coverage of the MilvusFilterExpressionConverter....</div>
+            </div>
+            
+            
+            
+            <div class="pr-actions">
+                <a href="https://github.com/spring-projects/spring-ai/pull/3922" target="_blank" class="btn btn-primary">View on GitHub</a>
+                <a href="https://github.com/spring-projects/spring-ai/pull/3922/files" target="_blank" class="btn btn-secondary">View Files</a>
+            </div>
+        </div>
+        
+
+        <div class="pr-card" data-risk="low" data-type="testing" data-backport="approve">
+            <div class="pr-header">
+                <div class="pr-icon">🍃</div>
+                <div class="pr-title-section">
+                    <h3 class="pr-title">
+                        <a href="https://github.com/spring-projects/spring-ai/pull/3932" target="_blank" class="pr-link">
+                            #3932: test: Add comprehensive test coverage for PineconeFilterExpressionConverter
+                        </a>
+                    </h3>
+                    <div class="pr-meta">
+                        <span class="pr-author">by alxkm</span>
+                        <span class="pr-type">testing</span>
+                        <span class="risk-badge risk-low">LOW</span>
+                        <span class="backport-badge backport-approve" title="This PR meets the criteria for backporting as it only adds test coverage without modifying any pu...">
+                            ✅ APPROVE
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="pr-stats">
+                <div class="stat">
+                    <span class="stat-label">Files:</span>
+                    <span class="stat-value">1</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Lines:</span>
+                    <span class="stat-value">+138/-0</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Effort:</span>
+                    <span class="stat-value">3/10</span>
+                </div>
+            </div>
+            
+            <div class="pr-summary">
+                <p class="risk-summary">This is a well-written test class that adds comprehensive coverage for the PineconeFilterExpressionConverter. The main risk is potential gaps in negative testing scenarios, but the overall implementation follows good testing practices with no security concerns.</p>
+                <ul class='positive-findings'><li>Comprehensive test coverage for PineconeFilterExpressionConverter across multiple data types and operators</li><li>Well-structured test cases covering boolean, numeric, string, and mixed data type scenarios</li><li>Proper testing of complex nested expressions and grouping logic</li></ul>
+            </div>
+            
+            <div class="backport-info">
+                <div class="backport-classification">
+                    <strong>Backport Classification:</strong> Test additions 
+                    <span class="backport-risk">(Low - Test-only changes with no impact on production code or public interfaces Risk)</span>
+                </div>
+                <div class="backport-reasoning">This PR meets the criteria for backporting as it only adds test coverage without modifying any pu...</div>
+            </div>
+            
+            
+            
+            <div class="pr-actions">
+                <a href="https://github.com/spring-projects/spring-ai/pull/3932" target="_blank" class="btn btn-primary">View on GitHub</a>
+                <a href="https://github.com/spring-projects/spring-ai/pull/3932/files" target="_blank" class="btn btn-secondary">View Files</a>
+            </div>
+        </div>
+        
+
+        <div class="pr-card" data-risk="low" data-type="testing" data-backport="approve">
+            <div class="pr-header">
+                <div class="pr-icon">🍃</div>
+                <div class="pr-title-section">
+                    <h3 class="pr-title">
+                        <a href="https://github.com/spring-projects/spring-ai/pull/3919" target="_blank" class="pr-link">
+                            #3919: test: Add comprehensive test coverage for MongoDBAtlasFilterExpressionConverter
+                        </a>
+                    </h3>
+                    <div class="pr-meta">
+                        <span class="pr-author">by alxkm</span>
+                        <span class="pr-type">testing</span>
+                        <span class="risk-badge risk-low">LOW</span>
+                        <span class="backport-badge backport-approve" title="This PR only adds test methods to an existing test class without modifying any production code, p...">
+                            ✅ APPROVE
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="pr-stats">
+                <div class="stat">
+                    <span class="stat-label">Files:</span>
+                    <span class="stat-value">1</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Lines:</span>
+                    <span class="stat-value">+170/-0</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Effort:</span>
+                    <span class="stat-value">3/10</span>
+                </div>
+            </div>
+            
+            <div class="pr-summary">
+                <p class="risk-summary">This is a well-written test file that significantly improves test coverage for the MongoDB Atlas filter converter. The main risks are around missing performance and error handling validation rather than security vulnerabilities. The added tests properly validate core functionality without introducing security concerns.</p>
+                <ul class='positive-findings'><li>Comprehensive test coverage for all MongoDB filter operators (EQ, NE, LT, LTE, GT, GTE, IN, NIN)</li><li>Proper handling of edge cases including null values, empty strings, and mixed data types</li><li>Well-structured test cases covering complex nested expressions with multiple logical operators</li></ul>
+            </div>
+            
+            <div class="backport-info">
+                <div class="backport-classification">
+                    <strong>Backport Classification:</strong> Other 
+                    <span class="backport-risk">(Low Risk)</span>
+                </div>
+                <div class="backport-reasoning">This PR only adds test methods to an existing test class without modifying any production code, p...</div>
+            </div>
+            
+            
+            
+            <div class="pr-actions">
+                <a href="https://github.com/spring-projects/spring-ai/pull/3919" target="_blank" class="btn btn-primary">View on GitHub</a>
+                <a href="https://github.com/spring-projects/spring-ai/pull/3919/files" target="_blank" class="btn btn-secondary">View Files</a>
+            </div>
+        </div>
+        
+
+        <div class="pr-card" data-risk="low" data-type="bugfix" data-backport="unknown">
+            <div class="pr-header">
+                <div class="pr-icon">🍃</div>
+                <div class="pr-title-section">
+                    <h3 class="pr-title">
+                        <a href="https://github.com/spring-projects/spring-ai/pull/3933" target="_blank" class="pr-link">
+                            #3933: Issue 3924 Fix MethodToolCallback enum argument handling
+                        </a>
+                    </h3>
+                    <div class="pr-meta">
+                        <span class="pr-author">by wilocu</span>
+                        <span class="pr-type">bugfix</span>
+                        <span class="risk-badge risk-low">LOW</span>
+                        <span class="backport-badge backport-unknown" title="Backport assessment not available">
+                            ❓ UNKNOWN
+                        </span>
                     </div>
                 </div>
             </div>
@@ -733,97 +1495,84 @@
                 </div>
                 <div class="stat">
                     <span class="stat-label">Lines:</span>
-                    <span class="stat-value">+202/-1</span>
+                    <span class="stat-value">+113/-1</span>
                 </div>
                 <div class="stat">
                     <span class="stat-label">Effort:</span>
-                    <span class="stat-value">5/10</span>
+                    <span class="stat-value">3/10</span>
                 </div>
             </div>
             
             <div class="pr-summary">
-                <p class="risk-summary">This PR implements a clean exception handling improvement that wraps RuntimeExceptions in ToolExecutionException while preserving existing ToolExecutionException instances. The comprehensive test coverage and proper Spring patterns indicate a low-risk change with good maintainability.</p>
-                <ul class='positive-findings'><li>Proper exception handling with ToolExecutionException wrapping maintains tool definition context</li><li>Comprehensive test coverage for all function types (Consumer, Function, BiFunction, Supplier)</li><li>Well-structured exception propagation that preserves ToolExecutionException instances while wrapping RuntimeExceptions</li></ul>
+                <p class="risk-summary">This is a well-implemented Spring AI tool callback with proper exception handling and input validation. The main risks are related to reflection usage and JSON deserialization, but these are appropriately controlled within the Spring framework context and follow established patterns.</p>
+                <ul class='positive-findings'><li>Proper exception handling with IllegalArgumentException being caught and wrapped in ToolExecutionException (lines 111-115)</li><li>Good input validation with Assert.hasText check for toolInput (line 99)</li><li>Comprehensive test coverage for both valid and invalid enum arguments in the test class</li></ul>
+            </div>
+            
+            <div class="backport-info">
+                <div class="backport-classification">
+                    <strong>Backport Classification:</strong> Assessment Missing 
+                    <span class="backport-risk">(Unknown Risk)</span>
+                </div>
+                <div class="backport-reasoning">Backport assessment not available</div>
             </div>
             
             
-            
-            <div class="pr-actions">
-                <a href="https://github.com/spring-projects/spring-ai/pull/3918" target="_blank" class="btn btn-primary">View on GitHub</a>
-                <a href="https://github.com/spring-projects/spring-ai/pull/3918/files" target="_blank" class="btn btn-secondary">View Files</a>
-            </div>
-        </div>
-        
-                    </div>
-                </section>
+            <div class="diff-preview" style="display: none;">
+                <div class="diff-header">
+                    <h4>📋 Quick Preview</h4>
+                    <button class="toggle-diff">Hide Preview</button>
+                </div>
+                <div class="diff-files">
+                    
+                <div class="file-diff">
+                    <div class="file-header">spring-ai-model/src/main/java/org/springframework/ai/tool/method/MethodToolCallback.java</div>
+                    <pre class="diff-content">@@ -104,7 +104,15 @@ public String call(String toolInput, @Nullable ToolContext toolContext) {
+ 
+ 		Map&lt;String, Object&gt; toolArguments = extractToolArguments(toolInput);
+ 
+-		Object[] methodArguments = buildMethodArguments(toolArguments, toolContext);
++		Object[] methodArguments;
++		try {
++			methodArguments = buildMethodArguments(toolArguments, toolContext);
++		}
++		catch (IllegalArgumentException ex) {
++			logger.debug(&quot;Failed to build method arguments for tool: {}. Error: {}&quot;, this.toolDefinition.name(),
++					ex.getMessage());
++			throw new ToolExecutionException(this.toolDefinition, ex);
++		}
+ 
+ 		Object result = callMethod(methodArguments);
+ </pre>
+                </div>
                 
-
-                <section class="orchard-section top-shelf">
-                    <div class="section-header">
-                        <h2>🌲 Top Shelf</h2>
-                        <p class="section-subtitle">High Risk/Complex (2 PRs)</p>
-                    </div>
-                    <div class="pr-grid">
-                        
-        <div class="pr-card" data-risk="low" data-type="feature">
-            <div class="pr-header">
-                <div class="pr-icon">🌲</div>
-                <div class="pr-title-section">
-                    <h3 class="pr-title">
-                        <a href="https://github.com/spring-projects/spring-ai/pull/3386" target="_blank" class="pr-link">
-                            #3386: Added support for the &quot;think&quot; for Ollama
-                        </a>
-                    </h3>
-                    <div class="pr-meta">
-                        <span class="pr-author">by sunyuhan1998</span>
-                        <span class="pr-type">feature</span>
-                        <span class="risk-badge risk-low">LOW</span>
-                    </div>
                 </div>
             </div>
-            
-            <div class="pr-stats">
-                <div class="stat">
-                    <span class="stat-label">Files:</span>
-                    <span class="stat-value">15</span>
-                </div>
-                <div class="stat">
-                    <span class="stat-label">Lines:</span>
-                    <span class="stat-value">+341/-16</span>
-                </div>
-                <div class="stat">
-                    <span class="stat-label">Effort:</span>
-                    <span class="stat-value">7/10</span>
-                </div>
-            </div>
-            
-            <div class="pr-summary">
-                <p class="risk-summary">The implementation is well-structured with good test coverage and maintains backward compatibility. Main concerns are around performance optimization for large thinking streams and ensuring graceful handling of unsupported Ollama versions.</p>
-                <ul class='positive-findings'><li>Proper use of @JsonProperty annotations for consistent API mapping</li><li>Comprehensive test coverage including both positive and negative thinking scenarios</li><li>Backward compatibility maintained - existing code without thinking support continues to work</li></ul>
-            </div>
-            
+            <button class="show-diff-btn">🔍 Show Diff Preview</button>
             
             
             <div class="pr-actions">
-                <a href="https://github.com/spring-projects/spring-ai/pull/3386" target="_blank" class="btn btn-primary">View on GitHub</a>
-                <a href="https://github.com/spring-projects/spring-ai/pull/3386/files" target="_blank" class="btn btn-secondary">View Files</a>
+                <a href="https://github.com/spring-projects/spring-ai/pull/3933" target="_blank" class="btn btn-primary">View on GitHub</a>
+                <a href="https://github.com/spring-projects/spring-ai/pull/3933/files" target="_blank" class="btn btn-secondary">View Files</a>
             </div>
         </div>
         
 
-        <div class="pr-card" data-risk="medium" data-type="bugfix">
+        <div class="pr-card" data-risk="low" data-type="cleanup" data-backport="approve">
             <div class="pr-header">
-                <div class="pr-icon">🌲</div>
+                <div class="pr-icon">🍃</div>
                 <div class="pr-title-section">
                     <h3 class="pr-title">
-                        <a href="https://github.com/spring-projects/spring-ai/pull/3914" target="_blank" class="pr-link">
-                            #3914: Fixes #3824, 3849 - New Google Gen AI Embedding Module, Starters for GenAI and GenAI EMbedding Module and support for ThinkingBudget
+                        <a href="https://github.com/spring-projects/spring-ai/pull/3921" target="_blank" class="pr-link">
+                            #3921: Remove unused import
                         </a>
                     </h3>
                     <div class="pr-meta">
-                        <span class="pr-author">by ddobrin</span>
-                        <span class="pr-type">bugfix</span>
-                        <span class="risk-badge risk-medium">MEDIUM</span>
+                        <span class="pr-author">by ngocnhan-tran1996</span>
+                        <span class="pr-type">cleanup</span>
+                        <span class="risk-badge risk-low">LOW</span>
+                        <span class="backport-badge backport-approve" title="This PR removes only unused imports across 8 files without modifying any functional code or publi...">
+                            ✅ APPROVE
+                        </span>
                     </div>
                 </div>
             </div>
@@ -831,28 +1580,173 @@
             <div class="pr-stats">
                 <div class="stat">
                     <span class="stat-label">Files:</span>
-                    <span class="stat-value">37</span>
+                    <span class="stat-value">8</span>
                 </div>
                 <div class="stat">
                     <span class="stat-label">Lines:</span>
-                    <span class="stat-value">+3469/-8</span>
+                    <span class="stat-value">+2/-14</span>
                 </div>
                 <div class="stat">
                     <span class="stat-label">Effort:</span>
-                    <span class="stat-value">10/10</span>
+                    <span class="stat-value">3/10</span>
                 </div>
             </div>
             
             <div class="pr-summary">
-                <p class="risk-summary">The PR introduces a well-structured Google Gen AI embedding module with proper Spring Boot integration patterns. Main concerns are around incomplete task type implementation and unused credentials handling in Vertex AI mode, but these are manageable issues that don&#x27;t pose security risks.</p>
-                <ul class='positive-findings'><li>Proper use of Spring Boot autoconfiguration patterns with conditional bean creation</li><li>Good separation of concerns between chat and embedding auto-configuration modules</li><li>Comprehensive integration tests covering both API key and Vertex AI authentication modes</li></ul>
+                <p class="risk-summary">This is a low-risk maintenance PR that removes unused imports without modifying functionality. The changes are minimal and focused on code cleanliness with proper copyright updates where needed.</p>
+                <ul class='positive-findings'><li>Clean code maintenance approach removing unused imports across the codebase</li><li>Changes are limited in scope with minimal net change (+2/-14 lines)</li><li>Copyright year updates show proper license header maintenance</li></ul>
+            </div>
+            
+            <div class="backport-info">
+                <div class="backport-classification">
+                    <strong>Backport Classification:</strong> Other 
+                    <span class="backport-risk">(Low - cosmetic changes with no functional impact Risk)</span>
+                </div>
+                <div class="backport-reasoning">This PR removes only unused imports across 8 files without modifying any functional code or publi...</div>
             </div>
             
             
             
             <div class="pr-actions">
-                <a href="https://github.com/spring-projects/spring-ai/pull/3914" target="_blank" class="btn btn-primary">View on GitHub</a>
-                <a href="https://github.com/spring-projects/spring-ai/pull/3914/files" target="_blank" class="btn btn-secondary">View Files</a>
+                <a href="https://github.com/spring-projects/spring-ai/pull/3921" target="_blank" class="btn btn-primary">View on GitHub</a>
+                <a href="https://github.com/spring-projects/spring-ai/pull/3921/files" target="_blank" class="btn btn-secondary">View Files</a>
+            </div>
+        </div>
+        
+
+        <div class="pr-card" data-risk="low" data-type="documentation" data-backport="approve">
+            <div class="pr-header">
+                <div class="pr-icon">🍃</div>
+                <div class="pr-title-section">
+                    <h3 class="pr-title">
+                        <a href="https://github.com/spring-projects/spring-ai/pull/3936" target="_blank" class="pr-link">
+                            #3936: Fix typos in comments and improve documentation
+                        </a>
+                    </h3>
+                    <div class="pr-meta">
+                        <span class="pr-author">by jbj338033</span>
+                        <span class="pr-type">documentation</span>
+                        <span class="risk-badge risk-low">LOW</span>
+                        <span class="backport-badge backport-approve" title="This PR exclusively contains typo corrections in comments and documentation improvements. No publ...">
+                            ✅ APPROVE
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="pr-stats">
+                <div class="stat">
+                    <span class="stat-label">Files:</span>
+                    <span class="stat-value">7</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Lines:</span>
+                    <span class="stat-value">+57/-11</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Effort:</span>
+                    <span class="stat-value">4/10</span>
+                </div>
+            </div>
+            
+            <div class="pr-summary">
+                <p class="risk-summary">This PR contains only minor documentation and comment improvements with no functional code changes. All modifications are cosmetic typo fixes and documentation enhancements with minimal risk to system security or stability.</p>
+                <ul class='positive-findings'><li>All changes are limited to documentation and comment improvements</li><li>No modifications to security-sensitive code patterns</li><li>Integration tests maintain proper credential handling with System.getenv() calls</li></ul>
+            </div>
+            
+            <div class="backport-info">
+                <div class="backport-classification">
+                    <strong>Backport Classification:</strong> Documentation 
+                    <span class="backport-risk">(Low - Only cosmetic changes to comments and documentation with no functional code impact Risk)</span>
+                </div>
+                <div class="backport-reasoning">This PR exclusively contains typo corrections in comments and documentation improvements. No publ...</div>
+            </div>
+            
+            
+            
+            <div class="pr-actions">
+                <a href="https://github.com/spring-projects/spring-ai/pull/3936" target="_blank" class="btn btn-primary">View on GitHub</a>
+                <a href="https://github.com/spring-projects/spring-ai/pull/3936/files" target="_blank" class="btn btn-secondary">View Files</a>
+            </div>
+        </div>
+        
+
+        <div class="pr-card" data-risk="medium" data-type="feature" data-backport="reject">
+            <div class="pr-header">
+                <div class="pr-icon">🍃</div>
+                <div class="pr-title-section">
+                    <h3 class="pr-title">
+                        <a href="https://github.com/spring-projects/spring-ai/pull/3927" target="_blank" class="pr-link">
+                            #3927: Update BeanOutputConverter.java
+                        </a>
+                    </h3>
+                    <div class="pr-meta">
+                        <span class="pr-author">by chang6666</span>
+                        <span class="pr-type">feature</span>
+                        <span class="risk-badge risk-medium">MEDIUM</span>
+                        <span class="backport-badge backport-reject" title="While this appears to be a legitimate bug fix for Ollama integration without API changes, the imp...">
+                            ❌ REJECT
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="pr-stats">
+                <div class="stat">
+                    <span class="stat-label">Files:</span>
+                    <span class="stat-value">1</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Lines:</span>
+                    <span class="stat-value">+1/-0</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Effort:</span>
+                    <span class="stat-value">4/10</span>
+                </div>
+            </div>
+            
+            <div class="pr-summary">
+                <p class="risk-summary">The change appears to be a single line addition to handle &lt;think&gt; tag removal, but the regex pattern used introduces potential ReDoS vulnerability. The overall codebase follows good security practices with proper error handling and logging, but the regex efficiency issue should be addressed.</p>
+                <ul class='positive-findings'><li>Proper error handling with specific exception catching and logging for JSON processing errors</li><li>Uses configured ObjectMapper with FAIL_ON_UNKNOWN_PROPERTIES=false for safer deserialization</li><li>Sensitive data logging is properly marked with SENSITIVE_DATA_MARKER for log filtering</li></ul>
+            </div>
+            
+            <div class="backport-info">
+                <div class="backport-classification">
+                    <strong>Backport Classification:</strong> Bug Fix 
+                    <span class="backport-risk">(Medium Risk)</span>
+                </div>
+                <div class="backport-reasoning">While this appears to be a legitimate bug fix for Ollama integration without API changes, the imp...</div>
+            </div>
+            
+            
+            <div class="diff-preview" style="display: none;">
+                <div class="diff-header">
+                    <h4>📋 Quick Preview</h4>
+                    <button class="toggle-diff">Hide Preview</button>
+                </div>
+                <div class="diff-files">
+                    
+                <div class="file-diff">
+                    <div class="file-header">spring-ai-model/src/main/java/org/springframework/ai/converter/BeanOutputConverter.java</div>
+                    <pre class="diff-content">@@ -159,6 +159,7 @@ private void generateSchema() {
+ 	@Override
+ 	public T convert(@NonNull String text) {
+ 		try {
++			text = text.replaceAll(&quot;&lt;think&gt;[\\s\\s]*?&lt;/think&gt;&quot;,&quot;&quot;)
+ 			// Remove leading and trailing whitespace
+ 			text = text.trim();
+ </pre>
+                </div>
+                
+                </div>
+            </div>
+            <button class="show-diff-btn">🔍 Show Diff Preview</button>
+            
+            
+            <div class="pr-actions">
+                <a href="https://github.com/spring-projects/spring-ai/pull/3927" target="_blank" class="btn btn-primary">View on GitHub</a>
+                <a href="https://github.com/spring-projects/spring-ai/pull/3927/files" target="_blank" class="btn btn-secondary">View Files</a>
             </div>
         </div>
         
@@ -991,6 +1885,70 @@
                     }
                 });
             }
+        });
+        
+        // PR Filtering functionality
+        function filterPRsByType(filterType) {
+            console.log(`🔍 Filtering PRs by type: ${filterType}`);
+            
+            // Update active stat card
+            document.querySelectorAll('.stat-card').forEach(card => {
+                card.classList.remove('active');
+            });
+            document.querySelector(`[data-filter="${filterType}"]`).classList.add('active');
+            
+            // Show/hide sections based on filter
+            const backportSection = document.querySelector('.backport-section');
+            const orchardSections = document.querySelectorAll('.orchard-section');
+            
+            if (filterType === 'all') {
+                // Show all sections
+                if (backportSection) backportSection.style.display = 'block';
+                orchardSections.forEach(section => section.style.display = 'block');
+            } else if (filterType === 'backport-ready') {
+                // Show only backport section
+                if (backportSection) backportSection.style.display = 'block';
+                orchardSections.forEach(section => section.style.display = 'none');
+            } else if (filterType === 'ready-harvest') {
+                // Show only ready-harvest section
+                if (backportSection) backportSection.style.display = 'none';
+                orchardSections.forEach(section => {
+                    if (section.classList.contains('ready-harvest')) {
+                        section.style.display = 'block';
+                    } else {
+                        section.style.display = 'none';
+                    }
+                });
+            } else if (filterType === 'low-risk') {
+                // Show sections and filter PR cards by risk level
+                if (backportSection) backportSection.style.display = 'none';
+                orchardSections.forEach(section => {
+                    section.style.display = 'block';
+                    // Hide PR cards that aren't low risk
+                    const prCards = section.querySelectorAll('.pr-card');
+                    prCards.forEach(card => {
+                        if (card.getAttribute('data-risk') === 'low') {
+                            card.style.display = 'block';
+                        } else {
+                            card.style.display = 'none';
+                        }
+                    });
+                });
+            }
+            
+            // Smooth scroll to first visible section
+            setTimeout(() => {
+                const firstVisibleSection = document.querySelector('.backport-section[style*="block"], .orchard-section[style*="block"]');
+                if (firstVisibleSection) {
+                    firstVisibleSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }, 100);
+        }
+        
+        // Initialize with 'all' filter active
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set 'Total PRs' as initially active
+            document.querySelector('[data-filter="all"]').classList.add('active');
         });
         
         // Add performance monitoring

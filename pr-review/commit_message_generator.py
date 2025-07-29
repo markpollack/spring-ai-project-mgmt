@@ -57,19 +57,26 @@ class CommitMessageResult:
 class CommitMessageGenerator:
     """Generates comprehensive commit messages using Claude Code AI"""
     
-    def __init__(self, script_dir: Path = None):
+    def __init__(self, script_dir: Path = None, logs_dir: Path = None):
         """Initialize the commit message generator
         
         Args:
             script_dir: Directory containing templates and scripts
+            logs_dir: Directory for logs (defaults to script_dir/logs)
         """
         self.script_dir = script_dir or Path(__file__).parent.absolute()
         self.template_file = self.script_dir / "templates" / "review-commit-message.md"
-        self.logs_dir = self.script_dir / "logs"
-        self.logs_dir.mkdir(exist_ok=True)
         
-        # Initialize Claude Code wrapper
-        self.claude = ClaudeCodeWrapper() if ClaudeCodeWrapper else None
+        # Use provided logs directory or default to script_dir/logs
+        if logs_dir is None:
+            self.logs_dir = self.script_dir / "logs"
+        else:
+            self.logs_dir = Path(logs_dir).absolute()
+            
+        self.logs_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Initialize Claude Code wrapper with logs directory
+        self.claude = ClaudeCodeWrapper(logs_dir=self.logs_dir) if ClaudeCodeWrapper else None
         
     def generate_commit_message(self, pr_number: str, pr_context_dir: Path, 
                               fallback_title: str = None) -> CommitMessageResult:
@@ -90,22 +97,26 @@ class CommitMessageGenerator:
             
             # Check if Claude Code is available
             if not self.claude or not self.claude.is_available():
-                Logger.warn("Claude Code not available - using fallback commit message")
-                return self._generate_fallback_message(pr_number, fallback_title, 
-                                                     "Claude Code not available")
+                error_msg = f"❌ CRITICAL ERROR: Claude Code not available for PR #{pr_number}"
+                Logger.error(error_msg)
+                Logger.error("Claude Code CLI must be installed and available for commit message generation")
+                raise RuntimeError("Claude Code not available for commit message generation")
             
             # Validate template exists
             if not self.template_file.exists():
-                Logger.error(f"Template file not found: {self.template_file}")
-                return self._generate_fallback_message(pr_number, fallback_title,
-                                                     "Template file not found")
+                error_msg = f"❌ CRITICAL ERROR: Template file not found: {self.template_file}"
+                Logger.error(error_msg)
+                Logger.error("Commit message template must be available for AI generation")
+                raise RuntimeError(f"Template file not found: {self.template_file}")
             
             # Load PR context data
             context_data = self._load_pr_context(pr_context_dir)
             if not context_data:
-                Logger.warn("No PR context data available - using fallback")
-                return self._generate_fallback_message(pr_number, fallback_title,
-                                                     "No context data available")
+                error_msg = f"❌ CRITICAL ERROR: No PR context data available for PR #{pr_number}"
+                Logger.error(error_msg)
+                Logger.error(f"Expected context directory: {pr_context_dir}")
+                Logger.error("Context data collection must run successfully before commit message generation")
+                raise RuntimeError(f"No PR context data available for PR #{pr_number}. Context directory: {pr_context_dir}")
             
             # Generate the commit message using Claude Code
             result = self._generate_with_claude_code(pr_number, context_data)
@@ -118,12 +129,15 @@ class CommitMessageGenerator:
                 Logger.success(f"✅ Generated comprehensive commit message for PR #{pr_number} ({processing_time:.1f}s)")
                 return result
             else:
-                Logger.warn(f"AI generation failed: {result.error}")
-                return self._generate_fallback_message(pr_number, fallback_title, result.error)
+                error_msg = f"❌ CRITICAL ERROR: AI commit message generation failed for PR #{pr_number}: {result.error}"
+                Logger.error(error_msg)
+                Logger.error("AI generation must succeed for proper commit message creation")
+                raise RuntimeError(f"AI commit message generation failed: {result.error}")
                 
         except Exception as e:
-            Logger.error(f"❌ Error generating commit message for PR #{pr_number}: {e}")
-            return self._generate_fallback_message(pr_number, fallback_title, str(e))
+            Logger.error(f"❌ CRITICAL ERROR: Exception during commit message generation for PR #{pr_number}: {e}")
+            Logger.error("All commit message generation dependencies must be available and working")
+            raise  # Re-raise the exception instead of falling back
     
     def _load_pr_context(self, pr_context_dir: Path) -> Optional[Dict[str, Any]]:
         """Load all available PR context data"""
@@ -176,10 +190,12 @@ The context includes PR metadata, file changes, conversations, and AI analysis. 
 
 Respond with ONLY the complete commit message text, exactly as it should appear in git."""
 
-            # Create temporary prompt file for Claude Code to read
-            with tempfile.NamedTemporaryFile(mode='w', suffix='.md', delete=False, encoding='utf-8') as f:
+            # Create persistent prompt file for debugging
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            prompt_file = self.logs_dir / f"claude-prompt-commit-message-{pr_number}-{timestamp}.md"
+            with open(prompt_file, 'w', encoding='utf-8') as f:
                 f.write(prompt)
-                prompt_file = f.name
+            prompt_file = str(prompt_file)
             
             # Use Claude Code to generate the commit message
             result = self.claude.analyze_from_file(
@@ -209,10 +225,15 @@ Respond with ONLY the complete commit message text, exactly as it should appear 
                         error=f"Generated message failed validation or extraction. Raw response: {raw_response[:100]}..."
                     )
             else:
+                # Include detailed error information for debugging
+                error_details = result.get('error', 'Claude Code analysis failed')
+                stderr_info = result.get('stderr', 'No stderr available')
+                full_error = f"{error_details}. Stderr: {stderr_info}"
+                Logger.error(f"🔍 Claude Code detailed error: {full_error}")
                 return CommitMessageResult(
                     success=False,
                     message="", 
-                    error=result.get('error', 'Claude Code analysis failed')
+                    error=full_error
                 )
                 
         except Exception as e:

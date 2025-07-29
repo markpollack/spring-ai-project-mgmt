@@ -1,0 +1,16 @@
+Return code: 0
+Stdout length: 664
+Stderr: None
+Response:
+Based on the template guidelines and the PR context data, I'll generate a comprehensive commit message for Spring AI PR #3927:
+
+fix(core): remove thinking tags from model output in BeanOutputConverter
+
+Local Ollama model deployments were including `<think>...</think>` tags in their
+output responses, causing JSON parsing failures when converting responses to
+Java beans through the BeanOutputConverter.
+
+Added regex-based preprocessing to strip thinking tags from text before JSON
+parsing in the convert method. This change ensures clean JSON extraction by
+removing the model's internal reasoning artifacts that were interfering with
+the bean conversion process.

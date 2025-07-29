@@ -54,7 +54,7 @@ class SolutionAssessment:
 class AIPoweredSolutionAssessor:
     """Uses Claude Code to perform intelligent solution assessment"""
     
-    def __init__(self, working_dir: Path = None, spring_ai_dir: Path = None):
+    def __init__(self, working_dir: Path = None, spring_ai_dir: Path = None, context_dir: Path = None, logs_dir: Path = None):
         # Default to script directory if not provided (most robust approach)
         if working_dir is None:
             working_dir = Path(__file__).parent.absolute()
@@ -63,7 +63,20 @@ class AIPoweredSolutionAssessor:
             
         self.working_dir = working_dir.absolute()
         self.spring_ai_dir = spring_ai_dir.absolute()
-        self.context_dir = self.working_dir / "context"
+        
+        # Use provided context directory or default to working_dir/context
+        if context_dir is None:
+            self.context_dir = self.working_dir / "context"
+        else:
+            self.context_dir = Path(context_dir).absolute()
+            
+        # Use provided logs directory or default to working_dir/logs
+        if logs_dir is None:
+            self.logs_dir = self.working_dir / "logs"
+        else:
+            self.logs_dir = Path(logs_dir).absolute()
+            
+        self.logs_dir.mkdir(parents=True, exist_ok=True)
     
     def assess_solution(self, pr_number: str) -> Optional[SolutionAssessment]:
         """Perform comprehensive AI-powered solution assessment"""
@@ -357,7 +370,7 @@ class AIPoweredSolutionAssessor:
             Logger.info("🤖 Running Claude Code solution assessment...")
             
             # Use ClaudeCodeWrapper for reliable integration
-            claude = ClaudeCodeWrapper()
+            claude = ClaudeCodeWrapper(logs_dir=self.logs_dir)
             
             if not claude.is_available():
                 Logger.error("❌ Claude Code is not available")
@@ -428,7 +441,7 @@ class AIPoweredSolutionAssessor:
                 else:
                     # Fallback: Try centralized JSON extraction as backup
                     Logger.info("🔄 Pre-extracted JSON not available, using fallback extraction...")
-                    claude = ClaudeCodeWrapper()
+                    claude = ClaudeCodeWrapper(logs_dir=self.logs_dir)
                     ai_data = claude.extract_json_from_response(response_text)
                     
                     if ai_data:
@@ -541,26 +554,31 @@ class AIPoweredSolutionAssessor:
 def main():
     """Command-line interface for AI-powered solution assessment"""
     import sys
+    import argparse
     
-    if len(sys.argv) < 2:
-        print("Usage: python3 solution_assessor.py <pr_number>")
-        print("\nExamples:")
-        print("  python3 solution_assessor.py 3386")
-        sys.exit(1)
+    parser = argparse.ArgumentParser(description='AI-powered solution assessment for Spring AI PRs')
+    parser.add_argument('pr_number', help='GitHub PR number to assess')
+    parser.add_argument('--context-dir', type=Path, help='Context directory path')
+    parser.add_argument('--logs-dir', type=Path, help='Logs directory path')
     
-    pr_number = sys.argv[1]
+    args = parser.parse_args()
     
     # Use script directory for assessment (robust regardless of where script is called from)
     working_dir = Path(__file__).parent.absolute()
     spring_ai_dir = working_dir / "spring-ai"  # Spring AI clone in pr-review directory
     
-    assessor = AIPoweredSolutionAssessor(working_dir, spring_ai_dir)
+    assessor = AIPoweredSolutionAssessor(
+        working_dir=working_dir,
+        spring_ai_dir=spring_ai_dir,
+        context_dir=args.context_dir,
+        logs_dir=args.logs_dir
+    )
     
     # Perform assessment
-    assessment = assessor.assess_solution(pr_number)
+    assessment = assessor.assess_solution(args.pr_number)
     
     if assessment:
-        print(f"\n✅ Solution assessment completed for PR #{pr_number}")
+        print(f"\n✅ Solution assessment completed for PR #{args.pr_number}")
         print(f"📊 Assessment summary:")
         print(f"   - Code quality score: {assessment.code_quality_score}/10")
         print(f"   - Final complexity score: {assessment.final_complexity_score}/10")

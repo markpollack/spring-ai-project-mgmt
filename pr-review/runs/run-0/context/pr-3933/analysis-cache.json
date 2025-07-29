@@ -1,0 +1,102 @@
+{
+  "pr_data": {
+    "number": 3933,
+    "title": "Issue 3924 Fix MethodToolCallback enum argument handling",
+    "body": "## Summary\r\n  Fixes MethodToolCallback not handling invalid enum arguments gracefully by converting\r\n  IllegalArgumentException to ToolExecutionException.\r\n\r\n  Closes #3924\r\n  ## Changes Made\r\n  - **Exception Handling**: Added try-catch block around `buildMethodArguments()` in\r\n  `MethodToolCallback.call()`\r\n  - **Exception Conversion**: Convert `IllegalArgumentException` to `ToolExecutionException` with\r\n  proper context\r\n  - **Logging**: Added debug logging for argument conversion failures following existing patterns\r\n  - **Test Coverage**: Added comprehensive unit tests for both invalid and valid enum scenarios  \r\n\r\n  ## Technical Details\r\n  - **Root Cause**: `IllegalArgumentException` was thrown during enum conversion in\r\n  `JsonParser.toTypedObject()` but not caught by `MethodToolCallback`\r\n  - **Solution**: Wrap argument building phase with exception handling at lines 108-115 in\r\n  `MethodToolCallback.java`\r\n  - **Integration**: Maintains compatibility with existing `ToolExecutionExceptionProcessor` pipeline \r\n\r\n## Test Results\r\n  - ✅ New unit tests pass (invalid enum throws `ToolExecutionException`)\r\n  - ✅ Existing functionality preserved (valid enum values work normally)\r\n  - ✅ No regressions in `MethodToolCallbackProviderTests` and `DefaultToolCallingManagerTests`\r\n\r\n  ## Files Modified\r\n  - `spring-ai-model/src/main/java/org/springframework/ai/tool/method/MethodToolCallback.java`\r\n  - `spring-ai-model/src/test/java/org/springframework/ai/tool/method/MethodToolCallbackTests.java`       \r\n  (new file)\r\n\r\n  This change allows LLMs that provide invalid enum values to receive graceful error responses\r\n  instead of unhandled exceptions.\r\nSigned-off-by:  Mattia Pasetto matpat17@gmail.com\r\n\r\nPlease make sure to double check and let me know if anything is wrong, this is my first contribution.",
+    "state": "OPEN",
+    "draft": false,
+    "labels": [],
+    "assignees": [],
+    "reviewers": [],
+    "created_at": "2025-07-28T19:29:14Z",
+    "updated_at": "2025-07-28T19:41:32Z",
+    "author": "wilocu",
+    "url": "https://github.com/spring-projects/spring-ai/pull/3933",
+    "base_branch": "main",
+    "head_branch": "GH-3924",
+    "commits_count": 1,
+    "changed_files": 2,
+    "additions": 113,
+    "deletions": 1,
+    "linked_issues": [
+      3924
+    ],
+    "comments": [],
+    "reviews": []
+  },
+  "issues_data": [
+    {
+      "number": 3924,
+      "title": "MethodToolCallback does not handle invalid arg gracefully",
+      "body": "**Bug description**\n\nSimilar to: https://github.com/spring-projects/spring-ai/issues/2857 (but this is the `MethodToolCallback` impl)\n\nWhen LLM intent to call a tool, there is possibility that the provided argument is invalid.\nFor example:\n- The tool argument is an enum\n- The LLM provide invalid enum\n\nWhen this occur it should throw `ToolExecutionException` instead of `IllegalArgumentException`. Or it might even be a good idea to change `ToolExecutionExceptionProcessor` process to all Exception instead of `ToolExecutionException` so other possible edge cases can be handled gracefully easily\n\nStack trace:\n```\njava.lang.IllegalArgumentException: No enum constant __INVALID_ENUM_NAME__\n\tat java.base/java.lang.Enum.valueOf(Enum.java:293)\n\tat org.springframework.ai.util.json.JsonParser.toTypedObject(JsonParser.java:152)\n\tat org.springframework.ai.tool.method.MethodToolCallback.buildTypedArgument(MethodToolCallback.java:150)\n\tat org.springframework.ai.tool.method.MethodToolCallback.lambda$buildMethodArguments$1(MethodToolCallback.java:139)\n\tat java.base/java.util.stream.ReferencePipeline$3$1.accept(ReferencePipeline.java:197)\n\tat java.base/java.util.Spliterators$ArraySpliterator.forEachRemaining(Spliterators.java:1024)\n\tat java.base/java.util.stream.AbstractPipeline.copyInto(AbstractPipeline.java:509)\n\tat java.base/java.util.stream.AbstractPipeline.wrapAndCopyInto(AbstractPipeline.java:499)\n\tat java.base/java.util.stream.AbstractPipeline.evaluate(AbstractPipeline.java:575)\n```\n\n**Environment**\nSpring AI 1.0.0\nJava 17\nAzure OpenAI gpt-4o\n\n**Steps to reproduce**\nCreate a tool that accepts an enum as a parameter, let's say:\n- ONE_DAY\n- TWO_DAY\n- THREE_DAY\n\nIf you ask LLM for FOUR_DAY or similar, it might try to call the tool, even if the input schema doesn't list it so\n\n**Expected behavior**\nIt should throw `ToolExecutionException` so it can be sent back to model, or handle gracefully at `ToolExecutionExceptionProcessor`.\n\nWorkaround (create a custom `MethodToolCallback` with a delegate):\n\n```\n\n@RequiredArgsConstructor\npublic class CustomMethodToolCallback implements ToolCallback {\n\n    @Delegate\n    private final MethodToolCallback delegate;\n\n    @Override\n    public String call(String toolInput) {\n        return call(toolInput, null);\n    }\n\n    @Override\n    public String call(String toolInput, @Nullable ToolContext toolContext) {\n        try {\n            return delegate.call(toolInput, toolContext); // Not perfect, but acceptable\n        } catch (IllegalArgumentException iae) {\n            throw new ToolExecutionException(getToolDefinition(), iae);\n        }\n    }\n}\n```\n\n",
+      "state": "OPEN",
+      "labels": [
+        "status: waiting-for-triage"
+      ],
+      "assignees": [],
+      "created_at": "2025-07-28T06:58:38Z",
+      "updated_at": "2025-07-28T14:39:19Z",
+      "author": "ls-rein-martha",
+      "url": "https://github.com/spring-projects/spring-ai/issues/3924",
+      "comments_count": 1,
+      "comments": [
+        {
+          "id": "IC_kwDOJ02wfs66apnt",
+          "author": {
+            "login": "wilocu"
+          },
+          "authorAssociation": "NONE",
+          "body": "take",
+          "createdAt": "2025-07-28T14:39:19Z",
+          "includesCreatedEdit": false,
+          "isMinimized": false,
+          "minimizedReason": "",
+          "reactionGroups": [],
+          "url": "https://github.com/spring-projects/spring-ai/issues/3924#issuecomment-3127548397",
+          "viewerDidAuthor": false
+        }
+      ]
+    }
+  ],
+  "file_changes": [
+    {
+      "filename": "spring-ai-model/src/main/java/org/springframework/ai/tool/method/MethodToolCallback.java",
+      "status": "modified",
+      "additions": 9,
+      "deletions": 1,
+      "changes": 10,
+      "patch": "@@ -104,7 +104,15 @@ public String call(String toolInput, @Nullable ToolContext toolContext) {\n \n \t\tMap<String, Object> toolArguments = extractToolArguments(toolInput);\n \n-\t\tObject[] methodArguments = buildMethodArguments(toolArguments, toolContext);\n+\t\tObject[] methodArguments;\n+\t\ttry {\n+\t\t\tmethodArguments = buildMethodArguments(toolArguments, toolContext);\n+\t\t}\n+\t\tcatch (IllegalArgumentException ex) {\n+\t\t\tlogger.debug(\"Failed to build method arguments for tool: {}. Error: {}\", this.toolDefinition.name(),\n+\t\t\t\t\tex.getMessage());\n+\t\t\tthrow new ToolExecutionException(this.toolDefinition, ex);\n+\t\t}\n \n \t\tObject result = callMethod(methodArguments);\n "
+    },
+    {
+      "filename": "spring-ai-model/src/test/java/org/springframework/ai/tool/method/MethodToolCallbackTests.java",
+      "status": "added",
+      "additions": 104,
+      "deletions": 0,
+      "changes": 104,
+      "patch": "@@ -0,0 +1,104 @@\n+\n+/*\n+ * Copyright 2023-2025 the original author or authors.\n+ *\n+ * Licensed under the Apache License, Version 2.0 (the \"License\");\n+ * you may not use this file except in compliance with the License.\n+ * You may obtain a copy of the License at\n+ *\n+ *      https://www.apache.org/licenses/LICENSE-2.0\n+ *\n+ * Unless required by applicable law or agreed to in writing, software\n+ * distributed under the License is distributed on an \"AS IS\" BASIS,\n+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n+ * See the License for the specific language governing permissions and\n+ * limitations under the License.\n+ */\n+\n+package org.springframework.ai.tool.method;\n+\n+import java.lang.reflect.Method;\n+\n+import org.junit.jupiter.api.Test;\n+\n+import org.springframework.ai.tool.annotation.Tool;\n+import org.springframework.ai.tool.definition.DefaultToolDefinition;\n+import org.springframework.ai.tool.definition.ToolDefinition;\n+import org.springframework.ai.tool.execution.ToolExecutionException;\n+\n+import static org.assertj.core.api.Assertions.assertThat;\n+import static org.assertj.core.api.Assertions.assertThatThrownBy;\n+\n+/**\n+ * Unit tests for {@link MethodToolCallback}.\n+ *\n+ * @author Thomas Vitale\n+ */\n+class MethodToolCallbackTests {\n+\n+\t@Test\n+\tvoid shouldThrowToolExecutionExceptionForInvalidEnumArgument() throws Exception {\n+\t\t// Given\n+\t\tTestToolClass testTool = new TestToolClass();\n+\t\tMethod method = TestToolClass.class.getDeclaredMethod(\"processOrder\", OrderType.class);\n+\t\tToolDefinition toolDefinition = DefaultToolDefinition.builder()\n+\t\t\t.name(\"processOrder\")\n+\t\t\t.description(\"Process an order\")\n+\t\t\t.inputSchema(\"{}\")\n+\t\t\t.build();\n+\n+\t\tMethodToolCallback callback = new MethodToolCallback(toolDefinition, null, method, testTool, null);\n+\n+\t\t// When/Then - Invalid enum value should throw ToolExecutionException\n+\t\tassertThatThrownBy(() -> callback.call(\"{\\\"orderType\\\": \\\"INVALID_TYPE\\\"}\"))\n+\t\t\t.isInstanceOf(ToolExecutionException.class)\n+\t\t\t.hasCauseInstanceOf(IllegalArgumentException.class)\n+\t\t\t.hasMessageContaining(\"No enum constant\");\n+\n+\t\t// Verify the ToolExecutionException contains the correct tool definition\n+\t\ttry {\n+\t\t\tcallback.call(\"{\\\"orderType\\\": \\\"INVALID_TYPE\\\"}\");\n+\t\t}\n+\t\tcatch (ToolExecutionException ex) {\n+\t\t\tassertThat(ex.getToolDefinition()).isEqualTo(toolDefinition);\n+\t\t\tassertThat(ex.getCause()).isInstanceOf(IllegalArgumentException.class);\n+\t\t}\n+\t}\n+\n+\t@Test\n+\tvoid shouldSucceedWithValidEnumArgument() throws Exception {\n+\t\t// Given\n+\t\tTestToolClass testTool = new TestToolClass();\n+\t\tMethod method = TestToolClass.class.getDeclaredMethod(\"processOrder\", OrderType.class);\n+\t\tToolDefinition toolDefinition = DefaultToolDefinition.builder()\n+\t\t\t.name(\"processOrder\")\n+\t\t\t.description(\"Process an order\")\n+\t\t\t.inputSchema(\"{}\")\n+\t\t\t.build();\n+\n+\t\tMethodToolCallback callback = new MethodToolCallback(toolDefinition, null, method, testTool, null);\n+\n+\t\t// When\n+\t\tString result = callback.call(\"{\\\"orderType\\\": \\\"ONE_DAY\\\"}\");\n+\n+\t\t// Then\n+\t\tassertThat(result).isEqualTo(\"\\\"Processing ONE_DAY order\\\"\");\n+\t}\n+\n+\t// Test classes\n+\tstatic class TestToolClass {\n+\n+\t\t@Tool(description = \"Process an order with the specified delivery type\")\n+\t\tpublic String processOrder(OrderType orderType) {\n+\t\t\treturn \"Processing \" + orderType + \" order\";\n+\t\t}\n+\n+\t}\n+\n+\tenum OrderType {\n+\n+\t\tONE_DAY, TWO_DAY, THREE_DAY\n+\n+\t}\n+\n+}\n\\ No newline at end of file"
+    }
+  ],
+  "commits_data": [
+    {
+      "sha": "0a4b9749e88b198b42e8c548bc96c8f35c24610a",
+      "message": "Issue 3924\n\nSigned-off-by: Mattia Pasetto <matpat17@gmail.com>",
+      "author": "mp2163",
+      "date": "2025-07-28T19:14:33Z",
+      "url": "https://github.com/spring-projects/spring-ai/commit/0a4b9749e88b198b42e8c548bc96c8f35c24610a"
+    }
+  ],
+  "conversation": [
+    {
+      "type": "issue_comment",
+      "author": "wilocu",
+      "created_at": "2025-07-28T14:39:19Z",
+      "body": "take",
+      "url": "https://github.com/spring-projects/spring-ai/issues/3924#issuecomment-3127548397",
+      "metadata": {
+        "issue_number": 3924
+      }
+    }
+  ],
+  "collection_timestamp": "2025-07-29T03:05:57.261936",
+  "repository": "spring-projects/spring-ai"
+}

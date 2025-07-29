@@ -59,10 +59,23 @@ class RiskAssessmentResult:
 class AIRiskAssessor:
     """AI-powered risk assessment using Claude Code"""
     
-    def __init__(self, working_dir: Path, spring_ai_dir: Path):
+    def __init__(self, working_dir: Path, spring_ai_dir: Path, context_dir: Path = None, logs_dir: Path = None):
         self.working_dir = working_dir
         self.spring_ai_dir = spring_ai_dir
-        self.context_dir = working_dir / "context"
+        
+        # Use provided context directory or default to working_dir/context
+        if context_dir is None:
+            self.context_dir = working_dir / "context"
+        else:
+            self.context_dir = Path(context_dir).absolute()
+            
+        # Use provided logs directory or default to working_dir/logs
+        if logs_dir is None:
+            self.logs_dir = working_dir / "logs"
+        else:
+            self.logs_dir = Path(logs_dir).absolute()
+            
+        self.logs_dir.mkdir(parents=True, exist_ok=True)
         
         # Cache for file content to avoid repeated stripping
         self._file_content_cache = {}
@@ -709,9 +722,7 @@ class AIRiskAssessor:
             risk_prompt = self.create_risk_assessment_prompt(pr_number, context_data)
             
             # Save prompt to logs directory for debugging
-            logs_dir = self.working_dir / "logs"
-            logs_dir.mkdir(exist_ok=True)
-            prompt_file_path = logs_dir / "claude-prompt-risk-assessor.txt"
+            prompt_file_path = self.logs_dir / "claude-prompt-risk-assessor.txt"
             
             with open(prompt_file_path, 'w', encoding='utf-8') as f:
                 f.write(risk_prompt)
@@ -737,14 +748,14 @@ class AIRiskAssessor:
                 Logger.info("🧠 Starting Claude Code AI analysis...")
                 
                 # Use ClaudeCodeWrapper for reliable integration
-                claude = ClaudeCodeWrapper()
+                claude = ClaudeCodeWrapper(logs_dir=self.logs_dir)
                 
                 if not claude.is_available():
                     Logger.error("❌ Claude Code is not available")
                     return None
                 
                 # Use centralized JSON extraction from ClaudeCodeWrapper
-                debug_response_file = logs_dir / "claude-response-risk-assessor.txt"
+                debug_response_file = self.logs_dir / "claude-response-risk-assessor.txt"
                 result = claude.analyze_from_file_with_json(
                     str(prompt_file_path), 
                     str(debug_response_file), 

@@ -1,0 +1,13 @@
+Return code: 0
+Stdout length: 1123
+Stderr: None
+Response:
+Based on the template and PR context data, I'll generate the commit message following the exact format and guidelines specified:
+
+test(vectorstore): add comprehensive test coverage for MongoDBAtlasFilterExpressionConverter
+
+The MongoDBAtlasFilterExpressionConverter lacked sufficient test coverage for missing operators (LT, GT, NIN), edge cases with null values and special characters, various data types, and complex nested expressions, creating potential reliability risks for the MongoDB Atlas integration.
+
+Added 25 comprehensive test methods covering all missing comparison operators, edge cases including null values and empty strings, data type validation for long/float/boolean values, list operations with empty and mixed-type scenarios, complex nested expression handling, and key variations with dots and special characters. Tests follow Spring AI testing patterns with proper AssertJ assertions and domain-neutral terminology.
+
+Improves reliability and maintainability of the MongoDB Atlas vector store integration by ensuring robust filter expression conversion across all supported scenarios and edge cases.

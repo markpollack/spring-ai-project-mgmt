@@ -42,7 +42,9 @@ class CompilationErrorResolver:
     
     def __init__(self, spring_ai_dir: Path):
         self.spring_ai_dir = spring_ai_dir
-        self.claude_wrapper = ClaudeCodeWrapper()
+        self.logs_dir = spring_ai_dir.parent / "logs"
+        self.logs_dir.mkdir(exist_ok=True)
+        self.claude_wrapper = ClaudeCodeWrapper(logs_dir=self.logs_dir)
         self.auto_fix_patterns = {
             'incorrect_override': {
                 'pattern': r'method does not override or implement a method from a supertype',

@@ -52,13 +52,26 @@ class AIConversationAnalysis:
 class AIPoweredConversationAnalyzer:
     """Uses Claude Code to perform intelligent conversation analysis"""
     
-    def __init__(self, working_dir: Path = None):
+    def __init__(self, working_dir: Path = None, context_dir: Path = None, logs_dir: Path = None):
         # Default to script directory if not provided (most robust approach)
         if working_dir is None:
             working_dir = Path(__file__).parent.absolute()
             
         self.working_dir = working_dir.absolute()
-        self.context_dir = self.working_dir / "context"
+        
+        # Use provided context directory or default to working_dir/context
+        if context_dir is None:
+            self.context_dir = self.working_dir / "context"
+        else:
+            self.context_dir = Path(context_dir).absolute()
+            
+        # Use provided logs directory or default to working_dir/logs
+        if logs_dir is None:
+            self.logs_dir = self.working_dir / "logs"
+        else:
+            self.logs_dir = Path(logs_dir).absolute()
+            
+        self.logs_dir.mkdir(parents=True, exist_ok=True)
     
     def analyze_with_ai(self, pr_number: str) -> Optional[AIConversationAnalysis]:
         """Perform AI-powered conversation analysis"""
@@ -258,7 +271,7 @@ class AIPoweredConversationAnalyzer:
             Logger.info("🤖 Running Claude Code analysis...")
             
             # Initialize Claude Code wrapper
-            claude = ClaudeCodeWrapper()
+            claude = ClaudeCodeWrapper(logs_dir=self.logs_dir)
             
             # Debug: Check availability with details
             is_available = claude.is_available()
@@ -336,7 +349,7 @@ class AIPoweredConversationAnalyzer:
                 else:
                     # Fallback: Try centralized JSON extraction as backup
                     Logger.info("🔄 Pre-extracted JSON not available, using fallback extraction...")
-                    claude = ClaudeCodeWrapper()
+                    claude = ClaudeCodeWrapper(logs_dir=self.logs_dir)
                     ai_data = claude.extract_json_from_response(response_text)
                     
                     if ai_data:
@@ -402,24 +415,28 @@ class AIPoweredConversationAnalyzer:
 def main():
     """Command-line interface for AI-powered conversation analysis"""
     import sys
+    import argparse
     
-    if len(sys.argv) < 2:
-        print("Usage: python3 ai_conversation_analyzer.py <pr_number>")
-        print("\nExamples:")
-        print("  python3 ai_conversation_analyzer.py 3386")
-        sys.exit(1)
+    parser = argparse.ArgumentParser(description='AI-powered conversation analysis for Spring AI PRs')
+    parser.add_argument('pr_number', help='GitHub PR number to analyze')
+    parser.add_argument('--context-dir', type=Path, help='Context directory path')
+    parser.add_argument('--logs-dir', type=Path, help='Logs directory path')
     
-    pr_number = sys.argv[1]
+    args = parser.parse_args()
     
     # Use script directory for analysis (robust regardless of where script is called from)
     working_dir = Path(__file__).parent.absolute()
-    analyzer = AIPoweredConversationAnalyzer(working_dir)
+    analyzer = AIPoweredConversationAnalyzer(
+        working_dir=working_dir,
+        context_dir=args.context_dir,
+        logs_dir=args.logs_dir
+    )
     
     # Perform AI analysis
-    analysis = analyzer.analyze_with_ai(pr_number)
+    analysis = analyzer.analyze_with_ai(args.pr_number)
     
     if analysis:
-        print(f"\n✅ AI analysis completed for PR #{pr_number}")
+        print(f"\n✅ AI analysis completed for PR #{args.pr_number}")
         print(f"📊 Analysis summary:")
         print(f"   - Problem: {analysis.problem_summary[:100]}...")
         print(f"   - Complexity Score: {analysis.complexity_score}/10")

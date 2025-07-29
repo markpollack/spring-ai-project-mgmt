@@ -64,7 +64,7 @@ class BackportAssessmentResult:
 class BackportAssessor:
     """AI-powered backport candidate assessment for Spring AI PRs"""
     
-    def __init__(self, working_dir: Path, spring_ai_dir: Path):
+    def __init__(self, working_dir: Path, spring_ai_dir: Path, context_dir: Path = None, logs_dir: Path = None):
         """Initialize the backport assessor
         
         Args:
@@ -73,15 +73,26 @@ class BackportAssessor:
         """
         self.working_dir = working_dir
         self.spring_ai_dir = spring_ai_dir
-        self.context_dir = working_dir / "context"
-        self.logs_dir = working_dir / "logs"
+        
+        # Use provided context directory or default to working_dir/context
+        if context_dir is None:
+            self.context_dir = working_dir / "context"
+        else:
+            self.context_dir = Path(context_dir).absolute()
+            
+        # Use provided logs directory or default to working_dir/logs
+        if logs_dir is None:
+            self.logs_dir = working_dir / "logs"
+        else:
+            self.logs_dir = Path(logs_dir).absolute()
+            
         self.template_path = working_dir / "templates" / "backport-candidate.md"
         
         # Ensure directories exist
-        self.logs_dir.mkdir(exist_ok=True)
+        self.logs_dir.mkdir(parents=True, exist_ok=True)
         
-        # Initialize Claude Code wrapper
-        self.claude = ClaudeCodeWrapper()
+        # Initialize Claude Code wrapper with logs directory
+        self.claude = ClaudeCodeWrapper(logs_dir=self.logs_dir)
         
         # Initialize GitHub utilities if available
         self.github_utils = None
@@ -591,18 +602,18 @@ Please provide your assessment following the exact format specified in the templ
 
 def main():
     """Command-line interface for backport assessment"""
-    if len(sys.argv) < 2:
-        print("Usage: python3 backport_assessor.py <pr_number>")
-        print("\nExamples:")
-        print("  python3 backport_assessor.py 3386")
-        print("  python3 backport_assessor.py 3914")
-        sys.exit(1)
+    import argparse
     
-    pr_number = sys.argv[1]
+    parser = argparse.ArgumentParser(description='AI-powered backport assessment for Spring AI PRs')
+    parser.add_argument('pr_number', help='GitHub PR number to assess')
+    parser.add_argument('--context-dir', type=Path, help='Context directory path')
+    parser.add_argument('--logs-dir', type=Path, help='Logs directory path')
+    
+    args = parser.parse_args()
     
     # Validate PR number
-    if not pr_number.isdigit():
-        Logger.error(f"Invalid PR number: {pr_number}")
+    if not args.pr_number.isdigit():
+        Logger.error(f"Invalid PR number: {args.pr_number}")
         sys.exit(1)
     
     # Use script directory as working directory
@@ -610,19 +621,24 @@ def main():
     spring_ai_dir = working_dir / "spring-ai"
     
     # Create assessor and run assessment
-    assessor = BackportAssessor(working_dir, spring_ai_dir)
-    result = assessor.run_backport_assessment(pr_number)
+    assessor = BackportAssessor(
+        working_dir=working_dir,
+        spring_ai_dir=spring_ai_dir,
+        context_dir=args.context_dir,
+        logs_dir=args.logs_dir
+    )
+    result = assessor.run_backport_assessment(args.pr_number)
     
     if result:
-        print(f"\n✅ Backport assessment completed for PR #{pr_number}")
+        print(f"\n✅ Backport assessment completed for PR #{args.pr_number}")
         print(f"🎯 Decision: {result.decision}")
         print(f"📊 Classification: {result.classification}")
         print(f"⚠️  Risk Level: {result.risk_level}")
         print(f"📄 Files Changed: {result.files_changed_count}")
-        print(f"💾 Assessment saved to: context/pr-{pr_number}/backport-assessment.json")
+        print(f"💾 Assessment saved to: context/pr-{args.pr_number}/backport-assessment.json")
         sys.exit(0)
     else:
-        print(f"\n❌ Backport assessment failed for PR #{pr_number}")
+        print(f"\n❌ Backport assessment failed for PR #{args.pr_number}")
         sys.exit(1)
 
 
