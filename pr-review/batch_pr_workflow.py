@@ -554,7 +554,13 @@ class BatchPRWorkflow:
         with open(summary_file, 'w') as f:
             f.write(summary_content)
         
+        # Also create the completion marker file that the run directory logic looks for
+        completion_marker = self.current_run_dir / "BATCH_PROCESSING_SUMMARY.md"
+        with open(completion_marker, 'w') as f:
+            f.write(summary_content)
+        
         Logger.success(f"📋 Batch summary generated: {summary_file}")
+        Logger.success(f"✅ Completion marker created: {completion_marker}")
     
     def _generate_html_dashboard(self):
         """Generate interactive HTML dashboard for low hanging fruit identification"""
