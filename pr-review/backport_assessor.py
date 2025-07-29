@@ -15,7 +15,7 @@ import json
 import subprocess
 import tempfile
 from pathlib import Path
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional, Any, Union
 from dataclasses import dataclass
 from datetime import datetime
 from claude_code_wrapper import ClaudeCodeWrapper
@@ -222,6 +222,18 @@ class BackportAssessor:
             Logger.error("❌ Missing essential context data (pr-data.json or file-changes.json)")
             return None
         
+        # Validate data structure for issue_data and add logging
+        issue_data = context_data.get('issue_data', [])
+        if issue_data:
+            if isinstance(issue_data, list):
+                Logger.info(f"🔍 Issue data is correctly formatted as list with {len(issue_data)} items")
+            elif isinstance(issue_data, dict):
+                Logger.info(f"🔍 Issue data is dict format - keys: {list(issue_data.keys())}")
+            else:
+                Logger.warn(f"⚠️  Unexpected issue_data type: {type(issue_data)}")
+        else:
+            Logger.info("🔍 No issue data found for this PR")
+        
         Logger.success(f"✅ Collected context data for PR #{pr_number}")
         return context_data
     
@@ -242,11 +254,30 @@ class BackportAssessor:
         issue_data = context_data.get('issue_data', {})
         conversation = context_data.get('conversation', [])
         
-        # Create formatted context sections
-        pr_summary = self._format_pr_summary(pr_data)
-        files_summary = self._format_files_summary(file_changes)
-        issue_summary = self._format_issue_summary(issue_data)
-        conversation_summary = self._format_conversation_summary(conversation)
+        # Create formatted context sections with error handling
+        try:
+            pr_summary = self._format_pr_summary(pr_data)
+        except Exception as e:
+            Logger.warn(f"⚠️  Error formatting PR summary: {e}")
+            pr_summary = "PR summary formatting failed - using basic data"
+            
+        try:
+            files_summary = self._format_files_summary(file_changes)
+        except Exception as e:
+            Logger.warn(f"⚠️  Error formatting files summary: {e}")
+            files_summary = f"Files summary formatting failed - {len(file_changes) if file_changes else 0} files changed"
+            
+        try:
+            issue_summary = self._format_issue_summary(issue_data)
+        except Exception as e:
+            Logger.warn(f"⚠️  Error formatting issue summary: {e}")
+            issue_summary = "Issue summary formatting failed - data may be malformed"
+            
+        try:
+            conversation_summary = self._format_conversation_summary(conversation)
+        except Exception as e:
+            Logger.warn(f"⚠️  Error formatting conversation summary: {e}")
+            conversation_summary = f"Conversation summary formatting failed - {len(conversation) if conversation else 0} comments"
         
         # Build complete prompt
         prompt_content = f"""# Backport Candidate Assessment Request
@@ -340,21 +371,42 @@ Please provide your assessment following the exact format specified in the templ
         
         return summary
     
-    def _format_issue_summary(self, issue_data: Dict[str, Any]) -> str:
+    def _format_issue_summary(self, issue_data: Union[List[Dict[str, Any]], Dict[str, Any]]) -> str:
         """Format issue context into readable summary"""
         if not issue_data:
             return "No linked issues found"
         
-        issues = issue_data.get('issues', [])
+        # Handle both data structure formats:
+        # Format 1: Direct list of issues: [{"number": 3931, ...}]
+        # Format 2: Dict with issues key: {"issues": [{"number": 3931, ...}]}
+        if isinstance(issue_data, list):
+            Logger.info(f"🔍 Using direct list format for issue data ({len(issue_data)} issues)")
+            issues = issue_data
+        else:
+            issues = issue_data.get('issues', [])
+            Logger.info(f"🔍 Using dict format for issue data ({len(issues)} issues)")
+            
         if not issues:
             return "No linked issues found"
         
         summary = f"**Linked Issues**: {len(issues)} issue(s)\n"
         
         for issue in issues[:3]:  # Show first 3 issues
+            # Defensive check - ensure issue is a dict
+            if not isinstance(issue, dict):
+                Logger.warn(f"⚠️  Invalid issue format in list: {type(issue)}")
+                continue
+                
             title = issue.get('title', 'Unknown')
             state = issue.get('state', 'Unknown')
-            labels = ', '.join([label.get('name', '') for label in issue.get('labels', [])])
+            
+            # Defensive handling of labels
+            labels_data = issue.get('labels', [])
+            if isinstance(labels_data, list):
+                labels = ', '.join([label.get('name', '') if isinstance(label, dict) else str(label) for label in labels_data])
+            else:
+                labels = str(labels_data)
+                
             summary += f"- #{issue.get('number', 'N/A')}: {title} ({state}) [{labels}]\n"
         
         if len(issues) > 3:
