@@ -8,16 +8,16 @@ AI-powered PR review automation system for Spring AI project with comprehensive 
 
 ```bash
 # Complete PR analysis
-python pr_workflow.py 3914
+python3 pr_workflow.py 3914
 
 # Generate enhanced report only
-python pr_workflow.py --report-only 3914
+python3 pr_workflow.py --report-only 3914
 
 # Clean up PR workspace
-python pr_workflow.py --cleanup 3914
+python3 pr_workflow.py --cleanup 3914
 
 # Batch processing multiple PRs
-python batch_pr_workflow.py --cleanup --prs 3920 3919 3921 3922 3927 3929
+python3 batch_pr_workflow.py 3920 3919 3921 3922 3927 3929
 ```
 
 ## Core Files

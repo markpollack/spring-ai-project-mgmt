@@ -7,38 +7,49 @@ Comprehensive AI-powered automation for reviewing Spring AI project pull request
 ### Complete PR Review Workflow (Most Common)
 ```bash
 # Full end-to-end PR review with all features
-python pr_workflow.py 3386
+python3 pr_workflow.py 3386
 
 # Clean workspace first, then run full workflow
-python pr_workflow.py --cleanup 3386 && python pr_workflow.py 3386
+python3 pr_workflow.py --cleanup 3386 && python3 pr_workflow.py 3386
 ```
 
 ### Individual Workflow Components
 ```bash
 # Generate comprehensive reports only (assumes PR already prepared)
-python pr_workflow.py --report-only 3386
+python3 pr_workflow.py --report-only 3386
 
 # Run tests only (assumes PR already prepared) 
-python pr_workflow.py --test-only 3386
+python3 pr_workflow.py --test-only 3386
 
 # Generate workflow plan only
-python pr_workflow.py --plan-only 3386
+python3 pr_workflow.py --plan-only 3386
 
 # Clean up all generated files and repositories
-python pr_workflow.py --cleanup 3386
+python3 pr_workflow.py --cleanup 3386
+
+# Granular cleanup control
+python3 pr_workflow.py --cleanup 3386 --cleanup-mode light  # Keep spring-ai repo
+python3 pr_workflow.py --cleanup 3386 --cleanup-mode full   # Remove everything
 
 # Preview what would happen without executing
-python pr_workflow.py --dry-run 3386
+python3 pr_workflow.py --dry-run 3386
 ```
 
-### Workflow Options
+### Workflow Step Control Options
 ```bash
 # Skip individual steps if needed
-python pr_workflow.py --skip-squash 3386       # Skip commit squashing
-python pr_workflow.py --skip-compile 3386      # Skip compilation check
-python pr_workflow.py --skip-report 3386       # Skip report generation
-python pr_workflow.py --no-auto-resolve 3386   # Disable automatic conflict resolution
-python pr_workflow.py --force 3386             # Force overwrite existing branches
+python3 pr_workflow.py --skip-squash 3386           # Skip commit squashing
+python3 pr_workflow.py --skip-compile 3386          # Skip compilation check
+python3 pr_workflow.py --skip-tests 3386            # Skip test execution
+python3 pr_workflow.py --skip-docs 3386             # Skip Antora documentation build
+python3 pr_workflow.py --skip-report 3386           # Skip report generation
+python3 pr_workflow.py --skip-commit-message 3386   # Skip AI-powered commit message generation
+
+# Conflict resolution control
+python3 pr_workflow.py --no-auto-resolve 3386       # Disable automatic conflict resolution
+
+# Force operations
+python3 pr_workflow.py --force 3386                 # Force overwrite existing branches
 ```
 
 ## 📋 What This Solution Provides
@@ -53,7 +64,7 @@ The Spring AI PR Review system provides a **complete automated workflow** for ef
 
 ## 🔄 Complete Workflow Overview
 
-When you run `python pr_workflow.py 3386`, here's what happens automatically:
+When you run `python3 pr_workflow.py 3386`, here's what happens automatically:
 
 ### Phase 1: Repository Setup & PR Preparation
 1. **Repository Management**: Clones/updates Spring AI repository in isolated workspace
@@ -233,13 +244,22 @@ pr-review/
 
 ### Batch Processing
 ```bash
-# Use dedicated batch processing script (recommended)
-python batch_pr_workflow.py --cleanup --prs 3386 3387 3388
+# Basic batch processing (recommended)
+python3 batch_pr_workflow.py 3386 3387 3388
 
-# Manual batch processing
+# Batch processing with options
+python3 batch_pr_workflow.py --dry-run 3386 3387 3388           # Preview what would happen
+python3 batch_pr_workflow.py --report-only 3386 3387 3388       # Generate reports only
+python3 batch_pr_workflow.py --no-cleanup 3386 3387 3388        # Skip cleanup between PRs
+python3 batch_pr_workflow.py --stop-on-error 3386 3387 3388     # Stop on first error
+python3 batch_pr_workflow.py --force-reprocess 3386 3387 3388   # Force reprocessing existing reports
+python3 batch_pr_workflow.py --open-browser 3386 3387 3388      # Auto-open HTML dashboard
+python3 batch_pr_workflow.py --from-scratch 3386 3387 3388      # Fresh start - remove all data first
+
+# Manual batch processing (alternative approach)
 for pr in 3386 3387 3388; do
-    python pr_workflow.py --cleanup $pr
-    python pr_workflow.py $pr
+    python3 pr_workflow.py --cleanup $pr
+    python3 pr_workflow.py $pr
 done
 ```
 
@@ -267,7 +287,7 @@ done
 3. **Run Your First PR Analysis**:
    ```bash
    # Complete analysis of PR 3386
-   python pr_workflow.py 3386
+   python3 pr_workflow.py 3386
    ```
 
 4. **Review Generated Report**:
@@ -281,15 +301,15 @@ done
 ### AI Analysis Issues
 
 **Problem**: AI assessments show "Manual assessment required due to AI parsing failure"
-**Solution**: Use fresh analysis mode to clear cached data:
+**Solution**: Use report-only mode to regenerate AI analysis:
 ```bash
-python pr_workflow.py --report-only --force-fresh 3386
+python3 pr_workflow.py --report-only 3386
 ```
 
 **Problem**: Claude Code returns "Execution error"
 **Solution**: Run the diagnostic test suite:
 ```bash
-python test_claude_code_wrapper.py
+python3 test_claude_code_wrapper.py
 ```
 
 ### Batch Processing Issues
@@ -300,7 +320,7 @@ python test_claude_code_wrapper.py
 **Problem**: Compilation errors not being auto-fixed
 **Solution**: The CompilationErrorResolver now includes enhanced patterns for common errors like missing semicolons. Re-run the workflow:
 ```bash
-python pr_workflow.py --cleanup 3386 && python pr_workflow.py 3386
+python3 pr_workflow.py --cleanup 3386 && python3 pr_workflow.py 3386
 ```
 
 ### Debug Information
@@ -309,6 +329,49 @@ All AI prompts and responses are saved to the `logs/` directory for debugging:
 - `claude-prompt-*.txt` - Prompts sent to Claude Code
 - `claude-response-*.txt` - Raw responses from Claude Code
 - Debug logs include token estimation and performance metrics
+
+## 🔧 Individual Component Scripts
+
+While most users will use the main workflows, you can also run individual components directly:
+
+### Enhanced Report Generation
+```bash
+# Generate comprehensive AI-powered report for a PR
+python3 enhanced_report_generator.py 3386
+
+# Force fresh analysis (ignore cached assessments)
+python3 enhanced_report_generator.py --force-fresh 3386
+
+# Specify custom directories
+python3 enhanced_report_generator.py 3386 --context-dir /path/to/context --reports-dir /path/to/reports
+```
+
+### AI Assessment Scripts
+```bash
+# Individual AI assessments (useful for debugging)
+python3 ai_conversation_analyzer.py 3386      # Analyze PR conversations and requirements
+python3 ai_risk_assessor.py 3386             # Security and quality risk assessment  
+python3 backport_assessor.py 3386            # Backport candidate evaluation
+python3 solution_assessor.py 3386            # Technical solution analysis
+python3 commit_message_generator.py 3386     # AI-powered commit message generation
+```
+
+### Utility Scripts
+```bash
+# Intelligent commit squashing
+python3 intelligent_squash.py 3386           # Analyze and squash commits automatically
+python3 intelligent_squash.py --dry-run 3386 # Preview squash operations
+
+# Test the Claude Code integration
+python3 test_claude_code_wrapper.py          # Comprehensive integration testing
+```
+
+### Running with Custom Directories
+Most AI assessment scripts support custom directory routing for batch processing:
+```bash
+python3 backport_assessor.py 3386 --context-dir /path/to/context --logs-dir /path/to/logs
+python3 ai_conversation_analyzer.py 3386 --context-dir /path/to/context --logs-dir /path/to/logs
+```
 
 ---
 
