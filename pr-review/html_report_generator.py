@@ -70,6 +70,27 @@ class PRSummary:
     
     # AI-generated commit message
     commit_message: str
+    
+    # Conversation analysis data
+    problem_summary: str
+    key_requirements: List[str]
+    design_decisions: List[str]
+    outstanding_concerns: List[str]
+    solution_approaches: List[str]
+    complexity_indicators: List[str]
+    quality_assessment: str
+    recommendations: List[str]
+    stakeholder_feedback: List[str]
+    
+    # Solution assessment data
+    scope_analysis: str
+    architecture_impact: List[str]
+    implementation_quality: List[str]
+    breaking_changes_assessment: List[str]
+    testing_adequacy: List[str]
+    documentation_completeness: List[str]
+    solution_fitness: str
+    solution_risk_factors: List[str]
 
 
 class LowHangingFruitReportGenerator:
@@ -149,6 +170,28 @@ class LowHangingFruitReportGenerator:
             except Exception as e:
                 print(f"⚠️  Error loading backport data for PR #{pr_number}: {e}")
                 backport_data = {}
+        
+        # Load conversation analysis if available
+        conversation_file = pr_dir / "ai-conversation-analysis.json"
+        conversation_data = {}
+        if conversation_file.exists():
+            try:
+                with open(conversation_file) as f:
+                    conversation_data = json.load(f)
+            except Exception as e:
+                print(f"⚠️  Error loading conversation data for PR #{pr_number}: {e}")
+                conversation_data = {}
+                
+        # Load solution assessment if available  
+        solution_file = pr_dir / "solution-assessment.json"
+        solution_data = {}
+        if solution_file.exists():
+            try:
+                with open(solution_file) as f:
+                    solution_data = json.load(f)
+            except Exception as e:
+                print(f"⚠️  Error loading solution data for PR #{pr_number}: {e}")
+                solution_data = {}
             
         # Determine PR type from analysis
         pr_type = self._classify_pr_type(pr_data, risk_data, file_changes)
@@ -195,7 +238,26 @@ class LowHangingFruitReportGenerator:
             backport_badge_color=backport_info["badge_color"],
             backport_icon=backport_info["icon"],
             file_changes=file_changes[:5],  # Limit to first 5 files for preview
-            commit_message=commit_message
+            commit_message=commit_message,
+            # Conversation analysis data
+            problem_summary=conversation_data.get("problem_summary", ""),
+            key_requirements=conversation_data.get("key_requirements", []),
+            design_decisions=conversation_data.get("design_decisions", []),
+            outstanding_concerns=conversation_data.get("outstanding_concerns", []),
+            solution_approaches=conversation_data.get("solution_approaches", []),
+            complexity_indicators=conversation_data.get("complexity_indicators", []),
+            quality_assessment=conversation_data.get("quality_assessment", ""),
+            recommendations=conversation_data.get("recommendations", []),
+            stakeholder_feedback=conversation_data.get("stakeholder_feedback", []),
+            # Solution assessment data
+            scope_analysis=solution_data.get("scope_analysis", ""),
+            architecture_impact=solution_data.get("architecture_impact", []),
+            implementation_quality=solution_data.get("implementation_quality", []),
+            breaking_changes_assessment=solution_data.get("breaking_changes_assessment", []),
+            testing_adequacy=solution_data.get("testing_adequacy", []),
+            documentation_completeness=solution_data.get("documentation_completeness", []),
+            solution_fitness=solution_data.get("solution_fitness", ""),
+            solution_risk_factors=solution_data.get("risk_factors", [])
         )
     
     def _classify_pr_type(self, pr_data: Dict, risk_data: Dict, file_changes: List) -> str:
@@ -262,6 +324,167 @@ class LowHangingFruitReportGenerator:
         #         enhanced = enhanced[:break_point + 1] + "..."
         
         return enhanced
+    
+    def _get_risk_tooltip(self, risk_level: str) -> str:
+        """Get tooltip text for risk badges"""
+        risk_tooltips = {
+            "LOW": "Low Risk: Minimal security/stability impact, safe to review",
+            "MEDIUM": "Medium Risk: Moderate impact, review carefully for potential issues", 
+            "HIGH": "High Risk: Significant impact, thorough review required"
+        }
+        return risk_tooltips.get(risk_level.upper(), f"{risk_level} risk level")
+    
+    def _get_backport_tooltip(self, backport_decision: str) -> str:
+        """Get tooltip text for backport badges"""
+        backport_tooltips = {
+            "APPROVE": "Backport Approved: Safe for 1.0.x release branch",
+            "REJECT": "Backport Rejected: Not suitable for 1.0.x release",
+            "UNKNOWN": "Backport Assessment: Analysis pending or unavailable"
+        }
+        return backport_tooltips.get(backport_decision.upper(), f"Backport {backport_decision}")
+        
+    def _get_pr_type_tooltip(self, pr_type: str) -> str:
+        """Get tooltip text for PR type badges"""
+        pr_type_tooltips = {
+            "feature": "Feature: New functionality addition",
+            "major-feature": "Major Feature: Large functionality addition (>20 files or >500 lines)",
+            "bugfix": "Bug Fix: Resolves existing issues or errors",
+            "cleanup": "Cleanup: Code refactoring, unused code removal, or maintenance",
+            "documentation": "Documentation: Updates to docs, guides, or README files",
+            "testing": "Testing: Test additions, improvements, or coverage enhancements"
+        }
+        return pr_type_tooltips.get(pr_type.lower(), f"PR Type: {pr_type}")
+    
+    def _generate_key_requirements_list(self, requirements: List[str]) -> str:
+        """Generate HTML for key requirements (first 2-3 items)"""
+        if not requirements:
+            return ""
+        
+        # Show first 2-3 requirements for main card
+        display_requirements = requirements[:3]
+        items = [f"<li>{html.escape(req)}</li>" for req in display_requirements]
+        
+        if len(requirements) > 3:
+            remaining = len(requirements) - 3
+            items.append(f"<li class='requirements-more'>+ {remaining} more requirements...</li>")
+        
+        return f"<ul class='key-requirements'>{''.join(items)}</ul>"
+    
+    def _generate_problem_analysis_content(self, pr: 'PRSummary') -> str:
+        """Generate HTML content for Problem Analysis modal card"""
+        if not pr.problem_summary:
+            return "<p>Problem analysis not available</p>"
+        
+        # Complete requirements list
+        requirements_html = ""
+        if pr.key_requirements:
+            req_items = [f"<li>{html.escape(req)}</li>" for req in pr.key_requirements]
+            requirements_html = f"<div class='modal-section'><h4>Key Requirements:</h4><ul>{''.join(req_items)}</ul></div>"
+        
+        # Design decisions
+        decisions_html = ""
+        if pr.design_decisions:
+            dec_items = [f"<li>{html.escape(dec)}</li>" for dec in pr.design_decisions]
+            decisions_html = f"<div class='modal-section'><h4>Design Decisions:</h4><ul>{''.join(dec_items)}</ul></div>"
+        
+        # Solution approaches
+        approaches_html = ""
+        if pr.solution_approaches:
+            app_items = [f"<li>{html.escape(app)}</li>" for app in pr.solution_approaches]
+            approaches_html = f"<div class='modal-section'><h4>Solution Approach:</h4><ul>{''.join(app_items)}</ul></div>"
+        
+        # Quality assessment
+        quality_html = ""
+        if pr.quality_assessment:
+            quality_html = f"<div class='modal-section'><h4>Quality Assessment:</h4><p>{html.escape(pr.quality_assessment)}</p></div>"
+        
+        return f"""
+        <div class='modal-section'>
+            <h4>Problem Summary:</h4>
+            <p>{html.escape(pr.problem_summary)}</p>
+        </div>
+        {requirements_html}
+        {decisions_html}
+        {approaches_html}
+        {quality_html}
+        """
+    
+    def _generate_backport_assessment_content(self, pr: 'PRSummary') -> str:
+        """Generate HTML content for Backport Assessment modal card"""
+        recommendations_html = ""
+        if pr.backport_recommendations:
+            recommendations_html = f"<div class='modal-section'><h4>Recommendations:</h4><p>{html.escape(pr.backport_recommendations)}</p></div>"
+        
+        return f"""
+        <div class='modal-section'>
+            <div class="backport-decision {pr.backport_decision.lower()}">{pr.backport_icon} {pr.backport_decision}</div>
+            <p><strong>Classification:</strong> {pr.backport_classification}</p>
+            <p><strong>Risk Level:</strong> {pr.backport_risk_level}</p>
+        </div>
+        <div class='modal-section'>
+            <h4>Reasoning:</h4>
+            <p>{html.escape(pr.backport_reasoning)}</p>
+        </div>
+        {recommendations_html}
+        """
+    
+    def _generate_technical_concerns_content(self, pr: 'PRSummary') -> str:
+        """Generate HTML content for Technical Concerns modal card"""
+        concerns_html = ""
+        if pr.outstanding_concerns:
+            con_items = [f"<li>{html.escape(con)}</li>" for con in pr.outstanding_concerns]
+            concerns_html = f"<div class='modal-section'><h4>Outstanding Concerns:</h4><ul>{''.join(con_items)}</ul></div>"
+        
+        complexity_html = ""
+        if pr.complexity_indicators:
+            comp_items = [f"<li>{html.escape(comp)}</li>" for comp in pr.complexity_indicators]
+            complexity_html = f"<div class='modal-section'><h4>Complexity Indicators:</h4><ul>{''.join(comp_items)}</ul></div>"
+        
+        recommendations_html = ""
+        if pr.recommendations:
+            rec_items = [f"<li>{html.escape(rec)}</li>" for rec in pr.recommendations]
+            recommendations_html = f"<div class='modal-section'><h4>Recommendations:</h4><ul>{''.join(rec_items)}</ul></div>"
+        
+        feedback_html = ""
+        if pr.stakeholder_feedback and any(pr.stakeholder_feedback):
+            feedback_items = [f"<li>{html.escape(fb)}</li>" for fb in pr.stakeholder_feedback if fb.strip()]
+            if feedback_items:
+                feedback_html = f"<div class='modal-section'><h4>Stakeholder Feedback:</h4><ul>{''.join(feedback_items)}</ul></div>"
+        
+        if not any([concerns_html, complexity_html, recommendations_html, feedback_html]):
+            return "<p>Technical concerns analysis not available</p>"
+        
+        return f"{concerns_html}{complexity_html}{recommendations_html}{feedback_html}"
+    
+    def _generate_solution_quality_content(self, pr: 'PRSummary') -> str:
+        """Generate HTML content for Solution Quality modal card"""
+        scope_html = ""
+        if pr.scope_analysis:
+            scope_html = f"<div class='modal-section'><h4>Scope Analysis:</h4><p>{html.escape(pr.scope_analysis)}</p></div>"
+        
+        architecture_html = ""
+        if pr.architecture_impact:
+            arch_items = [f"<li>{html.escape(arch)}</li>" for arch in pr.architecture_impact]
+            architecture_html = f"<div class='modal-section'><h4>Architecture Impact:</h4><ul>{''.join(arch_items)}</ul></div>"
+        
+        implementation_html = ""
+        if pr.implementation_quality:
+            impl_items = [f"<li>{html.escape(impl)}</li>" for impl in pr.implementation_quality]
+            implementation_html = f"<div class='modal-section'><h4>Implementation Quality:</h4><ul>{''.join(impl_items)}</ul></div>"
+        
+        testing_html = ""
+        if pr.testing_adequacy:
+            test_items = [f"<li>{html.escape(test)}</li>" for test in pr.testing_adequacy]
+            testing_html = f"<div class='modal-section'><h4>Testing Adequacy:</h4><ul>{''.join(test_items)}</ul></div>"
+        
+        fitness_html = ""
+        if pr.solution_fitness:
+            fitness_html = f"<div class='modal-section'><h4>Solution Fitness:</h4><p>{html.escape(pr.solution_fitness)}</p></div>"
+        
+        if not any([scope_html, architecture_html, implementation_html, testing_html, fitness_html]):
+            return "<p>Solution quality analysis not available</p>"
+        
+        return f"{scope_html}{architecture_html}{implementation_html}{testing_html}{fitness_html}"
     
     def _load_commit_message(self, pr_number: str) -> str:
         """Load the AI-generated commit message for a PR"""
@@ -629,11 +852,20 @@ class LowHangingFruitReportGenerator:
                         </a>
                     </h3>
                     <div class="pr-meta">
-                        <span class="pr-author">by {author}</span>
-                        <span class="pr-type">{pr.pr_type}</span>
-                        <span class="risk-badge risk-{pr.risk_level.lower()}">{pr.risk_level}</span>
-                        <span class="backport-badge backport-{pr.backport_badge_color}">
-                            {pr.backport_icon} {pr.backport_decision}
+                        <span class="pr-author">by <a href="https://github.com/spring-projects/spring-ai/pulls?q=author:{author}" target="_blank" class="author-link">{author}</a></span>
+                        <span class="badge-group">
+                            <span class="badge-label">Type:</span>
+                            <span class="pr-type" title="{self._get_pr_type_tooltip(pr.pr_type)}">{pr.pr_type}</span>
+                        </span>
+                        <span class="badge-group">
+                            <span class="badge-label">Risk:</span>
+                            <span class="risk-badge risk-{pr.risk_level.lower()}" title="{self._get_risk_tooltip(pr.risk_level)}">{pr.risk_level}</span>
+                        </span>
+                        <span class="badge-group">
+                            <span class="badge-label">Backport:</span>
+                            <span class="backport-badge backport-{pr.backport_badge_color}" title="{self._get_backport_tooltip(pr.backport_decision)}">
+                                {pr.backport_icon} {pr.backport_decision}
+                            </span>
                         </span>
                     </div>
                 </div>
@@ -655,8 +887,11 @@ class LowHangingFruitReportGenerator:
             </div>
             
             <div class="pr-summary">
-                <p class="risk-summary">{risk_summary}</p>
-                {positive_list}
+                <div class="assessment-section">
+                    <h4 class="assessment-label">💡 Problem Summary</h4>
+                    <p class="problem-summary">{html.escape(pr.problem_summary) if pr.problem_summary else 'Analysis not available'}</p>
+                    {self._generate_key_requirements_list(pr.key_requirements)}
+                </div>
             </div>
             
             <div class="pr-actions">
@@ -669,41 +904,24 @@ class LowHangingFruitReportGenerator:
             
             <!-- Hidden assessment data for modal population -->
             <div class="assessment-data" style="display: none;" data-pr="{pr.number}">
-                <div class="risk-assessment-card">
-                    <div class="assessment-content">
-                        <div class="risk-level-display">
-                            <span class="risk-badge risk-{pr.risk_level.lower()}">{pr.risk_level}</span>
-                            <span class="risk-explanation">Risk Level</span>
-                        </div>
-                        <div class="risk-details">
-                            <p class="risk-summary">{html.escape(pr.risk_summary)}</p>
-                            {positive_list}
-                        </div>
-                    </div>
+                <div class="problem-analysis-data">
+                    {self._generate_problem_analysis_content(pr)}
                 </div>
                 
-                <div class="backport-assessment-card">
-                    <div class="assessment-content">
-                        <div class="backport-decision {pr.backport_decision.lower()}">{pr.backport_icon} {pr.backport_decision}</div>
-                        <p><strong>Classification:</strong> {pr.backport_classification}</p>
-                        <p><strong>Risk Level:</strong> {pr.backport_risk_level}</p>
-                        
-                        <div class="backport-reasoning">
-                            <strong>Reasoning:</strong><br>
-                            {html.escape(pr.backport_reasoning)}
-                        </div>
-                        
-                        {f'<div class="backport-recommendations"><strong>Recommendations:</strong><br>{html.escape(pr.backport_recommendations)}</div>' if pr.backport_recommendations else ''}
-                    </div>
+                <div class="backport-assessment-data">
+                    {self._generate_backport_assessment_content(pr)}
                 </div>
                 
-                <div class="commit-message-card">
-                    <div class="assessment-content">
-                        <div class="commit-message-content">
-                            <pre id="commit-message-{pr.number}" class="commit-message">{html.escape(pr.commit_message)}</pre>
-                            <button class="copy-button" onclick="copyCommitMessage({pr.number})">Copy</button>
-                        </div>
-                    </div>
+                <div class="technical-concerns-data">
+                    {self._generate_technical_concerns_content(pr)}
+                </div>
+                
+                <div class="solution-quality-data">
+                    {self._generate_solution_quality_content(pr)}
+                </div>
+                
+                <div class="commit-message-data">
+                    <div class="commit-message-text">{html.escape(pr.commit_message)}</div>
                 </div>
             </div>
         </div>
@@ -754,16 +972,30 @@ class LowHangingFruitReportGenerator:
                 <div class="modal-content">
                     <div class="modal-assessment-layout">
                         <div class="modal-top-row">
-                            <div class="modal-assessment-card modal-risk-card">
-                                <h3>🔍 Risk Assessment</h3>
-                                <div id="modal-risk-content">
-                                    <!-- Risk content will be populated by JavaScript -->
+                            <div class="modal-assessment-card modal-problem-card">
+                                <h3>🔍 Problem Analysis</h3>
+                                <div id="modal-problem-content">
+                                    <!-- Problem analysis content will be populated by JavaScript -->
                                 </div>
                             </div>
                             <div class="modal-assessment-card modal-backport-card">
                                 <h3>🔄 Backport Assessment</h3>
                                 <div id="modal-backport-content">
                                     <!-- Backport content will be populated by JavaScript -->
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-middle-row">
+                            <div class="modal-assessment-card modal-concerns-card">
+                                <h3>⚠️ Technical Concerns</h3>
+                                <div id="modal-concerns-content">
+                                    <!-- Technical concerns content will be populated by JavaScript -->
+                                </div>
+                            </div>
+                            <div class="modal-assessment-card modal-solution-card">
+                                <h3>🏗️ Solution Quality</h3>
+                                <div id="modal-solution-content">
+                                    <!-- Solution quality content will be populated by JavaScript -->
                                 </div>
                             </div>
                         </div>
@@ -1087,14 +1319,75 @@ class LowHangingFruitReportGenerator:
         .pr-meta {
             display: flex;
             flex-wrap: wrap;
-            gap: 10px;
+            gap: 15px;
             align-items: center;
             font-size: 0.9rem;
+        }
+        
+        .badge-group {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .badge-label {
+            font-size: 0.8rem;
+            color: #6c757d;
+            font-weight: 500;
+        }
+        
+        .assessment-section {
+            margin-bottom: 15px;
+        }
+        
+        .assessment-label {
+            margin: 0 0 8px 0;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--orchard-green);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .problem-summary {
+            margin: 0 0 12px 0;
+            line-height: 1.5;
+            color: #24292f;
+        }
+        
+        .key-requirements {
+            margin: 8px 0 0 0;
+            padding-left: 20px;
+            list-style-type: disc;
+        }
+        
+        .key-requirements li {
+            margin: 4px 0;
+            line-height: 1.4;
+            color: #656d76;
+        }
+        
+        .requirements-more {
+            font-style: italic;
+            color: #8b949e !important;
         }
         
         .pr-author {
             color: #666;
             font-weight: 500;
+        }
+        
+        .author-link {
+            color: #0969da;
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.2s ease;
+        }
+        
+        .author-link:hover {
+            color: #0550ae;
+            text-decoration: underline;
         }
         
         .pr-type {
@@ -1870,7 +2163,7 @@ class LowHangingFruitReportGenerator:
             gap: 30px;
         }
         
-        .modal-top-row {
+        .modal-top-row, .modal-middle-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 30px;
@@ -1897,28 +2190,70 @@ class LowHangingFruitReportGenerator:
             padding-bottom: 12px;
         }
         
-        .modal-risk-card {
-            border-left: 4px solid var(--apple-red);
-        }
-        
-        .modal-backport-card {
+        .modal-problem-card {
             border-left: 4px solid #0969da;
         }
         
-        .modal-commit-card {
-            border-left: 4px solid #8b5cf6;
+        .modal-backport-card {
+            border-left: 4px solid #28a745;
         }
         
-        .modal-commit-card .commit-message-content {
+        .modal-concerns-card {
+            border-left: 4px solid #ffc107;
+        }
+        
+        .modal-solution-card {
+            border-left: 4px solid #6f42c1;
+        }
+        
+        .modal-commit-card {
+            border-left: 4px solid #fd7e14;
+        }
+        
+        .modal-commit-card .commit-message-text {
+            font-family: 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace;
             font-size: 1rem;
             line-height: 1.7;
+            white-space: pre-wrap;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
             padding: 24px;
             min-height: 200px;
+            color: #334155;
+        }
+        
+        .modal-section {
+            margin-bottom: 20px;
+        }
+        
+        .modal-section h4 {
+            margin: 0 0 8px 0;
+            color: #24292f;
+            font-size: 0.95rem;
+            font-weight: 600;
+        }
+        
+        .modal-section p {
+            margin: 0 0 8px 0;
+            line-height: 1.5;
+            color: #656d76;
+        }
+        
+        .modal-section ul {
+            margin: 0 0 8px 0;
+            padding-left: 20px;
+        }
+        
+        .modal-section li {
+            margin: 4px 0;
+            line-height: 1.4;
+            color: #656d76;
         }
         
         /* Responsive modal */
         @media (max-width: 1024px) {
-            .modal-top-row {
+            .modal-top-row, .modal-middle-row {
                 grid-template-columns: 1fr;
                 gap: 20px;
             }
@@ -2372,29 +2707,34 @@ class LowHangingFruitReportGenerator:
             const prCard = document.querySelector(`[data-pr-number="${prNumber}"]`);
             const prTitle = prCard ? prCard.querySelector('.pr-title a').textContent : `PR #${prNumber}`;
             
-            // Get assessment content from hidden data
-            const riskContent = assessmentData.querySelector('.risk-assessment-card .assessment-content');
-            const backportContent = assessmentData.querySelector('.backport-assessment-card .assessment-content');
-            const commitContent = assessmentData.querySelector('.commit-message-card .assessment-content');
-            
             // Update modal title
             document.getElementById('modal-pr-title').textContent = prTitle;
             
+            // Get assessment content from hidden data sections
+            const problemData = assessmentData.querySelector('.problem-analysis-data');
+            const backportData = assessmentData.querySelector('.backport-assessment-data');
+            const concernsData = assessmentData.querySelector('.technical-concerns-data');
+            const solutionData = assessmentData.querySelector('.solution-quality-data');
+            const commitData = assessmentData.querySelector('.commit-message-data');
+            
             // Populate modal content
-            if (riskContent) {
-                document.getElementById('modal-risk-content').innerHTML = riskContent.innerHTML;
+            if (problemData) {
+                document.getElementById('modal-problem-content').innerHTML = problemData.innerHTML;
             }
-            if (backportContent) {
-                document.getElementById('modal-backport-content').innerHTML = backportContent.innerHTML;
+            if (backportData) {
+                document.getElementById('modal-backport-content').innerHTML = backportData.innerHTML;
             }
-            if (commitContent) {
-                const modalCommitContent = document.getElementById('modal-commit-content');
-                modalCommitContent.innerHTML = commitContent.innerHTML;
-                
-                // Update copy button for modal context
-                const copyButton = modalCommitContent.querySelector('.copy-button');
-                if (copyButton) {
-                    copyButton.setAttribute('onclick', `copyCommitMessage(${prNumber})`);
+            if (concernsData) {
+                document.getElementById('modal-concerns-content').innerHTML = concernsData.innerHTML;
+            }
+            if (solutionData) {
+                document.getElementById('modal-solution-content').innerHTML = solutionData.innerHTML;
+            }
+            if (commitData) {
+                const commitText = commitData.querySelector('.commit-message-text');
+                if (commitText) {
+                    document.getElementById('modal-commit-content').innerHTML = 
+                        `<div class="commit-message-text">${commitText.textContent}</div>`;
                 }
             }
             

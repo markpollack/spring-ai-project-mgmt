@@ -46,6 +46,7 @@ pr-review/logs/
 pr-review/context/pr-*/ai-risk-assessment.json
 pr-review/context/pr-*/ai-conversation-analysis.json
 pr-review/context/pr-*/solution-assessment.json
+pr-review/runs/
 
 # PR Review workflow - persistent state files
 pr-review/state/pr-branch-mapping.json
