@@ -1,0 +1,15 @@
+# Release automation generated files and directories
+
+# State files (temporary release state)
+state/
+
+# Build and deployment logs  
+logs/
+
+# Generated workspace directories
+spring-ai-release/
+start-spring-io/
+spring-website-content/
+
+# Temporary test directories
+/tmp/
