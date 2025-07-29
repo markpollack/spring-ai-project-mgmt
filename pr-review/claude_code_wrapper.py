@@ -17,23 +17,45 @@ from animated_progress import AnimatedProgress
 class ClaudeCodeWrapper:
     """Robust wrapper for Claude Code CLI interactions"""
     
-    def __init__(self, claude_binary_path: str = '/home/mark/.nvm/versions/node/v22.15.0/bin/claude'):
-        self.claude_binary_path = claude_binary_path
+    def __init__(self, claude_binary_path: str = None):
+        if claude_binary_path is None:
+            # Try to find Claude Code in PATH
+            try:
+                result = subprocess.run(['which', 'claude'], capture_output=True, text=True, check=True)
+                self.claude_binary_path = result.stdout.strip()
+            except subprocess.CalledProcessError:
+                # Fallback to hardcoded path
+                self.claude_binary_path = '/home/mark/.nvm/versions/node/v22.15.0/bin/claude'
+        else:
+            self.claude_binary_path = claude_binary_path
     
     def is_available(self) -> bool:
         """Check if Claude Code is available"""
         try:
-            subprocess.run([self.claude_binary_path, '--version'], 
-                         capture_output=True, check=True, timeout=10)
+            # Use 'claude' command directly and set working directory to avoid yoga.wasm issues
+            result = subprocess.run(['claude', '--version'], 
+                         capture_output=True, check=True, timeout=10,
+                         cwd='/home/mark/.nvm/versions/node/v22.15.0/lib/node_modules/@anthropic-ai/claude-code')
             return True
-        except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired):
+        except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired) as e:
+            # Debug: print the actual exception for troubleshooting
+            print(f"DEBUG: Claude Code availability check failed: {type(e).__name__}: {e}")
+            if hasattr(e, 'stdout') and e.stdout:
+                print(f"DEBUG: stdout: {e.stdout}")
+            if hasattr(e, 'stderr') and e.stderr:
+                print(f"DEBUG: stderr: {e.stderr}")
+            return False
+        except Exception as e:
+            # Catch any other unexpected exceptions
+            print(f"DEBUG: Unexpected exception in is_available(): {type(e).__name__}: {e}")
             return False
     
     def get_version(self) -> Optional[str]:
         """Get Claude Code version"""
         try:
-            result = subprocess.run([self.claude_binary_path, '--version'], 
-                                  capture_output=True, text=True, check=True, timeout=10)
+            result = subprocess.run(['claude', '--version'], 
+                                  capture_output=True, text=True, check=True, timeout=10,
+                                  cwd='/home/mark/.nvm/versions/node/v22.15.0/lib/node_modules/@anthropic-ai/claude-code')
             return result.stdout.strip()
         except Exception:
             return None
@@ -72,7 +94,7 @@ class ClaudeCodeWrapper:
         
         try:
             # Build command with optional JSON output format and skip permissions
-            cmd = [self.claude_binary_path, '-p', '--dangerously-skip-permissions', '--verbose']
+            cmd = ['claude', '-p', '--dangerously-skip-permissions', '--verbose']
             if use_json_output:
                 cmd.extend(['--output-format', 'json'])
             
@@ -124,7 +146,8 @@ class ClaudeCodeWrapper:
                         cmd,
                         stdout=subprocess.PIPE,
                         stderr=subprocess.PIPE,
-                        text=True
+                        text=True,
+                        cwd='/home/mark/.nvm/versions/node/v22.15.0/lib/node_modules/@anthropic-ai/claude-code'
                     )
                     
                     # Wait for completion with timeout
