@@ -301,6 +301,196 @@ class ClaudeCodeWrapper:
                 'response': None
             }
     
+    def extract_json_from_response(self, text_content: str) -> Optional[Dict[str, Any]]:
+        """
+        Extract JSON from Claude Code response text using multiple fallback strategies.
+        
+        This centralizes all JSON extraction logic that was previously duplicated
+        across backport_assessor.py, solution_assessor.py, ai_conversation_analyzer.py, etc.
+        
+        Args:
+            text_content: Raw text content from Claude Code response
+            
+        Returns:
+            Parsed JSON dict if successful, None if extraction fails
+        """
+        import re
+        import json
+        import logging
+        
+        logger = logging.getLogger(__name__)
+        
+        if not text_content:
+            logger.warning("🔍 extract_json_from_response: Empty text content provided")
+            return None
+        
+        logger.info(f"🔍 Extracting JSON from response ({len(text_content)} chars)")
+        
+        # Strategy 1: Try to extract JSON from markdown code block
+        try:
+            json_pattern = r'```json\s*\n(.*?)\n```'
+            json_match = re.search(json_pattern, text_content, re.DOTALL)
+            
+            if json_match:
+                json_str = json_match.group(1).strip()
+                logger.info(f"🔍 Found JSON in markdown code block ({len(json_str)} chars)")
+                
+                try:
+                    parsed_json = json.loads(json_str)
+                    logger.info("✅ Successfully parsed JSON from markdown code block")
+                    return parsed_json
+                except json.JSONDecodeError as e:
+                    logger.warning(f"⚠️  JSON code block parse error: {e}")
+                    # Continue to next strategy
+        except Exception as e:
+            logger.warning(f"⚠️  Markdown code block extraction failed: {e}")
+        
+        # Strategy 2: Try direct JSON parsing (look for { ... } blocks)
+        try:
+            logger.info("🔍 Trying direct JSON parsing from response...")
+            lines = text_content.split('\n')
+            json_lines = []
+            in_json = False
+            brace_count = 0
+            
+            for line in lines:
+                line_stripped = line.strip()
+                
+                # Start JSON block detection
+                if line_stripped.startswith('{') and not in_json:
+                    in_json = True
+                    brace_count = 0
+                    json_lines = [line]  # Reset and start fresh
+                elif in_json:
+                    json_lines.append(line)
+                
+                # Count braces to handle nested objects
+                if in_json:
+                    brace_count += line.count('{') - line.count('}')
+                    
+                    # End of JSON block
+                    if brace_count == 0 and line_stripped.endswith('}'):
+                        break
+            
+            if json_lines and in_json:
+                json_str = '\n'.join(json_lines).strip()
+                logger.info(f"🔍 Found direct JSON block ({len(json_str)} chars)")
+                
+                try:
+                    parsed_json = json.loads(json_str)
+                    logger.info("✅ Successfully parsed JSON from direct parsing")
+                    return parsed_json
+                except json.JSONDecodeError as e:
+                    logger.warning(f"⚠️  Direct JSON parse error: {e}")
+                    logger.warning(f"⚠️  Problematic JSON preview: {json_str[:200]}...")
+                    # Continue to next strategy
+        except Exception as e:
+            logger.warning(f"⚠️  Direct JSON parsing failed: {e}")
+        
+        # Strategy 3: Try to find JSON using simple bracket matching
+        try:
+            logger.info("🔍 Trying bracket-based JSON extraction...")
+            
+            # Find first { and last }
+            first_brace = text_content.find('{')
+            last_brace = text_content.rfind('}')
+            
+            if first_brace != -1 and last_brace != -1 and last_brace > first_brace:
+                json_str = text_content[first_brace:last_brace+1].strip()
+                logger.info(f"🔍 Found bracket-based JSON ({len(json_str)} chars)")
+                
+                try:
+                    parsed_json = json.loads(json_str)
+                    logger.info("✅ Successfully parsed JSON using bracket matching")
+                    return parsed_json
+                except json.JSONDecodeError as e:
+                    logger.warning(f"⚠️  Bracket-based JSON parse error: {e}")
+        except Exception as e:
+            logger.warning(f"⚠️  Bracket-based JSON extraction failed: {e}")
+        
+        # All strategies failed
+        logger.error("❌ All JSON extraction strategies failed")
+        logger.error(f"❌ Text preview: {text_content[:500]}...")
+        return None
+    
+    def analyze_from_file_with_json(self, prompt_file_path: str, output_file_path: Optional[str] = None,
+                                   timeout: int = 300, show_progress: bool = True) -> Dict[str, Any]:
+        """
+        Analyze from file and automatically extract JSON from the response.
+        
+        This is a convenience method that combines analyze_from_file() with JSON extraction.
+        
+        Args:
+            prompt_file_path: Path to the prompt file
+            output_file_path: Optional path to save the response
+            timeout: Timeout in seconds
+            show_progress: Show animated progress
+            
+        Returns:
+            Dict with keys: success, response (raw text), json_data (parsed), error, etc.
+        """
+        # Get raw response using JSON output mode
+        result = self.analyze_from_file(
+            prompt_file_path=prompt_file_path,
+            output_file_path=output_file_path,
+            timeout=timeout,
+            use_json_output=True,  # Force JSON mode for better parsing
+            show_progress=show_progress
+        )
+        
+        # If the call failed, return as-is
+        if not result.get('success'):
+            return result
+        
+        # Extract JSON from the response
+        raw_response = result.get('response', '')
+        json_data = self.extract_json_from_response(raw_response)
+        
+        # Add JSON data to the result
+        result['json_data'] = json_data
+        result['json_extraction_success'] = json_data is not None
+        
+        return result
+    
+    def analyze_from_text_with_json(self, prompt_text: str, output_file_path: Optional[str] = None,
+                                   timeout: int = 300, show_progress: bool = True) -> Dict[str, Any]:
+        """
+        Analyze from text and automatically extract JSON from the response.
+        
+        This is a convenience method that combines analyze_from_text() with JSON extraction.
+        
+        Args:
+            prompt_text: The prompt text to analyze
+            output_file_path: Optional path to save the response
+            timeout: Timeout in seconds
+            show_progress: Show animated progress
+            
+        Returns:
+            Dict with keys: success, response (raw text), json_data (parsed), error, etc.
+        """
+        # Get raw response using JSON output mode
+        result = self.analyze_from_text(
+            prompt_text=prompt_text,
+            output_file_path=output_file_path,
+            timeout=timeout,
+            use_json_output=True,  # Force JSON mode for better parsing
+            show_progress=show_progress
+        )
+        
+        # If the call failed, return as-is
+        if not result.get('success'):
+            return result
+        
+        # Extract JSON from the response
+        raw_response = result.get('response', '')
+        json_data = self.extract_json_from_response(raw_response)
+        
+        # Add JSON data to the result
+        result['json_data'] = json_data
+        result['json_extraction_success'] = json_data is not None
+        
+        return result
+    
     def analyze_from_text(self, prompt_text: str, output_file_path: Optional[str] = None,
                          timeout: int = 300, use_json_output: bool = True, show_progress: bool = True) -> Dict[str, Any]:
         """

@@ -351,8 +351,8 @@ class AIPoweredSolutionAssessor:
         
         return '\n'.join(details)
     
-    def _execute_claude_assessment(self, prompt: str) -> Optional[str]:
-        """Execute assessment using Claude Code"""
+    def _execute_claude_assessment(self, prompt: str) -> Optional[Dict[str, Any]]:
+        """Execute assessment using Claude Code with centralized JSON extraction"""
         try:
             Logger.info("🤖 Running Claude Code solution assessment...")
             
@@ -371,16 +371,34 @@ class AIPoweredSolutionAssessor:
                 f.write(prompt)
             Logger.info(f"🔍 Saved prompt to: {debug_prompt_file}")
             
-            # Use wrapper to analyze from file without JSON output (expecting markdown with JSON blocks)
+            # Use centralized JSON extraction from ClaudeCodeWrapper
             debug_response_file = logs_dir / "claude-response-solution-assessor.txt"
-            result = claude.analyze_from_file(str(debug_prompt_file), str(debug_response_file), timeout=300, use_json_output=False, show_progress=True)
+            result = claude.analyze_from_file_with_json(
+                str(debug_prompt_file), 
+                str(debug_response_file), 
+                timeout=300, 
+                show_progress=True
+            )
             
-            if result['success']:
+            if result['success'] and result['response']:
                 Logger.info(f"🔍 Claude Code stdout length: {len(result['response'])} chars")
-                return result['response']
+                
+                # Log JSON extraction status
+                if result.get('json_extraction_success'):
+                    Logger.info("✅ JSON extraction successful using centralized method")
+                else:
+                    Logger.warn("⚠️  JSON extraction failed, will use fallback parsing")
+                
+                return {
+                    'response': result['response'],
+                    'json_data': result.get('json_data'),  # Pre-extracted JSON
+                    'json_extraction_success': result.get('json_extraction_success', False),
+                    'response_file': str(debug_response_file),
+                    'success': True
+                }
             else:
-                Logger.error(f"❌ Claude Code assessment failed: {result['error']}")
-                if result['stderr']:
+                Logger.error(f"❌ Claude Code assessment failed: {result.get('error', 'Unknown error')}")
+                if result.get('stderr'):
                     Logger.error(f"❌ Claude Code stderr: {result['stderr']}")
                 return None
                 
@@ -388,44 +406,64 @@ class AIPoweredSolutionAssessor:
             Logger.error(f"❌ Failed to execute Claude Code assessment: {e}")
             return None
     
-    def _parse_assessment_results(self, ai_output: str, context_data: Dict[str, Any]) -> SolutionAssessment:
-        """Parse AI assessment results into structured format"""
-        try:
-            # Parse the analysis JSON from Claude's markdown response
-            import re
-            json_pattern = r'```json\s*\n(.*?)\n```'
-            json_match = re.search(json_pattern, ai_output, re.DOTALL)
-            
-            if json_match:
-                json_str = json_match.group(1)
-                ai_data = json.loads(json_str)
-            else:
-                # Try to find JSON without code blocks
-                lines = ai_output.split('\n')
-                json_lines = []
-                in_json = False
-                for line in lines:
-                    if line.strip().startswith('{'):
-                        in_json = True
-                    if in_json:
-                        json_lines.append(line)
-                    if line.strip().endswith('}') and in_json:
-                        break
-                
-                if json_lines:
-                    json_str = '\n'.join(json_lines)
-                    ai_data = json.loads(json_str)
-                else:
-                    raise ValueError("No analysis JSON found in Claude response")
+    def _parse_assessment_results(self, ai_result: Dict[str, Any], context_data: Dict[str, Any]) -> SolutionAssessment:
+        """Parse AI assessment results into structured format using centralized JSON extraction"""
+        Logger.info("🔍 Parsing solution assessment results...")
         
-        except (json.JSONDecodeError, ValueError) as e:
-            Logger.warn(f"⚠️  Could not parse AI assessment JSON: {e}")
-            # Log the failure for batch processing tracking
-            self._log_ai_failure(pr_number, "solution_assessment", str(e), response)
-            # Fallback to default values
+        response_text = ai_result.get('response', '')
+        if not response_text:
+            Logger.error("❌ Empty AI response")
+            # Log the failure and use fallback
+            pr_data = context_data.get('pr_data', {})
+            pr_number = pr_data.get('number', 'unknown')
+            self._log_ai_failure(pr_number, "solution_assessment", "Empty response", "")
             ai_data = self._create_fallback_assessment()
+        else:
+            try:
+                # Try to use pre-extracted JSON data first (from centralized extraction)
+                ai_data = ai_result.get('json_data')
+                
+                if ai_data and ai_result.get('json_extraction_success'):
+                    Logger.info("✅ Using pre-extracted JSON data from ClaudeCodeWrapper")
+                else:
+                    # Fallback: Try centralized JSON extraction as backup
+                    Logger.info("🔄 Pre-extracted JSON not available, using fallback extraction...")
+                    claude = ClaudeCodeWrapper()
+                    ai_data = claude.extract_json_from_response(response_text)
+                    
+                    if ai_data:
+                        Logger.info("✅ Fallback JSON extraction successful")
+                    else:
+                        # Final fallback to manual parsing (legacy format)
+                        Logger.info("🔄 JSON extraction failed, using manual parsing fallback")
+                        raise ValueError("Centralized JSON extraction failed")
+                
+                # Validate required fields
+                required_fields = ['scope_analysis', 'architecture_impact', 'implementation_quality', 
+                                 'breaking_changes_assessment', 'testing_adequacy', 'documentation_completeness',
+                                 'solution_fitness', 'risk_factors', 'code_quality_score', 'complexity_justification',
+                                 'final_complexity_score', 'recommendations']
+                
+                missing_fields = [field for field in required_fields if field not in ai_data]
+                if missing_fields:
+                    Logger.warn(f"⚠️  Missing fields in assessment: {missing_fields}")
+                
+                Logger.success(f"✅ Solution assessment parsing completed with {len(ai_data)} fields")
+            
+            except (json.JSONDecodeError, ValueError) as e:
+                Logger.warn(f"⚠️  Could not parse AI assessment JSON: {e}")
+                Logger.info(f"🔍 Response length: {len(response_text)} characters")
+                Logger.info(f"🔍 Response preview: {response_text[:500]}...")
+                
+                # Log the failure for batch processing tracking - get pr_number from context
+                pr_data = context_data.get('pr_data', {})
+                pr_number = pr_data.get('number', 'unknown')
+                self._log_ai_failure(pr_number, "solution_assessment", str(e), response_text)
+                
+                # Fallback to default values
+                ai_data = self._create_fallback_assessment()
         
-        # Create assessment object
+        # Create assessment object with validated data
         return SolutionAssessment(
             scope_analysis=ai_data.get('scope_analysis', 'Assessment unavailable'),
             architecture_impact=ai_data.get('architecture_impact', []),

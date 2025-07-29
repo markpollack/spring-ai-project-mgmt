@@ -64,35 +64,23 @@ Analyze test changes:
 
 ## Output Format
 
-Provide your assessment in this structured format:
+Provide your assessment in JSON format:
 
-**Backporting Decision:** [APPROVE/REJECT]
-
-## Classification
-
-- **Type:** [Bug Fix/Documentation/Feature/etc.]
-- **Scope:** [Brief description of what changed]
-
-## Analysis Summary
-
-- **Files Changed:** [Count and types of files]
-- **API Impact:** [None/Minor/Major - explain any public API changes]
-- **Dependencies:** [Any new or changed dependencies]
-- **Risk Level:** [Low/Medium/High - based on potential for breaking changes]
-
-## Key Findings
-
-- [Bullet point list of critical observations]
-- [Include specific examples of concerning changes if any]
-
-## Reasoning
-
-[2-3 sentences explaining the decision rationale]
-
-## Recommended Actions
-
-- **If REJECT:** [What would need to change for approval]
-- **If APPROVE:** [Any special considerations for backporting]
+```json
+{
+  "decision": "APPROVE or REJECT",
+  "classification": "Bug Fix or Documentation or Feature or Other",
+  "scope": "Brief description of what changed",
+  "api_impact": "None/Minor/Major - explain any public API changes",
+  "risk_level": "Low/Medium/High - based on potential for breaking changes",
+  "key_findings": [
+    "Critical observation 1",
+    "Critical observation 2"
+  ],
+  "reasoning": "2-3 sentences explaining the decision rationale",
+  "recommendations": "If REJECT: what would need to change. If APPROVE: special considerations for backporting"
+}
+```
 
 
 ## Special Considerations

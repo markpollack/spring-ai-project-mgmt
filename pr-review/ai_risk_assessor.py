@@ -743,22 +743,47 @@ class AIRiskAssessor:
                     Logger.error("❌ Claude Code is not available")
                     return None
                 
-                # Use wrapper to analyze from file
+                # Use centralized JSON extraction from ClaudeCodeWrapper
                 debug_response_file = logs_dir / "claude-response-risk-assessor.txt"
-                result = claude.analyze_from_file(str(prompt_file_path), str(debug_response_file), timeout=300, use_json_output=True, show_progress=True)
+                result = claude.analyze_from_file_with_json(
+                    str(prompt_file_path), 
+                    str(debug_response_file), 
+                    timeout=300, 
+                    show_progress=True
+                )
                 
                 # Debug logging to trace the 'list' object error
                 Logger.info(f"🔍 Claude wrapper result type: {type(result)}")
                 Logger.info(f"🔍 Claude wrapper result keys: {result.keys() if isinstance(result, dict) else 'Not a dict!'}")
                 
-                if result['success'] and result['response'].strip():
+                if result['success'] and result['response']:
                     response_content = result['response'].strip()
                     response_size_kb = len(response_content) / 1024
                     Logger.success(f"✅ Claude Code returned response ({response_size_kb:.1f}KB)")
                     
+                    # Log JSON extraction status
+                    if result.get('json_extraction_success'):
+                        Logger.info("✅ JSON extraction successful using centralized method")
+                    else:
+                        Logger.warn("⚠️  JSON extraction failed, will use fallback parsing")
+                    
                     try:
-                        # Parse as JSON - first try direct parsing, then extract if needed
-                        assessment_data = self._extract_json_from_response(response_content)
+                        # Try to use pre-extracted JSON data first (from centralized extraction)
+                        assessment_data = result.get('json_data')
+                        
+                        if assessment_data and result.get('json_extraction_success'):
+                            Logger.info("✅ Using pre-extracted JSON data from ClaudeCodeWrapper")
+                        else:
+                            # Fallback: Try centralized JSON extraction as backup
+                            Logger.info("🔄 Pre-extracted JSON not available, using fallback extraction...")
+                            assessment_data = claude.extract_json_from_response(response_content)
+                            
+                            if assessment_data:
+                                Logger.info("✅ Fallback JSON extraction successful")
+                            else:
+                                # Final fallback to legacy method
+                                Logger.info("🔄 Centralized extraction failed, using legacy method...")
+                                assessment_data = self._extract_json_from_response(response_content)
                         
                         # Validate required keys exist
                         required_keys = ['critical_issues', 'important_issues', 'risk_factors', 'positive_findings', 'overall_risk_level', 'risk_summary']
@@ -789,7 +814,7 @@ class AIRiskAssessor:
                         Logger.success("✅ AI risk assessment completed successfully")
                         return result_obj
                             
-                    except json.JSONDecodeError as e:
+                    except (json.JSONDecodeError, ValueError) as e:
                         Logger.error(f"❌ Failed to parse AI response as JSON - EXECUTION STOPPED: {e}")
                         Logger.error(f"Response content preview: {response_content[:500]}...")
                         return None

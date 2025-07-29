@@ -1,0 +1,44 @@
+# TODO Items for Spring AI PR Review System
+
+## High Priority
+
+### Fix CLAUDE.md Improvement Process
+- **Issue**: The improve_claude_md.py script has a content extraction bug that truncates the output file
+- **Impact**: CLAUDE.md file was corrupted during improvement, lost most content
+- **Root Cause**: Script extraction logic fails when Claude doesn't provide content in expected markdown code block format
+- **Next Steps**: 
+  - Debug the _extract_improved_content() method in improve_claude_md.py
+  - Improve prompt to ensure Claude always provides complete file content
+  - Add validation to prevent file corruption
+  - Test with multiple CLAUDE.md files to ensure reliability
+
+### Fix README.md Batch Processing Documentation
+- **Issue**: README shows incorrect batch_pr_workflow.py usage with wrong flags
+- **Current (Wrong)**: `python batch_pr_workflow.py --cleanup --prs 3386 3387 3388`
+- **Should Be**: `python batch_pr_workflow.py 3386 3387 3388`
+- **Action Needed**: Update README.md Batch Processing section with correct examples from `--help` output
+- **Include Examples**:
+  - Basic usage: `python batch_pr_workflow.py 3920 3919 3921`
+  - With browser: `python batch_pr_workflow.py --open-browser 3920 3919 3921`
+  - Force reprocess: `python batch_pr_workflow.py --force-reprocess 3920 3919 3921`
+  - Dry run: `python batch_pr_workflow.py --dry-run 3920 3919 3921`
+
+## Medium Priority
+
+### Test Backport Assessment Functionality
+- **Goal**: Test backport assessment and other AI functionality across multiple PRs
+- **PRs to Test**: 3920 3919 3921 3922 3927 3929
+- **Command**: `python batch_pr_workflow.py 3920 3919 3921 3922 3927 3929`
+- **Focus Areas**: Verify backport classifications are accurate, especially after PR 3920 fix
+
+## Low Priority
+
+### Create Reusable CLAUDE.md Improvement Workflow
+- **Goal**: Make the CLAUDE.md improvement process more reliable and reusable
+- **Components**: improve_claude_md.py script + claude-md-improvement-prompt.md template
+- **Status**: Basic framework exists but needs content extraction bug fixes
+- **Future**: Could be expanded to work with other projects beyond Spring AI
+
+---
+Generated: 2025-07-29
+Last Updated: 2025-07-29

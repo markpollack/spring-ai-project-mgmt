@@ -252,8 +252,8 @@ class AIPoweredConversationAnalyzer:
         scored_entries.sort(key=lambda x: x[0], reverse=True)
         return [entry for score, entry in scored_entries[:8]]
     
-    def _execute_claude_analysis(self, prompt: str) -> Optional[str]:
-        """Execute analysis using Claude Code via robust wrapper"""
+    def _execute_claude_analysis(self, prompt: str) -> Optional[Dict[str, Any]]:
+        """Execute analysis using Claude Code with centralized JSON extraction"""
         try:
             Logger.info("🤖 Running Claude Code analysis...")
             
@@ -279,22 +279,39 @@ class AIPoweredConversationAnalyzer:
                 f.write(prompt)
             Logger.info(f"🔍 Saved prompt to: {debug_prompt_file}")
             
-            # Use the robust wrapper to analyze from file (expecting markdown with JSON blocks)
+            # Use centralized JSON extraction from ClaudeCodeWrapper
             debug_response_file = logs_dir / "claude-response-ai-analyzer.txt"
-            result = claude.analyze_from_file(str(debug_prompt_file), str(debug_response_file), timeout=300, use_json_output=False, show_progress=True)
+            result = claude.analyze_from_file_with_json(
+                str(debug_prompt_file), 
+                str(debug_response_file), 
+                timeout=300, 
+                show_progress=True
+            )
             
-            if result['success']:
+            if result['success'] and result['response']:
                 Logger.info(f"🔍 Claude Code stdout length: {len(result['response'])} chars")
                 Logger.info(f"🔍 Claude Code stderr: {result['stderr'][:200] if result['stderr'] else 'None'}")
                 Logger.info(f"🔍 Saved Claude Code response to: {debug_response_file}")
                 
+                # Log JSON extraction status
+                if result.get('json_extraction_success'):
+                    Logger.info("✅ JSON extraction successful using centralized method")
+                else:
+                    Logger.warn("⚠️  JSON extraction failed, will use fallback parsing")
+                
                 if len(result['response']) <= 10:
                     Logger.info(f"🔍 Claude Code stdout content (short): '{result['response']}'")
                 
-                return result['response']
+                return {
+                    'response': result['response'],
+                    'json_data': result.get('json_data'),  # Pre-extracted JSON
+                    'json_extraction_success': result.get('json_extraction_success', False),
+                    'response_file': str(debug_response_file),
+                    'success': True
+                }
             else:
-                Logger.error(f"❌ Claude Code analysis failed: {result['error']}")
-                if result['stderr']:
+                Logger.error(f"❌ Claude Code analysis failed: {result.get('error', 'Unknown error')}")
+                if result.get('stderr'):
                     Logger.error(f"❌ Claude Code stderr: {result['stderr']}")
                 return None
                 
@@ -302,41 +319,38 @@ class AIPoweredConversationAnalyzer:
             Logger.error(f"❌ Failed to execute Claude Code: {e}")
             return None
     
-    def _parse_ai_results(self, ai_output: str, context_data: Dict[str, Any]) -> AIConversationAnalysis:
-        """Parse AI analysis results into structured format"""
-        try:
-            # Parse the analysis JSON from Claude's markdown response
-            import re
-            json_pattern = r'```json\s*\n(.*?)\n```'
-            json_match = re.search(json_pattern, ai_output, re.DOTALL)
-            
-            if json_match:
-                json_str = json_match.group(1)
-                ai_data = json.loads(json_str)
-            else:
-                # Try to find JSON without code blocks
-                lines = ai_output.split('\n')
-                json_lines = []
-                in_json = False
-                for line in lines:
-                    if line.strip().startswith('{'):
-                        in_json = True
-                    if in_json:
-                        json_lines.append(line)
-                    if line.strip().endswith('}') and in_json:
-                        break
-                
-                if json_lines:
-                    json_str = '\n'.join(json_lines)
-                    ai_data = json.loads(json_str)
-                else:
-                    raise ValueError("No analysis JSON found in Claude response")
+    def _parse_ai_results(self, ai_result: Dict[str, Any], context_data: Dict[str, Any]) -> AIConversationAnalysis:
+        """Parse AI analysis results into structured format using centralized JSON extraction"""
         
-        except (json.JSONDecodeError, ValueError) as e:
-            Logger.warn(f"⚠️  Could not parse Claude Code JSON output: {e}")
-            Logger.info(f"🔍 Raw output for debugging: {ai_output[:500]}...")
-            # Fallback to extracting information from text
-            ai_data = self._extract_from_text(ai_output)
+        response_text = ai_result.get('response', '')
+        if not response_text:
+            Logger.error("❌ Empty AI response")
+            ai_data = self._extract_from_text("")
+        else:
+            try:
+                # Try to use pre-extracted JSON data first (from centralized extraction)
+                ai_data = ai_result.get('json_data')
+                
+                if ai_data and ai_result.get('json_extraction_success'):
+                    Logger.info("✅ Using pre-extracted JSON data from ClaudeCodeWrapper")
+                else:
+                    # Fallback: Try centralized JSON extraction as backup
+                    Logger.info("🔄 Pre-extracted JSON not available, using fallback extraction...")
+                    claude = ClaudeCodeWrapper()
+                    ai_data = claude.extract_json_from_response(response_text)
+                    
+                    if ai_data:
+                        Logger.info("✅ Fallback JSON extraction successful")
+                    else:
+                        # Final fallback to text extraction
+                        Logger.info("🔄 JSON extraction failed, using text extraction fallback")
+                        raise ValueError("Centralized JSON extraction failed")
+            
+            except (json.JSONDecodeError, ValueError) as e:
+                Logger.warn(f"⚠️  Could not parse Claude Code JSON output: {e}")
+                Logger.info(f"🔍 Raw output for debugging: {response_text[:500]}...")
+                # Fallback to extracting information from text
+                ai_data = self._extract_from_text(response_text)
         
         # Create analysis object with defaults
         return AIConversationAnalysis(

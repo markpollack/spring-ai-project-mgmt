@@ -372,12 +372,11 @@ Please provide your assessment following the exact format specified in the templ
         output_file = self.logs_dir / f"backport-assessment-response-{pr_number}-{timestamp}.txt"
         
         try:
-            # Use ClaudeCodeWrapper to analyze the prompt
-            result = self.claude.analyze_from_file(
+            # Use ClaudeCodeWrapper with centralized JSON extraction
+            result = self.claude.analyze_from_file_with_json(
                 str(prompt_file), 
                 str(output_file), 
                 timeout=300,  # 5 minutes for thorough analysis
-                use_json_output=False,  # We'll parse the structured response ourselves
                 show_progress=True  # Show progress animation during analysis
             )
             
@@ -385,8 +384,16 @@ Please provide your assessment following the exact format specified in the templ
                 Logger.success(f"✅ AI analysis completed for PR #{pr_number}")
                 Logger.info(f"📄 Response saved to: {output_file}")
                 
+                # Log JSON extraction status
+                if result.get('json_extraction_success'):
+                    Logger.info("✅ JSON extraction successful using centralized method")
+                else:
+                    Logger.warn("⚠️  JSON extraction failed, will use fallback parsing")
+                
                 return {
                     'response': result['response'],
+                    'json_data': result.get('json_data'),  # Pre-extracted JSON
+                    'json_extraction_success': result.get('json_extraction_success', False),
                     'response_file': str(output_file),
                     'success': True
                 }
@@ -401,7 +408,7 @@ Please provide your assessment following the exact format specified in the templ
             return None
     
     def _parse_assessment_result(self, pr_number: str, ai_result: Dict[str, Any], context_data: Dict[str, Any]) -> Optional[BackportAssessmentResult]:
-        """Parse AI assessment response into structured result"""
+        """Parse AI assessment response into structured result using centralized JSON extraction"""
         
         response_text = ai_result.get('response', '')
         if not response_text:
@@ -409,15 +416,45 @@ Please provide your assessment following the exact format specified in the templ
             return None
         
         try:
-            # Parse structured sections from the AI response
-            decision = self._extract_section(response_text, "Backporting Decision")
-            classification = self._extract_section(response_text, "Type")
-            scope = self._extract_section(response_text, "Scope")
-            api_impact = self._extract_section(response_text, "API Impact")
-            risk_level = self._extract_section(response_text, "Risk Level")
-            key_findings = self._extract_list_section(response_text, "Key Findings")
-            reasoning = self._extract_section(response_text, "Reasoning")
-            recommendations = self._extract_section(response_text, "Recommended Actions")
+            # Try to use pre-extracted JSON data first (from centralized extraction)
+            ai_data = ai_result.get('json_data')
+            
+            if ai_data and ai_result.get('json_extraction_success'):
+                Logger.info("✅ Using pre-extracted JSON data from ClaudeCodeWrapper")
+                decision = ai_data.get("decision", "").upper()
+                classification = ai_data.get("classification", "")
+                scope = ai_data.get("scope", "")
+                api_impact = ai_data.get("api_impact", "")
+                risk_level = ai_data.get("risk_level", "")
+                key_findings = ai_data.get("key_findings", [])
+                reasoning = ai_data.get("reasoning", "")
+                recommendations = ai_data.get("recommendations", "")
+            else:
+                # Fallback: Try centralized JSON extraction as backup
+                Logger.info("🔄 Pre-extracted JSON not available, using fallback extraction...")
+                ai_data = self.claude.extract_json_from_response(response_text)
+                
+                if ai_data:
+                    Logger.info("✅ Fallback JSON extraction successful")
+                    decision = ai_data.get("decision", "").upper()
+                    classification = ai_data.get("classification", "")
+                    scope = ai_data.get("scope", "")
+                    api_impact = ai_data.get("api_impact", "")
+                    risk_level = ai_data.get("risk_level", "")
+                    key_findings = ai_data.get("key_findings", [])
+                    reasoning = ai_data.get("reasoning", "")
+                    recommendations = ai_data.get("recommendations", "")
+                else:
+                    # Final fallback to markdown parsing (legacy format)
+                    Logger.info("🔄 JSON extraction failed, falling back to markdown parsing")
+                    decision = self._extract_section(response_text, "Backporting Decision")
+                    classification = self._extract_section(response_text, "Type")
+                    scope = self._extract_section(response_text, "Scope")
+                    api_impact = self._extract_section(response_text, "API Impact")
+                    risk_level = self._extract_section(response_text, "Risk Level")
+                    key_findings = self._extract_list_section(response_text, "Key Findings")
+                    reasoning = self._extract_section(response_text, "Reasoning")
+                    recommendations = self._extract_section(response_text, "Recommended Actions")
             
             
             # Extract file count from context
