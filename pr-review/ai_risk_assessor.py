@@ -745,7 +745,7 @@ class AIRiskAssessor:
                 
                 # Use wrapper to analyze from file
                 debug_response_file = logs_dir / "claude-response-risk-assessor.txt"
-                result = claude.analyze_from_file(str(prompt_file_path), str(debug_response_file), timeout=300, use_json_output=True)
+                result = claude.analyze_from_file(str(prompt_file_path), str(debug_response_file), timeout=300, use_json_output=True, show_progress=True)
                 
                 # Debug logging to trace the 'list' object error
                 Logger.info(f"🔍 Claude wrapper result type: {type(result)}")

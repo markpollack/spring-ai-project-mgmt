@@ -13,6 +13,7 @@ This directory contains a comprehensive AI-powered PR review automation system f
 - `commit_message_generator.py` - AI-powered comprehensive commit message generation
 - `pr_context_collector.py` - GitHub context and issue data collection
 - `claude_code_wrapper.py` - Robust utility class for Claude Code CLI integration
+- `animated_progress.py` - ASCII progress animation for long-running AI operations
 
 ## Supporting Subdirectories
 
@@ -110,10 +111,49 @@ from claude_code_wrapper import ClaudeCodeWrapper
 
 claude = ClaudeCodeWrapper()
 if claude.is_available():
-    result = claude.analyze_from_file(prompt_file, output_file, use_json_output=True)
+    result = claude.analyze_from_file(prompt_file, output_file, use_json_output=True, show_progress=True)
     if result['success']:
         response = result['response']
 ```
 
 This ensures consistent, reliable Claude Code integration across all system components.
+
+## Progress Animation System
+
+### Overview
+The system includes ASCII progress animations for long-running Claude Code operations (typically 13-15+ seconds). This provides visual feedback that the system is actively processing instead of appearing frozen.
+
+### Animation Features
+- **Professional Braille Spinner**: `⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏` (Unicode-based, works on most terminals)
+- **Real-time Duration**: Shows elapsed time: `⠋ 🧠 Claude Code analyzing... 7.3s`
+- **Thread-safe Implementation**: Non-blocking animation runs in background thread
+- **Clean Shutdown**: Animation stops cleanly when Claude Code operation completes
+- **Configurable**: Can be disabled with `show_progress=False` parameter
+
+### Where Animations Appear
+Progress animations are integrated into all major AI analysis operations:
+
+1. **AI Risk Assessment** (~15s) - Security and quality analysis
+2. **AI Conversation Analysis** (~15s) - PR discussion understanding  
+3. **Solution Assessment** (~15s) - Technical solution evaluation
+4. **Backport Assessment** (~15s) - Maintenance branch compatibility
+5. **Commit Message Generation** (~15s) - AI-powered commit messages
+
+### Usage Example
+```python
+from claude_code_wrapper import ClaudeCodeWrapper
+
+wrapper = ClaudeCodeWrapper()
+# Animation enabled by default
+result = wrapper.analyze_from_file("prompt.txt", show_progress=True)
+
+# Disable animation if needed
+result = wrapper.analyze_from_file("prompt.txt", show_progress=False)
+```
+
+### Implementation Details
+- **File**: `animated_progress.py` - Core animation system
+- **Integration**: All Claude Code wrapper calls include `show_progress=True` by default
+- **Subprocess Compatibility**: Enhanced report generator removes `capture_output=True` to show animations
+- **Fallback**: Gracefully handles terminals that don't support Unicode characters
 

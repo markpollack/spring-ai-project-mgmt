@@ -248,7 +248,7 @@ class EnhancedReportGenerator:
             
             result = subprocess.run([
                 "python3", str(assessor_script), pr_number
-            ], capture_output=True, text=True, timeout=300)
+            ], text=True, timeout=300)  # Removed capture_output to show progress animation
             
             if result.returncode == 0 and assessment_file.exists():
                 Logger.success("AI solution assessment completed")
@@ -285,7 +285,7 @@ class EnhancedReportGenerator:
             
             result = subprocess.run([
                 "python3", str(assessor_script), pr_number
-            ], capture_output=True, text=True, timeout=300)
+            ], text=True, timeout=300)  # Removed capture_output to show progress animation
             
             if result.returncode == 0 and assessment_file.exists():
                 Logger.success("AI backport assessment completed")

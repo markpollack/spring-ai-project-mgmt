@@ -185,7 +185,8 @@ Respond with ONLY the complete commit message text, exactly as it should appear 
             result = self.claude.analyze_from_file(
                 prompt_file_path=prompt_file,
                 output_file_path=str(self.logs_dir / f"claude-response-commit-message-{pr_number}.txt"),
-                use_json_output=False  # We want text output for commit messages
+                use_json_output=False,  # We want text output for commit messages
+                show_progress=True  # Show progress animation during generation
             )
             
             if result['success']:

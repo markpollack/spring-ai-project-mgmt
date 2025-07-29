@@ -377,7 +377,8 @@ Please provide your assessment following the exact format specified in the templ
                 str(prompt_file), 
                 str(output_file), 
                 timeout=300,  # 5 minutes for thorough analysis
-                use_json_output=False  # We'll parse the structured response ourselves
+                use_json_output=False,  # We'll parse the structured response ourselves
+                show_progress=True  # Show progress animation during analysis
             )
             
             if result['success'] and result['response']:

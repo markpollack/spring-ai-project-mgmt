@@ -9,8 +9,10 @@ error handling, file I/O, and debugging capabilities.
 import subprocess
 import os
 import tempfile
+import time
 from pathlib import Path
 from typing import Dict, Any, Optional
+from animated_progress import AnimatedProgress
 
 class ClaudeCodeWrapper:
     """Robust wrapper for Claude Code CLI interactions"""
@@ -37,7 +39,7 @@ class ClaudeCodeWrapper:
             return None
     
     def analyze_from_file(self, prompt_file_path: str, output_file_path: Optional[str] = None, 
-                         timeout: int = 300, use_json_output: bool = True) -> Dict[str, Any]:
+                         timeout: int = 300, use_json_output: bool = True, show_progress: bool = True) -> Dict[str, Any]:
         """
         Analyze using Claude Code by having it read the prompt file directly
         
@@ -46,6 +48,7 @@ class ClaudeCodeWrapper:
             output_file_path: Optional path to save the response
             timeout: Timeout in seconds (default 300 = 5 minutes)
             use_json_output: Use --output-format json for structured responses
+            show_progress: Show animated progress during execution (default True)
             
         Returns:
             Dict containing success status, response, error info, etc.
@@ -104,26 +107,42 @@ class ClaudeCodeWrapper:
             except Exception as e:
                 print(f"🔍 Could not get prompt size: {e}")
             
-            # Call Claude Code using subprocess.run
+            # Call Claude Code with optional progress animation
             try:
-                import time
                 start_time = time.time()
                 logger.info(f"🔍 Starting Claude Code execution...")
                 
-                result = subprocess.run(
-                    cmd,
-                    capture_output=True,
-                    text=True,
-                    timeout=timeout,
-                    check=True
-                )
+                # Start progress animation if requested
+                progress = None
+                if show_progress:
+                    progress = AnimatedProgress("🧠 Claude Code analyzing")
+                    progress.start()
+                
+                try:
+                    # Use Popen for non-blocking execution with progress
+                    process = subprocess.Popen(
+                        cmd,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        text=True
+                    )
+                    
+                    # Wait for completion with timeout
+                    stdout, stderr = process.communicate(timeout=timeout)
+                    returncode = process.returncode
+                    
+                finally:
+                    # Always stop progress animation
+                    if progress:
+                        progress.stop()
                 
                 end_time = time.time()
                 duration = end_time - start_time
                 logger.info(f"🔍 Claude Code completed in {duration:.1f} seconds")
-                stdout = result.stdout
-                stderr = result.stderr
-                returncode = result.returncode
+                
+                # Check if command succeeded
+                if returncode != 0:
+                    raise subprocess.CalledProcessError(returncode, cmd, stdout, stderr)
                 
             except subprocess.TimeoutExpired:
                 return {
@@ -260,7 +279,7 @@ class ClaudeCodeWrapper:
             }
     
     def analyze_from_text(self, prompt_text: str, output_file_path: Optional[str] = None,
-                         timeout: int = 300, use_json_output: bool = True) -> Dict[str, Any]:
+                         timeout: int = 300, use_json_output: bool = True, show_progress: bool = True) -> Dict[str, Any]:
         """
         Analyze using Claude Code with prompt text directly
         
@@ -269,6 +288,7 @@ class ClaudeCodeWrapper:
             output_file_path: Optional path to save the response
             timeout: Timeout in seconds (default 300 = 5 minutes)
             use_json_output: Use --output-format json for structured responses
+            show_progress: Show animated progress during execution (default True)
             
         Returns:
             Dict containing success status, response, error info, etc.
@@ -280,7 +300,7 @@ class ClaudeCodeWrapper:
         
         try:
             # Use the file-based analysis
-            result = self.analyze_from_file(temp_file_path, output_file_path, timeout, use_json_output)
+            result = self.analyze_from_file(temp_file_path, output_file_path, timeout, use_json_output, show_progress)
             return result
         finally:
             # Clean up temp file

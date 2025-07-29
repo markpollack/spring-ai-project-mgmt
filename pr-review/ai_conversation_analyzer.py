@@ -281,7 +281,7 @@ class AIPoweredConversationAnalyzer:
             
             # Use the robust wrapper to analyze from file (expecting markdown with JSON blocks)
             debug_response_file = logs_dir / "claude-response-ai-analyzer.txt"
-            result = claude.analyze_from_file(str(debug_prompt_file), str(debug_response_file), timeout=300, use_json_output=False)
+            result = claude.analyze_from_file(str(debug_prompt_file), str(debug_response_file), timeout=300, use_json_output=False, show_progress=True)
             
             if result['success']:
                 Logger.info(f"🔍 Claude Code stdout length: {len(result['response'])} chars")
