@@ -486,6 +486,17 @@ class LowHangingFruitReportGenerator:
         
         return f"{scope_html}{architecture_html}{implementation_html}{testing_html}{fitness_html}"
     
+    def _generate_backport_button(self, pr: 'PRSummary') -> str:
+        """Generate backport preparation button for approved PRs"""
+        if pr.backport_decision != 'APPROVE':
+            return ""  # Only show button for approved PRs
+        
+        return f"""
+                <button class="btn btn-backport" onclick="openBackportModal({pr.number})">
+                    🔄 Prepare Backport
+                </button>
+        """
+    
     def _load_commit_message(self, pr_number: str) -> str:
         """Load the AI-generated commit message for a PR"""
         # Check run-specific logs first, then fallback to main logs directory
@@ -900,6 +911,7 @@ class LowHangingFruitReportGenerator:
                 <button class="btn btn-details modal-details-btn" onclick="openAssessmentModal({pr.number})">
                     🔍 View Assessments
                 </button>
+                {self._generate_backport_button(pr)}
             </div>
             
             <!-- Hidden assessment data for modal population -->
@@ -1007,6 +1019,52 @@ class LowHangingFruitReportGenerator:
                                 </div>
                             </div>
                         </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Backport Command Modal -->
+        <div id="backport-modal" class="modal-overlay" style="display: none;">
+            <div class="modal-content backport-modal-content">
+                <div class="modal-header">
+                    <h2>🔄 Backport Command Ready</h2>
+                    <button class="modal-close" onclick="closeBackportModal()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="backport-info">
+                        <div class="branch-info">
+                            <strong>Branch:</strong> <span id="backport-branch"></span>
+                        </div>
+                        <div class="status-info">
+                            <strong>Status:</strong> <span class="status-approved">✅ APPROVED for backport</span>
+                        </div>
+                    </div>
+                    
+                    <div class="command-section">
+                        <h3>📋 Command to run (click to copy):</h3>
+                        <div class="command-box" id="backport-command" onclick="copyBackportCommand()">
+                            <code id="backport-command-text"></code>
+                        </div>
+                        <div class="copy-feedback" id="copy-feedback" style="display: none;">
+                            ✅ Copied to clipboard!
+                        </div>
+                    </div>
+                    
+                    <div class="safety-warnings">
+                        <div class="warning-item">
+                            <span class="warning-icon">⚠️</span>
+                            <span>Make sure you're in: <strong>spring-ai</strong> directory</span>
+                        </div>
+                        <div class="warning-item">
+                            <span class="warning-icon">⚠️</span>
+                            <span>Make sure you're on: <strong id="warning-branch"></strong> branch</span>
+                        </div>
+                    </div>
+                    
+                    <div class="modal-actions">
+                        <button class="btn btn-primary" onclick="copyBackportCommand()">📋 Copy Command</button>
+                        <button class="btn btn-secondary" onclick="closeBackportModal()">Close</button>
                     </div>
                 </div>
             </div>
@@ -1702,6 +1760,20 @@ class LowHangingFruitReportGenerator:
             transform: translateY(-2px);
         }
         
+        .btn-backport {
+            background: #ff6b35;
+            color: white;
+            border: 2px solid #ff6b35;
+            font-weight: 600;
+        }
+        
+        .btn-backport:hover {
+            background: #e55a30;
+            border-color: #e55a30;
+            color: white;
+            transform: translateY(-2px);
+        }
+        
         /* === EXPANDABLE DETAILS === */
         .pr-details-expandable {
             margin-top: 15px;
@@ -2285,6 +2357,104 @@ class LowHangingFruitReportGenerator:
                 padding: 15px;
             }
         }
+        
+        /* === BACKPORT MODAL STYLES === */
+        .backport-modal-content {
+            max-width: 700px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        
+        .backport-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #ff6b35;
+        }
+        
+        .branch-info, .status-info {
+            margin-bottom: 8px;
+        }
+        
+        .status-approved {
+            color: #28a745;
+            font-weight: 600;
+        }
+        
+        .command-section {
+            margin-bottom: 20px;
+        }
+        
+        .command-section h3 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+        
+        .command-box {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            cursor: pointer;
+            border: 2px solid #4a5568;
+            transition: all 0.2s ease;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        
+        .command-box:hover {
+            border-color: #ff6b35;
+            background: #3a4553;
+        }
+        
+        .command-box code {
+            color: #e2e8f0;
+            background: none;
+            padding: 0;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+        
+        .copy-feedback {
+            margin-top: 8px;
+            color: #28a745;
+            font-weight: 600;
+            text-align: center;
+        }
+        
+        .safety-warnings {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .warning-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .warning-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .warning-icon {
+            margin-right: 8px;
+            font-size: 16px;
+        }
+        
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 20px;
+        }
         </style>
         """
     
@@ -2768,6 +2938,87 @@ class LowHangingFruitReportGenerator:
             const modal = document.getElementById('assessment-modal');
             if (e.target === modal) {
                 closeAssessmentModal();
+            }
+        });
+        
+        // === BACKPORT MODAL FUNCTIONS ===
+        function openBackportModal(prNumber) {
+            const modal = document.getElementById('backport-modal');
+            const branchName = `pr-${prNumber}-branch`;
+            const command = `cd spring-ai && python3 ../prepare_backport.py ${prNumber}`;
+            
+            // Populate modal content
+            document.getElementById('backport-branch').textContent = branchName;
+            document.getElementById('backport-command-text').textContent = command;
+            document.getElementById('warning-branch').textContent = branchName;
+            
+            // Show modal
+            modal.style.display = 'flex';
+            document.body.style.overflow = 'hidden'; // Prevent background scrolling
+        }
+        
+        function closeBackportModal() {
+            const modal = document.getElementById('backport-modal');
+            modal.style.display = 'none';
+            document.body.style.overflow = ''; // Restore scrolling
+            
+            // Hide copy feedback
+            document.getElementById('copy-feedback').style.display = 'none';
+        }
+        
+        function copyBackportCommand() {
+            const commandText = document.getElementById('backport-command-text').textContent;
+            const feedback = document.getElementById('copy-feedback');
+            
+            // Copy to clipboard
+            navigator.clipboard.writeText(commandText).then(function() {
+                // Show success feedback
+                feedback.style.display = 'block';
+                
+                // Hide feedback after 2 seconds
+                setTimeout(function() {
+                    feedback.style.display = 'none';
+                }, 2000);
+            }).catch(function(err) {
+                console.error('Failed to copy command: ', err);
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = commandText;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                
+                feedback.style.display = 'block';
+                setTimeout(function() {
+                    feedback.style.display = 'none';
+                }, 2000);
+            });
+        }
+        
+        // Enhanced ESC key support for both modals
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                const assessmentModal = document.getElementById('assessment-modal');
+                const backportModal = document.getElementById('backport-modal');
+                
+                if (assessmentModal.style.display === 'flex') {
+                    closeAssessmentModal();
+                } else if (backportModal.style.display === 'flex') {
+                    closeBackportModal();
+                }
+            }
+        });
+        
+        // Enhanced click outside modal to close for both modals
+        document.addEventListener('click', function(e) {
+            const assessmentModal = document.getElementById('assessment-modal');
+            const backportModal = document.getElementById('backport-modal');
+            
+            if (e.target === assessmentModal) {
+                closeAssessmentModal();
+            } else if (e.target === backportModal) {
+                closeBackportModal();
             }
         });
         </script>

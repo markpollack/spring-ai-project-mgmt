@@ -1,280 +1,257 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
 # Spring AI Project Management
 
-This repository contains tooling for managing the Spring AI project using GitHub CLI.
+This repository contains tooling for managing the Spring AI project using GitHub CLI and AI-powered automation.
 
 ## Repository Context
 - Target Repository: https://github.com/spring-projects/spring-ai
 - Primary Tool: GitHub CLI (`gh`)
 - Purpose: Project management automation and workflow enhancement
 
-## Github Projects
-- 1.1 M1 Release Board: https://github.com/orgs/spring-projects/projects/38/
-- Default Project Number: 38
-- 1.0.1 Release Board: https://github.com/orgs/spring-projects/projects/40/
-- 1.0.1 Release Project Number: 40
+## Architecture Overview
 
-## Common Commands
+The repository is organized into three main subsystems:
 
-### GitHub CLI Setup
+### 1. PR Review System (`pr-review/`)
+AI-powered PR review automation with comprehensive analysis capabilities.
+
+**Core Components:**
+- `pr_workflow.py` - Main workflow orchestrator
+- `enhanced_report_generator.py` - AI-powered report generation
+- `ai_conversation_analyzer.py` - Conversation analysis
+- `ai_risk_assessor.py` - Security and quality risk assessment
+- `claude_code_wrapper.py` - Claude Code CLI integration utility
+
+### 2. GitHub Issues Collection (`scripts/`)
+JBang-based and Maven-based tools for collecting GitHub issues with advanced filtering.
+
+**Key Files:**
+- `CollectGithubIssues.java` - JBang script for issue collection
+- `project/` - Maven-based modular architecture (refactored from JBang)
+- `application.yaml` - Configuration for collection parameters
+
+### 3. Release Management (`release/`)
+Automation tools for managing Spring AI releases.
+
+**Components:**
+- `spring-ai-point-release.py` - Point release automation
+- `spring-ai-release/` - Working release repository clone
+
+## Development Commands
+
+### PR Review System
 ```bash
-# Authenticate with GitHub
-gh auth login
+cd pr-review
 
-# Set default repository
-gh repo set-default spring-projects/spring-ai
+# Complete PR analysis
+python3 pr_workflow.py 3914
+
+# Generate enhanced report only
+python3 pr_workflow.py --report-only 3914
+
+# Clean up PR workspace
+python3 pr_workflow.py --cleanup 3914
+
+# Batch processing multiple PRs
+python3 batch_pr_workflow.py 3920 3919 3921 3922 3927 3929
 ```
 
-### Issue Management
+### GitHub Issues Collection
+
+**JBang Script (Legacy):**
 ```bash
-# List open issues
-gh issue list
+cd scripts
+export GITHUB_TOKEN="your_token_here"
 
-# List latest 5 issues with detailed JSON output
-gh issue list --repo spring-projects/spring-ai --limit 5 --json number,title,author,createdAt,state
+# Basic collection
+/home/mark/.sdkman/candidates/jbang/current/bin/jbang CollectGithubIssues.java --repo spring-projects/spring-ai --state open
 
-# View issue details
+# With filtering
+/home/mark/.sdkman/candidates/jbang/current/bin/jbang CollectGithubIssues.java --repo spring-projects/spring-ai --labels bug --dry-run
+
+# Help
+/home/mark/.sdkman/candidates/jbang/current/bin/jbang CollectGithubIssues.java --help
+```
+
+**Maven Project (Current):**
+```bash
+cd scripts/project
+
+# Fast compilation (skip tests and javadoc)
+mvnd clean compile -Dmaven.javadoc.skip=true -DskipTests
+
+# Run tests
+mvnd test
+
+# Run application
+mvnd spring-boot:run -Dspring-boot.run.arguments="--help"
+mvnd spring-boot:run -Dspring-boot.run.arguments="--repo spring-projects/spring-ai --dry-run"
+```
+
+### GitHub CLI Operations
+```bash
+# Setup
+gh auth login
+gh repo set-default spring-projects/spring-ai
+
+# Issue management
+gh issue list --limit 5 --json number,title,author,createdAt,state
 gh issue view <issue-number>
 
-# Create new issue
-gh issue create --title "Title" --body "Description"
-
-# Close issue
-gh issue close <issue-number>
-```
-
-### Pull Request Management
-```bash
-# List pull requests
+# Pull request management
 gh pr list
-
-# View PR details
 gh pr view <pr-number>
 
-# Review PR
-gh pr review <pr-number>
-
-# Merge PR
-gh pr merge <pr-number>
-```
-
-### Project Management
-```bash
-# List projects
-gh project list
-
-# View project items
-gh project item-list <project-number>
-
-# Add item to project
-gh project item-add <project-number> --url <issue-or-pr-url>
-
-# List items in Spring AI project (project 38)
+# Project management
 gh project item-list 38 --owner spring-projects --format json
-
-# List all milestones
 gh api repos/spring-projects/spring-ai/milestones
 ```
 
-## Release Process
+## Build Systems
 
-Spring AI follows the standard Spring project release lifecycle with three main types of releases:
+### Python (PR Review)
+- Uses virtual environments for dependency isolation
+- Claude Code CLI integration with `--dangerously-skip-permissions` flag
+- Token limit: 80,000 tokens (~62,000 words)
 
-### Milestone Releases (M1, M2, M3, etc.)
-- **Format**: `1.1.0.M1`, `1.1.0.M2`, `1.1.0.M3`
-- **Purpose**: Feature development and testing milestones
-- **Characteristics**: 
-  - New features and APIs may be added
-  - APIs may change between milestones
-  - Used for community feedback and testing
-  - Multiple milestones can exist for a single major/minor version
+### JBang (Legacy Issues Collection)
+- Single-file Java execution with dependency management
+- Located at `/home/mark/.sdkman/candidates/jbang/current/bin/jbang`
+- Dependencies embedded in script headers
 
-### Release Candidate (RC)
-- **Format**: `1.1.0.RC1`
-- **Purpose**: Final pre-release validation
-- **Characteristics**:
-  - All APIs are stable and frozen
-  - Only bug fixes, documentation, and testing improvements allowed
-  - Typically only one RC release per version
-  - Usually one week from RC to GA release
-  - Prepares for General Availability release
+### Maven (Current Issues Collection)
+- Spring Boot application with modular architecture
+- Java 17+ required
+- Maven Daemon (`mvnd`) recommended for fast builds
 
-### General Availability (GA)
-- **Format**: `1.1.0` (no GA suffix)
-- **Purpose**: Production-ready stable release
-- **Characteristics**:
-  - Final stable release for public consumption
-  - All features complete and APIs stable
-  - Full documentation and testing coverage
+## Environment Requirements
 
-## Automation Scripts
+- **GitHub CLI (`gh`)** - Repository operations
+- **Claude Code CLI** - AI analysis (requires `--dangerously-skip-permissions`)
+- **Python 3.8+** - PR review system
+- **Java 17+** - Issues collection tools
+- **JBang** - Legacy script execution (via SDKMAN)
+- **Maven Daemon (`mvnd`)** - Fast builds (recommended)
 
-Complex project management tasks may require bash scripts that combine multiple `gh` commands for efficient workflow automation.
+## Configuration Files
 
-## Usage Notes
+### GitHub Issues Collection
+- `scripts/application.yaml` - Spring Boot configuration
+- `scripts/project/src/test/resources/application-test.yaml` - Test configuration
+- Rate limiting, batch sizes, and output directories configurable
 
-- All GitHub operations should use the `gh` CLI tool
-- Scripts should be created in this repository for reusable automation
-- Focus on Spring AI project management workflows
-- Prefer direct `gh` commands for simple operations
-- Use bash scripts for complex multi-step operations
+### PR Review System
+- `pr-review/templates/` - AI analysis prompts and report templates
+- Environment variables for GitHub token and Claude Code paths
+- Context limits and token estimation settings
 
-## Important: Spring AI Directory Management
+## Important Directory Management
 
-**CRITICAL**: The `/spring-ai/` directory is a working clone managed exclusively by the Python workflow scripts (`pr_workflow.py` and related automation). 
+**Critical: Spring AI Repository Clone**
+- The `/pr-review/spring-ai/` and `/release/spring-ai-release/` directories are working clones
+- Managed exclusively by Python workflow scripts
+- **Never directly manipulate these directories or run git commands within them**
+- All git operations handled by automation scripts with subprocess calls
 
-**Claude interactive sessions should NEVER directly manipulate this directory or run git commands within it.**
+## Data Management
 
-The Python workflow handles all git operations including:
-- Repository cloning and setup
-- Branch checkout and switching  
-- Conflict resolution via Claude Code CLI subprocess calls
-- Rebase operations and commit squashing
-- Repository cleanup and state management
+### File Patterns to Ignore
+- `issues/` - Generated issue data
+- `logs/` - Debug and operation logs  
+- `batch_*` - Temporary batch files
+- `target/` - Maven build artifacts
+- `*.log` - Log files
 
-If there are git conflicts or issues in the spring-ai directory, these should be resolved by:
-1. Using the appropriate Python workflow flags (e.g. `--cleanup`, `--force`)
-2. Modifying the Python workflow code itself to fix subprocess issues
-3. Running the workflow commands, not direct git operations
+### Token Estimation Guidelines
+- **Token Estimation**: 1 word = 1.3 tokens
+- **File Size Estimation**: ~5 bytes per token or ~200 tokens per KB
+- **Context Limits**: 80,000 tokens maximum for AI analysis
 
-This separation ensures the Python automation maintains full control over the repository state and prevents conflicts between interactive Claude sessions and the automated workflow processes.
+## Testing Strategies
 
+### PR Review System
+- Use `--dry-run` flags for safe testing
+- File-based analysis approach with direct file paths
+- Comprehensive timeout and debug logging
 
-## AI Risk Assessment Optimization Guidelines
+### Issues Collection (Maven)
+- **Critical**: Avoid `@SpringBootTest` - triggers CommandLineRunner production operations
+- Use `@SpringJUnitConfig` with minimal TestConfiguration instead  
+- Mock external dependencies (GitHub API, file system)
+- Use `--dry-run` flag for collection testing
 
-When optimizing context for large PRs in the AI risk assessor:
-- **Always include full test classes** - Never truncate test files, even for large PRs
-- Test classes need complete context for proper security analysis and coverage review
-- Production code can be optimized, but tests must remain complete for AI analysis
-
-## Script creation guidance
-
-Your bash code must follow best practices and be maintainable. Use safe and strict scripting conventions. All scripts should:
-
-- Begin with #!/usr/bin/env bash
-- Enable strict mode: set -Eeuo pipefail
-- Use trap to clean up on exit or error
-- Define usage/help functions
-- Validate arguments and input
-- Use logging functions (info, warn, error)
-- Avoid using eval unless absolutely necessary
-- Use functions to break down logic
-- Quote all variable expansions ("$var")
-- Use $() for command substitution instead of backticks
-- Support --help and --version flags
-- Document your code. Include inline comments and example usages. Output in markdown code blocks.
-
-## JBang Script Usage
-
-The repository includes JBang-based Java scripts for enhanced functionality. JBang is installed via SDKMAN but may not be in the PATH.
-
-### JBang Location
-JBang is located at: `/home/mark/.sdkman/candidates/jbang/current/bin/jbang`
-
-### Usage Examples
+### Safety Measures
 ```bash
-# Test help functionality
-/home/mark/.sdkman/candidates/jbang/current/bin/jbang CollectGithubIssues.java --help
-
-# Dry run with new filtering options
-/home/mark/.sdkman/candidates/jbang/current/bin/jbang CollectGithubIssues.java --repo spring-projects/spring-ai --state open --dry-run
-
-# Test label filtering
-/home/mark/.sdkman/candidates/jbang/current/bin/jbang CollectGithubIssues.java --repo spring-projects/spring-ai --labels bug --dry-run
-
-# Combined filtering
-/home/mark/.sdkman/candidates/jbang/current/bin/jbang CollectGithubIssues.java --repo spring-projects/spring-ai --state closed --labels bug,enhancement --label-mode any --dry-run
+# Repository cleanup before commits
+rm -rf issues/
+find . -name "batch_*" -type f -delete
+find . -name "logs" -type d -exec rm -rf {} + 2>/dev/null || true
 ```
 
-### Testing Protocol
-When implementing new functionality in JBang scripts:
-1. Use the full path to jbang for testing
-2. Always test with --dry-run first
-3. Verify help output for new options
-4. Test error handling with invalid inputs
-5. Confirm backward compatibility
+## Common Workflows
 
-## Smart Prompt Creation for AI Risk Assessment
+### Adding New CLI Arguments (Issues Collection)
+1. Update `CollectionProperties` class with new property and default
+2. Modify argument parsing logic in `ArgumentParser.java`  
+3. Add comprehensive tests for new arguments
+4. Update help text and documentation
 
-The AI risk assessment system uses an optimized smart prompt creation approach that dramatically reduces token usage while maintaining analysis quality.
+### PR Analysis Workflow
+1. Context collection from GitHub API
+2. File change analysis with token optimization
+3. AI-powered risk assessment and conversation analysis
+4. Report generation with security focus
+5. Optional backport candidate evaluation
 
-### File Status-Aware Prompt Optimization
+### Release Process Support
+- Milestone tracking (M1, M2, M3, RC, GA releases)
+- Author contribution analysis
+- Documentation build verification
+- Version management automation
 
-**Key Innovation**: Different handling based on Git file status to eliminate patch content duplication:
+## Security Considerations
 
-- **New Files (`added`)**: Patch content omitted entirely (patch = full file content, 100% redundant)
-- **Modified Files (`modified`)**: Continue current approach with security-focused patch filtering
-- **Removed Files (`removed`)**: Minimal context with deletion rationale
+- Never commit GitHub tokens or API keys
+- Use environment variables for sensitive configuration
+- Validate all user inputs in CLI parsing
+- Implement proper rate limiting for GitHub API calls
+- File access patterns use absolute paths for security
 
-### Token Optimization Results
+## Troubleshooting
 
-**Before**: Large PRs with many new files could generate 80-100KB+ prompts
-**After**: Same PRs generate ~25-30KB prompts (~75% reduction)
+### Common Issues
+- **JBang not in PATH**: Use full path `/home/mark/.sdkman/candidates/jbang/current/bin/jbang`
+- **Maven builds slow**: Use `mvnd` with skip flags for faster compilation
+- **Tests trigger production operations**: Avoid `@SpringBootTest`, use minimal Spring context
+- **Claude Code integration**: Ensure `--dangerously-skip-permissions` flag is used
 
-Example with PR 3914 (30 new files, 3,169 lines added):
-- **Traditional approach**: Would generate ~80-100KB prompt
-- **Smart approach**: Generated 28KB prompt (75% reduction)
-- **Processing time**: 48.2 seconds (30% faster than previous approach)
-- **Quality**: Analysis depth maintained with comprehensive risk assessment
-
-### Java File Prioritization
-
-Java source files are automatically prioritized in both prompt organization and analysis instructions:
-- **High Priority Marking**: All `.java` files marked as "HIGH" priority
-- **Processing Order**: Java files processed first in prompt structure
-- **Contextual Analysis**: Pattern-based file purpose detection (Controllers, Services, Tests, etc.)
-- **Spring Framework Focus**: Specialized guidance for Spring AI integration patterns
-
-### Status-Aware Analysis Strategy
-
-The AI risk assessment template provides different analysis approaches for each file type:
-
-#### New Files Analysis:
-- Full security analysis of entire file (everything is new code)
-- Pattern recognition using file purpose descriptions
-- Complete dependency and integration risk assessment
-- Focus on Spring Boot auto-configuration security
-
-#### Modified Files Analysis: 
-- Security-focused change highlighting in patch content
-- Impact analysis of modifications on existing security posture  
-- Emphasis on additions that could introduce new risks
-- Cross-reference with existing codebase patterns
-
-### Implementation Details
-
-Located in `ai_risk_assessor.py`:
-- **`build_file_changes_detail()`**: Core method with file status routing
-- **`_format_new_files()`**: Zero patch content with Java prioritization
-- **`_format_modified_files()`**: Security-focused patch filtering
-- **`_generate_java_file_summary()`**: Contextual file purpose detection
-- **`_filter_patch_for_security_analysis()`**: Highlight security-relevant changes
-
-### Usage Impact
-
-**No Change Required**: The optimization is transparent to users:
+### Debug Commands
 ```bash
-python3 ai_risk_assessor.py 3914  # Same command, better performance
+# Verify GitHub connectivity
+gh auth status
+
+# Test JBang script
+cd scripts && /home/mark/.sdkman/candidates/jbang/current/bin/jbang CollectGithubIssues.java --help
+
+# Test Maven application
+cd scripts/project && mvnd spring-boot:run -Dspring-boot.run.arguments="--dry-run"
+
+# Test PR workflow (safe)
+cd pr-review && python3 pr_workflow.py --cleanup 1234
 ```
 
-**Benefits Achieved**:
-- ~75% token reduction for PRs with many new files
-- 30% faster processing time
-- Maintained analysis quality and depth
-- Better organization with Java file prioritization
-- Enhanced template guidance for status-aware analysis
+## Project-Specific Notes
 
-### Troubleshooting
+### Spring AI Release Lifecycle
+- **Milestone Releases**: `1.1.0.M1`, `1.1.0.M2`, `1.1.0.M3` (feature development)
+- **Release Candidate**: `1.1.0.RC1` (API freeze, final validation)  
+- **General Availability**: `1.1.0` (stable production release)
 
-**File Access Issues**: If files aren't accessible after branch switching:
-1. Verify branch checkout completed successfully
-2. Check working directory synchronization
-3. Validate file paths exist in current working tree
-4. Consider adding delay for git operations to complete
+### GitHub Projects
+- **1.1 M1 Release Board**: https://github.com/orgs/spring-projects/projects/38/
+- **1.0.1 Release Board**: https://github.com/orgs/spring-projects/projects/40/
 
-**Token Limit Concerns**: The optimization ensures prompts stay well under Claude Code's 25K token Read tool limit:
-- **Monitoring**: Prompt size logged for each analysis
-- **Safety Margin**: Typical prompts use 5-6K tokens (19K tokens remaining)
-- **Scaling**: Successfully tested with 30-file PRs (largest test case)
-
-This smart prompt creation approach enables efficient analysis of large PRs while maintaining the high-quality security and risk assessment that the system provides.
-
+This repository provides comprehensive tooling to support the entire Spring AI project lifecycle from issue tracking through release management.

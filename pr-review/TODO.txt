@@ -7,6 +7,20 @@
 
 - When looking at the report, i see 'LOW' and 'APPROVE' or 'REJECT' and hovering over gives a tooltip for some but not other that explain why that decision was made.  the tooltip doesn't show all the info.  maybe a larger tooltip area is needed or some other representation.
 
+### Next step in PR management for backporting
+
+- we have a custom github action that will do the backport on a commit from the main branch if the text
+
+Auto-cherry-pick to 1.0.x
+Fixes #<Issue/PR number>
+
+is in the commit message.
+
+
+I would like to review the PR and then somehow update the comimt message to include this.  I am not sure of the best way to achieve this goal in particular as i'm in the report area and now need to 'execute' some code to update the commit message.  please suggest some options.  i only need to run this locally, so maybe the javascript in the browser can invoke a program on my machine in the pr-review directory?
+
+### show details should also show the commit message.
+
 ### Fix CLAUDE.md Improvement Process
 - **Issue**: The improve_claude_md.py script has a content extraction bug that truncates the output file
 - **Impact**: CLAUDE.md file was corrupted during improvement, lost most content
@@ -35,6 +49,37 @@
 - **PRs to Test**: 3920 3919 3921 3922 3927 3929
 - **Command**: `python batch_pr_workflow.py 3920 3919 3921 3922 3927 3929`
 - **Focus Areas**: Verify backport classifications are accurate, especially after PR 3920 fix
+
+### Add Example HTML Report for Documentation
+- **Goal**: Keep one example HTML report for documentation purposes in a separate examples/ directory rather than the working runs/ directory
+- **Background**: Generated reports in runs/ are now excluded from git tracking, but having a documented example would be valuable for understanding the system output format
+- **Implementation**: Create examples/ directory with a representative HTML dashboard report showing the progressive disclosure system
+
+### Manual Testing of Backport Preparation System
+- **Goal**: Test the complete backport preparation workflow with real PR branches
+- **Prerequisites**: 
+  - PR analysis completed with backport assessment (run `python3 pr_workflow.py <pr_number>` first)
+  - HTML dashboard generated showing "Prepare Backport" button for approved PRs
+- **Test Steps**:
+  1. **Open dashboard**: Open the generated HTML report in browser
+  2. **Verify button**: Look for "🔄 Prepare Backport" button on PRs with APPROVE backport status
+  3. **Test modal**: Click button to open backport command modal
+  4. **Copy command**: Click command box or "📋 Copy Command" button to copy to clipboard
+  5. **Manual execution**: In separate terminal:
+     ```bash
+     cd spring-ai-project-mgmt/pr-review/spring-ai
+     git checkout pr-<number>-branch  # Use actual PR number
+     python3 ../prepare_backport.py <pr_number>
+     ```
+  6. **Verify results**: 
+     - Script shows pre-flight checks ✅
+     - Displays commits to be squashed
+     - Shows generated commit message preview
+     - Creates backup branch successfully
+     - Squashes commits and adds backport directive
+     - Final commit message includes "Auto-cherry-pick to 1.0.x" and "Fixes #<pr_number>"
+- **Safety**: Script creates backup branches and requires user confirmation at each step
+- **Rollback**: If issues occur, use `git checkout pr-<number>-branch-backup` to restore
 
 ## Low Priority
 
