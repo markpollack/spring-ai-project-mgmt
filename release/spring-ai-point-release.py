@@ -1646,23 +1646,25 @@ class ReleaseWorkflow:
             ("Set next development version", self._set_next_dev_version),
             ("Commit development version", self._commit_dev_version),
             ("Push all changes", self._push_dev_changes),
-            ("Update start.spring.io", self._update_start_spring_io),
-            ("Update spring-website-content", self._update_spring_website),
+            # TODO: Revisit these functionality later
+            # ("Update start.spring.io", self._update_start_spring_io),
+            # ("Update spring-website-content", self._update_spring_website),
         ]
         
         # Find starting step index based on skip-to parameter
         start_index = 0
-        if self.config.skip_to and self.config.skip_to in ['start-spring-io', 'spring-website']:
-            target_step = post_maven_skip_to_mapping.get(self.config.skip_to)
-            if target_step:
-                for i, (step_name, _) in enumerate(steps):
-                    if step_name == target_step:
-                        start_index = i
-                        Logger.info(f"Skipping to step: {target_step}")
-                        break
-                else:
-                    Logger.error(f"Skip-to step not found: {self.config.skip_to}")
-                    return False
+        # TODO: Revisit this functionality later - skip-to logic commented out for start.spring.io and spring-website
+        # if self.config.skip_to and self.config.skip_to in ['start-spring-io', 'spring-website']:
+        #     target_step = post_maven_skip_to_mapping.get(self.config.skip_to)
+        #     if target_step:
+        #         for i, (step_name, _) in enumerate(steps):
+        #             if step_name == target_step:
+        #                 start_index = i
+        #                 Logger.info(f"Skipping to step: {target_step}")
+        #                 break
+        #         else:
+        #             Logger.error(f"Skip-to step not found: {self.config.skip_to}")
+        #             return False
         
         completed_steps = state["completed_steps"].copy()
         
@@ -1932,14 +1934,15 @@ Skip-to options: setup, set-version, build, commit-release, tag, push, docs, jav
                        help='Check Maven Central infrastructure status and exit')
     parser.add_argument('--skip-maven-status-check', action='store_true',
                        help='Skip Maven Central status check before deployment')
-    parser.add_argument('--skip-start-spring-io', action='store_true',
-                       help='Skip start.spring.io update in post-Maven Central workflow')
-    parser.add_argument('--cleanup-start-spring-io', action='store_true',
-                       help='Clean up start.spring.io repository and exit')
-    parser.add_argument('--skip-spring-website', action='store_true',
-                       help='Skip spring-website-content update in post-Maven Central workflow')
-    parser.add_argument('--cleanup-spring-website', action='store_true',
-                       help='Clean up spring-website-content repository and exit')
+    # TODO: Revisit these functionality later
+    # parser.add_argument('--skip-start-spring-io', action='store_true',
+    #                    help='Skip start.spring.io update in post-Maven Central workflow')
+    # parser.add_argument('--cleanup-start-spring-io', action='store_true',
+    #                    help='Clean up start.spring.io repository and exit')
+    # parser.add_argument('--skip-spring-website', action='store_true',
+    #                    help='Skip spring-website-content update in post-Maven Central workflow')
+    # parser.add_argument('--cleanup-spring-website', action='store_true',
+    #                    help='Clean up spring-website-content repository and exit')
     
     args = parser.parse_args()
     
@@ -1961,10 +1964,11 @@ Skip-to options: setup, set-version, build, commit-release, tag, push, docs, jav
     # Add new attributes to config
     config.check_maven_status = args.check_maven_status
     config.skip_maven_status_check = args.skip_maven_status_check
-    config.skip_start_spring_io = args.skip_start_spring_io
-    config.cleanup_start_spring_io = args.cleanup_start_spring_io
-    config.skip_spring_website = args.skip_spring_website
-    config.cleanup_spring_website = args.cleanup_spring_website
+    # TODO: Revisit these functionality later
+    # config.skip_start_spring_io = args.skip_start_spring_io
+    # config.cleanup_start_spring_io = args.cleanup_start_spring_io
+    # config.skip_spring_website = args.skip_spring_website
+    # config.cleanup_spring_website = args.cleanup_spring_website
     
     # Validate version format
     if not config.validate_version():
@@ -1997,49 +2001,50 @@ Skip-to options: setup, set-version, build, commit-release, tag, push, docs, jav
             Logger.error(f"\nUnexpected error during cleanup: {e}")
             sys.exit(1)
     
-    # Handle start.spring.io cleanup if requested
-    if config.cleanup_start_spring_io:
-        Logger.bold("\n🧹 START.SPRING.IO CLEANUP")
-        Logger.bold("=" * 35)
-        
-        if not workflow.confirm_step("Clean up start.spring.io repository"):
-            Logger.info("start.spring.io cleanup cancelled by user")
-            sys.exit(0)
-        
-        try:
-            updater = StartSpringIOUpdater(config)
-            success = updater.cleanup_repository()
-            if success:
-                Logger.success("\n✅ start.spring.io repository cleaned up successfully!")
-            else:
-                Logger.error("\nstart.spring.io cleanup failed!")
-                sys.exit(1)
-            sys.exit(0)
-        except Exception as e:
-            Logger.error(f"\nUnexpected error during start.spring.io cleanup: {e}")
-            sys.exit(1)
-    
-    # Handle spring-website-content cleanup if requested
-    if config.cleanup_spring_website:
-        Logger.bold("\n🧹 SPRING-WEBSITE-CONTENT CLEANUP")
-        Logger.bold("=" * 40)
-        
-        if not workflow.confirm_step("Clean up spring-website-content repository"):
-            Logger.info("spring-website-content cleanup cancelled by user")
-            sys.exit(0)
-        
-        try:
-            updater = SpringWebsiteUpdater(config)
-            success = updater.cleanup_repository()
-            if success:
-                Logger.success("\n✅ spring-website-content repository cleaned up successfully!")
-            else:
-                Logger.error("\nspring-website-content cleanup failed!")
-                sys.exit(1)
-            sys.exit(0)
-        except Exception as e:
-            Logger.error(f"\nUnexpected error during spring-website-content cleanup: {e}")
-            sys.exit(1)
+    # TODO: Revisit these functionality later
+    # # Handle start.spring.io cleanup if requested
+    # if config.cleanup_start_spring_io:
+    #     Logger.bold("\n🧹 START.SPRING.IO CLEANUP")
+    #     Logger.bold("=" * 35)
+    #     
+    #     if not workflow.confirm_step("Clean up start.spring.io repository"):
+    #         Logger.info("start.spring.io cleanup cancelled by user")
+    #         sys.exit(0)
+    #     
+    #     try:
+    #         updater = StartSpringIOUpdater(config)
+    #         success = updater.cleanup_repository()
+    #         if success:
+    #             Logger.success("\n✅ start.spring.io repository cleaned up successfully!")
+    #         else:
+    #             Logger.error("\nstart.spring.io cleanup failed!")
+    #             sys.exit(1)
+    #         sys.exit(0)
+    #     except Exception as e:
+    #         Logger.error(f"\nUnexpected error during start.spring.io cleanup: {e}")
+    #         sys.exit(1)
+    # 
+    # # Handle spring-website-content cleanup if requested
+    # if config.cleanup_spring_website:
+    #     Logger.bold("\n🧹 SPRING-WEBSITE-CONTENT CLEANUP")
+    #     Logger.bold("=" * 40)
+    #     
+    #     if not workflow.confirm_step("Clean up spring-website-content repository"):
+    #         Logger.info("spring-website-content cleanup cancelled by user")
+    #         sys.exit(0)
+    #     
+    #     try:
+    #         updater = SpringWebsiteUpdater(config)
+    #         success = updater.cleanup_repository()
+    #         if success:
+    #             Logger.success("\n✅ spring-website-content repository cleaned up successfully!")
+    #         else:
+    #             Logger.error("\nspring-website-content cleanup failed!")
+    #             sys.exit(1)
+    #         sys.exit(0)
+    #     except Exception as e:
+    #         Logger.error(f"\nUnexpected error during spring-website-content cleanup: {e}")
+    #         sys.exit(1)
     
     # Handle manual Maven status check if requested
     if config.check_maven_status:

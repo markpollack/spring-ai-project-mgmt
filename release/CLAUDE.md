@@ -127,6 +127,16 @@ The `spring-ai-point-release.py` script specifically handles the technical relea
 - Review generated contributor lists before including in release notes
 - Scripts use hardcoded paths - verify paths match your environment
 
+## Code Location Reference
+
+**Important**: The [`README.md`](README.md) file contains detailed function names and line numbers for all key functionality in the release scripts. Use this as a reference when modifying or debugging the automation:
+
+- **Main Functions**: Entry points and core workflow methods with exact line numbers
+- **Helper Classes**: Supporting functionality locations for Maven, Git, and GitHub operations
+- **Step Implementation**: Specific method locations for each release workflow step
+
+This documentation cross-references with the actual code locations to enable efficient development and maintenance.
+
 ## Current Capabilities
 
 **Implemented Features**:

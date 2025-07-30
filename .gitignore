@@ -56,6 +56,9 @@ release/logs/
 release/state/
 release/spring-ai-release/
 
+# Git squash merge tool - working directories (timestamped)
+release/spring-ai-squash-merge-*/
+
 # IDE files
 pr-review/.idea/
 .idea/
