@@ -90,6 +90,7 @@ The main workflow executes steps 1-10 and stops at Maven Central trigger:
   git pull origin 1.0.x
   ```
 - **Purpose**: Ensures clean working directory isolated from development checkouts
+- **Implementation**: [`setup_workspace()`](spring-ai-point-release.py#L1509) → [`ReleaseGitHelper.clone_repository()`](spring-ai-point-release.py#L155) → [`ReleaseGitHelper.checkout_branch()`](spring-ai-point-release.py#L180)
 
 ### 2. Set Release Version
 - **Action**: Updates all POM files to release version with comprehensive verification
@@ -108,6 +109,7 @@ The main workflow executes steps 1-10 and stops at Maven Central trigger:
   ```
 - **Purpose**: Removes `-SNAPSHOT` suffix and sets exact release version in all modules including BOM
 - **Safety**: Comprehensive verification ensures all POMs have correct versions before proceeding
+- **Implementation**: [`_set_release_version()`](spring-ai-point-release.py#L1693) → [`MavenHelper.set_version()`](spring-ai-point-release.py#L435) → [`MavenHelper.set_bom_version()`](spring-ai-point-release.py#L448) → [`MavenHelper.verify_release_versions()`](spring-ai-point-release.py#L571)
 
 ### 3. Build and Verify
 - **Action**: Performs fast compilation and documentation verification with comprehensive logging
@@ -125,6 +127,7 @@ The main workflow executes steps 1-10 and stops at Maven Central trigger:
   - Build logs saved to `./logs/fast-build-{timestamp}.log`
   - Documentation logs saved to `./logs/docs-build-{timestamp}.log`
   - Last 10 lines shown on build failures for immediate debugging
+- **Implementation**: [`_build_and_verify()`](spring-ai-point-release.py#L1702) → [`MavenHelper.fast_build()`](spring-ai-point-release.py#L462) → [`MavenHelper.verify_docs()`](spring-ai-point-release.py#L489)
 
 ### 4. Commit Release Version
 - **Action**: Commits version changes on the maintenance branch
@@ -134,6 +137,7 @@ The main workflow executes steps 1-10 and stops at Maven Central trigger:
   git commit -m "Release version 1.0.1"
   ```
 - **Purpose**: Creates commit with release version changes
+- **Implementation**: [`_commit_release_version()`](spring-ai-point-release.py#L1708) → [`ReleaseGitHelper.commit_changes()`](spring-ai-point-release.py#L220)
 
 ### 5. Create Release Tag
 - **Action**: Creates annotated Git tag on the release commit
@@ -142,6 +146,7 @@ The main workflow executes steps 1-10 and stops at Maven Central trigger:
   git tag -a v1.0.1 -m "Release version 1.0.1"
   ```
 - **Purpose**: Marks the exact release commit (tag points to release version)
+- **Implementation**: [`_create_release_tag()`](spring-ai-point-release.py#L1713) → [`ReleaseGitHelper.create_tag()`](spring-ai-point-release.py#L229)
 
 ### 6. Create Release Branch
 - **Action**: Creates new local branch from the release tag
@@ -150,6 +155,7 @@ The main workflow executes steps 1-10 and stops at Maven Central trigger:
   git checkout -b 1.0.1 v1.0.1
   ```
 - **Purpose**: Creates dedicated branch for release work, containing the release commit
+- **Implementation**: [`_create_release_branch()`](spring-ai-point-release.py#L1718) → [`ReleaseGitHelper.create_release_branch()`](spring-ai-point-release.py#L237)
 
 ### 7. Push Changes
 - **Action**: Pushes tag and release branch to remote repository
@@ -160,6 +166,7 @@ The main workflow executes steps 1-10 and stops at Maven Central trigger:
   ```
 - **Purpose**: Makes release tag and dedicated release branch available for GitHub Actions
 - **Note**: Maintenance branch `1.0.x` stays local (not pushed)
+- **Implementation**: [`_push_changes()`](spring-ai-point-release.py#L1733) → [`ReleaseGitHelper.push_tag_and_release_branch()`](spring-ai-point-release.py#L280)
 
 ### 8. Trigger Documentation Deployment
 - **Action**: Triggers GitHub Actions workflow for reference documentation
@@ -169,6 +176,7 @@ The main workflow executes steps 1-10 and stops at Maven Central trigger:
   ```
 - **Purpose**: Deploys updated documentation for the release
 - **Target**: Runs on dedicated release branch `1.0.1`
+- **Implementation**: [`_trigger_deploy_docs()`](spring-ai-point-release.py#L1843) → [`GitHubActionsHelper.trigger_deploy_docs()`](spring-ai-point-release.py#L646)
 
 ### 9. Trigger Javadoc Upload
 - **Action**: Triggers GitHub Actions workflow for API documentation
@@ -178,6 +186,7 @@ The main workflow executes steps 1-10 and stops at Maven Central trigger:
   ```
 - **Purpose**: Publishes javadocs for the specific release version
 - **Target**: Runs on dedicated release branch `1.0.1`
+- **Implementation**: [`_trigger_documentation_upload()`](spring-ai-point-release.py#L1850) → [`GitHubActionsHelper.trigger_documentation_upload()`](spring-ai-point-release.py#L651)
 
 ### 10. Trigger Maven Central Release
 - **Action**: Triggers GitHub Actions workflow for artifact publishing
@@ -188,6 +197,7 @@ The main workflow executes steps 1-10 and stops at Maven Central trigger:
 - **Purpose**: Uploads build artifacts to Maven Central
 - **Target**: Runs on dedicated release branch `1.0.1`
 - **🛑 WORKFLOW STOPS HERE**: Phase 1 complete, state saved
+- **Implementation**: [`_trigger_maven_central_release()`](spring-ai-point-release.py#L1857) → [`GitHubActionsHelper.trigger_maven_central_release()`](spring-ai-point-release.py#L657) with [`MavenStatusChecker`](spring-ai-point-release.py#L663) health monitoring
 
 ### Phase 2: Post-Maven Central Workflow
 
@@ -204,6 +214,7 @@ After Maven Central deployment succeeds, run with `--post-maven-central`:
   mvnd versions:set -DnewVersion=1.0.2-SNAPSHOT -DgenerateBackupPoms=false -pl spring-ai-bom
   ```
 - **Purpose**: Prepares branch for continued development with proper BOM versioning
+- **Implementation**: [`_set_next_dev_version()`](spring-ai-point-release.py#L1722) → [`MavenHelper.set_version()`](spring-ai-point-release.py#L435) → [`MavenHelper.set_bom_version()`](spring-ai-point-release.py#L448)
 
 ### 12. Commit Development Version
 - **Action**: Commits development version changes
@@ -213,6 +224,7 @@ After Maven Central deployment succeeds, run with `--post-maven-central`:
   git commit -m "Next development version 1.0.2-SNAPSHOT"
   ```
 - **Purpose**: Records development version changes
+- **Implementation**: [`_commit_dev_version()`](spring-ai-point-release.py#L1728) → [`ReleaseGitHelper.commit_changes()`](spring-ai-point-release.py#L220)
 
 ### 13. Push All Changes
 - **Action**: Pushes both release commit and development version changes to remote
@@ -222,6 +234,7 @@ After Maven Central deployment succeeds, run with `--post-maven-central`:
   ```
 - **Purpose**: Makes both release commit and development version available on maintenance branch
 - **Note**: This pushes both commits that were accumulated locally during Phase 2
+- **Implementation**: [`_push_dev_changes()`](spring-ai-point-release.py#L1741) → [`ReleaseGitHelper.run_git()`](spring-ai-point-release.py#L123)
 
 ### 14. Update start.spring.io
 - **Action**: Updates Spring Initializr with new Spring AI version
@@ -235,6 +248,7 @@ After Maven Central deployment succeeds, run with `--post-maven-central`:
   ```
 - **Purpose**: Makes new Spring AI version available in Spring Initializr for new projects
 - **Interactive**: Shows diff preview and PR details before creating pull request
+- **Implementation**: [`_update_start_spring_io()`](spring-ai-point-release.py#L1751) → [`StartSpringIOUpdater`](spring-ai-point-release.py#L866) → [`update_spring_ai_version()`](spring-ai-point-release.py#L928) → [`create_pull_request()`](spring-ai-point-release.py#L1015)
 
 ### 15. Update spring-website-content
 - **Action**: Updates Spring AI project documentation on the Spring website
@@ -251,6 +265,7 @@ After Maven Central deployment succeeds, run with `--post-maven-central`:
   ```
 - **Purpose**: Updates Spring AI project page to reflect latest point release information
 - **Interactive**: Shows changes preview and confirmation before creating pull request
+- **Implementation**: [`_update_spring_website()`](spring-ai-point-release.py#L1812) → [`SpringWebsiteUpdater`](spring-ai-point-release.py#L1069) → [`update_documentation()`](spring-ai-point-release.py#L1077) → [`_update_documentation_json()`](spring-ai-point-release.py#L1145)
 
 ## Interactive Workflow
 
