@@ -17,10 +17,15 @@ AI-powered PR review automation with comprehensive analysis capabilities.
 
 **Core Components:**
 - `pr_workflow.py` - Main workflow orchestrator
+  - **Main Function**: `PRWorkflow.run_complete_workflow()` - pr_workflow.py:282
 - `enhanced_report_generator.py` - AI-powered report generation
+  - **Main Function**: `EnhancedReportGenerator.generate_report()` - enhanced_report_generator.py:156
 - `ai_conversation_analyzer.py` - Conversation analysis
+  - **Main Function**: `AIConversationAnalyzer.analyze_conversation()` - ai_conversation_analyzer.py:89
 - `ai_risk_assessor.py` - Security and quality risk assessment
+  - **Main Function**: `AIRiskAssessor.assess_risks()` - ai_risk_assessor.py:112
 - `claude_code_wrapper.py` - Claude Code CLI integration utility
+  - **Main Function**: `ClaudeCodeWrapper.run_analysis()` - claude_code_wrapper.py:248
 
 **Key Features:**
 - **AI-Powered Analysis**: Uses Claude Code integration for intelligent code review
@@ -47,7 +52,9 @@ JBang-based and Maven-based tools for collecting GitHub issues with advanced fil
 
 **Key Files:**
 - `CollectGithubIssues.java` - JBang script for issue collection
+  - **Main Function**: `CollectGithubIssues.main()` - CollectGithubIssues.java:217
 - `project/` - Maven-based modular architecture (refactored from JBang)
+  - **Main Function**: `CollectGithubIssues.run()` - project/src/main/java/org/springaicommunity/github/ai/collection/CollectGithubIssues.java:94
 - `application.yaml` - Configuration for collection parameters
 
 **Features:**
@@ -78,6 +85,8 @@ Automation tools for managing Spring AI releases.
 
 **Components:**
 - `spring-ai-point-release.py` - Point release automation
+  - **Main Function**: `main()` - spring-ai-point-release.py:1893
+  - **Core Workflow**: `ReleaseWorkflow.run_release_workflow()` - spring-ai-point-release.py:1368
 - `spring-ai-release/` - Working release repository clone
 
 **Quick Start:**
