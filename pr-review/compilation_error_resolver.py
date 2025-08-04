@@ -44,6 +44,7 @@ class CompilationErrorResolver:
         self.spring_ai_dir = spring_ai_dir
         self.logs_dir = spring_ai_dir.parent / "logs"
         self.logs_dir.mkdir(exist_ok=True)
+        self.templates_dir = spring_ai_dir.parent / "templates"
         self.claude_wrapper = ClaudeCodeWrapper(logs_dir=self.logs_dir)
         self.auto_fix_patterns = {
             'incorrect_override': {
@@ -77,6 +78,31 @@ class CompilationErrorResolver:
                 'description': 'Add missing semicolon'
             }
         }
+    
+    def load_prompt_template(self, template_name: str, **kwargs) -> str:
+        """Load and populate prompt template with provided variables"""
+        template_path = self.templates_dir / f"{template_name}.md"
+        
+        if not template_path.exists():
+            Logger.error(f"Template not found: {template_path}")
+            return f"Template {template_name} not found"
+        
+        try:
+            with open(template_path, 'r', encoding='utf-8') as f:
+                template_content = f.read()
+            
+            # Replace placeholders with kwargs
+            formatted_prompt = template_content.format(**kwargs)
+            
+            Logger.info(f"✅ Loaded template: {template_name}")
+            return formatted_prompt
+            
+        except KeyError as e:
+            Logger.error(f"Missing template variable: {e}")
+            return f"Template {template_name} missing variable: {e}"
+        except Exception as e:
+            Logger.error(f"Error loading template {template_name}: {e}")
+            return f"Error loading template {template_name}: {e}"
     
     def detect_compilation_errors(self) -> List[CompilationError]:
         """Run compilation and detect errors"""
@@ -171,11 +197,23 @@ class CompilationErrorResolver:
     
     def _classify_error(self, message: str) -> Tuple[str, bool, str]:
         """Classify error type and determine if auto-fixable"""
+        # Check for specific patterns first for better template selection
         for error_type, config in self.auto_fix_patterns.items():
             if re.search(config['pattern'], message, re.IGNORECASE):
                 return error_type, True, config['description']
         
-        return 'unknown', False, 'Manual review required'
+        # Classify common error types for template selection
+        if 'incompatible types' in message and 'cannot be converted' in message:
+            error_type = 'type_mismatch'
+        elif 'cannot find symbol' in message:
+            error_type = 'missing_symbol'
+        elif 'method does not override' in message:
+            error_type = 'incorrect_override'
+        else:
+            error_type = 'compilation_error'
+        
+        # ALL errors are now auto-fixable via Claude Code
+        return error_type, True, 'Fix via Claude Code AI'
     
     def auto_resolve_errors(self, errors: List[CompilationError]) -> Tuple[int, List[str]]:
         """Automatically resolve fixable compilation errors"""
@@ -189,11 +227,20 @@ class CompilationErrorResolver:
                 continue
                 
             try:
-                handler = self.auto_fix_patterns[error.error_type]['handler']
-                if handler(error):
+                # Try specific handler first if available
+                if error.error_type in self.auto_fix_patterns:
+                    handler = self.auto_fix_patterns[error.error_type]['handler']
+                    if handler(error):
+                        resolved_count += 1
+                        resolution_log.append(f"✅ Fixed {error.error_type} in {error.file_path}:{error.line_number}")
+                        Logger.success(f"Auto-resolved: {error.fix_description} in {error.file_path}")
+                        continue
+                
+                # Fall back to generic Claude Code handler
+                if self._fix_with_claude_code(error):
                     resolved_count += 1
                     resolution_log.append(f"✅ Fixed {error.error_type} in {error.file_path}:{error.line_number}")
-                    Logger.success(f"Auto-resolved: {error.fix_description} in {error.file_path}")
+                    Logger.success(f"Auto-resolved via Claude Code: {error.error_type} in {error.file_path}")
                 else:
                     resolution_log.append(f"❌ Failed to fix {error.error_type} in {error.file_path}:{error.line_number}")
                     
@@ -245,9 +292,50 @@ class CompilationErrorResolver:
         return False
     
     def _fix_generic_types(self, error: CompilationError) -> bool:
-        """Fix generic type mismatch (basic implementation)"""
-        Logger.info(f"Generic type auto-fix not yet implemented for: {error.file_path}")
-        return False
+        """Fix generic type mismatch using Claude Code and templates"""
+        Logger.info(f"🤖 Using Claude Code to fix type mismatch in {error.file_path}")
+        
+        try:
+            # Load the appropriate template based on error type
+            if "incompatible types" in error.message and "cannot be converted" in error.message:
+                template_name = "compilation_error_type_mismatch_prompt"
+            else:
+                template_name = "compilation_error_base_prompt"
+            
+            # Load and format the prompt template
+            prompt = self.load_prompt_template(
+                template_name,
+                file_path=error.file_path,
+                line_number=error.line_number,
+                column=error.column,
+                error_message=error.message,
+                spring_ai_dir=self.spring_ai_dir
+            )
+            
+            # Use ClaudeCodeWrapper for reliable execution
+            result = self.claude_wrapper.analyze_from_text(
+                prompt_text=prompt,
+                timeout=180,  # 3 minutes
+                use_json_output=False,  # Text output is fine for this
+                show_progress=True
+            )
+            
+            if result['success']:
+                Logger.success(f"Claude Code successfully fixed type mismatch in {error.file_path}")
+                
+                # Run Java formatter after the fix
+                self._apply_java_formatter()
+                
+                return True
+            else:
+                Logger.warn(f"Claude Code failed to fix type mismatch: {result.get('error', 'Unknown error')}")
+                if result.get('stderr'):
+                    Logger.warn(f"Claude stderr: {result['stderr']}")
+                return False
+                
+        except Exception as e:
+            Logger.warn(f"Error using Claude Code to fix type mismatch in {error.file_path}: {e}")
+            return False
     
     def _fix_missing_semicolon(self, error: CompilationError) -> bool:
         """Use Claude Code to intelligently fix missing semicolon"""
@@ -315,6 +403,54 @@ Working directory: {self.spring_ai_dir}"""
                 
         except Exception as e:
             Logger.warn(f"Error applying Java formatter: {e}")
+    
+    def _fix_with_claude_code(self, error: CompilationError) -> bool:
+        """Universal Claude Code handler for any compilation error"""
+        Logger.info(f"🤖 Using Claude Code to fix {error.error_type} in {error.file_path}")
+        
+        try:
+            # Select appropriate template based on error type
+            template_name = "compilation_error_base_prompt"  # Default
+            
+            if error.error_type == 'type_mismatch' or ('incompatible types' in error.message and 'cannot be converted' in error.message):
+                template_name = "compilation_error_type_mismatch_prompt"
+            elif error.error_type == 'missing_symbol' or 'cannot find symbol' in error.message:
+                template_name = "compilation_error_missing_symbol_prompt"
+            
+            # Load and format the prompt template
+            prompt = self.load_prompt_template(
+                template_name,
+                file_path=error.file_path,
+                line_number=error.line_number,
+                column=error.column,
+                error_message=error.message,
+                spring_ai_dir=self.spring_ai_dir
+            )
+            
+            # Use ClaudeCodeWrapper for execution
+            result = self.claude_wrapper.analyze_from_text(
+                prompt_text=prompt,
+                timeout=180,  # 3 minutes
+                use_json_output=False,
+                show_progress=True
+            )
+            
+            if result['success']:
+                Logger.success(f"Claude Code successfully fixed {error.error_type} in {error.file_path}")
+                
+                # Run Java formatter after the fix
+                self._apply_java_formatter()
+                
+                return True
+            else:
+                Logger.warn(f"Claude Code failed to fix {error.error_type}: {result.get('error', 'Unknown error')}")
+                if result.get('stderr'):
+                    Logger.warn(f"Claude stderr: {result['stderr']}")
+                return False
+                
+        except Exception as e:
+            Logger.warn(f"Error using Claude Code to fix {error.error_type} in {error.file_path}: {e}")
+            return False
     
     def generate_error_report(self, errors: List[CompilationError], resolution_log: List[str]) -> str:
         """Generate detailed compilation error report"""
