@@ -21,19 +21,43 @@ python3 pr_workflow.py --report-only 3386
 # Run tests only (assumes PR already prepared) 
 python3 pr_workflow.py --test-only 3386
 
-# Generate workflow plan only
+# Generate workflow plan only (smart analysis & progress tracking)
 python3 pr_workflow.py --plan-only 3386
 
 # Clean up all generated files and repositories
 python3 pr_workflow.py --cleanup 3386
 
 # Granular cleanup control
-python3 pr_workflow.py --cleanup 3386 --cleanup-mode light  # Keep spring-ai repo
+python3 pr_workflow.py --cleanup 3386 --cleanup-mode light  # Keep spring-ai repo, delete PR branch
 python3 pr_workflow.py --cleanup 3386 --cleanup-mode full   # Remove everything
 
 # Preview what would happen without executing
 python3 pr_workflow.py --dry-run 3386
 ```
+
+#### Plan-Only Mode: Smart Pre-Analysis
+
+The `--plan-only` mode is a lightweight analysis tool that generates an intelligent workflow plan without executing any changes:
+
+**What it does:**
+- 🔍 **Smart Analysis**: Detects compilation errors, merge conflicts, and potential issues
+- 📋 **Progress Tracking**: Creates a detailed checklist plan in `/plans/enhanced-plan-pr-XXXX.md`
+- ⚡ **Fast Execution**: Completes in seconds (no compilation, testing, or heavy operations)
+- 🎯 **Issue Preview**: Shows exactly what problems need to be addressed before full workflow
+
+**When to use:**
+- **Before full workflow**: Preview what issues exist and estimate time needed
+- **After cleanup**: Verify PR branch is properly set up (as demonstrated in cleanup testing)
+- **Troubleshooting**: Quick check of current PR state without making changes
+- **Planning**: Understand scope and complexity before committing to full workflow
+
+**Example output location:** `/plans/enhanced-plan-pr-3914.md`
+
+**Perfect for:**
+- Quick PR assessment and planning
+- Validating clean workspace state after cleanup
+- Understanding workflow requirements before execution
+- Team coordination and issue prioritization
 
 ### Workflow Step Control Options
 ```bash
@@ -63,6 +87,149 @@ The Spring AI PR Review system provides a **complete automated workflow** for ef
 **After**: Single command provides complete PR preparation, intelligent conflict resolution, automated compilation fixes, comprehensive testing, professional AI-generated commit messages, and professional-grade AI-powered analysis reports.
 
 ## 🔄 Complete Workflow Overview
+
+### Visual Workflow Diagram
+
+```
+🚀 START: python3 pr_workflow.py 3386
+    │
+    ▼
+┌─ Check Prerequisites ─────────────────────┐
+│  • GitHub CLI authenticated              │
+│  • Claude Code CLI available             │
+│  • Maven/Java environment ready          │
+└───────────────────────────────────────────┘
+    │
+    ▼
+📁 PHASE 1: Repository Setup & PR Preparation
+    │
+    ├─► Clone/Update spring-ai repository
+    ├─► Fetch PR branch via GitHub CLI  
+    ├─► Create clean isolated PR branch
+    └─► Validate PR state and structure
+    │
+    ▼
+🔧 PHASE 2: Initial Compilation & Error Fixing
+    │
+    ├─► Run initial Maven compilation check
+    │
+    ├─ Compilation errors found? ────┐
+    │                                ▼
+    │                           🤖 AI-powered compilation fixing
+    │                           │   (Claude Code + templates)
+    │                           ├─► Detect error types (type mismatch, etc.)
+    │                           ├─► Apply template-based fixes
+    │                           ├─► Add type casts, fix imports
+    │                           └─► Iterative resolution (up to 3 attempts)
+    │                                │
+    │                                ├─ More errors? ─┐
+    │                                │                ▼
+    │                                │            (Loop back)
+    │                                │                │
+    └─ Clean compilation ◄───────────┴────────────────┘
+    │
+    ├─► Run Java formatter on modified files
+    ├─► Commit compilation fixes if any were applied
+    └─► Validate clean build state
+    │
+    ▼
+📝 PHASE 3: Intelligent Commit Management
+    │
+    ├─► Analyze existing commit structure
+    ├─► 🤖 AI-powered intelligent squashing
+    ├─► 🤖 Generate professional commit message (Claude Code)
+    └─► Prepare for upstream integration
+    │
+    ▼
+⚡ PHASE 4: Conflict Resolution & Integration
+    │
+    ├─► Rebase against upstream main branch
+    │
+    ├─ Merge conflicts detected? ────┐
+    │                                ▼
+    │                           🤖 AI conflict resolution
+    │                           │   (Claude Code analysis)
+    │                           ├─► Apply semantic fixes
+    │                           └─► Verify resolution
+    │                                │
+    └─ No conflicts ◄────────────────┘
+    │
+    ▼
+🔧 PHASE 5: Post-Rebase Compilation Check
+    │
+    ├─► Run Maven compilation after rebase
+    │
+    ├─ New compilation errors from rebase? ──┐
+    │                                        ▼
+    │                                   🤖 AI-powered error fixing
+    │                                   │   (Claude Code templates)
+    │                                   ├─► Handle API conflicts from upstream
+    │                                   ├─► Fix dependency version issues
+    │                                   └─► Apply rebase-specific fixes
+    │                                        │
+    │                                        ├─ More errors? ─┐
+    │                                        │                ▼
+    │                                        │            (Loop back)
+    │                                        │                │
+    └─ Clean post-rebase compilation ◄───────┴────────────────┘
+    │
+    ├─► Run Java formatter on any new fixes
+    └─► Commit post-rebase fixes if needed
+    │
+    ▼
+🧪 PHASE 6: Comprehensive Testing
+    │
+    ├─► Discover tests affected by PR changes
+    ├─► Execute modular Maven test suites
+    ├─► Handle container-based tests (Ollama, etc.)
+    ├─► Collect detailed test results and logs
+    └─► Generate test execution summary
+    │
+    ▼
+📊 PHASE 7: AI Analysis & Report Generation
+    │
+    ├─► Collect comprehensive PR context & metadata
+    ├─► 🤖 AI conversation analysis (Claude Code)
+    │    └─► Analyze GitHub discussions & requirements
+    ├─► 🤖 Technical solution assessment (Claude Code)  
+    │    └─► Evaluate architecture impact & patterns
+    ├─► 🤖 Security & quality risk analysis (Claude Code)
+    │    └─► Identify risks & breaking changes
+    └─► Generate comprehensive markdown report
+    │
+    ▼
+✅ WORKFLOW COMPLETE
+    │
+    ├─► Professional analysis report: /reports/review-pr-XXXX.md
+    ├─► Detailed test logs: /reports/test-logs-pr-XXXX/
+    ├─► PR ready for review with clean state
+    └─► All conflicts resolved, compilation clean, tests executed
+
+═══════════════════════════════════════════════════════════════════
+
+🤖 AI INTEGRATION POINTS (Claude Code):
+┌────────────────────────────────────────────────────────────────┐
+│  1. Initial compilation error fixing (Phase 2)               │
+│  2. Professional commit message generation (Phase 3)         │
+│  3. Intelligent merge conflict resolution (Phase 4)          │  
+│  4. Post-rebase compilation fixes (Phase 5)                  │
+│  5. GitHub conversation & requirement analysis (Phase 7)     │
+│  6. Technical solution assessment & risk analysis (Phase 7)  │
+└────────────────────────────────────────────────────────────────┘
+
+🔄 ITERATIVE LOOPS:
+• Compilation errors: Fixed until clean build achieved
+• Conflict resolution: Continues until all conflicts resolved  
+• Testing: Retries failed tests with different strategies
+
+⚠️  ERROR HANDLING:
+• Prerequisites missing → Exit with guidance
+• Merge conflicts → AI resolution → Manual fallback if needed
+• Compilation errors → AI fixing → Template-based repair
+• Test failures → Detailed logging → Continue with warnings
+```
+
+### Detailed Step-by-Step Process
 
 When you run `python3 pr_workflow.py 3386`, here's what happens automatically:
 
@@ -329,6 +496,44 @@ All AI prompts and responses are saved to the `logs/` directory for debugging:
 - `claude-prompt-*.txt` - Prompts sent to Claude Code
 - `claude-response-*.txt` - Raw responses from Claude Code
 - Debug logs include token estimation and performance metrics
+
+### Cleanup Modes
+
+The system supports two cleanup modes for different use cases:
+
+#### Light Mode (Default)
+```bash
+python3 pr_workflow.py --cleanup 3914
+# OR explicitly:
+python3 pr_workflow.py --cleanup 3914 --cleanup-mode light
+```
+
+**What it cleans:**
+- ✅ Switches back to `main` branch from PR branch
+- ✅ **Deletes the PR branch** for fresh state
+- ✅ Discards any uncommitted changes
+- ✅ Removes generated reports, logs, and context files
+
+**What it preserves:**
+- ✅ Keeps the `spring-ai/` repository directory intact
+- ✅ Preserves git history and remote configuration
+- ✅ Maintains repository for efficient re-use
+
+#### Full Mode (Complete Reset)
+```bash
+python3 pr_workflow.py --cleanup 3914 --cleanup-mode full
+```
+
+**What it does:**
+- 🗑️ Completely removes the entire `spring-ai/` directory
+- 🗑️ Forces fresh clone on next workflow run
+- 🗑️ Use when troubleshooting repository issues
+
+**Benefits of Light Mode:**
+- **Faster subsequent runs** - No need to re-clone repository
+- **Bandwidth savings** - Repository already available locally
+- **Fresh PR state** - PR branch deleted and re-fetched cleanly
+- **Efficient** - Optimal balance of cleanliness and performance
 
 ## 🔧 Individual Component Scripts
 

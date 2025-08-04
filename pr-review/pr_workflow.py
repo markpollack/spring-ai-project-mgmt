@@ -743,6 +743,41 @@ class PRWorkflow:
         except:
             return "unknown"
     
+    def _delete_pr_branch(self, branch_name: str, pr_number: str = None) -> bool:
+        """Delete a PR branch for cleaner workspace state"""
+        if not branch_name or branch_name == self.config.main_branch:
+            return False
+            
+        try:
+            # Check if branch exists
+            branches_result = self.git.run_git(["branch", "--list", branch_name], capture_output=True)
+            if not branches_result.stdout.strip():
+                Logger.debug(f"Branch {branch_name} doesn't exist, nothing to delete")
+                return True
+            
+            Logger.info(f"🗑️  Deleting PR branch: {branch_name}")
+            self.git.run_git(["branch", "-D", branch_name])
+            Logger.info(f"✅ Deleted PR branch: {branch_name}")
+            
+            # Also try to get and delete the PR branch from GitHub mapping as fallback
+            if pr_number:
+                expected_branch = self.github_utils.get_pr_branch_name(pr_number)
+                if expected_branch and expected_branch != branch_name and expected_branch != self.config.main_branch:
+                    try:
+                        branches_result = self.git.run_git(["branch", "--list", expected_branch], capture_output=True)
+                        if branches_result.stdout.strip():
+                            Logger.info(f"🗑️  Also deleting expected PR branch: {expected_branch}")
+                            self.git.run_git(["branch", "-D", expected_branch])
+                            Logger.info(f"✅ Deleted expected PR branch: {expected_branch}")
+                    except Exception as e:
+                        Logger.debug(f"Could not delete expected branch {expected_branch}: {e}")
+            
+            return True
+            
+        except Exception as e:
+            Logger.warn(f"Failed to delete PR branch {branch_name}: {e}")
+            return False
+    
     def _format_compilation_errors(self, errors) -> str:
         """Format compilation errors for plan display"""
         if not errors:
@@ -867,8 +902,14 @@ class PRWorkflow:
                     
                     self.git.run_git(["checkout", self.config.main_branch])
                     Logger.info("✅ Switched to main branch (keeping repository)")
+                    
+                    # Delete the PR branch for cleaner state
+                    self._delete_pr_branch(current_branch, pr_number)
             except Exception as e:
                 Logger.warn(f"Error switching to main branch: {e}")
+                # Still try to delete PR branch if we know what it was
+                if hasattr(self, 'current_pr_branch') and self.current_pr_branch:
+                    self._delete_pr_branch(self.current_pr_branch, pr_number)
         elif cleanup_mode == 'full':
             # For full cleanup, the entire spring-ai directory will be removed
             Logger.info("📁 Spring AI directory will be completely removed (full cleanup)")
