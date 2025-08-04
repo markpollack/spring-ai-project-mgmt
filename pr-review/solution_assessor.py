@@ -225,21 +225,21 @@ class AIPoweredSolutionAssessor:
                             with open(file_path, 'r', encoding='utf-8') as f:
                                 content = f.read()
                             
-                            # Detect Spring patterns
+                            # Detect Spring patterns (without including file paths)
                             if '@Configuration' in content:
-                                patterns.append(f"Spring Configuration class: {file}")
+                                patterns.append("Spring Configuration class pattern")
                             if '@Component' in content or '@Service' in content or '@Repository' in content:
-                                patterns.append(f"Spring component: {file}")
+                                patterns.append("Spring component pattern")
                             if '@Bean' in content:
-                                patterns.append(f"Bean definition: {file}")
+                                patterns.append("Bean definition pattern")
                             if 'ChatClient' in content or 'EmbeddingClient' in content:
-                                patterns.append(f"AI client integration: {file}")
+                                patterns.append("AI client integration pattern")
                             if re.search(r'class.*Test', content) or 'test' in file.lower():
-                                patterns.append(f"Test implementation: {file}")
+                                patterns.append("Test implementation pattern")
                             if '@Override' in content:
-                                patterns.append(f"Method overrides: {file}")
+                                patterns.append("Method override pattern")
                             if 'implements' in content:
-                                patterns.append(f"Interface implementation: {file}")
+                                patterns.append("Interface implementation pattern")
                                 
                         except Exception as e:
                             Logger.warn(f"⚠️  Could not analyze {file}: {e}")
@@ -342,11 +342,19 @@ class AIPoweredSolutionAssessor:
         return formatted_prompt
     
     def _build_file_changes_detail(self, file_changes: List[Dict[str, Any]]) -> str:
-        """Build detailed file changes summary"""
+        """Build detailed file changes summary with absolute paths"""
         if not file_changes:
             return "No file changes detected."
         
         details = []
+        details.append("CRITICAL INSTRUCTIONS:")
+        details.append("1. ONLY read and analyze the files explicitly listed below")
+        details.append("2. DO NOT explore or read any other files in the codebase")
+        details.append("3. DO NOT follow imports or dependencies to other files")
+        details.append("4. The list below contains ALL files in this PR - do not search for more")
+        details.append("")
+        details.append("Files to analyze:")
+        
         for change in file_changes:
             filename = change.get('filename', 'Unknown')
             status = change.get('status', 'unknown')
@@ -360,7 +368,12 @@ class AIPoweredSolutionAssessor:
                 'renamed': 'Renamed'
             }.get(status, status)
             
-            details.append(f"- **{filename}**: {status_desc} (+{additions}/-{deletions})")
+            # Convert to absolute path
+            abs_path = str(self.spring_ai_dir / filename)
+            details.append(f"- **{abs_path}**: {status_desc} (+{additions}/-{deletions})")
+        
+        details.append("")
+        details.append("IMPORTANT: You have all necessary context above. Do not attempt to read additional files.")
         
         return '\n'.join(details)
     

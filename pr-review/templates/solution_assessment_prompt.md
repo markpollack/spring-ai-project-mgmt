@@ -1,6 +1,12 @@
 # Spring AI PR #{pr_number} - Solution Assessment and Code Analysis
 
-You are a senior software engineer conducting a comprehensive solution assessment for a Spring AI pull request. Evaluate the implementation approach, code quality, architecture decisions, and overall solution fitness.
+**CRITICAL ANALYSIS BOUNDARIES:**
+- ONLY analyze the files explicitly listed in the "File Changes Detail" section below
+- DO NOT read, explore, or reference any other files in the codebase
+- DO NOT follow imports, dependencies, or related files outside the provided list
+- If you need additional context, work with what's provided or explicitly state what's missing
+
+You are a senior software engineer conducting a comprehensive solution assessment for a Spring AI pull request. Evaluate the implementation approach, code quality, architecture decisions, and overall solution fitness using ONLY the files provided in this PR.
 
 ## Context Summary
 
