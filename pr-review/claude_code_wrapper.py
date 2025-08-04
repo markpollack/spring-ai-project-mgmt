@@ -464,7 +464,8 @@ class ClaudeCodeWrapper:
         return result
     
     def analyze_from_text_with_json(self, prompt_text: str, output_file_path: Optional[str] = None,
-                                   timeout: int = 300, show_progress: bool = True) -> Dict[str, Any]:
+                                   timeout: int = 300, show_progress: bool = True,
+                                   log_prefix: str = None) -> Dict[str, Any]:
         """
         Analyze from text and automatically extract JSON from the response.
         
@@ -485,7 +486,8 @@ class ClaudeCodeWrapper:
             output_file_path=output_file_path,
             timeout=timeout,
             use_json_output=True,  # Force JSON mode for better parsing
-            show_progress=show_progress
+            show_progress=show_progress,
+            log_prefix=log_prefix
         )
         
         # If the call failed, return as-is
@@ -503,7 +505,8 @@ class ClaudeCodeWrapper:
         return result
     
     def analyze_from_text(self, prompt_text: str, output_file_path: Optional[str] = None,
-                         timeout: int = 300, use_json_output: bool = True, show_progress: bool = True) -> Dict[str, Any]:
+                         timeout: int = 300, use_json_output: bool = True, show_progress: bool = True,
+                         log_prefix: str = None) -> Dict[str, Any]:
         """
         Analyze using Claude Code with prompt text directly
         
@@ -513,13 +516,17 @@ class ClaudeCodeWrapper:
             timeout: Timeout in seconds (default 300 = 5 minutes)
             use_json_output: Use --output-format json for structured responses
             show_progress: Show animated progress during execution (default True)
+            log_prefix: Descriptive prefix for log file naming (e.g., 'compilation-error-type-mismatch')
             
         Returns:
             Dict containing success status, response, error info, etc.
         """
-        # Create persistent prompt file for debugging
+        # Create persistent prompt file for debugging with descriptive naming
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        prompt_file_path = self.logs_dir / f"claude-prompt-{timestamp}.md"
+        if log_prefix:
+            prompt_file_path = self.logs_dir / f"claude-prompt-{log_prefix}-{timestamp}.md"
+        else:
+            prompt_file_path = self.logs_dir / f"claude-prompt-{timestamp}.md"
         
         with open(prompt_file_path, 'w', encoding='utf-8') as f:
             f.write(prompt_text)

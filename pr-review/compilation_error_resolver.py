@@ -427,12 +427,14 @@ Working directory: {self.spring_ai_dir}"""
                 spring_ai_dir=self.spring_ai_dir
             )
             
-            # Use ClaudeCodeWrapper for execution
+            # Use ClaudeCodeWrapper for execution with descriptive logging
+            log_prefix = f"compilation-error-{error.error_type}-{Path(error.file_path).stem}-line{error.line_number}"
             result = self.claude_wrapper.analyze_from_text(
                 prompt_text=prompt,
                 timeout=180,  # 3 minutes
                 use_json_output=False,
-                show_progress=True
+                show_progress=True,
+                log_prefix=log_prefix
             )
             
             if result['success']:
