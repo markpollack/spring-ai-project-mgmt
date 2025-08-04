@@ -56,19 +56,13 @@ class SinglePRHTMLGenerator:
         print(f"🎨 Generating HTML report for PR #{pr_number}...")
         
         try:
-            # Load PR data using the existing batch generator logic
-            from html_report_generator import LowHangingFruitReportGenerator
-            
-            # Create temporary batch generator to reuse data loading logic
-            batch_generator = LowHangingFruitReportGenerator(self.working_dir)
-            
-            # Process single PR directory
+            # Load PR data directly (not using batch generator to avoid file truncation)
             pr_dir = self.context_dir / f"pr-{pr_number}"
             if not pr_dir.exists():
                 print(f"⚠️  PR context directory not found: {pr_dir}")
                 return None
                 
-            pr_summary = batch_generator._process_pr_directory(pr_dir)
+            pr_summary = self._load_single_pr_data(pr_dir)
             if not pr_summary:
                 print(f"⚠️  Failed to process PR data for #{pr_number}")
                 return None
@@ -89,6 +83,203 @@ class SinglePRHTMLGenerator:
         except Exception as e:
             print(f"❌ Failed to generate HTML report: {e}")
             return None
+    
+    def _load_single_pr_data(self, pr_dir: Path) -> Optional[PRSummary]:
+        """Load PR data with complete file changes (not truncated like batch generator)"""
+        import json
+        
+        pr_number = pr_dir.name.replace('pr-', '')
+        
+        # Load required JSON files
+        pr_data_file = pr_dir / "pr-data.json"
+        risk_file = pr_dir / "ai-risk-assessment.json"
+        changes_file = pr_dir / "file-changes.json"
+        backport_file = pr_dir / "backport-assessment.json"
+        
+        required_files = [pr_data_file, risk_file, changes_file]
+        if not all(f.exists() for f in required_files):
+            missing = [f.name for f in required_files if not f.exists()]
+            print(f"⚠️  Missing data files for PR #{pr_number}: {missing}")
+            return None
+            
+        # Load JSON data
+        try:
+            with open(pr_data_file) as f:
+                pr_data = json.load(f)
+            with open(risk_file) as f:
+                risk_data = json.load(f)
+            with open(changes_file) as f:
+                file_changes = json.load(f)  # Load ALL files, not truncated
+                
+            print(f"📊 Loaded {len(file_changes)} files for HTML generation")
+                
+            # Load backport assessment if available
+            backport_data = {}
+            if backport_file.exists():
+                try:
+                    with open(backport_file) as f:
+                        backport_data = json.load(f)
+                except Exception as e:
+                    print(f"⚠️  Could not load backport assessment: {e}")
+            
+            # Load conversation analysis if available
+            conv_file = pr_dir / "ai-conversation-analysis.json"
+            conversation_data = {}
+            if conv_file.exists():
+                try:
+                    with open(conv_file) as f:
+                        conversation_data = json.load(f)
+                except Exception as e:
+                    print(f"⚠️  Could not load conversation analysis: {e}")
+            
+            # Process backport data
+            backport_decision = backport_data.get("decision", "UNKNOWN")
+            backport_reasoning = backport_data.get("reasoning", "Not available")
+            
+            # Create PRSummary with complete file changes matching the exact dataclass structure
+            return PRSummary(
+                number=str(pr_data["number"]),
+                title=pr_data["title"],
+                author=pr_data["author"],
+                url=pr_data["url"],
+                risk_level=risk_data.get("overall_risk_level", "UNKNOWN"),
+                risk_summary=risk_data.get("risk_summary", "Not available"),
+                positive_findings=risk_data.get("positive_findings", []),
+                risk_factors=risk_data.get("risk_factors", []),
+                changed_files=pr_data.get("changed_files", len(file_changes)),
+                additions=pr_data.get("additions", 0),
+                deletions=pr_data.get("deletions", 0),
+                processing_time=None,
+                prompt_size=None,
+                created_at=pr_data.get("created_at", ""),
+                state=pr_data.get("state", "unknown"),
+                draft=pr_data.get("draft", False),
+                pr_type="feature",  # Default for single PR
+                harvest_difficulty="medium",  # Default for single PR
+                effort_score=5,  # Default for single PR
+                fruit_icon="🍎",  # Default for single PR
+                backport_eligible=(backport_decision == "APPROVE"),
+                backport_decision=backport_decision,
+                backport_classification=backport_data.get("classification", "Unknown"),
+                backport_risk_level=backport_data.get("risk_level", "Unknown"),
+                backport_reasoning=backport_reasoning,
+                backport_recommendations=backport_data.get("recommendations", ""),
+                backport_badge_color="green" if backport_decision == "APPROVE" else "red",
+                backport_icon="✅" if backport_decision == "APPROVE" else "❌",
+                file_changes=file_changes,  # ALL files, not truncated!
+                commit_message=self._load_commit_message(pr_number),
+                problem_summary=conversation_data.get("problem_summary", ""),
+                key_requirements=conversation_data.get("key_requirements", []),
+                design_decisions=conversation_data.get("design_decisions", []),
+                outstanding_concerns=conversation_data.get("outstanding_concerns", []),
+                solution_approaches=conversation_data.get("solution_approaches", []),
+                complexity_indicators=conversation_data.get("complexity_indicators", []),
+                quality_assessment=conversation_data.get("quality_assessment", ""),
+                recommendations=conversation_data.get("recommendations", []),
+                stakeholder_feedback=conversation_data.get("stakeholder_feedback", []),
+                scope_analysis="",  # Not available in single PR context
+                architecture_impact=conversation_data.get("architecture_impact", []),
+                implementation_quality=conversation_data.get("implementation_quality", []),
+                breaking_changes_assessment=[],  # Not available in single PR context
+                testing_adequacy=conversation_data.get("testing_adequacy", []),
+                documentation_completeness=[],  # Not available in single PR context
+                solution_fitness="",  # Not available in single PR context
+                solution_risk_factors=[]  # Not available in single PR context
+            )
+            
+        except Exception as e:
+            print(f"❌ Error loading PR data: {e}")
+            return None
+    
+    def _load_commit_message(self, pr_number: str) -> str:
+        """Load the AI-generated commit message for a PR (adapted from batch generator)"""
+        # Check logs directory for commit message files
+        commit_file_paths = [
+            self.logs_dir / f"claude-response-commit-message-{pr_number}.txt",
+            self.working_dir / "logs" / f"claude-response-commit-message-{pr_number}.txt"
+        ]
+        
+        for commit_file in commit_file_paths:
+            if commit_file.exists():
+                try:
+                    with open(commit_file, 'r', encoding='utf-8') as f:
+                        raw_content = f.read()
+                    
+                    # Extract the actual commit message (skip Claude Code wrapper metadata)
+                    lines = raw_content.split('\n')
+                    response_started = False
+                    response_lines = []
+                    
+                    for line in lines:
+                        if line.startswith('Response:'):
+                            response_started = True
+                            continue
+                        elif response_started:
+                            response_lines.append(line)
+                    
+                    if response_lines:
+                        raw_message = '\n'.join(response_lines).strip()
+                        # Apply the same extraction logic as the commit message generator
+                        cleaned_message = self._extract_commit_message_from_response(raw_message)
+                        if cleaned_message:
+                            return cleaned_message
+                    
+                    # Fallback to raw content if extraction fails
+                    return raw_content.strip()
+                    
+                except Exception as e:
+                    print(f"⚠️  Error reading commit message file {commit_file}: {e}")
+                    continue
+        
+        return ""  # Return empty string if no commit message found
+    
+    def _extract_commit_message_from_response(self, raw_response: str) -> str:
+        """Extract clean commit message from Claude Code response (simplified version)"""
+        if not raw_response:
+            return ""
+        
+        import re
+        lines = raw_response.split('\n')
+        message_lines = []
+        in_commit_message = False
+        
+        for line in lines:
+            line = line.strip()
+            
+            # Skip empty lines at the start
+            if not line and not message_lines:
+                continue
+            
+            # Skip Claude Code reasoning patterns
+            if any(pattern in line.lower() for pattern in [
+                'now i\'ll generate', 'i\'ll generate', 'let me generate', 'based on the information gathered',
+                'here\'s the commit message', 'based on the template', 'here is the commit message', 
+                'analyzing the pr', 'looking at the changes', 'considering the', 'given the'
+            ]):
+                continue
+            
+            # Skip lines that start with common reasoning indicators
+            if line.lower().startswith(('now ', 'based on', 'here is', 'here\'s', 'i\'ll', 'let me', 'analyzing')):
+                continue
+            
+            # Look for conventional commit format
+            conventional_pattern = r'^(feat|fix|docs|style|refactor|test|chore|perf|ci|build|revert)(\([^)]+\))?:'
+            if re.match(conventional_pattern, line, re.IGNORECASE):
+                in_commit_message = True
+                message_lines.append(line)
+            elif in_commit_message:
+                message_lines.append(line)
+        
+        if message_lines:
+            commit_message = '\n'.join(message_lines).strip()
+            # Final validation - ensure no reasoning text leaked through
+            first_line = commit_message.split('\n')[0].lower()
+            if not any(bad_pattern in first_line for bad_pattern in [
+                'now i\'ll', 'based on the information', 'let me generate', 'analyzing'
+            ]):
+                return commit_message
+        
+        return ""
     
     def _generate_single_pr_html(self, pr: PRSummary) -> str:
         """Generate HTML content for a single PR"""
@@ -253,13 +444,17 @@ class SinglePRHTMLGenerator:
                 <p><em>No file changes data available</em></p>
             </section>"""
         
-        # Group files by type
+        # Group files by type with better Spring AI categorization
         java_files = [f for f in pr.file_changes if f.get('filename', '').endswith('.java')]
         test_files = [f for f in java_files if 'test' in f.get('filename', '').lower()]
         src_files = [f for f in java_files if f not in test_files]
-        config_files = [f for f in pr.file_changes if f.get('filename', '').endswith(('.xml', '.yml', '.yaml', '.properties'))]
-        doc_files = [f for f in pr.file_changes if f.get('filename', '').endswith(('.md', '.adoc', '.txt'))]
-        other_files = [f for f in pr.file_changes if f not in java_files + config_files + doc_files]
+        
+        config_files = [f for f in pr.file_changes if f.get('filename', '').endswith(('.xml', '.yml', '.yaml', '.properties', '.imports'))]
+        doc_files = [f for f in pr.file_changes if f.get('filename', '').endswith(('.md', '.adoc', '.txt', '.rst'))]
+        
+        # Include all remaining files in other_files, ensuring comprehensive coverage
+        categorized_files = java_files + config_files + doc_files
+        other_files = [f for f in pr.file_changes if f not in categorized_files]
         
         return f"""
         <section class="code-changes">
@@ -276,7 +471,20 @@ class SinglePRHTMLGenerator:
     def _generate_file_group(self, title: str, files: List[Dict], group_id: str) -> str:
         """Generate a file group section"""
         if not files:
-            return ""
+            return f"""
+        <div class="file-group">
+            <button class="file-group-toggle" onclick="toggleFileGroup('{group_id}')">
+                <span class="toggle-icon">▶</span>
+                {title} (0 files)
+            </button>
+            <div id="{group_id}" class="file-group-content collapsed">
+                <div class="file-item">
+                    <span class="file-status">ℹ️</span>
+                    <span class="file-name"><em>No files in this category</em></span>
+                    <span class="file-changes">+0 -0</span>
+                </div>
+            </div>
+        </div>"""
         
         file_items = []
         for file_info in files:

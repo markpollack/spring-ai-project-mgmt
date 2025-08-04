@@ -301,8 +301,8 @@ class AIPoweredSolutionAssessor:
         conversation_analysis = context_data.get('conversation_analysis', {})
         file_changes = context_data.get('file_changes', [])
         
-        # Build file changes detail
-        file_changes_detail = self._build_file_changes_detail(file_changes[:10])  # Limit details
+        # Build file changes file path for Claude Code to read
+        file_changes_file_path = str(self.working_dir / "context" / f"pr-{pr_number}" / "file-changes.json")
         
         # Build file types breakdown
         file_types = {}
@@ -331,7 +331,7 @@ class AIPoweredSolutionAssessor:
             total_lines_added=code_analysis.get('total_lines_added', 0),
             total_lines_removed=code_analysis.get('total_lines_removed', 0),
             file_types_breakdown=file_types_breakdown,
-            file_changes_detail=file_changes_detail,
+            file_changes_file_path=file_changes_file_path,
             implementation_patterns='\n'.join(f"- {pattern}" for pattern in code_analysis.get('implementation_patterns', [])),
             test_files_count=code_analysis.get('test_analysis', {}).get('test_files_count', 0),
             test_coverage_areas=', '.join(code_analysis.get('test_analysis', {}).get('test_coverage_areas', [])),

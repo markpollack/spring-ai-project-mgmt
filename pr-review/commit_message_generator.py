@@ -285,29 +285,62 @@ Respond with ONLY the complete commit message text, exactly as it should appear 
             if not line and not message_lines:
                 continue
                 
-            # Skip obvious explanation text
-            if any(phrase in line.lower() for phrase in [
-                'based on the template', 'here is the commit message', 
-                'commit message for pr', 'following the guidelines'
+            # Skip Claude Code reasoning patterns (expanded list)
+            if any(pattern in line.lower() for pattern in [
+                'now i\'ll generate', 'i\'ll generate', 'let me generate', 'based on the information gathered',
+                'here\'s the commit message', 'based on the template', 'here is the commit message', 
+                'commit message for pr', 'following the guidelines', 'based on the context',
+                'analyzing the pr', 'looking at the changes', 'considering the', 'given the',
+                'i\'ll create', 'let me create', 'generating commit message', 'commit message based on'
             ]):
                 continue
             
+            # Skip lines that start with common reasoning indicators
+            if line.lower().startswith(('now ', 'based on', 'here is', 'here\'s', 'i\'ll', 'let me', 'analyzing', 'considering')):
+                continue
+            
             # Look for conventional commit format or commit-like lines
-            if ((':' in line and len(line) < 100) or 
-                (line and not line.startswith('Based on') and not line.startswith('Here is'))):
+            # More specific pattern matching for commit messages
+            is_commit_line = False
+            
+            # Check for conventional commit format (type(scope): description)
+            conventional_pattern = r'^(feat|fix|docs|style|refactor|test|chore|perf|ci|build|revert)(\([^)]+\))?:'
+            if re.match(conventional_pattern, line, re.IGNORECASE):
+                is_commit_line = True
                 in_commit_message = True
             
-            if in_commit_message:
+            # Check for other commit-like patterns
+            elif in_commit_message or (line and len(line) > 10 and len(line) < 100 and not line.startswith('Response:')):
+                is_commit_line = True
+                if not in_commit_message:
+                    in_commit_message = True
+            
+            if is_commit_line:
                 message_lines.append(line)
         
         if message_lines:
             commit_message = '\n'.join(message_lines).strip()
+            
+            # Final validation - ensure no reasoning text leaked through
+            first_line = commit_message.split('\n')[0].lower()
+            if any(bad_pattern in first_line for bad_pattern in [
+                'now i\'ll', 'based on the information', 'let me generate', 'analyzing'
+            ]):
+                Logger.warn(f"⚠️  Detected reasoning text in extracted commit message: {first_line[:50]}...")
+                return None
+            
             if len(commit_message) > 10:
                 return commit_message
         
         # Fallback: use the entire response if it looks like a commit message
         if len(raw_response) < 2000 and '\n' in raw_response:
-            return raw_response.strip()
+            cleaned = raw_response.strip()
+            # Check if fallback also contains reasoning text
+            first_line = cleaned.split('\n')[0].lower()
+            if not any(bad_pattern in first_line for bad_pattern in [
+                'now i\'ll', 'based on the information', 'let me generate', 'analyzing'
+            ]):
+                return cleaned
         
         return None
     
@@ -324,6 +357,14 @@ Respond with ONLY the complete commit message text, exactly as it should appear 
         first_line = lines[0].strip()
         if not first_line or len(first_line) > 100:
             return False
+        
+        # CRITICAL: Check for Claude Code reasoning text that leaked through
+        if any(bad_pattern in first_line.lower() for bad_pattern in [
+            'now i\'ll', 'based on the information', 'let me generate', 'analyzing', 
+            'i\'ll create', 'here is the', 'here\'s the'
+        ]):
+            Logger.error(f"❌ MALFORMED COMMIT MESSAGE: Contains reasoning text: {first_line[:80]}")
+            return False
             
         # Check for common commit message patterns
         has_colon = ':' in first_line
@@ -331,6 +372,48 @@ Respond with ONLY the complete commit message text, exactly as it should appear 
         
         # Accept messages with either conventional commit format or descriptive format
         return has_colon or len(first_line.split()) >= 2
+    
+    def validate_existing_commit_message(self, commit_message: str) -> Dict[str, Any]:
+        """Public method to validate any commit message and return detailed results"""
+        result = {
+            'is_valid': True,
+            'warnings': [],
+            'errors': [],
+            'suggestions': []
+        }
+        
+        if not commit_message or len(commit_message.strip()) < 10:
+            result['is_valid'] = False
+            result['errors'].append("Commit message is too short (minimum 10 characters)")
+            return result
+        
+        lines = commit_message.strip().split('\n')
+        first_line = lines[0].strip()
+        
+        # Check for Claude Code reasoning text
+        reasoning_patterns = [
+            'now i\'ll generate', 'based on the information gathered', 'let me generate', 
+            'analyzing the pr', 'i\'ll create', 'here is the commit message', 'here\'s the'
+        ]
+        
+        for pattern in reasoning_patterns:
+            if pattern in first_line.lower():
+                result['is_valid'] = False
+                result['errors'].append(f"Contains Claude Code reasoning text: '{pattern}'")
+                result['suggestions'].append("Regenerate commit message with improved extraction")
+                break
+        
+        # Check line length
+        if len(first_line) > 100:
+            result['warnings'].append(f"First line is too long ({len(first_line)} chars, recommended max 72)")
+        
+        # Check for conventional commit format
+        import re
+        conventional_pattern = r'^(feat|fix|docs|style|refactor|test|chore|perf|ci|build|revert)(\([^)]+\))?:'
+        if not re.match(conventional_pattern, first_line, re.IGNORECASE):
+            result['warnings'].append("Not using conventional commit format (feat:, fix:, etc.)")
+        
+        return result
     
     def _generate_fallback_message(self, pr_number: str, fallback_title: str = None, 
                                  error_reason: str = None) -> CommitMessageResult:

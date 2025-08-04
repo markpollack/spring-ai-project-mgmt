@@ -22,8 +22,21 @@ You are a senior software engineer conducting a comprehensive solution assessmen
 - **Lines Removed**: {total_lines_removed}
 - **File Types**: {file_types_breakdown}
 
-### File Changes Detail
-{file_changes_detail}
+### File Changes Analysis Instructions
+
+**CRITICAL**: Please read the complete file changes data using: 
+
+```
+Please read the file {file_changes_file_path} and analyze ALL files listed in it.
+```
+
+This file contains a JSON array with detailed information about all {total_files_changed} files changed in this PR. Each file entry includes:
+- filename: Full path of the changed file
+- status: "added", "modified", "removed", or "renamed" 
+- additions/deletions: Line counts
+- patch: Diff content for modified files
+
+**FILE COUNT VALIDATION**: After reading the file, confirm you have analyzed exactly {total_files_changed} files total.
 
 ### Implementation Patterns Detected
 {implementation_patterns}

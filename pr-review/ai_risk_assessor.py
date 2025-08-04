@@ -598,7 +598,7 @@ class AIRiskAssessor:
             'total_files_changed': len(file_changes),
             'total_lines_added': sum(f.get('additions', 0) for f in file_changes),
             'total_lines_removed': sum(f.get('deletions', 0) for f in file_changes),
-            'file_changes_detail': self.build_file_changes_detail(file_changes),
+            'file_changes_file_path': str(self.context_dir / f"pr-{pr_number}" / "file-changes.json"),
             'key_requirements_list': self._format_list_items(conversation_analysis.get('key_requirements', [])),
             'outstanding_concerns_list': self._format_list_items(conversation_analysis.get('outstanding_concerns', []))
         }
