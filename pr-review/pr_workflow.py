@@ -1704,7 +1704,8 @@ File content with conflicts:"""
         
         return True
     
-    def run_report_only(self, pr_number: str, dry_run: bool = False, skip_backport: bool = False, force_fresh: bool = False) -> bool:
+    def run_report_only(self, pr_number: str, dry_run: bool = False, skip_backport: bool = False, force_fresh: bool = False, 
+                       no_html: bool = False, html_only: bool = False, open_browser: bool = False) -> bool:
         """Generate enhanced PR analysis report with AI-powered analysis (assumes PR is already prepared)"""
         Logger.info(f"📊 Generating PR analysis report for PR #{pr_number}")
         
@@ -1746,15 +1747,75 @@ File content with conflicts:"""
             Logger.warn(f"Could not validate PR branch from GitHub: {e}")
             Logger.info(f"Current branch: '{current_branch}' - ensure this matches PR #{pr_number}")
         
-        # Generate the enhanced report (now the only report)
-        report_file = self.pr_analyzer.generate_report(pr_number, dry_run, force_fresh=force_fresh, skip_backport=skip_backport)
+        # Generate reports based on options
+        report_file = None
+        html_report_file = None
         
-        if report_file:
-            Logger.success(f"📋 Enhanced PR analysis report generated: {report_file}")
-            return True
+        # Generate markdown report unless html-only mode
+        if not html_only:
+            report_file = self.pr_analyzer.generate_report(pr_number, dry_run, force_fresh=force_fresh, skip_backport=skip_backport)
+            if report_file:
+                Logger.success(f"📋 Markdown report generated: {report_file}")
+            else:
+                Logger.error("❌ Markdown report generation failed")
+                if not html_only:  # If this was the only report type requested, fail
+                    return False
+        
+        # Generate HTML report unless no-html mode or if markdown failed and we're not in html-only mode
+        if not no_html and not dry_run and (report_file or html_only):
+            try:
+                from single_pr_html_generator import SinglePRHTMLGenerator
+                
+                html_generator = SinglePRHTMLGenerator(
+                    working_dir=self.config.script_dir,
+                    context_dir=self.config.context_dir,
+                    reports_dir=self.config.reports_dir,
+                    logs_dir=self.config.logs_dir
+                )
+                
+                html_report_file = html_generator.generate_html_report(pr_number)
+                
+                if html_report_file:
+                    Logger.success(f"🎨 HTML report generated: {html_report_file}")
+                    
+                    # Open browser if requested
+                    if open_browser:
+                        try:
+                            import webbrowser
+                            file_url = f"file://{html_report_file.absolute()}"
+                            webbrowser.open(file_url)
+                            Logger.info(f"🌐 Opened HTML report in browser: {file_url}")
+                        except Exception as e:
+                            Logger.warn(f"⚠️  Could not open browser: {e}")
+                            Logger.info(f"🔗 Manual URL: file://{html_report_file.absolute()}")
+                else:
+                    Logger.warn("⚠️  HTML report generation failed")
+                    if html_only:  # If this was the only report type requested, fail
+                        return False
+                    
+            except Exception as e:
+                Logger.warn(f"⚠️  HTML report generation failed: {e}")
+                if html_only:  # If this was the only report type requested, fail
+                    Logger.error("❌ HTML-only mode failed")
+                    return False
+                Logger.info("📋 Markdown report is still available")
+        
+        # Summary of what was generated
+        if report_file and html_report_file:
+            Logger.info(f"📊 Dual output generated:")
+            Logger.info(f"   📄 Markdown: {report_file}")
+            Logger.info(f"   🌐 HTML: {html_report_file}")
+            Logger.info(f"   🔗 Open HTML: file://{html_report_file.absolute()}")
+        elif report_file:
+            Logger.info(f"📄 Markdown report: {report_file}")
+        elif html_report_file:
+            Logger.info(f"🌐 HTML report: {html_report_file}")
+            Logger.info(f"🔗 Open HTML: file://{html_report_file.absolute()}")
         else:
-            Logger.error("❌ Enhanced report generation failed")
+            Logger.error("❌ No reports were generated successfully")
             return False
+            
+        return True
     
     def run_test_only(self, pr_number: str, dry_run: bool = False) -> bool:
         """Run only the changed tests (assumes PR is already prepared)"""
@@ -2181,6 +2242,9 @@ Examples:
     parser.add_argument('--report-only', action='store_true', help='Generate only the analysis report (assumes PR already prepared)')
     parser.add_argument('--skip-backport', action='store_true', help='Skip backport assessment in report generation')
     parser.add_argument('--force-fresh', action='store_true', help='Force fresh AI analysis (ignore cached assessments)')
+    parser.add_argument('--no-html', action='store_true', help='Skip HTML report generation (generate only markdown)')
+    parser.add_argument('--html-only', action='store_true', help='Generate only HTML report (skip markdown)')
+    parser.add_argument('--open-browser', action='store_true', help='Automatically open HTML report in browser')
     parser.add_argument('--test-only', action='store_true', help='Run only the changed tests (assumes PR already prepared)')
     parser.add_argument('--plan-only', action='store_true', help='Generate enhanced workflow plan with progress tracking')
     parser.add_argument('--cleanup', action='store_true', help='Clean up PR workspace and generated files')
@@ -2214,7 +2278,10 @@ Examples:
             pr_number=args.pr_number,
             dry_run=args.dry_run,
             skip_backport=args.skip_backport,
-            force_fresh=args.force_fresh
+            force_fresh=args.force_fresh,
+            no_html=args.no_html,
+            html_only=args.html_only,
+            open_browser=args.open_browser
         )
     elif args.test_only:
         success = workflow.run_test_only(
