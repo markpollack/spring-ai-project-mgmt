@@ -656,14 +656,54 @@ class PRWorkflow:
         
         if auto_fixable:
             Logger.info(f"🔧 {len(auto_fixable)} error(s) can be auto-resolved")
-            resolved_count, resolution_log = self.compilation_resolver.auto_resolve_errors(errors)
             
-            if resolved_count > 0:
-                Logger.success(f"✅ Auto-resolved {resolved_count} compilation error(s)")
+            # Iterative fixing with maximum attempts
+            max_attempts = 3
+            total_resolved = 0
+            
+            for attempt in range(1, max_attempts + 1):
+                Logger.info(f"🔄 Compilation fix attempt {attempt}/{max_attempts}")
                 
-                # Re-apply formatter after fixes
-                if not self.apply_java_formatter():
-                    Logger.warn("⚠️  Java formatter failed after compilation fixes")
+                # Get current errors
+                current_errors = self.compilation_resolver.detect_compilation_errors()
+                if not current_errors:
+                    Logger.success("✅ All compilation errors resolved!")
+                    break
+                    
+                auto_fixable_current = [e for e in current_errors if e.auto_fixable]
+                if not auto_fixable_current:
+                    Logger.info("No more auto-fixable errors remaining")
+                    break
+                
+                # Attempt to resolve current batch of errors
+                resolved_count, resolution_log = self.compilation_resolver.auto_resolve_errors(auto_fixable_current)
+                total_resolved += resolved_count
+                
+                if resolved_count > 0:
+                    Logger.success(f"✅ Resolved {resolved_count} error(s) in attempt {attempt}")
+                    
+                    # Re-apply formatter after fixes
+                    if not self.apply_java_formatter():
+                        Logger.warn("⚠️  Java formatter failed after compilation fixes")
+                else:
+                    Logger.warn(f"⚠️  No errors resolved in attempt {attempt}")
+                    break
+            
+            Logger.info(f"🎯 Total compilation errors resolved: {total_resolved}")
+            
+            # Commit compilation fixes immediately to prevent losing them
+            if total_resolved > 0:
+                try:
+                    status_result = self.git.run_git(["status", "--porcelain"], capture_output=True)
+                    if status_result.stdout.strip():
+                        Logger.info("💾 Committing compilation fixes...")
+                        self.git.run_git(["add", "."])
+                        self.git.run_git(["commit", "-m", f"Auto-fix compilation errors\n\n🤖 Automatically resolved {total_resolved} compilation errors using Claude Code"])
+                        Logger.success("✅ Compilation fixes committed")
+                    else:
+                        Logger.debug("No uncommitted changes to commit")
+                except Exception as e:
+                    Logger.warn(f"Error committing compilation fixes: {e}")
         
         if manual_review:
             Logger.error(f"❌ {len(manual_review)} error(s) require manual review:")
@@ -674,7 +714,9 @@ class PRWorkflow:
         # Final compilation check
         final_errors = self.compilation_resolver.detect_compilation_errors()
         if final_errors:
-            Logger.error(f"❌ {len(final_errors)} compilation error(s) still remain")
+            Logger.error(f"❌ {len(final_errors)} compilation error(s) still remain after all attempts")
+            for error in final_errors:
+                Logger.error(f"  - {error.file_path}:{error.line_number} - {error.message}")
             return False
         
         return True
