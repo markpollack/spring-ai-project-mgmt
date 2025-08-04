@@ -136,8 +136,13 @@ class AIRiskAssessor:
             return "*No file changes data available*"
         
         details = []
-        details.append("**IMPORTANT**: Use your Read tool to examine files as needed for analysis.")
+        details.append("**CRITICAL INSTRUCTIONS:**")
+        details.append("1. ONLY analyze the files explicitly listed in the sections below")
+        details.append("2. DO NOT read, explore, or reference any other files in the codebase") 
+        details.append("3. DO NOT follow imports or dependencies to other files")
+        details.append("4. The list below contains ALL files in this PR - do not search for more")
         details.append("")
+        details.append("Files to analyze:")
         
         # Group files by status for better organization
         new_files = [f for f in file_changes if f.get('status') == 'added']
@@ -171,7 +176,7 @@ class AIRiskAssessor:
             details.append(f"- **Status**: New file (patch content omitted - would be identical to full file)")
             details.append(f"- **File Path**: `{file_path}`")
             details.append(f"- **Size**: {additions} lines")
-            details.append(f"- **Analysis**: Use Read tool to examine complete file content")
+            details.append(f"- **Analysis**: Analyze based on file structure and Spring AI patterns")
             
             # Add contextual summary for Java files (prioritized)
             if filename.endswith('.java'):
@@ -211,7 +216,7 @@ class AIRiskAssessor:
                     details.append(f"- **Key Changes**:")
                     details.extend(f"  - {line}" for line in filtered_patch[:5])  # Top 5 changes
             
-            details.append(f"- **Full Analysis**: Use Read tool for complete context")
+            details.append(f"- **Full Analysis**: Analyze based on provided change information")
             details.append("")
         
         return details
@@ -682,10 +687,17 @@ class AIRiskAssessor:
         Logger.info(f"   Patch content size: {total_patch_size/1024:.1f}KB") 
         Logger.info(f"   Total context size: {total_context_size/1024:.1f}KB")
     
-    def run_ai_risk_assessment(self, pr_number: str) -> Optional[RiskAssessmentResult]:
+    def run_ai_risk_assessment(self, pr_number: str, force_fresh: bool = False) -> Optional[RiskAssessmentResult]:
         """Run AI-powered risk assessment using Claude Code"""
         
         Logger.info(f"🤖 Running AI risk assessment for PR #{pr_number}")
+        
+        # Check for cached assessment first
+        if not force_fresh:
+            cached_result = self.load_cached_assessment(pr_number)
+            if cached_result:
+                Logger.info("✅ Using cached AI risk assessment")
+                return cached_result
         
         # Ensure we're on the correct branch for this PR
         if self.github_utils and self.spring_ai_dir.exists():
@@ -760,7 +772,8 @@ class AIRiskAssessor:
                     str(prompt_file_path), 
                     str(debug_response_file), 
                     timeout=300, 
-                    show_progress=True
+                    show_progress=True,
+                    system_debug_mode=True
                 )
                 
                 # Debug logging to trace the 'list' object error
@@ -842,6 +855,33 @@ class AIRiskAssessor:
                     
         except Exception as e:
             Logger.error(f"Error during AI risk assessment: {e}")
+            return None
+    
+    def load_cached_assessment(self, pr_number: str) -> Optional[RiskAssessmentResult]:
+        """Load cached assessment result from context directory"""
+        try:
+            pr_context_dir = self.context_dir / f"pr-{pr_number}"
+            assessment_file = pr_context_dir / "ai-risk-assessment.json"
+            
+            if not assessment_file.exists():
+                return None
+                
+            with open(assessment_file, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            
+            # Convert back to RiskAssessmentResult
+            return RiskAssessmentResult(
+                critical_issues=data.get('critical_issues', []),
+                important_issues=data.get('important_issues', []),
+                risk_factors=data.get('risk_factors', []),
+                positive_findings=data.get('positive_findings', []),
+                overall_risk_level=data.get('overall_risk_level', 'UNKNOWN'),
+                risk_summary=data.get('risk_summary', ''),
+                assessment_timestamp=data.get('assessment_timestamp', '')
+            )
+            
+        except Exception as e:
+            Logger.warn(f"Could not load cached assessment: {e}")
             return None
     
     def save_assessment_result(self, pr_number: str, result: RiskAssessmentResult) -> bool:

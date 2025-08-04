@@ -461,7 +461,8 @@ Please provide your assessment following the exact format specified in the templ
                 str(prompt_file), 
                 str(output_file), 
                 timeout=300,  # 5 minutes for thorough analysis
-                show_progress=True  # Show progress animation during analysis
+                show_progress=True,  # Show progress animation during analysis
+                system_debug_mode=True
             )
             
             if result['success'] and result['response']:

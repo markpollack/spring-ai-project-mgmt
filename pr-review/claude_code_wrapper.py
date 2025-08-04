@@ -10,13 +10,19 @@ import subprocess
 import os
 import tempfile
 import time
+import signal
+import psutil
+import uuid
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from animated_progress import AnimatedProgress
 
 class ClaudeCodeWrapper:
     """Robust wrapper for Claude Code CLI interactions"""
+    
+    # Class-level marker for processes launched by this wrapper
+    WRAPPER_MARKER_ENV = "CLAUDE_CODE_WRAPPER_ID"
     
     def __init__(self, claude_binary_path: str = None, logs_dir: Path = None):
         if claude_binary_path is None:
@@ -39,14 +45,29 @@ class ClaudeCodeWrapper:
         
         # Ensure logs directory exists
         self.logs_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Track active processes with metadata
+        self.active_processes = {}  # Changed from list to dict for metadata
+        
+        # Process tracking log file
+        self.process_log_path = self.logs_dir / "claude_process_tracking.log"
+        
+        # Generate unique session ID for this wrapper instance
+        self.session_id = str(uuid.uuid4())
+        self._log_process_event("WRAPPER_INIT", details=f"session_id={self.session_id}")
     
     def is_available(self) -> bool:
         """Check if Claude Code is available"""
         try:
+            # Prepare environment with our marker
+            env = os.environ.copy()
+            env[self.WRAPPER_MARKER_ENV] = self.session_id
+            
             # Use 'claude' command directly and set working directory to avoid yoga.wasm issues
             result = subprocess.run(['claude', '--version'], 
                          capture_output=True, check=True, timeout=10,
-                         cwd='/home/mark/.nvm/versions/node/v22.15.0/lib/node_modules/@anthropic-ai/claude-code')
+                         cwd='/home/mark/.nvm/versions/node/v22.15.0/lib/node_modules/@anthropic-ai/claude-code',
+                         env=env)
             return True
         except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired) as e:
             # Debug: print the actual exception for troubleshooting
@@ -64,15 +85,127 @@ class ClaudeCodeWrapper:
     def get_version(self) -> Optional[str]:
         """Get Claude Code version"""
         try:
+            # Prepare environment with our marker
+            env = os.environ.copy()
+            env[self.WRAPPER_MARKER_ENV] = self.session_id
+            
             result = subprocess.run(['claude', '--version'], 
                                   capture_output=True, text=True, check=True, timeout=10,
-                                  cwd='/home/mark/.nvm/versions/node/v22.15.0/lib/node_modules/@anthropic-ai/claude-code')
+                                  cwd='/home/mark/.nvm/versions/node/v22.15.0/lib/node_modules/@anthropic-ai/claude-code',
+                                  env=env)
             return result.stdout.strip()
         except Exception:
             return None
     
+    def _log_process_event(self, event: str, pid: int = None, details: str = None):
+        """Log process tracking events for debugging"""
+        try:
+            with open(self.process_log_path, 'a') as f:
+                timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
+                log_entry = f"[{timestamp}] {event}"
+                if pid:
+                    log_entry += f" PID={pid}"
+                if details:
+                    log_entry += f" {details}"
+                f.write(log_entry + '\n')
+        except Exception as e:
+            print(f"Failed to log process event: {e}")
+    
+    def _find_claude_processes(self, wrapper_only: bool = False) -> List[psutil.Process]:
+        """Find all running Claude processes
+        
+        Args:
+            wrapper_only: If True, only return processes launched by this wrapper
+        """
+        claude_processes = []
+        try:
+            for proc in psutil.process_iter(['pid', 'name', 'cmdline', 'environ']):
+                try:
+                    # Check if this is a Claude process
+                    if proc.info['name'] == 'claude' or (proc.info['cmdline'] and 'claude' in ' '.join(proc.info['cmdline'])):
+                        if wrapper_only:
+                            # Check for our wrapper marker in environment
+                            try:
+                                environ = proc.environ()
+                                if self.WRAPPER_MARKER_ENV in environ:
+                                    claude_processes.append(proc)
+                                    self._log_process_event("FOUND_WRAPPER_PROCESS", pid=proc.pid, 
+                                                          details=f"wrapper_id={environ[self.WRAPPER_MARKER_ENV]}")
+                            except (psutil.NoSuchProcess, psutil.AccessDenied):
+                                # Can't read environment, skip this process
+                                continue
+                        else:
+                            claude_processes.append(proc)
+                except (psutil.NoSuchProcess, psutil.AccessDenied):
+                    continue
+        except Exception as e:
+            self._log_process_event("ERROR", details=f"Failed to find Claude processes: {e}")
+        return claude_processes
+    
+    def cleanup_hanging_processes(self):
+        """Clean up any hanging Claude processes launched by this wrapper"""
+        cleaned_count = 0
+        try:
+            # Log current Claude processes - only get wrapper processes
+            claude_procs = self._find_claude_processes(wrapper_only=True)
+            self._log_process_event("CLEANUP_START", details=f"Found {len(claude_procs)} wrapper Claude processes")
+            
+            for proc in claude_procs:
+                try:
+                    pid = proc.pid
+                    # Check if this is one of our tracked processes
+                    if pid in self.active_processes:
+                        self._log_process_event("CLEANUP_KILL_TRACKED", pid=pid)
+                        proc.terminate()
+                        try:
+                            proc.wait(timeout=5)
+                        except psutil.TimeoutExpired:
+                            proc.kill()
+                        del self.active_processes[pid]
+                        cleaned_count += 1
+                    else:
+                        # Log but don't kill untracked processes automatically
+                        self._log_process_event("CLEANUP_FOUND_UNTRACKED", pid=pid)
+                except (psutil.NoSuchProcess, psutil.AccessDenied) as e:
+                    self._log_process_event("CLEANUP_ERROR", pid=pid, details=str(e))
+            
+            self._log_process_event("CLEANUP_END", details=f"Cleaned {cleaned_count} processes")
+            
+        except Exception as e:
+            self._log_process_event("CLEANUP_FATAL_ERROR", details=str(e))
+        
+        return cleaned_count
+    
+    def force_cleanup_all_claude_processes(self) -> int:
+        """Force cleanup ALL Claude processes (use with caution)"""
+        killed_count = 0
+        try:
+            claude_procs = self._find_claude_processes()
+            self._log_process_event("FORCE_CLEANUP_START", details=f"Found {len(claude_procs)} Claude processes")
+            
+            for proc in claude_procs:
+                try:
+                    pid = proc.pid
+                    self._log_process_event("FORCE_CLEANUP_KILL", pid=pid)
+                    proc.kill()
+                    killed_count += 1
+                    # Remove from tracking if it was tracked
+                    if pid in self.active_processes:
+                        del self.active_processes[pid]
+                except (psutil.NoSuchProcess, psutil.AccessDenied) as e:
+                    self._log_process_event("FORCE_CLEANUP_ERROR", pid=pid, details=str(e))
+            
+            self._log_process_event("FORCE_CLEANUP_END", details=f"Killed {killed_count} processes")
+            
+        except Exception as e:
+            self._log_process_event("FORCE_CLEANUP_FATAL_ERROR", details=str(e))
+        
+        return killed_count
+    
     def analyze_from_file(self, prompt_file_path: str, output_file_path: Optional[str] = None, 
-                         timeout: int = 300, use_json_output: bool = True, show_progress: bool = True) -> Dict[str, Any]:
+                         timeout: int = 300, use_json_output: bool = True, show_progress: bool = True,
+                         debug_mode: bool = False, system_debug_mode: bool = False,
+                         model: str = "sonnet") -> Dict[str, Any]:
         """
         Analyze using Claude Code by having it read the prompt file directly
         
@@ -82,6 +215,9 @@ class ClaudeCodeWrapper:
             timeout: Timeout in seconds (default 300 = 5 minutes)
             use_json_output: Use --output-format json for structured responses
             show_progress: Show animated progress during execution (default True)
+            debug_mode: Enable detailed debug logging with real-time output streaming
+            system_debug_mode: Enable system-level debugging (strace, file access monitoring)
+            model: Model to use (default 'sonnet' for cost control)
             
         Returns:
             Dict containing success status, response, error info, etc.
@@ -108,6 +244,8 @@ class ClaudeCodeWrapper:
             cmd = ['claude', '-p', '--dangerously-skip-permissions', '--verbose']
             if use_json_output:
                 cmd.extend(['--output-format', 'json'])
+            # Add model specification for cost control
+            cmd.extend(['--model', model])
             
             # Ask Claude Code to read and analyze the file directly
             file_prompt = f"Please read the file {prompt_path.absolute()} and follow the instructions contained within it."
@@ -152,23 +290,199 @@ class ClaudeCodeWrapper:
                     progress.start()
                 
                 try:
+                    # Prepare environment with our marker
+                    env = os.environ.copy()
+                    env[self.WRAPPER_MARKER_ENV] = self.session_id
+                    
+                    debug_log_path = None
+                    strace_log_path = None
+                    system_monitor_processes = []
+                    
+                    if debug_mode:
+                        # Create debug log file
+                        debug_log_path = self.logs_dir / f"claude-debug-{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
+                        logger.info(f"🔍 Debug mode enabled, streaming output to: {debug_log_path}")
+                    
+                    if system_debug_mode:
+                        # Create system debug log files
+                        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                        strace_log_path = self.logs_dir / f"claude-strace-{timestamp}.log"
+                        lsof_log_path = self.logs_dir / f"claude-lsof-{timestamp}.log"
+                        iotop_log_path = self.logs_dir / f"claude-iotop-{timestamp}.log"
+                        logger.info(f"🔍 System debug mode enabled:")
+                        logger.info(f"    - strace: {strace_log_path}")
+                        logger.info(f"    - lsof: {lsof_log_path}")
+                        logger.info(f"    - iotop: {iotop_log_path}")
+                        
+                        # Wrap command with strace for file system monitoring
+                        strace_cmd = [
+                            'strace', 
+                            '-e', 'trace=file,openat,read,write,close',  # Track file operations
+                            '-f',  # Follow forks
+                            '-t',  # Add timestamps
+                            '-o', str(strace_log_path)
+                        ] + cmd
+                        
+                        actual_cmd = strace_cmd
+                    else:
+                        actual_cmd = cmd
+                    
                     # Use Popen for non-blocking execution with progress
                     process = subprocess.Popen(
-                        cmd,
+                        actual_cmd,
                         stdout=subprocess.PIPE,
                         stderr=subprocess.PIPE,
                         text=True,
-                        cwd='/home/mark/.nvm/versions/node/v22.15.0/lib/node_modules/@anthropic-ai/claude-code'
+                        cwd='/home/mark/.nvm/versions/node/v22.15.0/lib/node_modules/@anthropic-ai/claude-code',
+                        env=env,
+                        bufsize=1  # Line buffered
                     )
                     
+                    # Track the process with metadata
+                    pid = process.pid
+                    self.active_processes[pid] = {
+                        'start_time': datetime.now(),
+                        'prompt_file': prompt_path.absolute(),
+                        'timeout': timeout,
+                        'cwd': os.getcwd()
+                    }
+                    self._log_process_event("PROCESS_START", pid=pid, details=f"timeout={timeout}s, prompt={prompt_path.name}")
+                    
+                    # Start system monitoring processes if requested
+                    if system_debug_mode:
+                        try:
+                            # Find the actual Claude process (skip strace wrapper)
+                            time.sleep(0.5)  # Give process time to start
+                            
+                            # Find Claude child process
+                            parent_proc = psutil.Process(pid)
+                            claude_processes = []
+                            
+                            def find_claude_children(proc):
+                                try:
+                                    if proc.name() == 'claude' or 'claude' in ' '.join(proc.cmdline()):
+                                        claude_processes.append(proc)
+                                    for child in proc.children():
+                                        find_claude_children(child)
+                                except (psutil.NoSuchProcess, psutil.AccessDenied):
+                                    pass
+                            
+                            find_claude_children(parent_proc)
+                            
+                            if claude_processes:
+                                claude_pid = claude_processes[0].pid
+                                logger.info(f"🔍 Found Claude process PID: {claude_pid}")
+                                
+                                # Start lsof monitoring
+                                lsof_process = subprocess.Popen([
+                                    'bash', '-c',
+                                    f'while kill -0 {claude_pid} 2>/dev/null; do '
+                                    f'echo "=== $(date) ===" >> {lsof_log_path}; '
+                                    f'lsof -p {claude_pid} >> {lsof_log_path} 2>&1; '
+                                    f'sleep 2; done'
+                                ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                                system_monitor_processes.append(lsof_process)
+                                
+                                # Start resource monitoring
+                                resource_process = subprocess.Popen([
+                                    'bash', '-c',
+                                    f'while kill -0 {claude_pid} 2>/dev/null; do '
+                                    f'echo "=== $(date) ===" >> {iotop_log_path}; '
+                                    f'ps -o pid,ppid,%cpu,%mem,time,comm -p {claude_pid} >> {iotop_log_path} 2>&1; '
+                                    f'sleep 1; done'
+                                ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                                system_monitor_processes.append(resource_process)
+                                
+                        except Exception as e:
+                            logger.warning(f"Failed to start system monitoring: {e}")
+                    
                     # Wait for completion with timeout
-                    stdout, stderr = process.communicate(timeout=timeout)
-                    returncode = process.returncode
+                    if debug_mode:
+                        # Stream output in real-time for debugging
+                        import select
+                        import threading
+                        import queue
+                        
+                        stdout_lines = []
+                        stderr_lines = []
+                        
+                        def stream_output(pipe, output_list, pipe_name, debug_file):
+                            """Stream output from pipe to list and debug file"""
+                            try:
+                                for line in iter(pipe.readline, ''):
+                                    if line:
+                                        output_list.append(line)
+                                        debug_file.write(f"[{pipe_name}] {line}")
+                                        debug_file.flush()
+                                        if pipe_name == "STDOUT" and len(line.strip()) > 0:
+                                            logger.debug(f"🔍 Claude output: {line.strip()[:100]}...")
+                            except Exception as e:
+                                logger.error(f"Stream error ({pipe_name}): {e}")
+                            finally:
+                                pipe.close()
+                        
+                        with open(debug_log_path, 'w') as debug_file:
+                            debug_file.write(f"=== Claude Code Debug Log ===\n")
+                            debug_file.write(f"Started: {datetime.now()}\n")
+                            debug_file.write(f"PID: {pid}\n")
+                            debug_file.write(f"Command: {' '.join(cmd)}\n")
+                            debug_file.write(f"Prompt: {prompt_path}\n")
+                            debug_file.write(f"=== Output ===\n")
+                            
+                            # Start threads to read stdout and stderr
+                            stdout_thread = threading.Thread(
+                                target=stream_output,
+                                args=(process.stdout, stdout_lines, "STDOUT", debug_file)
+                            )
+                            stderr_thread = threading.Thread(
+                                target=stream_output,
+                                args=(process.stderr, stderr_lines, "STDERR", debug_file)
+                            )
+                            
+                            stdout_thread.start()
+                            stderr_thread.start()
+                            
+                            # Wait for process with timeout
+                            try:
+                                returncode = process.wait(timeout=timeout)
+                            except subprocess.TimeoutExpired:
+                                debug_file.write(f"\n=== TIMEOUT after {timeout}s ===\n")
+                                raise
+                            
+                            # Wait for threads to finish reading
+                            stdout_thread.join(timeout=5)
+                            stderr_thread.join(timeout=5)
+                            
+                            stdout = ''.join(stdout_lines)
+                            stderr = ''.join(stderr_lines)
+                            
+                            debug_file.write(f"\n=== Process completed with return code: {returncode} ===\n")
+                    else:
+                        # Normal mode - use communicate
+                        stdout, stderr = process.communicate(timeout=timeout)
+                        returncode = process.returncode
+                    
+                    # Process completed normally, remove from tracking
+                    if pid in self.active_processes:
+                        del self.active_processes[pid]
+                    self._log_process_event("PROCESS_END", pid=pid, details=f"returncode={returncode}")
                     
                 finally:
                     # Always stop progress animation
                     if progress:
                         progress.stop()
+                    
+                    # Clean up system monitoring processes
+                    if system_debug_mode and system_monitor_processes:
+                        for monitor_proc in system_monitor_processes:
+                            try:
+                                monitor_proc.terminate()
+                                monitor_proc.wait(timeout=2)
+                            except Exception:
+                                try:
+                                    monitor_proc.kill()
+                                except Exception:
+                                    pass
                 
                 end_time = time.time()
                 duration = end_time - start_time
@@ -179,6 +493,29 @@ class ClaudeCodeWrapper:
                     raise subprocess.CalledProcessError(returncode, cmd, stdout, stderr)
                 
             except subprocess.TimeoutExpired:
+                # Process timed out - kill it
+                if 'process' in locals() and process.poll() is None:
+                    pid = process.pid
+                    self._log_process_event("PROCESS_TIMEOUT", pid=pid, details=f"Killing after {timeout}s")
+                    
+                    try:
+                        # Try graceful termination first
+                        process.terminate()
+                        try:
+                            process.wait(timeout=5)
+                            self._log_process_event("PROCESS_TERMINATED", pid=pid)
+                        except subprocess.TimeoutExpired:
+                            # Force kill if graceful termination failed
+                            process.kill()
+                            process.wait()
+                            self._log_process_event("PROCESS_KILLED", pid=pid)
+                    except Exception as kill_error:
+                        self._log_process_event("PROCESS_KILL_ERROR", pid=pid, details=str(kill_error))
+                    
+                    # Remove from tracking
+                    if pid in self.active_processes:
+                        del self.active_processes[pid]
+                
                 return {
                     'success': False,
                     'error': f'Claude Code analysis timed out after {timeout} seconds',
@@ -221,6 +558,8 @@ class ClaudeCodeWrapper:
                     
                     # Extract actual content from Claude Code JSON response
                     actual_content = None
+                    token_usage = None
+                    cost_info = None
                     
                     try:
                         # Debug logging to see what we're working with
@@ -231,6 +570,16 @@ class ClaudeCodeWrapper:
                             logger.info(f"List length: {len(claude_response)}")
                             if len(claude_response) > 0:
                                 logger.info(f"First item type: {type(claude_response[0])}")
+                                
+                                # Look for usage and cost information
+                                for item in claude_response:
+                                    if isinstance(item, dict):
+                                        if 'usage' in item:
+                                            token_usage = item['usage']
+                                            logger.info(f"Found token usage: {token_usage}")
+                                        if 'total_cost_usd' in item:
+                                            cost_info = item['total_cost_usd']
+                                            logger.info(f"Found cost info: ${cost_info}")
                         
                         # Handle array format (conversation messages)
                         if isinstance(claude_response, list):
@@ -281,7 +630,9 @@ class ClaudeCodeWrapper:
                         'response': actual_content,
                         'output_file': output_file_path,
                         'stderr': stderr,
-                        'error': None
+                        'error': None,
+                        'token_usage': token_usage,
+                        'cost_usd': cost_info
                     }
                     
                 except json.JSONDecodeError:
@@ -425,7 +776,8 @@ class ClaudeCodeWrapper:
         return None
     
     def analyze_from_file_with_json(self, prompt_file_path: str, output_file_path: Optional[str] = None,
-                                   timeout: int = 300, show_progress: bool = True) -> Dict[str, Any]:
+                                   timeout: int = 300, show_progress: bool = True,
+                                   system_debug_mode: bool = False, model: str = "sonnet") -> Dict[str, Any]:
         """
         Analyze from file and automatically extract JSON from the response.
         
@@ -436,6 +788,8 @@ class ClaudeCodeWrapper:
             output_file_path: Optional path to save the response
             timeout: Timeout in seconds
             show_progress: Show animated progress
+            system_debug_mode: Enable system-level debugging
+            model: Model to use (default 'sonnet' for cost control)
             
         Returns:
             Dict with keys: success, response (raw text), json_data (parsed), error, etc.
@@ -446,7 +800,9 @@ class ClaudeCodeWrapper:
             output_file_path=output_file_path,
             timeout=timeout,
             use_json_output=True,  # Force JSON mode for better parsing
-            show_progress=show_progress
+            show_progress=show_progress,
+            system_debug_mode=system_debug_mode,
+            model=model
         )
         
         # If the call failed, return as-is

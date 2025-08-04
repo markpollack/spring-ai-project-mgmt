@@ -278,7 +278,7 @@ class PRAnalyzer:
         except subprocess.CalledProcessError:
             return False
     
-    def generate_report(self, pr_number: str, dry_run: bool = False, force_fresh: bool = False) -> Optional[Path]:
+    def generate_report(self, pr_number: str, dry_run: bool = False, force_fresh: bool = False, skip_backport: bool = False) -> Optional[Path]:
         """Generate enhanced PR analysis report using context collection and AI-powered analysis"""
         
         # Check GitHub CLI authentication
@@ -326,6 +326,10 @@ class PRAnalyzer:
             if force_fresh:
                 cmd.append("--force-fresh")
                 Logger.info("🔄 Forcing fresh AI analysis (report-only mode)")
+            
+            if skip_backport:
+                cmd.append("--skip-backport")
+                Logger.info("⏭️  Skipping backport assessment")
             
             # Pass the context directory to the enhanced report generator
             cmd.extend(["--context-dir", str(self.config.context_dir)])
@@ -1524,7 +1528,7 @@ File content with conflicts:"""
                 logs_dir = self.config.logs_dir
                 logs_dir.mkdir(exist_ok=True)
                 debug_response_file = logs_dir / f"claude-response-conflict-resolution-{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
-                result = claude.analyze_from_file(str(input_file_path), str(debug_response_file), timeout=300, use_json_output=False)
+                result = claude.analyze_from_file(str(input_file_path), str(debug_response_file), timeout=300, use_json_output=False, system_debug_mode=True)
                 
                 # Debug: Log Claude Code execution details
                 Logger.info(f"🔍 Claude Code execution - Success: {result['success']}")
@@ -1700,7 +1704,7 @@ File content with conflicts:"""
         
         return True
     
-    def run_report_only(self, pr_number: str, dry_run: bool = False) -> bool:
+    def run_report_only(self, pr_number: str, dry_run: bool = False, skip_backport: bool = False, force_fresh: bool = False) -> bool:
         """Generate enhanced PR analysis report with AI-powered analysis (assumes PR is already prepared)"""
         Logger.info(f"📊 Generating PR analysis report for PR #{pr_number}")
         
@@ -1743,7 +1747,7 @@ File content with conflicts:"""
             Logger.info(f"Current branch: '{current_branch}' - ensure this matches PR #{pr_number}")
         
         # Generate the enhanced report (now the only report)
-        report_file = self.pr_analyzer.generate_report(pr_number, dry_run, force_fresh=True)
+        report_file = self.pr_analyzer.generate_report(pr_number, dry_run, force_fresh=force_fresh, skip_backport=skip_backport)
         
         if report_file:
             Logger.success(f"📋 Enhanced PR analysis report generated: {report_file}")
@@ -2175,6 +2179,8 @@ Examples:
     parser.add_argument('--force', action='store_true', help='Force operations (overwrite existing branches)')
     parser.add_argument('--skip-report', action='store_true', help='Skip PR analysis report generation')
     parser.add_argument('--report-only', action='store_true', help='Generate only the analysis report (assumes PR already prepared)')
+    parser.add_argument('--skip-backport', action='store_true', help='Skip backport assessment in report generation')
+    parser.add_argument('--force-fresh', action='store_true', help='Force fresh AI analysis (ignore cached assessments)')
     parser.add_argument('--test-only', action='store_true', help='Run only the changed tests (assumes PR already prepared)')
     parser.add_argument('--plan-only', action='store_true', help='Generate enhanced workflow plan with progress tracking')
     parser.add_argument('--cleanup', action='store_true', help='Clean up PR workspace and generated files')
@@ -2206,7 +2212,9 @@ Examples:
     if args.report_only:
         success = workflow.run_report_only(
             pr_number=args.pr_number,
-            dry_run=args.dry_run
+            dry_run=args.dry_run,
+            skip_backport=args.skip_backport,
+            force_fresh=args.force_fresh
         )
     elif args.test_only:
         success = workflow.run_test_only(
