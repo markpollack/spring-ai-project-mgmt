@@ -641,7 +641,7 @@ class PRWorkflow:
         
         Logger.info("🔍 Checking for compilation errors...")
         
-        # Detect compilation errors
+        # Detect compilation errors (first and only initial check)
         errors = self.compilation_resolver.detect_compilation_errors()
         
         if not errors:
@@ -664,8 +664,13 @@ class PRWorkflow:
             for attempt in range(1, max_attempts + 1):
                 Logger.info(f"🔄 Compilation fix attempt {attempt}/{max_attempts}")
                 
-                # Get current errors
-                current_errors = self.compilation_resolver.detect_compilation_errors()
+                # Use existing errors list instead of re-detecting
+                if attempt == 1:
+                    current_errors = errors
+                else:
+                    # Only re-detect on subsequent attempts
+                    current_errors = self.compilation_resolver.detect_compilation_errors()
+                
                 if not current_errors:
                     Logger.success("✅ All compilation errors resolved!")
                     break
@@ -711,13 +716,8 @@ class PRWorkflow:
                 Logger.error(f"  - {error.file_path}:{error.line_number} - {error.message}")
             return False
         
-        # Final compilation check
-        final_errors = self.compilation_resolver.detect_compilation_errors()
-        if final_errors:
-            Logger.error(f"❌ {len(final_errors)} compilation error(s) still remain after all attempts")
-            for error in final_errors:
-                Logger.error(f"  - {error.file_path}:{error.line_number} - {error.message}")
-            return False
+        # Skip final compilation check - it will be done by the full Maven build that follows
+        Logger.info("✅ Compilation error resolution completed - full build will verify success")
         
         return True
     
@@ -1022,6 +1022,7 @@ class PRWorkflow:
             Logger.error("❌ Compilation errors could not be resolved")
             return False
         
+        # Run full Maven build (this also serves as final compilation verification)
         # Use mvnd for fastest builds (with fb as backup)
         build_commands = [
             (["fb"], "Run compilation check with fb alias"),
