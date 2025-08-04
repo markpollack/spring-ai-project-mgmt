@@ -87,7 +87,7 @@ class EnhancedReportGenerator:
             self.reports_dir = Path(reports_dir).absolute()
         self.reports_dir.mkdir(parents=True, exist_ok=True)
     
-    def generate_enhanced_report(self, pr_number: str) -> bool:
+    def generate_enhanced_report(self, pr_number: str, skip_backport: bool = False, force_fresh: bool = False) -> bool:
         """Generate comprehensive enhanced PR report"""
         Logger.info(f"📋 Generating enhanced PR report for PR #{pr_number}")
         Logger.info(f"🔍 DEBUG: Starting enhanced report generation...")
@@ -95,7 +95,7 @@ class EnhancedReportGenerator:
         try:
             # Load all analysis data
             Logger.info(f"🔍 DEBUG: Loading report data...")
-            report_data = self._load_report_data(pr_number)
+            report_data = self._load_report_data(pr_number, skip_backport=skip_backport, force_fresh=force_fresh)
             Logger.info(f"🔍 DEBUG: Report data loaded successfully")
             if not report_data:
                 Logger.error("❌ Failed to load report data")
@@ -121,7 +121,7 @@ class EnhancedReportGenerator:
             Logger.error(f"❌ Enhanced report generation failed: {e}")
             return False
     
-    def _load_report_data(self, pr_number: str) -> Optional[EnhancedReportData]:
+    def _load_report_data(self, pr_number: str, skip_backport: bool = False, force_fresh: bool = False) -> Optional[EnhancedReportData]:
         """Load all data needed for enhanced report generation"""
         pr_context_dir = self.context_dir / f"pr-{pr_number}"
         if not pr_context_dir.exists():
@@ -170,7 +170,7 @@ class EnhancedReportGenerator:
         Logger.info("🔍 DEBUG: About to start code analysis (AI risk assessment)...")
         Logger.info("🔍 Starting code analysis (AI risk assessment)...")
         start_time = time.time()
-        code_analysis = self._perform_code_analysis(pr_number)
+        code_analysis = self._perform_code_analysis(pr_number, force_fresh=force_fresh)
         code_duration = time.time() - start_time
         Logger.info(f"🔍 Code analysis completed in {code_duration:.1f} seconds")
         analysis_status['code_analysis'] = 'Available' if code_analysis else 'Failed'
@@ -188,12 +188,17 @@ class EnhancedReportGenerator:
         sol_duration = time.time() - start_time
         Logger.info(f"🔍 Solution assessment completed in {sol_duration:.1f} seconds")
         
-        Logger.info("🔍 Starting backport candidate assessment...")
-        start_time = time.time()
-        backport_assessment = self._run_backport_assessment(pr_number, pr_context_dir)
-        backport_duration = time.time() - start_time
-        Logger.info(f"🔍 Backport assessment completed in {backport_duration:.1f} seconds")
-        analysis_status['backport_assessment'] = 'Available' if backport_assessment else 'Failed'
+        if skip_backport:
+            Logger.info("⏭️  Skipping backport assessment as requested")
+            backport_assessment = self._create_skipped_backport_assessment()
+            analysis_status['backport_assessment'] = 'Skipped'
+        else:
+            Logger.info("🔍 Starting backport candidate assessment...")
+            start_time = time.time()
+            backport_assessment = self._run_backport_assessment(pr_number, pr_context_dir)
+            backport_duration = time.time() - start_time
+            Logger.info(f"🔍 Backport assessment completed in {backport_duration:.1f} seconds")
+            analysis_status['backport_assessment'] = 'Available' if backport_assessment else 'Failed'
         
         return EnhancedReportData(
             pr_number=pr_number,
@@ -322,26 +327,35 @@ class EnhancedReportGenerator:
                     data = json.load(f)
                     # Check if this is placeholder/fallback data
                     if data.get("decision") == "UNKNOWN":
-                        Logger.error("❌ AI backport assessment failed - Claude Code returned placeholder data")
-                        Logger.error("❌ Cannot continue with incomplete AI analysis")
-                        raise RuntimeError("AI backport assessment failed - no fallbacks allowed")
+                        Logger.error("❌ AI backport assessment returned placeholder data")
+                        Logger.warn("🔄 Using fallback data for backport assessment")
+                        return self._create_fallback_backport_assessment("AI assessment returned UNKNOWN status")
                     return data
             else:
-                Logger.error(f"❌ AI backport assessment failed: {result.stderr}")
-                raise RuntimeError("AI backport assessment failed - no fallbacks allowed")
+                error_msg = f"Process failed with return code {result.returncode}"
+                Logger.error(f"❌ AI backport assessment failed: {error_msg}")
+                Logger.warn("🔄 Using fallback data for backport assessment")
+                return self._create_fallback_backport_assessment(error_msg)
                 
+        except subprocess.TimeoutExpired:
+            error_msg = "AI backport assessment timed out after 300 seconds"
+            Logger.error(f"⏱️  {error_msg}")
+            Logger.warn("🔄 Using fallback data for backport assessment")
+            return self._create_fallback_backport_assessment(error_msg)
         except Exception as e:
             Logger.error(f"Error running AI backport assessment: {e}")
-            raise RuntimeError(f"AI backport assessment failed: {e}")
+            Logger.warn("🔄 Using fallback data for backport assessment")
+            return self._create_fallback_backport_assessment(str(e))
 
-    def _perform_code_analysis(self, pr_number: str) -> Dict[str, Any]:
+    def _perform_code_analysis(self, pr_number: str, force_fresh: bool = False) -> Dict[str, Any]:
         """Perform AI-powered code analysis for the report"""
         try:
-            # Use AI-powered risk assessment instead of hardcoded patterns
+            # Use AI-powered risk assessment
             from ai_risk_assessor import AIRiskAssessor
             
             assessor = AIRiskAssessor(self.working_dir, self.spring_ai_dir, context_dir=self.context_dir, logs_dir=self.logs_dir)
-            assessment_result = assessor.run_ai_risk_assessment(pr_number)
+            # Pass force_fresh to the assessor which will check cache internally
+            assessment_result = assessor.run_ai_risk_assessment(pr_number, force_fresh=force_fresh)
             
             if assessment_result:
                 # Save the assessment results for future use
@@ -643,8 +657,19 @@ class EnhancedReportGenerator:
         
         # Backport Assessment
         backport_assess = data.backport_assessment
+        backport_decision = backport_assess.get('decision', 'UNKNOWN')
+        
+        # Format decision with appropriate styling
+        decision_display = {
+            'APPROVE': '✅ **APPROVE**',
+            'REJECT': '❌ **REJECT**',
+            'UNAVAILABLE': '⚠️ **UNAVAILABLE** (Assessment Failed)',
+            'SKIPPED': '⏭️ **SKIPPED** (Not Assessed)',
+            'UNKNOWN': '❓ **UNKNOWN**'
+        }.get(backport_decision, backport_decision)
+        
         template_vars.update({
-            'backport_decision': backport_assess.get('decision', 'UNKNOWN'),
+            'backport_decision': decision_display,
             'backport_classification': backport_assess.get('classification', 'Unknown'),
             'backport_scope': backport_assess.get('scope', 'Analysis not available'),
             'backport_api_impact': backport_assess.get('api_impact', 'Unknown'),
@@ -661,7 +686,7 @@ class EnhancedReportGenerator:
             'conversation_analysis_status': '✅ Available' if data.analysis_status.get('conversation_analysis') == 'Available' else '❌ Not Available',
             'solution_assessment_status': '✅ Available' if data.analysis_status.get('solution_assessment') == 'Available' else '❌ Not Available',
             'code_analysis_status': '✅ Available' if data.analysis_status.get('code_analysis') == 'Available' else '❌ Not Available',
-            'backport_assessment_status': '✅ Available' if data.analysis_status.get('backport_assessment') == 'Available' else '❌ Not Available',
+            'backport_assessment_status': self._format_analysis_status(data.analysis_status.get('backport_assessment', 'Not Available')),
             'ai_integration_status': '✅ Active' if any(status == 'Available' for status in data.analysis_status.values()) else '❌ Inactive'
         })
         
@@ -673,6 +698,16 @@ class EnhancedReportGenerator:
             return "*No items identified*"
         
         return '\n'.join(f"- {item}" for item in items[:10])  # Limit to top 10
+    
+    def _format_analysis_status(self, status: str) -> str:
+        """Format analysis status with appropriate icon"""
+        status_map = {
+            'Available': '✅ Available',
+            'Failed': '❌ Failed',
+            'Skipped': '⏭️ Skipped',
+            'Not Available': '❌ Not Available'
+        }
+        return status_map.get(status, status)
     
     def _build_critical_issues_section(self, code_analysis: Dict[str, Any]) -> str:
         """Build critical issues section"""
@@ -1052,6 +1087,37 @@ class EnhancedReportGenerator:
             if len(parts) > 1:
                 return parts[0]
             return 'Unknown Module'
+    
+    def _create_fallback_backport_assessment(self, error_details: str) -> Dict[str, Any]:
+        """Create fallback data structure for failed backport assessments"""
+        return {
+            "decision": "UNAVAILABLE",
+            "classification": "Assessment Failed",
+            "scope": "Backport assessment could not be completed",
+            "api_impact": "Unknown",
+            "risk_level": "Unknown",
+            "files_changed_count": 0,
+            "dependencies_changed": False,
+            "key_findings": ["Backport assessment failed - manual review required"],
+            "reasoning": "AI assessment failed due to timeout or processing error. Manual backport evaluation recommended.",
+            "recommendations": "Please manually review this PR for backport suitability by checking: 1) Bug fix vs feature, 2) API compatibility, 3) Dependency changes, 4) Risk assessment.",
+            "error_details": error_details
+        }
+    
+    def _create_skipped_backport_assessment(self) -> Dict[str, Any]:
+        """Create data structure for skipped backport assessments"""
+        return {
+            "decision": "SKIPPED",
+            "classification": "Not Assessed",
+            "scope": "Backport assessment was skipped",
+            "api_impact": "Not Assessed",
+            "risk_level": "Not Assessed",
+            "files_changed_count": 0,
+            "dependencies_changed": False,
+            "key_findings": ["Backport assessment was skipped by user request"],
+            "reasoning": "Backport assessment was skipped. Use --skip-backport=false to enable backport analysis.",
+            "recommendations": "To assess backport suitability, run the report without --skip-backport flag."
+        }
 
 
 def main():
@@ -1063,6 +1129,8 @@ def main():
     parser.add_argument("pr_number", help="GitHub PR number to generate report for")
     parser.add_argument("--force-fresh", action="store_true", 
                        help="Force fresh AI analysis (ignore cached assessments)")
+    parser.add_argument("--skip-backport", action="store_true",
+                       help="Skip backport assessment in report generation")
     parser.add_argument("--context-dir", type=str,
                        help="Directory containing PR context data (default: working_dir/context)")
     parser.add_argument("--reports-dir", type=str,
@@ -1115,7 +1183,7 @@ def main():
                     print(f"🗑️  Removed cached {cache_file}")
     
     # Generate enhanced report
-    success = generator.generate_enhanced_report(pr_number)
+    success = generator.generate_enhanced_report(pr_number, skip_backport=args.skip_backport, force_fresh=force_fresh)
     
     if success:
         print(f"\n✅ Enhanced report generated for PR #{pr_number}")
