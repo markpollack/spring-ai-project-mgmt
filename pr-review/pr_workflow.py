@@ -31,7 +31,7 @@ class WorkflowConfig:
     """Configuration for the PR workflow"""
     script_dir: Path
     spring_ai_repo: str = "spring-projects/spring-ai"
-    upstream_remote: str = "upstream"
+    upstream_remote: str = "origin"
     main_branch: str = "main"
     
     @property
@@ -532,18 +532,8 @@ class PRWorkflow:
             Logger.error(f"Directory {self.config.spring_ai_dir} exists but is not a git repository")
             return False
         
-        # Ensure upstream remote exists
-        try:
-            self.git.run_git(["remote", "get-url", self.config.upstream_remote], capture_output=True)
-        except subprocess.CalledProcessError:
-            Logger.info("Adding upstream remote...")
-            self.git.run_git([
-                "remote", "add", self.config.upstream_remote,
-                f"https://github.com/{self.config.spring_ai_repo}.git"
-            ])
-        
-        # Fetch latest changes
-        Logger.info("Fetching latest changes from upstream...")
+        # Fetch latest changes from origin
+        Logger.info("Fetching latest changes from origin...")
         self.git.run_git(["fetch", self.config.upstream_remote])
         
         # Switch to main branch and update
@@ -685,11 +675,10 @@ class PRWorkflow:
                     break
                 
                 # Attempt to resolve current batch of errors
-                resolved_count, resolution_log = self.compilation_resolver.auto_resolve_errors(auto_fixable_current)
-                total_resolved += resolved_count
+                attempted_count, resolution_log = self.compilation_resolver.auto_resolve_errors(auto_fixable_current)
                 
-                if resolved_count > 0:
-                    Logger.info(f"🔧 Applied fixes to {resolved_count} error(s) in attempt {attempt} - validating...")
+                if attempted_count > 0:
+                    Logger.info(f"🔧 Applied fixes to {attempted_count} error(s) in attempt {attempt} - validating...")
                     
                     # Re-apply formatter after fixes
                     if not self.apply_java_formatter():
@@ -699,13 +688,21 @@ class PRWorkflow:
                     verification_errors = self.compilation_resolver.detect_compilation_errors()
                     if not verification_errors:
                         Logger.success("✅ Validation successful: All compilation errors resolved!")
+                        # Count actually resolved errors = initial errors - remaining errors
+                        errors_resolved_this_attempt = len(current_errors) - len(verification_errors)
+                        total_resolved += errors_resolved_this_attempt
                         break
                     else:
                         Logger.info(f"📋 After attempt {attempt}: {len(verification_errors)} error(s) still remain")
+                        # Count partially resolved errors = reduction in error count
+                        errors_resolved_this_attempt = len(current_errors) - len(verification_errors)
+                        if errors_resolved_this_attempt > 0:
+                            total_resolved += errors_resolved_this_attempt
+                            Logger.info(f"🎯 Actually resolved {errors_resolved_this_attempt} error(s) in this attempt")
                         if attempt < max_attempts:
                             Logger.info("Continuing to next attempt...")
                 else:
-                    Logger.warn(f"⚠️  No errors resolved in attempt {attempt}")
+                    Logger.warn(f"⚠️  No fix attempts made in attempt {attempt}")
                     break
             
             Logger.info(f"🎯 Total compilation errors resolved: {total_resolved}")

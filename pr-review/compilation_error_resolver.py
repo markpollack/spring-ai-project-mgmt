@@ -202,18 +202,90 @@ class CompilationErrorResolver:
             if re.search(config['pattern'], message, re.IGNORECASE):
                 return error_type, True, config['description']
         
-        # Classify common error types for template selection
+        # Enhanced classification for signature mismatches and dependency changes
         if 'incompatible types' in message and 'cannot be converted' in message:
-            error_type = 'type_mismatch'
+            # Check for specific patterns that suggest dependency signature changes
+            if any(keyword in message.lower() for keyword in [
+                'server', 'exchange', 'mcp', 'protocol', 'context', 'client', 'async', 'sync'
+            ]):
+                error_type = 'dependency_signature_mismatch'
+            else:
+                error_type = 'generic_type_mismatch'
         elif 'cannot find symbol' in message:
             error_type = 'missing_symbol'
         elif 'method does not override' in message:
             error_type = 'incorrect_override'
+        elif 'method' in message and ('cannot be applied' in message or 'does not exist' in message):
+            error_type = 'method_signature_mismatch'
         else:
             error_type = 'compilation_error'
         
         # ALL errors are now auto-fixable via Claude Code
         return error_type, True, 'Fix via Claude Code AI'
+    
+    def _is_lambda_related_error(self, error: CompilationError) -> bool:
+        """Enhanced detection for lambda-related compilation errors"""
+        
+        # 1. Direct lambda keywords in error message
+        lambda_keywords = [
+            "lambda expression", 
+            "incompatible parameter types in lambda",
+            "lambda parameter",
+            "functional interface"
+        ]
+        
+        if any(keyword in error.message.lower() for keyword in lambda_keywords):
+            return True
+        
+        # 2. Context-based detection: check if error occurs on a line with lambda syntax
+        try:
+            file_path = self.spring_ai_dir / error.file_path
+            if file_path.exists():
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    lines = f.readlines()
+                
+                # Check the error line and surrounding lines for lambda patterns
+                error_line_idx = error.line_number - 1  # Convert to 0-based index
+                lines_to_check = []
+                
+                # Include current line and a few lines around it for context
+                for i in range(max(0, error_line_idx - 2), min(len(lines), error_line_idx + 3)):
+                    lines_to_check.append(lines[i])
+                
+                # Look for lambda patterns in the context
+                context_text = ''.join(lines_to_check)
+                lambda_patterns = [
+                    r'->', # Lambda arrow
+                    r'\([^)]*\)\s*->', # Lambda with parameters
+                    r'Consumer<', # Common functional interfaces
+                    r'Function<',
+                    r'BiConsumer<',
+                    r'BiFunction<',
+                    r'Supplier<',
+                    r'Predicate<'
+                ]
+                
+                for pattern in lambda_patterns:
+                    if re.search(pattern, context_text):
+                        Logger.info(f"🔍 Lambda context detected: pattern '{pattern}' found near error")
+                        return True
+                        
+        except Exception as e:
+            Logger.warn(f"Could not analyze lambda context for {error.file_path}: {e}")
+        
+        # 3. Type signature analysis - common lambda-related type mismatches
+        type_mismatch_patterns = [
+            r'cannot be converted to.*Exchange', # Server exchange patterns
+            r'Object cannot be converted to.*Consumer', # Consumer type issues
+            r'Object cannot be converted to.*Function', # Function type issues
+        ]
+        
+        for pattern in type_mismatch_patterns:
+            if re.search(pattern, error.message):
+                Logger.info(f"🔍 Lambda type pattern detected: '{pattern}'")
+                return True
+        
+        return False
     
     def auto_resolve_errors(self, errors: List[CompilationError]) -> Tuple[int, List[str]]:
         """Automatically resolve fixable compilation errors"""
@@ -297,9 +369,13 @@ class CompilationErrorResolver:
         
         try:
             # Select template based on error pattern - lambda errors need special coordination
-            if "lambda expression" in error.message or "incompatible parameter types in lambda" in error.message:
+            is_lambda_error = self._is_lambda_related_error(error)
+            if is_lambda_error:
                 template_name = "compilation_error_lambda_coordination_prompt"
-                Logger.info("🎯 Using lambda coordination template for multi-line lambda fix")
+                Logger.info("🎯 Using lambda coordination template for lambda-related error")
+            elif error.error_type == 'dependency_signature_mismatch':
+                template_name = "compilation_error_enhanced_prompt"
+                Logger.info("🔍 Using enhanced template for dependency signature mismatch")
             else:
                 template_name = "compilation_error_enhanced_prompt"
             
@@ -339,7 +415,7 @@ This suggests a cascading type compatibility issue. You MUST:
             # Use ClaudeCodeWrapper for reliable execution with longer timeout
             result = self.claude_wrapper.analyze_from_text(
                 prompt_text=prompt,
-                timeout=300,  # 5 minutes for complex type analysis
+                timeout=360,  # 6 minutes for complex type analysis
                 use_json_output=False,
                 show_progress=True
             )
@@ -434,9 +510,13 @@ Working directory: {self.spring_ai_dir}"""
         
         try:
             # Select template based on error pattern
-            if "lambda expression" in error.message or "incompatible parameter types in lambda" in error.message:
+            is_lambda_error = self._is_lambda_related_error(error)
+            if is_lambda_error:
                 template_name = "compilation_error_lambda_coordination_prompt"
-                Logger.info("🎯 Using lambda coordination template for multi-line lambda fix")
+                Logger.info("🎯 Using lambda coordination template for lambda-related error")
+            elif error.error_type == 'dependency_signature_mismatch':
+                template_name = "compilation_error_enhanced_prompt"
+                Logger.info("🔍 Using enhanced template for dependency signature mismatch")
             else:
                 template_name = "compilation_error_enhanced_prompt"
             
@@ -474,7 +554,7 @@ Look for related type mismatches or missing imports that might be causing cascad
             log_prefix = f"compilation-error-{error.error_type}-{Path(error.file_path).stem}-line{error.line_number}"
             result = self.claude_wrapper.analyze_from_text(
                 prompt_text=prompt,
-                timeout=240,  # 4 minutes for more complex analysis
+                timeout=360,  # 6 minutes for more complex analysis
                 use_json_output=False,
                 show_progress=True,
                 log_prefix=log_prefix

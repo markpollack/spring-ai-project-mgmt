@@ -516,6 +516,35 @@ class ClaudeCodeWrapper:
                     if pid in self.active_processes:
                         del self.active_processes[pid]
                 
+                # Log timeout case for debugging
+                timeout_log_path = self.logs_dir / f"claude-timeout-{prompt_path.stem}-{datetime.now().strftime('%Y%m%d_%H%M%S')}.md"
+                try:
+                    with open(timeout_log_path, 'w', encoding='utf-8') as f:
+                        f.write(f"# Claude Code Timeout Log\n\n")
+                        f.write(f"**Timestamp**: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+                        f.write(f"**Request File**: {prompt_path.name}\n")
+                        f.write(f"**Timeout After**: {timeout} seconds\n")
+                        f.write(f"**Process PID**: {pid if 'pid' in locals() else 'Unknown'}\n\n")
+                        
+                        f.write(f"## Request Prompt\n```\n")
+                        try:
+                            with open(prompt_path, 'r', encoding='utf-8') as prompt_f:
+                                f.write(prompt_f.read())
+                        except Exception as e:
+                            f.write(f"Error reading prompt: {e}")
+                        f.write(f"\n```\n\n")
+                        
+                        f.write(f"## Timeout Details\n")
+                        f.write(f"**Command**: {' '.join(cmd)}\n")
+                        f.write(f"**Working Directory**: {os.getcwd()}\n")
+                    
+                    import logging
+                    logger = logging.getLogger(__name__)
+                    logger.info(f"🔍 Timeout logged: {timeout_log_path}")
+                    
+                except Exception as log_error:
+                    pass  # Don't fail on logging errors
+                
                 return {
                     'success': False,
                     'error': f'Claude Code analysis timed out after {timeout} seconds',
@@ -530,7 +559,53 @@ class ClaudeCodeWrapper:
                     'response': None
                 }
             
-            # Save output if requested
+            # ENHANCED LOGGING: Save both request and response with pairing
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            
+            # Create a response log file paired with the prompt
+            response_log_path = self.logs_dir / f"claude-response-{prompt_path.stem}-{timestamp}.md"
+            try:
+                # Ensure duration is available (it should be from the main execution path)
+                duration_str = f"{duration:.1f} seconds" if 'duration' in locals() else "Unknown"
+                
+                with open(response_log_path, 'w', encoding='utf-8') as f:
+                    f.write(f"# Claude Code Request-Response Log\n\n")
+                    f.write(f"**Timestamp**: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+                    f.write(f"**Request File**: {prompt_path.name}\n")
+                    f.write(f"**Duration**: {duration_str}\n")
+                    f.write(f"**Return Code**: {returncode}\n")
+                    f.write(f"**Success**: {returncode == 0}\n\n")
+                    
+                    f.write(f"## Request Prompt\n```\n")
+                    try:
+                        with open(prompt_path, 'r', encoding='utf-8') as prompt_f:
+                            f.write(prompt_f.read())
+                    except Exception as e:
+                        f.write(f"Error reading prompt: {e}")
+                    f.write(f"\n```\n\n")
+                    
+                    f.write(f"## Response (Raw stdout)\n")
+                    f.write(f"**Length**: {len(stdout)} characters\n\n")
+                    f.write(f"```\n{stdout}\n```\n\n")
+                    
+                    if stderr:
+                        f.write(f"## Error Output (stderr)\n")
+                        f.write(f"```\n{stderr}\n```\n\n")
+                    
+                    # Add command info for debugging
+                    f.write(f"## Command Details\n")
+                    f.write(f"**Command**: {' '.join(cmd)}\n")
+                    f.write(f"**Working Directory**: {os.getcwd()}\n")
+                    f.write(f"**Environment Marker**: {env.get(self.WRAPPER_MARKER_ENV, 'Not set')}\n")
+                
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.info(f"🔍 Request-Response pair logged: {response_log_path}")
+                
+            except Exception as log_error:
+                logger.warning(f"Failed to create response log: {log_error}")
+            
+            # Save output if requested (legacy behavior)
             if output_file_path:
                 output_path = Path(output_file_path)
                 output_path.parent.mkdir(parents=True, exist_ok=True)

@@ -475,12 +475,19 @@ class IntelligentSquash:
             else:
                 # No conflicts, but might be stuck rebase - try to continue or abort and restart
                 Logger.info("📋 No conflicts detected, continuing rebase...")
+                
+                # Debug: Check what git thinks about the current state
+                try:
+                    self._debug_git_state()
+                except Exception as debug_error:
+                    Logger.warn(f"Debug state check failed: {debug_error}")
+                
                 try:
                     self.run_git(["rebase", "--continue"])
                     Logger.success("✅ Rebase continued successfully")
                     return True
                 except subprocess.CalledProcessError as continue_error:
-                    Logger.warn(f"⚠️  Rebase --continue failed (exit code {continue_error.returncode}), attempting to abort and restart...")
+                    Logger.warn(f"⚠️  Rebase --continue failed (exit code {continue_error.returncode}) - will try abort and restart")
                     try:
                         # Abort the problematic rebase
                         self.run_git(["rebase", "--abort"])
@@ -499,11 +506,126 @@ class IntelligentSquash:
                             return False
                             
                     except subprocess.CalledProcessError as abort_error:
-                        Logger.error(f"❌ Failed to abort rebase (exit code {abort_error.returncode})")
-                        return False
+                        Logger.warn(f"⚠️  Standard rebase abort failed (exit code {abort_error.returncode}) - trying emergency cleanup")
+                        Logger.info("🧹 Attempting alternative cleanup methods...")
+                        if self._emergency_cleanup():
+                            Logger.info("✅ Emergency cleanup successful, starting fresh squash...")
+                            # Try to start fresh after cleanup
+                            base_sha, commits, title = self.get_pr_info(pr_number)
+                            strategy = self.choose_squash_strategy(pr_number, base_sha, commits)
+                            
+                            if strategy.method == "reset_soft":
+                                return self.squash_with_reset_soft(pr_number, base_sha, title, strategy.commits_count)
+                            elif strategy.method == "interactive_rebase":
+                                return self.squash_with_interactive_rebase(pr_number, base_sha, title, strategy.commits_count)
+                            else:
+                                Logger.error(f"❌ Unknown squash method after cleanup: {strategy.method}")
+                                return False
+                        else:
+                            Logger.error("❌ CRITICAL: All cleanup attempts failed - manual intervention required")
+                            Logger.error("❌ Repository may be in an inconsistent state - check git status manually")
+                            return False
                 
         except subprocess.CalledProcessError as e:
             Logger.error(f"❌ Failed to handle existing rebase: {e}")
+            return False
+    
+    def _debug_git_state(self):
+        """Debug git state to understand rebase issues"""
+        Logger.info("🔍 DEBUG: Current git state analysis:")
+        
+        try:
+            # Check current branch/HEAD
+            branch_result = self.run_git(["rev-parse", "--abbrev-ref", "HEAD"])
+            Logger.info(f"   Current branch/HEAD: {branch_result.stdout.strip()}")
+        except Exception as e:
+            Logger.info(f"   Branch check failed: {e}")
+        
+        try:
+            # Check if REBASE_HEAD exists and what commit it points to
+            rebase_head = self.spring_ai_dir / ".git" / "REBASE_HEAD"
+            if rebase_head.exists():
+                with open(rebase_head, 'r') as f:
+                    rebase_commit = f.read().strip()
+                Logger.info(f"   REBASE_HEAD: {rebase_commit[:8]}")
+            else:
+                Logger.info("   REBASE_HEAD: not found")
+        except Exception as e:
+            Logger.info(f"   REBASE_HEAD check failed: {e}")
+        
+        try:
+            # Check rebase state directories
+            rebase_merge = self.spring_ai_dir / ".git" / "rebase-merge"
+            rebase_apply = self.spring_ai_dir / ".git" / "rebase-apply"
+            Logger.info(f"   rebase-merge exists: {rebase_merge.exists()}")
+            Logger.info(f"   rebase-apply exists: {rebase_apply.exists()}")
+        except Exception as e:
+            Logger.info(f"   Rebase directory check failed: {e}")
+        
+        try:
+            # Check index status
+            status_result = self.run_git(["status", "--porcelain=v1"])
+            status_lines = [line for line in status_result.stdout.strip().split('\n') if line]
+            Logger.info(f"   Working directory status: {len(status_lines)} items")
+            if status_lines and len(status_lines) <= 5:  # Show a few items
+                for line in status_lines[:5]:
+                    Logger.info(f"     {line}")
+        except Exception as e:
+            Logger.info(f"   Status check failed: {e}")
+    
+    def _emergency_cleanup(self) -> bool:
+        """Emergency cleanup when standard git rebase --abort fails"""
+        Logger.info("🚨 Performing emergency git state cleanup...")
+        
+        try:
+            # Method 1: Try to reset HEAD to remove rebase state
+            Logger.info("🔧 Attempting to reset HEAD to clear rebase state...")
+            try:
+                self.run_git(["reset", "--hard", "HEAD"])
+                Logger.info("✅ HEAD reset successful")
+            except subprocess.CalledProcessError:
+                Logger.warn("⚠️  HEAD reset failed, trying alternative methods...")
+            
+            # Method 2: Remove rebase-related files manually
+            Logger.info("🗑️  Removing rebase state files...")
+            rebase_files = [
+                self.spring_ai_dir / ".git" / "REBASE_HEAD",
+                self.spring_ai_dir / ".git" / "rebase-merge",
+                self.spring_ai_dir / ".git" / "rebase-apply"
+            ]
+            
+            for file_path in rebase_files:
+                try:
+                    if file_path.exists():
+                        if file_path.is_file():
+                            file_path.unlink()
+                            Logger.info(f"✅ Removed {file_path.name}")
+                        elif file_path.is_dir():
+                            import shutil
+                            shutil.rmtree(file_path)
+                            Logger.info(f"✅ Removed directory {file_path.name}")
+                except Exception as e:
+                    Logger.warn(f"Could not remove {file_path.name}: {e}")
+            
+            # Method 3: Verify we're back to a clean state
+            try:
+                status_result = self.run_git(["status", "--porcelain"])
+                if not status_result.stdout.strip():
+                    Logger.success("✅ Repository is now in a clean state")
+                    return True
+                else:
+                    Logger.warn("⚠️  Repository still has uncommitted changes after cleanup")
+                    # Try to clean working directory
+                    self.run_git(["reset", "--hard"])
+                    self.run_git(["clean", "-fd"])
+                    Logger.info("✅ Performed hard reset and clean")
+                    return True
+            except subprocess.CalledProcessError as e:
+                Logger.error(f"❌ Could not verify clean state: {e}")
+                return False
+            
+        except Exception as e:
+            Logger.error(f"❌ Emergency cleanup failed: {e}")
             return False
     
     # Note: Removed duplicate conflict resolution methods - now using existing PR workflow system
@@ -516,6 +638,16 @@ class IntelligentSquash:
             Logger.info("🔍 DRY RUN MODE - no changes will be made")
         
         try:
+            # Critical: Validate we're on the correct PR branch before proceeding
+            current_branch = self.run_git(["rev-parse", "--abbrev-ref", "HEAD"]).stdout.strip()
+            if current_branch == "main" or current_branch == "master":
+                Logger.error("❌ CRITICAL: Cannot run squash on main/master branch!")
+                Logger.error("❌ Please checkout the PR branch first using the main workflow")
+                Logger.error("❌ Use: python3 pr_workflow.py --cleanup 3914 && python3 pr_workflow.py 3914")
+                return False
+            
+            Logger.info(f"📋 Operating on branch: {current_branch}")
+            
             # Check if we're already in the middle of a rebase
             rebase_head_path = self.spring_ai_dir / ".git" / "REBASE_HEAD"
             Logger.info(f"🔍 Checking for existing rebase at: {rebase_head_path}")
@@ -525,6 +657,18 @@ class IntelligentSquash:
             
             # Step 1: Get PR information
             base_sha, commits, title = self.get_pr_info(pr_number)
+            
+            # Additional check: count current commits on this branch vs base
+            try:
+                current_commit_count = self.run_git(["rev-list", "--count", f"{base_sha}..HEAD"])
+                current_count = int(current_commit_count.stdout.strip())
+                pr_commit_count = len(commits)
+                
+                Logger.info(f"📊 PR original commits: {pr_commit_count}, Current commits: {current_count}")
+                if current_count > pr_commit_count:
+                    Logger.info(f"📋 Detected {current_count - pr_commit_count} additional commit(s) (likely auto-fixes)")
+            except Exception as e:
+                Logger.warn(f"Could not count current commits: {e}")
             
             # Step 2: Choose squash strategy
             strategy = self.choose_squash_strategy(pr_number, base_sha, commits)

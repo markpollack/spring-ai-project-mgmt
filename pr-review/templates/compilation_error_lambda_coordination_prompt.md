@@ -33,7 +33,19 @@ For the lambda expression, determine:
 ### 4. MAKE COORDINATED CHANGES
 **You MUST fix the ENTIRE lambda expression in a single Edit operation**. Do NOT make piecemeal changes that fix one line but break another.
 
-Common coordinated solutions:
+**MOST COMMON SOLUTION**: Add explicit parameter types to lambda expressions when type inference fails:
+
+**Before (fails type inference):**
+```java
+serverBuilder.rootsChangeHandler((exchange, roots) -> consumer.accept(exchange, roots));
+```
+
+**After (explicit types):**
+```java
+serverBuilder.rootsChangeHandler((McpSyncServerExchange exchange, List<McpSchema.Root> roots) -> consumer.accept(exchange, roots));
+```
+
+Other coordinated solutions:
 - Add explicit type casts to lambda parameters: `(Type1) param1, (Type2) param2`
 - Change lambda parameter types to match functional interface
 - Add type casting within the lambda body: `method.call((CastType) param)`
