@@ -473,11 +473,34 @@ class IntelligentSquash:
                 Logger.success("✅ Rebase continued successfully")
                 return True
             else:
-                # No conflicts, just continue the rebase
+                # No conflicts, but might be stuck rebase - try to continue or abort and restart
                 Logger.info("📋 No conflicts detected, continuing rebase...")
-                self.run_git(["rebase", "--continue"])
-                Logger.success("✅ Rebase continued successfully")
-                return True
+                try:
+                    self.run_git(["rebase", "--continue"])
+                    Logger.success("✅ Rebase continued successfully")
+                    return True
+                except subprocess.CalledProcessError as continue_error:
+                    Logger.warn(f"⚠️  Rebase --continue failed (exit code {continue_error.returncode}), attempting to abort and restart...")
+                    try:
+                        # Abort the problematic rebase
+                        self.run_git(["rebase", "--abort"])
+                        Logger.info("✅ Aborted stuck rebase, starting fresh squash...")
+                        
+                        # Start fresh squash process
+                        base_sha, commits, title = self.get_pr_info(pr_number)
+                        strategy = self.choose_squash_strategy(pr_number, base_sha, commits)
+                        
+                        if strategy.method == "reset_soft":
+                            return self.squash_with_reset_soft(pr_number, base_sha, title, strategy.commits_count)
+                        elif strategy.method == "interactive_rebase":
+                            return self.squash_with_interactive_rebase(pr_number, base_sha, title, strategy.commits_count)
+                        else:
+                            Logger.error(f"❌ Unknown squash method after restart: {strategy.method}")
+                            return False
+                            
+                    except subprocess.CalledProcessError as abort_error:
+                        Logger.error(f"❌ Failed to abort rebase (exit code {abort_error.returncode})")
+                        return False
                 
         except subprocess.CalledProcessError as e:
             Logger.error(f"❌ Failed to handle existing rebase: {e}")

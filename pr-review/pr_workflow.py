@@ -689,11 +689,21 @@ class PRWorkflow:
                 total_resolved += resolved_count
                 
                 if resolved_count > 0:
-                    Logger.success(f"✅ Resolved {resolved_count} error(s) in attempt {attempt}")
+                    Logger.info(f"🔧 Applied fixes to {resolved_count} error(s) in attempt {attempt} - validating...")
                     
                     # Re-apply formatter after fixes
                     if not self.apply_java_formatter():
                         Logger.warn("⚠️  Java formatter failed after compilation fixes")
+                    
+                    # Critical: Check if all errors are actually resolved after this attempt
+                    verification_errors = self.compilation_resolver.detect_compilation_errors()
+                    if not verification_errors:
+                        Logger.success("✅ Validation successful: All compilation errors resolved!")
+                        break
+                    else:
+                        Logger.info(f"📋 After attempt {attempt}: {len(verification_errors)} error(s) still remain")
+                        if attempt < max_attempts:
+                            Logger.info("Continuing to next attempt...")
                 else:
                     Logger.warn(f"⚠️  No errors resolved in attempt {attempt}")
                     break
@@ -720,9 +730,18 @@ class PRWorkflow:
                 Logger.error(f"  - {error.file_path}:{error.line_number} - {error.message}")
             return False
         
-        # Skip final compilation check - it will be done by the full Maven build that follows
-        Logger.info("✅ Compilation error resolution completed - full build will verify success")
+        # Final verification step - ensure all errors are actually resolved
+        Logger.info("🔍 Final verification: checking if all compilation errors are resolved...")
+        final_errors = self.compilation_resolver.detect_compilation_errors()
         
+        if final_errors:
+            Logger.error(f"❌ {len(final_errors)} compilation error(s) still remain after resolution attempts:")
+            for error in final_errors:
+                Logger.error(f"  - {error.file_path}:{error.line_number} - {error.message}")
+            Logger.error("Manual intervention required - compilation error auto-resolution was incomplete")
+            return False
+        
+        Logger.success("✅ All compilation errors successfully resolved and verified!")
         return True
     
     def generate_enhanced_plan(self, pr_number: str, pr_context: Optional[Dict] = None) -> Path:

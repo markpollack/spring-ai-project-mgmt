@@ -38,6 +38,30 @@ This file contains a JSON array with detailed information about all {total_files
 
 **FILE COUNT VALIDATION**: After reading the file, confirm you have analyzed exactly {total_files_changed} files total.
 
+## Code Analysis Focus Areas
+
+When analyzing the code changes, pay special attention to:
+
+### Method Complexity Red Flags
+- Methods exceeding 100 lines (extract to smaller, focused methods)
+- Cyclomatic complexity > 10 (too many decision paths)
+- Deep nesting levels (> 4 levels indicates need for refactoring)
+- Methods with > 5 parameters (consider parameter objects)
+
+### Testing Anti-Patterns
+- @Ignore or @Disabled annotations without explanation
+- Commented-out test code
+- Test methods > 50 lines (tests should be focused)
+- Tests with multiple assertions testing different concerns
+- Missing tests for error conditions or edge cases
+
+### Code Smells to Identify
+- Duplicate code blocks (> 10 lines repeated)
+- God classes (> 500 lines or > 20 methods)
+- Feature envy (methods using another class's data excessively)
+- Long parameter lists
+- Primitive obsession (using primitives instead of domain objects)
+
 ### Implementation Patterns Detected
 {implementation_patterns}
 
@@ -68,13 +92,15 @@ Assess architectural implications:
 - Are there any architectural concerns or improvements?
 - Impact on system modularity and maintainability?
 
-### 3. IMPLEMENTATION_QUALITY (4-5 items)
+### 3. IMPLEMENTATION_QUALITY (5-7 items)
 Evaluate the technical implementation:
 - Code organization and structure quality
 - Adherence to Spring AI coding patterns and conventions
 - Error handling and edge case coverage
 - Resource management and performance considerations
 - Integration with Spring Framework patterns (dependency injection, configuration, etc.)
+- **Method Complexity**: Identify methods over 100 lines or with high cyclomatic complexity (>10)
+- **Code Smells**: Look for duplicate code, god classes, or methods doing too many things
 
 ### 4. BREAKING_CHANGES_ASSESSMENT (2-3 items)
 Analyze compatibility impact:
@@ -82,12 +108,15 @@ Analyze compatibility impact:
 - Backward compatibility with existing Spring AI usage patterns?
 - Migration path for existing users if changes are breaking?
 
-### 5. TESTING_ADEQUACY (3-4 items)
+### 5. TESTING_ADEQUACY (5-7 items)
 Assess test coverage and quality:
 - Are all new functionality paths covered by tests?
 - Quality and comprehensiveness of test scenarios?
 - Integration testing for Spring AI components?
 - Edge case and error condition testing?
+- **Ignored/Disabled Tests**: Identify any @Ignore, @Disabled, or commented-out tests
+- **Test Method Complexity**: Flag test methods that are overly complex (>50 lines)
+- **Test Naming and Documentation**: Are test names descriptive of what's being tested?
 
 ### 6. DOCUMENTATION_COMPLETENESS (2-3 items)
 Evaluate documentation and usability:
@@ -131,14 +160,16 @@ Provide final complexity score where:
 
 This should synthesize conversation complexity with code analysis insights.
 
-### 12. RECOMMENDATIONS (List of 4-6 specific recommendations)
+### 12. RECOMMENDATIONS (List of 5-8 specific recommendations)
 Provide actionable technical recommendations:
-- Code quality improvements
-- Testing enhancements
-- Documentation additions
-- Architecture refinements
-- Risk mitigation strategies
-- Performance optimizations
+- **Code Refactoring**: Specifically identify methods that need to be broken down (e.g., "Refactor UserService.processData() - 150 lines, extract validation logic")
+- **Test Improvements**: Address ignored tests, add missing test cases, simplify complex tests
+- **Complexity Reduction**: Suggest specific methods/classes that violate single responsibility principle
+- **Documentation Gaps**: Missing JavaDoc for public APIs, unclear configuration options
+- **Architecture Refinements**: Module boundaries, dependency management improvements
+- **Risk Mitigation**: Security, performance, or reliability concerns
+- **Code Duplication**: Identify repeated patterns that should be extracted to utilities
+- **Spring Best Practices**: Non-idiomatic Spring usage that should be corrected
 
 ## Response Format
 Provide your assessment in JSON format:

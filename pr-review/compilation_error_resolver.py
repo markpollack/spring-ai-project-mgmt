@@ -105,15 +105,15 @@ class CompilationErrorResolver:
             return f"Error loading template {template_name}: {e}"
     
     def detect_compilation_errors(self) -> List[CompilationError]:
-        """Run compilation and detect errors"""
+        """Run compilation and detect errors using the same command as the final build"""
         Logger.info("🔍 Detecting compilation errors...")
         
         try:
-            # Run Maven compilation with detailed error output
+            # Use the fast compilation command that matches the build behavior
             result = subprocess.run([
-                "mvnd", "compile", 
-                "-Dmaven.javadoc.skip=true",
-                "-X"  # Debug output for detailed errors
+                "mvnd", "clean", "package", 
+                "-Dmaven.javadoc.skip=true", 
+                "-DskipTests"
             ], 
             cwd=self.spring_ai_dir,
             capture_output=True,
@@ -233,14 +233,14 @@ class CompilationErrorResolver:
                     if handler(error):
                         resolved_count += 1
                         resolution_log.append(f"✅ Fixed {error.error_type} in {error.file_path}:{error.line_number}")
-                        Logger.success(f"Auto-resolved: {error.fix_description} in {error.file_path}")
+                        Logger.info(f"🔧 Applied fix attempt: {error.fix_description} in {error.file_path} - validation pending")
                         continue
                 
                 # Fall back to generic Claude Code handler
                 if self._fix_with_claude_code(error):
                     resolved_count += 1
                     resolution_log.append(f"✅ Fixed {error.error_type} in {error.file_path}:{error.line_number}")
-                    Logger.success(f"Auto-resolved via Claude Code: {error.error_type} in {error.file_path}")
+                    Logger.info(f"🔧 Applied Claude Code fix attempt for {error.error_type} in {error.file_path} - validation pending")
                 else:
                     resolution_log.append(f"❌ Failed to fix {error.error_type} in {error.file_path}:{error.line_number}")
                     
@@ -292,36 +292,60 @@ class CompilationErrorResolver:
         return False
     
     def _fix_generic_types(self, error: CompilationError) -> bool:
-        """Fix generic type mismatch using Claude Code and templates"""
+        """Fix generic type mismatch using enhanced Claude Code templates"""
         Logger.info(f"🤖 Using Claude Code to fix type mismatch in {error.file_path}")
         
         try:
-            # Load the appropriate template based on error type
-            if "incompatible types" in error.message and "cannot be converted" in error.message:
-                template_name = "compilation_error_type_mismatch_prompt"
+            # Select template based on error pattern - lambda errors need special coordination
+            if "lambda expression" in error.message or "incompatible parameter types in lambda" in error.message:
+                template_name = "compilation_error_lambda_coordination_prompt"
+                Logger.info("🎯 Using lambda coordination template for multi-line lambda fix")
             else:
-                template_name = "compilation_error_base_prompt"
+                template_name = "compilation_error_enhanced_prompt"
             
-            # Load and format the prompt template
+            # Track previous attempts for this file to provide context
+            file_key = f"{error.file_path}:{error.line_number}"
+            if not hasattr(self, '_fix_attempts'):
+                self._fix_attempts = {}
+            
+            attempt_count = self._fix_attempts.get(file_key, 0) + 1
+            self._fix_attempts[file_key] = attempt_count
+            
+            # Create previous attempts context
+            previous_attempts = ""
+            if attempt_count > 1:
+                previous_attempts = f"""
+CRITICAL: This is attempt #{attempt_count} to fix this type mismatch error.
+Previous attempts have been made but the error persists or new type issues have been introduced.
+This suggests a cascading type compatibility issue. You MUST:
+1. Read the ENTIRE file to understand all type relationships
+2. Look for related lambda expressions, generic types, and method signatures
+3. Consider that multiple lines may need coordinated changes
+4. Verify that your fix doesn't introduce new type mismatches elsewhere
+"""
+            
+            # Load and format the enhanced prompt template
             prompt = self.load_prompt_template(
                 template_name,
                 file_path=error.file_path,
                 line_number=error.line_number,
                 column=error.column,
                 error_message=error.message,
-                spring_ai_dir=self.spring_ai_dir
+                error_type="generic_type_mismatch",
+                spring_ai_dir=self.spring_ai_dir,
+                previous_attempts=previous_attempts
             )
             
-            # Use ClaudeCodeWrapper for reliable execution
+            # Use ClaudeCodeWrapper for reliable execution with longer timeout
             result = self.claude_wrapper.analyze_from_text(
                 prompt_text=prompt,
-                timeout=180,  # 3 minutes
-                use_json_output=False,  # Text output is fine for this
+                timeout=300,  # 5 minutes for complex type analysis
+                use_json_output=False,
                 show_progress=True
             )
             
             if result['success']:
-                Logger.success(f"Claude Code successfully fixed type mismatch in {error.file_path}")
+                Logger.info(f"🔧 Claude Code applied changes to fix type mismatch in {error.file_path} - validation pending")
                 
                 # Run Java formatter after the fix
                 self._apply_java_formatter()
@@ -405,40 +429,59 @@ Working directory: {self.spring_ai_dir}"""
             Logger.warn(f"Error applying Java formatter: {e}")
     
     def _fix_with_claude_code(self, error: CompilationError) -> bool:
-        """Universal Claude Code handler for any compilation error"""
+        """Universal Claude Code handler for any compilation error with enhanced context"""
         Logger.info(f"🤖 Using Claude Code to fix {error.error_type} in {error.file_path}")
         
         try:
-            # Select appropriate template based on error type
-            template_name = "compilation_error_base_prompt"  # Default
+            # Select template based on error pattern
+            if "lambda expression" in error.message or "incompatible parameter types in lambda" in error.message:
+                template_name = "compilation_error_lambda_coordination_prompt"
+                Logger.info("🎯 Using lambda coordination template for multi-line lambda fix")
+            else:
+                template_name = "compilation_error_enhanced_prompt"
             
-            if error.error_type == 'type_mismatch' or ('incompatible types' in error.message and 'cannot be converted' in error.message):
-                template_name = "compilation_error_type_mismatch_prompt"
-            elif error.error_type == 'missing_symbol' or 'cannot find symbol' in error.message:
-                template_name = "compilation_error_missing_symbol_prompt"
+            # Track previous attempts for this file to provide context
+            file_key = f"{error.file_path}:{error.line_number}"
+            if not hasattr(self, '_fix_attempts'):
+                self._fix_attempts = {}
             
-            # Load and format the prompt template
+            attempt_count = self._fix_attempts.get(file_key, 0) + 1
+            self._fix_attempts[file_key] = attempt_count
+            
+            # Create previous attempts context
+            previous_attempts = ""
+            if attempt_count > 1:
+                previous_attempts = f"""
+IMPORTANT: This is attempt #{attempt_count} to fix this error.
+Previous attempts have partially resolved the issue but new errors may have been introduced.
+Consider the entire file context and make sure your fix doesn't break other parts of the code.
+Look for related type mismatches or missing imports that might be causing cascading errors.
+"""
+            
+            # Load and format the enhanced prompt template with more context
             prompt = self.load_prompt_template(
                 template_name,
                 file_path=error.file_path,
                 line_number=error.line_number,
                 column=error.column,
                 error_message=error.message,
-                spring_ai_dir=self.spring_ai_dir
+                error_type=error.error_type,
+                spring_ai_dir=self.spring_ai_dir,
+                previous_attempts=previous_attempts
             )
             
             # Use ClaudeCodeWrapper for execution with descriptive logging
             log_prefix = f"compilation-error-{error.error_type}-{Path(error.file_path).stem}-line{error.line_number}"
             result = self.claude_wrapper.analyze_from_text(
                 prompt_text=prompt,
-                timeout=180,  # 3 minutes
+                timeout=240,  # 4 minutes for more complex analysis
                 use_json_output=False,
                 show_progress=True,
                 log_prefix=log_prefix
             )
             
             if result['success']:
-                Logger.success(f"Claude Code successfully fixed {error.error_type} in {error.file_path}")
+                Logger.info(f"🔧 Claude Code applied changes to fix {error.error_type} in {error.file_path} - validation pending")
                 
                 # Run Java formatter after the fix
                 self._apply_java_formatter()

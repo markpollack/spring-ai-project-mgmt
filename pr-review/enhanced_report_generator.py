@@ -1121,6 +1121,50 @@ class EnhancedReportGenerator:
             "reasoning": "Backport assessment was skipped. Use --skip-backport=false to enable backport analysis.",
             "recommendations": "To assess backport suitability, run the report without --skip-backport flag."
         }
+    
+    def _validate_data_integrity(self, loaded_data: Dict[str, Any]) -> None:
+        """Validate data integrity and file count consistency"""
+        try:
+            file_changes = loaded_data.get('file_changes', [])
+            pr_data = loaded_data.get('pr_data', {})
+            
+            if not file_changes:
+                Logger.warn("⚠️  No file changes data loaded - analysis may be incomplete")
+                return
+            
+            # File count validation
+            file_count = len(file_changes)
+            Logger.info(f"📊 Data integrity check: {file_count} files loaded for analysis")
+            
+            # Check for potential token limit issues
+            try:
+                import json
+                file_changes_json = json.dumps(file_changes)
+                json_size_bytes = len(file_changes_json.encode('utf-8'))
+                estimated_tokens = json_size_bytes / 5  # 5 bytes per token estimate
+                
+                Logger.info(f"📊 File changes data size: {json_size_bytes:,} bytes (~{estimated_tokens:,.0f} tokens)")
+                
+                if estimated_tokens > 25000:
+                    Logger.warn(f"⚠️  CRITICAL: File changes data ({estimated_tokens:,.0f} tokens) exceeds Claude Code 25k token limit!")
+                    Logger.warn("    This may cause truncated AI analysis. Fixed by using file reading instructions.")
+                elif estimated_tokens > 20000:
+                    Logger.warn(f"⚠️  File changes data approaching token limit ({estimated_tokens:,.0f} tokens)")
+                    
+            except Exception as e:
+                Logger.warn(f"⚠️  Could not estimate token size: {e}")
+            
+            # File type breakdown for validation
+            file_types = {}
+            for change in file_changes:
+                filename = change.get('filename', 'unknown')
+                ext = filename.split('.')[-1] if '.' in filename else 'no-ext'
+                file_types[ext] = file_types.get(ext, 0) + 1
+            
+            Logger.info(f"📊 File types: {dict(sorted(file_types.items()))}")
+            
+        except Exception as e:
+            Logger.warn(f"⚠️  Data integrity validation failed: {e}")
 
 
 def main():
@@ -1195,50 +1239,6 @@ def main():
     else:
         print(f"\n❌ Enhanced report generation failed for PR #{pr_number}")
         sys.exit(1)
-
-    def _validate_data_integrity(self, loaded_data: Dict[str, Any]) -> None:
-        """Validate data integrity and file count consistency"""
-        try:
-            file_changes = loaded_data.get('file_changes', [])
-            pr_data = loaded_data.get('pr_data', {})
-            
-            if not file_changes:
-                Logger.warn("⚠️  No file changes data loaded - analysis may be incomplete")
-                return
-            
-            # File count validation
-            file_count = len(file_changes)
-            Logger.info(f"📊 Data integrity check: {file_count} files loaded for analysis")
-            
-            # Check for potential token limit issues
-            try:
-                import json
-                file_changes_json = json.dumps(file_changes)
-                json_size_bytes = len(file_changes_json.encode('utf-8'))
-                estimated_tokens = json_size_bytes / 5  # 5 bytes per token estimate
-                
-                Logger.info(f"📊 File changes data size: {json_size_bytes:,} bytes (~{estimated_tokens:,.0f} tokens)")
-                
-                if estimated_tokens > 25000:
-                    Logger.warn(f"⚠️  CRITICAL: File changes data ({estimated_tokens:,.0f} tokens) exceeds Claude Code 25k token limit!")
-                    Logger.warn("    This may cause truncated AI analysis. Fixed by using file reading instructions.")
-                elif estimated_tokens > 20000:
-                    Logger.warn(f"⚠️  File changes data approaching token limit ({estimated_tokens:,.0f} tokens)")
-                    
-            except Exception as e:
-                Logger.warn(f"⚠️  Could not estimate token size: {e}")
-            
-            # File type breakdown for validation
-            file_types = {}
-            for change in file_changes:
-                filename = change.get('filename', 'unknown')
-                ext = filename.split('.')[-1] if '.' in filename else 'no-ext'
-                file_types[ext] = file_types.get(ext, 0) + 1
-            
-            Logger.info(f"📊 File types: {dict(sorted(file_types.items()))}")
-            
-        except Exception as e:
-            Logger.warn(f"⚠️  Data integrity validation failed: {e}")
 
 
 if __name__ == "__main__":
