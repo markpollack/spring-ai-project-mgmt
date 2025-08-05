@@ -1,38 +1,38 @@
-**LAMBDA COMPILATION ERROR FIXING**
+**CRITICAL: LAMBDA PARAMETER TYPE FIXING**
 
-Fix the lambda expression compilation error in {file_path}.
+You MUST add explicit parameter types to the lambda expression. DO NOT remove types.
 
-## Error Details
+## Error Context
 - **File**: {file_path}
-- **Line**: {line_number}, **Column**: {column}
+- **Line**: {line_number}, **Column**: {column}  
 - **Error**: {error_message}
-- **Error Type**: {error_type}
 
-## Instructions
+## MANDATORY STEPS
 1. **Read the file**: `{spring_ai_dir}/{file_path}`
-2. **Find the lambda**: Locate the lambda expression around line {line_number}
-3. **Reference MCP SDK**: Check `{mcp_sdk_dir}` for MCP interface definitions and method signatures
-4. **Fix type inference**: Add explicit parameter types based on actual method signatures
+2. **Find line {line_number}**: Look for a lambda expression like `(param1, param2) -> ...`
+3. **CRITICAL**: If you see `(exchange, roots) ->`, you MUST change it to `(McpSyncServerExchange exchange, List<McpSchema.Root> roots) ->`
 
-## MCP SDK Reference
-The MCP Java SDK is available at `{mcp_sdk_dir}` with complete interface definitions.
-Key interfaces to check:
-- `{mcp_sdk_dir}/mcp/src/main/java/io/modelcontextprotocol/server/McpSyncServerExchange.java`
-- `{mcp_sdk_dir}/mcp/src/main/java/io/modelcontextprotocol/spec/McpSchema.java`
+## THE EXACT FIX REQUIRED
+**WRONG (causes compilation error):**
+```java
+serverBuilder.rootsChangeHandler((exchange, roots) -> consumer.accept(exchange, roots));
+```
 
-## Most Common Fix
-If you see `(param1, param2) -> body` and get type errors:
-1. Look up the actual method signature in the MCP SDK
-2. Add explicit parameter types: `(Type1 param1, Type2 param2) -> body`
+**CORRECT (fixes compilation error):**
+```java
+serverBuilder.rootsChangeHandler((McpSyncServerExchange exchange, List<McpSchema.Root> roots) -> consumer.accept(exchange, roots));
+```
 
-Example:
-- Before: `(exchange, roots) -> consumer.accept(exchange, roots)`
-- After: `(McpSyncServerExchange exchange, List<McpSchema.Root> roots) -> consumer.accept(exchange, roots)`
+## CRITICAL RULES
+- ❌ **NEVER** remove parameter types from lambdas
+- ❌ **NEVER** use type inference `(exchange, roots)` - this CAUSES the error
+- ✅ **ALWAYS** use explicit types `(McpSyncServerExchange exchange, List<McpSchema.Root> roots)`
+- ✅ The error "incompatible parameter types in lambda expression" means ADD types, not remove them
 
 ## Working Directory
 {spring_ai_dir}
 
-## Previous Fix Attempts
+## Previous Fix Attempts  
 {previous_attempts}
 
-**Fix the lambda by looking up actual types in the MCP SDK and adding explicit parameter types.**
+**CRITICAL: Change `(exchange, roots)` to `(McpSyncServerExchange exchange, List<McpSchema.Root> roots)` - DO NOT do the opposite!**
