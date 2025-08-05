@@ -1686,20 +1686,24 @@ File content with conflicts:"""
         if dry_run:
             Logger.warn("DRY RUN MODE - No actual changes will be made")
         
-        # Phase 1: Setup repository
-        if not self.setup_repository(dry_run):
-            Logger.error("❌ Repository setup failed")
-            return False
-        
-        # Phase 1b: Setup MCP SDK repository
-        if not self.setup_mcp_sdk_repository(dry_run):
-            Logger.error("❌ MCP SDK repository setup failed")
-            return False
-        
-        # Phase 2: Checkout PR
-        if not self.checkout_pr(pr_number, force, dry_run):
-            Logger.error("❌ PR checkout failed")
-            return False
+        # Phase 1: Setup repository (skip when resuming after manual fixes)
+        if not resume_after_compile:
+            if not self.setup_repository(dry_run):
+                Logger.error("❌ Repository setup failed")
+                return False
+            
+            # Phase 1b: Setup MCP SDK repository
+            if not self.setup_mcp_sdk_repository(dry_run):
+                Logger.error("❌ MCP SDK repository setup failed")
+                return False
+            
+            # Phase 2: Checkout PR
+            if not self.checkout_pr(pr_number, force, dry_run):
+                Logger.error("❌ PR checkout failed")
+                return False
+        else:
+            Logger.info("🔄 Resuming after manual compilation fixes - preserving current git state")
+            Logger.info(f"💡 Working in current branch with manual fixes intact")
         
         # Phase 3: Build check
         # Skip compilation when resuming after manual fixes
@@ -1711,7 +1715,11 @@ File content with conflicts:"""
             return False
         
         # Phase 4: Squash commits (mandatory for multi-commit PRs)
-        if not self.squash_commits(pr_number, skip_squash, dry_run):
+        # Skip squash when resuming to preserve manual fix commits
+        effective_skip_squash = skip_squash or resume_after_compile
+        if resume_after_compile:
+            Logger.info("🔄 Skipping squash to preserve manual compilation fix commits")
+        if not self.squash_commits(pr_number, effective_skip_squash, dry_run):
             Logger.error("❌ Squash commits failed - cannot proceed with multi-commit rebase")
             return False
         
