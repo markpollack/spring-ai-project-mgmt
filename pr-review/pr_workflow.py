@@ -31,12 +31,17 @@ class WorkflowConfig:
     """Configuration for the PR workflow"""
     script_dir: Path
     spring_ai_repo: str = "spring-projects/spring-ai"
+    mcp_sdk_repo: str = "modelcontextprotocol/java-sdk"
     upstream_remote: str = "origin"
     main_branch: str = "main"
     
     @property
     def spring_ai_dir(self) -> Path:
         return self.script_dir / "spring-ai"
+    
+    @property
+    def mcp_sdk_dir(self) -> Path:
+        return self.script_dir / "mcp-java-sdk"
     
     @property
     def plans_dir(self) -> Path:
@@ -414,7 +419,7 @@ class PRWorkflow:
         self.build_cache = BuildCache(config.script_dir, config.spring_ai_dir)
         self.conflict_analyzer = ConflictAnalyzer(str(config.script_dir))
         self.pr_analyzer = PRAnalyzer(config)
-        self.compilation_resolver = CompilationErrorResolver(config.spring_ai_dir)
+        self.compilation_resolver = CompilationErrorResolver(config.spring_ai_dir, config.mcp_sdk_dir)
         self.github_utils = GitHubUtils(config.script_dir, config.spring_ai_repo)
         
         # Ensure directories exist
@@ -540,6 +545,46 @@ class PRWorkflow:
         Logger.info(f"Switching to {self.config.main_branch} branch...")
         self.git.run_git(["checkout", self.config.main_branch])
         self.git.run_git(["pull", self.config.upstream_remote, self.config.main_branch])
+        
+        return True
+    
+    def setup_mcp_sdk_repository(self, dry_run: bool = False) -> bool:
+        """Setup and update the MCP Java SDK repository"""
+        Logger.info("Setting up MCP Java SDK repository...")
+        
+        if not self.config.mcp_sdk_dir.exists():
+            Logger.warn(f"MCP SDK repository not found at {self.config.mcp_sdk_dir}")
+            Logger.info("Cloning MCP Java SDK repository...")
+            
+            clone_cmd = [
+                "git", "clone", 
+                f"https://github.com/{self.config.mcp_sdk_repo}.git",
+                str(self.config.mcp_sdk_dir)
+            ]
+            
+            if not self.run_command(clone_cmd, "Clone MCP Java SDK repository", dry_run=dry_run):
+                return False
+        
+        if dry_run:
+            Logger.info("[DRY RUN] Would navigate to MCP SDK repository and update")
+            return True
+        
+        # Verify it's a git repository
+        if not (self.config.mcp_sdk_dir / ".git").exists():
+            Logger.error(f"Directory {self.config.mcp_sdk_dir} exists but is not a git repository")
+            return False
+        
+        # Create a temporary GitHelper for the MCP SDK repository
+        mcp_git = GitHelper(self.config.mcp_sdk_dir)
+        
+        # Fetch latest changes from origin
+        Logger.info("Fetching latest changes from MCP SDK origin...")
+        mcp_git.run_git(["fetch", self.config.upstream_remote])
+        
+        # Switch to main branch and update
+        Logger.info(f"Switching to {self.config.main_branch} branch...")
+        mcp_git.run_git(["checkout", self.config.main_branch])
+        mcp_git.run_git(["pull", self.config.upstream_remote, self.config.main_branch])
         
         return True
     
@@ -1638,6 +1683,11 @@ File content with conflicts:"""
         # Phase 1: Setup repository
         if not self.setup_repository(dry_run):
             Logger.error("❌ Repository setup failed")
+            return False
+        
+        # Phase 1b: Setup MCP SDK repository
+        if not self.setup_mcp_sdk_repository(dry_run):
+            Logger.error("❌ MCP SDK repository setup failed")
             return False
         
         # Phase 2: Checkout PR

@@ -40,8 +40,9 @@ class CompilationError:
 class CompilationErrorResolver:
     """Detects and automatically resolves common Java compilation errors"""
     
-    def __init__(self, spring_ai_dir: Path):
+    def __init__(self, spring_ai_dir: Path, mcp_sdk_dir: Path = None):
         self.spring_ai_dir = spring_ai_dir
+        self.mcp_sdk_dir = mcp_sdk_dir or spring_ai_dir.parent / "mcp-java-sdk"
         self.logs_dir = spring_ai_dir.parent / "logs"
         self.logs_dir.mkdir(exist_ok=True)
         self.templates_dir = spring_ai_dir.parent / "templates"
@@ -81,7 +82,11 @@ class CompilationErrorResolver:
     
     def load_prompt_template(self, template_name: str, **kwargs) -> str:
         """Load and populate prompt template with provided variables"""
-        template_path = self.templates_dir / f"{template_name}.md"
+        # Handle template names with or without .md extension
+        if template_name.endswith('.md'):
+            template_path = self.templates_dir / template_name
+        else:
+            template_path = self.templates_dir / f"{template_name}.md"
         
         if not template_path.exists():
             Logger.error(f"Template not found: {template_path}")
@@ -409,6 +414,7 @@ This suggests a cascading type compatibility issue. You MUST:
                 error_message=error.message,
                 error_type="generic_type_mismatch",
                 spring_ai_dir=self.spring_ai_dir,
+                mcp_sdk_dir=self.mcp_sdk_dir,
                 previous_attempts=previous_attempts
             )
             
@@ -547,6 +553,7 @@ Look for related type mismatches or missing imports that might be causing cascad
                 error_message=error.message,
                 error_type=error.error_type,
                 spring_ai_dir=self.spring_ai_dir,
+                mcp_sdk_dir=self.mcp_sdk_dir,
                 previous_attempts=previous_attempts
             )
             
@@ -636,7 +643,8 @@ def main():
         sys.exit(1)
     
     spring_ai_dir = Path(sys.argv[1])
-    resolver = CompilationErrorResolver(spring_ai_dir)
+    mcp_sdk_dir = spring_ai_dir.parent / "mcp-java-sdk"
+    resolver = CompilationErrorResolver(spring_ai_dir, mcp_sdk_dir)
     
     # Detect errors
     errors = resolver.detect_compilation_errors()

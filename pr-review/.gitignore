@@ -16,3 +16,6 @@ logs/temp_*
 __pycache__/
 *.pyc
 *.pyo
+
+# External repositories
+mcp-java-sdk/
