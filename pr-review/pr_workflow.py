@@ -672,7 +672,7 @@ class PRWorkflow:
         Logger.error("All formatting options failed")
         return False
     
-    def _handle_compilation_errors(self, dry_run: bool = False) -> bool:
+    def _handle_compilation_errors(self, pr_number: str = None, dry_run: bool = False) -> bool:
         """Detect and automatically resolve compilation errors"""
         if dry_run:
             Logger.info("[DRY RUN] Would detect and resolve compilation errors")
@@ -696,8 +696,8 @@ class PRWorkflow:
         if auto_fixable:
             Logger.info(f"🔧 {len(auto_fixable)} error(s) can be auto-resolved")
             
-            # Iterative fixing with maximum attempts
-            max_attempts = 3
+            # Single-shot fixing with human intervention fallback
+            max_attempts = 1
             total_resolved = 0
             
             for attempt in range(1, max_attempts + 1):
@@ -780,7 +780,13 @@ class PRWorkflow:
             Logger.error(f"❌ {len(final_errors)} compilation error(s) still remain after resolution attempts:")
             for error in final_errors:
                 Logger.error(f"  - {error.file_path}:{error.line_number} - {error.message}")
-            Logger.error("Manual intervention required - compilation error auto-resolution was incomplete")
+            Logger.error("")
+            Logger.error("🔧 HUMAN INTERVENTION NEEDED")
+            Logger.error("Please manually fix the compilation errors above, then resume with:")
+            Logger.error(f"   python3 pr_workflow.py --resume-after-compile {pr_number or '<PR_NUMBER>'}")
+            Logger.error("")
+            Logger.error("💡 The compilation errors are in the working directory:")
+            Logger.error(f"   {self.config.spring_ai_dir}")
             return False
         
         Logger.success("✅ All compilation errors successfully resolved and verified!")
@@ -1083,7 +1089,7 @@ class PRWorkflow:
             return False
         
         # Detect and auto-resolve compilation errors
-        if not self._handle_compilation_errors(dry_run):
+        if not self._handle_compilation_errors(pr_number, dry_run):
             Logger.error("❌ Compilation errors could not be resolved")
             return False
         
@@ -1673,7 +1679,7 @@ File content with conflicts:"""
     
     
     def run_complete_workflow(self, pr_number: str, skip_squash: bool = False, skip_compile: bool = False, 
-                            skip_tests: bool = False, skip_docs: bool = False, auto_resolve: bool = False, force: bool = False, generate_report: bool = True, skip_commit_message: bool = False, dry_run: bool = False) -> bool:
+                            skip_tests: bool = False, skip_docs: bool = False, auto_resolve: bool = False, force: bool = False, generate_report: bool = True, skip_commit_message: bool = False, resume_after_compile: bool = False, dry_run: bool = False) -> bool:
         """Run the complete PR workflow"""
         Logger.info(f"🚀 Starting complete PR review workflow for PR #{pr_number}")
         
@@ -1696,7 +1702,11 @@ File content with conflicts:"""
             return False
         
         # Phase 3: Build check
-        if not self.run_build_check(pr_number, skip_compile, dry_run):
+        # Skip compilation when resuming after manual fixes
+        effective_skip_compile = skip_compile or resume_after_compile
+        if resume_after_compile:
+            Logger.info("🔄 Resuming after manual compilation fixes - skipping compilation check")
+        if not self.run_build_check(pr_number, effective_skip_compile, dry_run):
             Logger.error("❌ Build check failed")
             return False
         
@@ -2293,6 +2303,7 @@ Examples:
   python3 pr_workflow.py --cleanup 3386            # Clean up PR workspace (light mode - keeps spring-ai repo)
   python3 pr_workflow.py --cleanup 3386 --cleanup-mode full  # Full cleanup (removes everything)
   python3 pr_workflow.py --dry-run 3386            # Preview the workflow
+  python3 pr_workflow.py --resume-after-compile 3386 # Resume after manually fixing compilation errors
         """
     )
     
@@ -2317,6 +2328,7 @@ Examples:
     parser.add_argument('--cleanup-mode', choices=['full', 'light'], default='light', 
                        help='Cleanup mode: full (remove everything including spring-ai repo) or light (keep spring-ai repo, remove generated files only)')
     parser.add_argument('--dry-run', action='store_true', help='Show what would be done without executing')
+    parser.add_argument('--resume-after-compile', action='store_true', help='Resume workflow after manual compilation fixes (skips compilation check)')
     
     args = parser.parse_args()
     
@@ -2378,6 +2390,7 @@ Examples:
             force=args.force,
             generate_report=not args.skip_report,
             skip_commit_message=args.skip_commit_message,
+            resume_after_compile=args.resume_after_compile,
             dry_run=args.dry_run
         )
     
