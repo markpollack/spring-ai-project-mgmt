@@ -155,6 +155,9 @@ gh api repos/spring-projects/spring-ai/milestones
 - Managed exclusively by Python workflow scripts
 - **Never directly manipulate these directories or run git commands within them**
 - All git operations handled by automation scripts with subprocess calls
+- **NEVER commit any changes from these directories to this project repository**
+- These directories are included in .gitignore and their changes should always be ignored
+- If you see git status showing changes in spring-ai/, always ignore them - they are not part of this project
 
 ## Data Management
 

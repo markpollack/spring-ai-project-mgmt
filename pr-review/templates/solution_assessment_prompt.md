@@ -69,6 +69,9 @@ When analyzing the code changes, pay special attention to:
 - **Test Files**: {test_files_count}
 - **Test Coverage Areas**: {test_coverage_areas}
 
+### Code Quality Issues Detected
+{code_quality_issues_summary}
+
 ### Key Requirements (from Conversation Analysis)
 {key_requirements_list}
 

@@ -57,6 +57,15 @@ python3 batch_pr_workflow.py 3920 3919 3921 3922 3927 3929
 - Python dependencies for AI analysis components
 - Working Spring AI repository clone in `/spring-ai/`
 
+## Important: Spring AI Directory Management
+
+**Critical: Never commit spring-ai directory changes**
+- The `/spring-ai/` directory is a working repository clone managed by workflow scripts
+- **NEVER commit any changes from the spring-ai directory to this project**
+- The directory is included in .gitignore and should always be ignored
+- If you see `git status` showing changes in spring-ai/, always ignore them
+- All git operations in spring-ai/ are handled by automation scripts only
+
 ## Integration Notes
 
 ### Claude Code Usage Pattern

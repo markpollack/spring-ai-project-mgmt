@@ -154,9 +154,10 @@ class AIPoweredSolutionAssessor:
         Logger.info("📊 Analyzing code changes...")
         
         try:
-            # Get diff statistics
+            # Get diff statistics - compare current commit with its parent
+            # This shows the changes introduced by the PR
             diff_result = subprocess.run([
-                "git", "diff", "--numstat", "upstream/main"
+                "git", "diff", "--numstat", "HEAD~1"
             ], capture_output=True, text=True, cwd=self.spring_ai_dir)
             
             total_lines_added = 0
@@ -183,12 +184,16 @@ class AIPoweredSolutionAssessor:
             # Analyze test coverage
             test_analysis = self._analyze_test_coverage()
             
+            # Analyze code complexity and quality issues
+            code_quality_issues = self._analyze_code_quality_issues()
+            
             return {
                 'total_lines_added': total_lines_added,
                 'total_lines_removed': total_lines_removed,
                 'file_count': file_count,
                 'implementation_patterns': implementation_patterns,
-                'test_analysis': test_analysis
+                'test_analysis': test_analysis,
+                'code_quality_issues': code_quality_issues
             }
             
         except Exception as e:
@@ -198,7 +203,8 @@ class AIPoweredSolutionAssessor:
                 'total_lines_removed': 0,
                 'file_count': 0,
                 'implementation_patterns': [],
-                'test_analysis': {}
+                'test_analysis': {},
+                'code_quality_issues': {}
             }
     
     def _detect_implementation_patterns(self) -> List[str]:
@@ -208,7 +214,7 @@ class AIPoweredSolutionAssessor:
         try:
             # Get list of changed files
             files_result = subprocess.run([
-                "git", "diff", "--name-only", "upstream/main"
+                "git", "diff", "--name-only", "HEAD~1"
             ], capture_output=True, text=True, cwd=self.spring_ai_dir)
             
             if not files_result.stdout:
@@ -261,7 +267,7 @@ class AIPoweredSolutionAssessor:
         try:
             # Get changed test files
             files_result = subprocess.run([
-                "git", "diff", "--name-only", "upstream/main"
+                "git", "diff", "--name-only", "HEAD~1"
             ], capture_output=True, text=True, cwd=self.spring_ai_dir)
             
             if files_result.stdout:
@@ -282,6 +288,122 @@ class AIPoweredSolutionAssessor:
             Logger.warn(f"⚠️  Test analysis failed: {e}")
         
         return test_analysis
+    
+    def _analyze_code_quality_issues(self) -> Dict[str, Any]:
+        """Analyze code for quality issues like complex methods and ignored tests"""
+        quality_issues = {
+            'complex_methods': [],
+            'ignored_tests': [],
+            'large_files': [],
+            'quality_concerns': []
+        }
+        
+        try:
+            # Get list of changed files
+            files_result = subprocess.run([
+                "git", "diff", "--name-only", "HEAD~1"
+            ], capture_output=True, text=True, cwd=self.spring_ai_dir)
+            
+            if not files_result.stdout:
+                return quality_issues
+            
+            changed_files = [f.strip() for f in files_result.stdout.split('\n') if f.strip()]
+            
+            # Analyze each Java file for quality issues
+            for file in changed_files[:20]:  # Limit to avoid excessive processing
+                if file.endswith('.java'):
+                    file_path = self.spring_ai_dir / file
+                    if file_path.exists():
+                        try:
+                            with open(file_path, 'r', encoding='utf-8') as f:
+                                content = f.read()
+                                lines = content.split('\n')
+                            
+                            # Check for ignored/disabled tests
+                            if 'test' in file.lower():
+                                for i, line in enumerate(lines):
+                                    if '@Ignore' in line or '@Disabled' in line:
+                                        # Extract the test method name from the following lines
+                                        test_method = 'Unknown'
+                                        for j in range(i+1, min(i+5, len(lines))):
+                                            if 'void' in lines[j] and '(' in lines[j]:
+                                                method_match = re.search(r'void\s+(\w+)\s*\(', lines[j])
+                                                if method_match:
+                                                    test_method = method_match.group(1)
+                                                break
+                                        
+                                        quality_issues['ignored_tests'].append({
+                                            'file': file,
+                                            'line': i + 1,
+                                            'method': test_method,
+                                            'annotation': '@Ignore' if '@Ignore' in line else '@Disabled'
+                                        })
+                            
+                            # Check for large/complex methods
+                            self._analyze_method_complexity(file, lines, quality_issues)
+                            
+                            # Check for large files (over 500 lines)
+                            if len(lines) > 500:
+                                quality_issues['large_files'].append({
+                                    'file': file,
+                                    'lines': len(lines)
+                                })
+                                
+                        except Exception as e:
+                            Logger.warn(f"⚠️  Could not analyze {file} for quality issues: {e}")
+        
+        except Exception as e:
+            Logger.warn(f"⚠️  Code quality analysis failed: {e}")
+        
+        return quality_issues
+    
+    def _analyze_method_complexity(self, file: str, lines: List[str], quality_issues: Dict[str, Any]):
+        """Analyze methods for excessive complexity/length"""
+        current_method = None
+        method_start = 0
+        brace_count = 0
+        in_method = False
+        
+        for i, line in enumerate(lines):
+            stripped_line = line.strip()
+            
+            # Skip comments and empty lines
+            if not stripped_line or stripped_line.startswith(('*', '//', '/*')):
+                continue
+            
+            # Detect method start (simplified heuristic)
+            if not in_method:
+                # Look for method signatures (public/private/protected followed by return type and method name)
+                method_match = re.search(r'(public|private|protected)\s+.*?\s+(\w+)\s*\([^)]*\)\s*\{?', stripped_line)
+                if method_match and not stripped_line.startswith('@'):
+                    current_method = method_match.group(2)
+                    method_start = i + 1
+                    in_method = True
+                    brace_count = stripped_line.count('{') - stripped_line.count('}')
+                    continue
+            
+            if in_method:
+                # Count braces to track method end
+                brace_count += stripped_line.count('{') - stripped_line.count('}')
+                
+                # Method ends when brace count returns to 0
+                if brace_count <= 0:
+                    method_length = i - method_start + 1
+                    
+                    # Flag methods over 50 lines as complex
+                    if method_length > 50:
+                        quality_issues['complex_methods'].append({
+                            'file': file,
+                            'method': current_method,
+                            'start_line': method_start,
+                            'end_line': i + 1,
+                            'lines': method_length
+                        })
+                    
+                    # Reset for next method
+                    in_method = False
+                    current_method = None
+                    brace_count = 0
     
     def _create_assessment_prompt(self, context_data: Dict[str, Any], 
                                  code_analysis: Dict[str, Any], pr_number: str) -> str:
@@ -320,6 +442,36 @@ class AIPoweredSolutionAssessor:
         
         file_types_breakdown = ', '.join(f"{k}: {v}" for k, v in file_types.items())
         
+        # Build code quality issues summary
+        code_quality_issues = code_analysis.get('code_quality_issues', {})
+        quality_summary_lines = []
+        
+        # Complex methods
+        complex_methods = code_quality_issues.get('complex_methods', [])
+        if complex_methods:
+            quality_summary_lines.append(f"**Complex Methods ({len(complex_methods)} found):**")
+            for method in complex_methods[:5]:  # Limit to avoid verbose output
+                quality_summary_lines.append(f"  - {method['file']}:{method['start_line']} - {method['method']}() ({method['lines']} lines)")
+        
+        # Ignored tests
+        ignored_tests = code_quality_issues.get('ignored_tests', [])
+        if ignored_tests:
+            quality_summary_lines.append(f"**Ignored/Disabled Tests ({len(ignored_tests)} found):**")
+            for test in ignored_tests[:5]:  # Limit to avoid verbose output
+                quality_summary_lines.append(f"  - {test['file']}:{test['line']} - {test['method']}() ({test['annotation']})")
+        
+        # Large files
+        large_files = code_quality_issues.get('large_files', [])
+        if large_files:
+            quality_summary_lines.append(f"**Large Files ({len(large_files)} found):**")
+            for file_info in large_files[:3]:  # Limit to avoid verbose output
+                quality_summary_lines.append(f"  - {file_info['file']} ({file_info['lines']} lines)")
+        
+        if not quality_summary_lines:
+            quality_summary_lines.append("No significant code quality issues detected.")
+        
+        code_quality_issues_summary = '\n'.join(quality_summary_lines)
+        
         # Format template
         formatted_prompt = template.format(
             pr_number=pr_number,
@@ -335,6 +487,7 @@ class AIPoweredSolutionAssessor:
             implementation_patterns='\n'.join(f"- {pattern}" for pattern in code_analysis.get('implementation_patterns', [])),
             test_files_count=code_analysis.get('test_analysis', {}).get('test_files_count', 0),
             test_coverage_areas=', '.join(code_analysis.get('test_analysis', {}).get('test_coverage_areas', [])),
+            code_quality_issues_summary=code_quality_issues_summary,
             key_requirements_list='\n'.join(f"- {req}" for req in conversation_analysis.get('key_requirements', [])),
             outstanding_concerns_list='\n'.join(f"- {concern}" for concern in conversation_analysis.get('outstanding_concerns', []))
         )

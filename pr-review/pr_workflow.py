@@ -1730,24 +1730,26 @@ File content with conflicts:"""
                 Logger.error("❌ Context collection failed")
                 return False
         
-        # Phase 4.6: Generate comprehensive commit message
-        commit_message = self.generate_commit_message(pr_number, skip_commit_message, dry_run)
-        if commit_message and not dry_run:
-            # Update the commit message if we generated one
-            Logger.info("📝 Updating commit with AI-generated message")
-            try:
-                # Amend the commit with the new message
-                result = subprocess.run(
-                    ["git", "commit", "--amend", "-m", commit_message],
-                    cwd=self.config.spring_ai_dir,
-                    capture_output=True,
-                    text=True,
-                    check=True
-                )
-                Logger.success("✅ Updated commit with comprehensive message")
-            except subprocess.CalledProcessError as e:
-                Logger.warn(f"⚠️  Could not update commit message: {e}")
-                Logger.warn("Proceeding with existing commit message")
+        # Phase 4.6: Generate comprehensive commit message (DISABLED)
+        # TODO: Fix commit message generation before re-enabling
+        # commit_message = self.generate_commit_message(pr_number, skip_commit_message, dry_run)
+        # if commit_message and not dry_run:
+        #     # Update the commit message if we generated one
+        #     Logger.info("📝 Updating commit with AI-generated message")
+        #     try:
+        #         # Amend the commit with the new message
+        #         result = subprocess.run(
+        #             ["git", "commit", "--amend", "-m", commit_message],
+        #             cwd=self.config.spring_ai_dir,
+        #             capture_output=True,
+        #             text=True,
+        #             check=True
+        #         )
+        #         Logger.success("✅ Updated commit with comprehensive message")
+        #     except subprocess.CalledProcessError as e:
+        #         Logger.warn(f"⚠️  Could not update commit message: {e}")
+        Logger.info("📝 Skipping commit message rewrite (disabled)")
+        Logger.warn("Proceeding with existing commit message")
         
         # Phase 5: Rebase against upstream
         if not self.rebase_against_upstream(pr_number, auto_resolve, dry_run):
@@ -1785,6 +1787,25 @@ File content with conflicts:"""
             
             if report_file:
                 Logger.info(f"📋 Review report: {report_file}")
+                
+                # Show both HTML and Markdown report locations
+                if str(report_file).endswith('.md'):
+                    # Markdown report exists, check for HTML version
+                    html_report = str(report_file).replace('.md', '.html')
+                    if Path(html_report).exists():
+                        Logger.info(f"🌐 HTML report: {html_report}")
+                        Logger.info(f"📄 Markdown report: {report_file}")
+                elif str(report_file).endswith('.html'):
+                    # HTML report exists, check for Markdown version  
+                    md_report = str(report_file).replace('.html', '.md')
+                    if Path(md_report).exists():
+                        Logger.info(f"🌐 HTML report: {report_file}")
+                        Logger.info(f"📄 Markdown report: {md_report}")
+                
+                # Show how to open HTML report
+                html_path = str(report_file).replace('.md', '.html') if str(report_file).endswith('.md') else str(report_file)
+                if Path(html_path).exists():
+                    Logger.info(f"💻 Open in browser: file://{Path(html_path).absolute()}")
         
         return True
     
