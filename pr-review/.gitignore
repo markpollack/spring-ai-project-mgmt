@@ -1,6 +1,9 @@
 # Runtime state and cache files
 state/
-context/*/analysis-cache.json
+context/
+
+# Investigation and debugging files
+claude-investigation/
 
 # Logs and temporary files
 logs/*.log
