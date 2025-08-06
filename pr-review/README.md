@@ -4,7 +4,18 @@ Comprehensive AI-powered automation for reviewing Spring AI project pull request
 
 ## 🚀 Quick Start - High Level Commands
 
-### Complete PR Review Workflow (Most Common)
+### Human-Assisted Compilation Fixing (Most Common)
+```bash
+# Human-assisted workflow: Let AI try once, then hand off to human
+python3 pr_workflow.py 3914
+
+# When compilation errors remain, fix them manually, then resume:
+python3 pr_workflow.py --resume-after-compile 3914
+```
+
+**Why this workflow?** The AI makes one focused attempt to fix compilation errors. If issues remain, it hands off to human expertise with clear guidance, then seamlessly continues the full workflow after manual fixes.
+
+### Complete PR Review Workflow
 ```bash
 # Full end-to-end PR review with all features
 python3 pr_workflow.py 3386
@@ -259,14 +270,17 @@ When you run `python3 pr_workflow.py 3386`, here's what happens automatically:
    - Maintains code integrity and functionality
 3. **Verification**: Ensures all conflicts are properly resolved and code compiles
 
-### Phase 4: Compilation Error Resolution
+### Phase 4: Human-Assisted Compilation Error Resolution
 1. **Compilation Validation**: Runs full compilation check before proceeding
-2. **Error Detection**: Identifies compilation errors and issues
-3. **AI-Powered Fixes**: Uses Claude Code to automatically fix compilation errors
+2. **Single AI Attempt**: Makes one focused attempt to fix compilation errors using Claude Code
    - Understands Java/Spring patterns and conventions
    - Fixes method signature issues, import problems, API changes
-   - Maintains code quality and Spring Framework best practices
-4. **Iterative Resolution**: Repeats fix cycle up to 3 times until clean compilation
+   - Uses MCP Java SDK for accurate type information
+3. **Human Handoff**: If errors remain, stops with clear guidance:
+   - Shows exactly what compilation errors still exist
+   - Provides the working directory path
+   - Instructions to resume with `--resume-after-compile`
+4. **Seamless Resume**: `--resume-after-compile` continues full workflow after manual fixes
 
 ### Phase 5: Comprehensive Testing
 1. **Test Discovery**: Identifies all tests affected by PR changes
@@ -310,6 +324,7 @@ reports/
 - 🔍 **Solution Assessment**: Technical analysis of implementation approach
 - ⚠️ **Risk Assessment**: Identified concerns and mitigation strategies  
 - 🧪 **Test Results**: Comprehensive test execution analysis with success/failure details
+- 🔧 **Code Quality Issues**: Automatic detection of complex methods (>50 lines), ignored/disabled tests, and large files
 - 💡 **Recommendations**: Prioritized action items and improvement suggestions
 - 📊 **Technical Metrics**: Complexity scores, file analysis, and quality indicators
 
@@ -317,8 +332,9 @@ reports/
 
 ### Claude Code AI Capabilities
 - **Intelligent Conflict Resolution**: Understands code context and intent for semantic conflict resolution
-- **Compilation Error Fixing**: Automatically fixes Java/Spring compilation issues with proper API usage
-- **Professional Commit Messages**: Generates comprehensive commit messages that explain the "why" and "what" of changes
+- **Human-Assisted Compilation Fixing**: Makes one focused attempt at compilation errors, then hands off to human expertise
+- **Code Quality Detection**: Automatically identifies complex methods (>50 lines), ignored/disabled tests (@Ignore/@Disabled), and large files
+- **Professional Commit Messages**: Generates comprehensive commit messages that explain the "why" and "what" of changes (currently disabled)
 - **Conversation Analysis**: Analyzes GitHub discussions to understand requirements and concerns
 - **Solution Assessment**: Evaluates technical approach, architecture impact, and implementation quality
 - **Risk Analysis**: Identifies potential issues, breaking changes, and integration concerns
