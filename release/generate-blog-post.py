@@ -207,18 +207,30 @@ class SpringAIBlogGenerator:
             in_contributors_section = False
             
             for line in lines:
-                if "## Contributors" in line or "# Contributors" in line:
+                if "🙏 Contributors" in line and line.startswith('##'):
                     in_contributors_section = True
+                    Logger.debug(f"Found contributors section: {line}")
                     continue
-                elif in_contributors_section and line.startswith('##') or line.startswith('#'):
+                elif in_contributors_section and (line.startswith('##') or line.startswith('#')):
                     # End of contributors section
+                    Logger.debug(f"End of contributors section at: {line}")
                     break
                 elif in_contributors_section and line.strip():
                     # Extract contributor name from various formats
-                    if line.startswith('- '):
+                    if line.startswith('- ['):
+                        # Format: - [Name (@username)](https://github.com/username)
+                        # Extract name between [ and ( 
+                        if ' (' in line and ')](' in line:
+                            start_idx = line.find('[') + 1
+                            end_idx = line.find(' (')
+                            contributor = line[start_idx:end_idx].strip()
+                            if contributor:
+                                contributors.append(contributor)
+                                Logger.debug(f"Added contributor: {contributor}")
+                    elif line.startswith('- '):
                         # Format: - Name (username)
                         contributor = line[2:].split('(')[0].strip()
-                        if contributor:
+                        if contributor and '[' not in contributor:  # Skip markdown links
                             contributors.append(contributor)
                     elif line.startswith('*'):
                         # Format: * Name
