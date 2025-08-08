@@ -337,6 +337,7 @@ class ReleaseNotesConfig:
     ai_timeout: int = 300
     claude_logs_dir: Path = Path("./logs")
     use_ai: bool = True
+    ai_batch_size: int = 10  # Maximum commits per AI analysis batch
     
     # Output settings
     output_file: Path = Path("RELEASE_NOTES.md")
@@ -383,6 +384,8 @@ class GitHubReleaseConfig:
     tag_name: Optional[str] = None  # Auto-generate from version if None
     discussion_category: Optional[str] = None  # Enable discussions
     latest: bool = True  # Mark as latest release
+    published_at: Optional[str] = None  # Custom release date (ISO 8601 format: 2024-12-15T10:30:00Z)
+    use_tag_date: bool = True  # Automatically use the tag's creation date for the release
     
     def __post_init__(self):
         # Auto-generate title if not provided
@@ -697,6 +700,94 @@ class GitHubReleaseAutomator:
             with open(notes_file, 'w') as f:
                 f.write(release_notes_content)
         
+        # Get tag date if requested and not explicitly provided
+        if release_config.use_tag_date and not release_config.published_at:
+            tag_date = self.get_tag_date(release_config.tag_name)
+            if tag_date:
+                release_config.published_at = tag_date
+                Logger.info(f"📅 Using tag creation date for release: {tag_date}")
+            else:
+                Logger.warn(f"⚠️ Could not determine date for tag {release_config.tag_name}, using current time")
+        
+        # Use REST API if custom published_at date is specified (GitHub CLI doesn't support this)
+        if release_config.published_at:
+            Logger.info(f"📅 Creating release with custom date: {release_config.published_at}")
+            return self.create_release_with_api(release_config, release_notes_content)
+        else:
+            # Use GitHub CLI for standard release creation
+            return self.create_release_with_gh_cli(release_config, notes_file)
+    
+    def get_tag_date(self, tag_name: str) -> Optional[str]:
+        """Get the creation date of a git tag in ISO 8601 format"""
+        try:
+            # Get tag date using git command
+            # Use git log to get the date of the commit that the tag points to
+            cmd = ['git', 'log', '-1', '--format=%aI', tag_name]
+            result = subprocess.run(cmd, capture_output=True, text=True, check=True, cwd=self.config.repo_path)
+            tag_date = result.stdout.strip()
+            
+            Logger.debug(f"Tag {tag_name} creation date: {tag_date}")
+            return tag_date
+            
+        except subprocess.CalledProcessError as e:
+            Logger.debug(f"Failed to get tag date for {tag_name}: {e}")
+            return None
+    
+    def create_release_with_api(self, release_config: GitHubReleaseConfig, release_notes_content: str) -> bool:
+        """Create a GitHub release using REST API (supports custom published_at date)"""
+        if not self.config.github_token:
+            Logger.error("❌ GitHub token required for API-based release creation")
+            Logger.error("Set GITHUB_TOKEN environment variable or provide token in config")
+            return False
+        
+        # Prepare release data
+        release_data = {
+            "tag_name": release_config.tag_name,
+            "target_commitish": release_config.target_commitish,
+            "name": release_config.title,
+            "body": release_notes_content,
+            "draft": release_config.draft,
+            "prerelease": release_config.prerelease or release_config.is_prerelease_version,
+            "published_at": release_config.published_at
+        }
+        
+        if release_config.discussion_category:
+            release_data["discussion_category_name"] = release_config.discussion_category
+        
+        Logger.info("Creating GitHub release via REST API...")
+        Logger.debug(f"Release data: tag={release_config.tag_name}, date={release_config.published_at}")
+        
+        try:
+            # Create release via GitHub API
+            url = f"https://api.github.com/repos/{release_config.repo}/releases"
+            headers = {
+                "Authorization": f"token {self.config.github_token}",
+                "Accept": "application/vnd.github.v3+json",
+                "Content-Type": "application/json"
+            }
+            
+            response = requests.post(url, json=release_data, headers=headers)
+            response.raise_for_status()
+            
+            release_info = response.json()
+            Logger.success(f"✅ GitHub release {release_config.tag_name} created successfully with tag date!")
+            Logger.info(f"🔗 Release URL: {release_info['html_url']}")
+            Logger.info(f"📅 Published at: {release_info['published_at']}")
+            
+            return True
+            
+        except requests.exceptions.RequestException as e:
+            Logger.error(f"❌ Failed to create GitHub release via API: {e}")
+            if hasattr(e, 'response') and e.response is not None:
+                try:
+                    error_data = e.response.json()
+                    Logger.error(f"API Error: {error_data}")
+                except:
+                    Logger.error(f"Response: {e.response.text}")
+            return False
+    
+    def create_release_with_gh_cli(self, release_config: GitHubReleaseConfig, notes_file: Path) -> bool:
+        """Create a GitHub release using GitHub CLI (standard flow)"""
         # Build GitHub CLI command
         cmd = self.build_release_command(release_config, notes_file)
         
@@ -1424,31 +1515,82 @@ class ReleaseNotesAIAnalyzer:
         self.claude = ClaudeCodeWrapper(logs_dir=config.claude_logs_dir)
     
     def analyze_changes(self, enriched_commits: List[EnrichedCommit], cost_tracker: CostTracker = None) -> AnalysisResult:
-        """Analyze enriched commits using Claude Code for categorization"""
+        """Analyze enriched commits using Claude Code for categorization with automatic batching"""
         if not enriched_commits:
             return AnalysisResult()
         
-        Logger.info(f"Analyzing {len(enriched_commits)} commits with Claude Code...")
+        total_commits = len(enriched_commits)
+        Logger.info(f"Analyzing {total_commits} commits with Claude Code...")
         
         # Check Claude Code availability
         if not self.claude.is_available():
             Logger.warn("Claude Code not available - falling back to rule-based categorization")
             return self._fallback_analysis(enriched_commits)
         
+        # Determine if batching is needed
+        batch_size = self.config.ai_batch_size
+        if total_commits <= batch_size:
+            Logger.info(f"Processing all {total_commits} commits in single batch")
+            return self._analyze_single_batch(enriched_commits, cost_tracker)
+        
+        # Process in batches
+        Logger.info(f"Processing {total_commits} commits in batches of {batch_size}")
+        batch_results = []
+        
+        for i in range(0, total_commits, batch_size):
+            batch_end = min(i + batch_size, total_commits)
+            batch_commits = enriched_commits[i:batch_end]
+            batch_num = (i // batch_size) + 1
+            total_batches = (total_commits + batch_size - 1) // batch_size
+            
+            Logger.info(f"📦 Processing batch {batch_num}/{total_batches}: commits {i+1}-{batch_end}")
+            
+            batch_result = self._analyze_single_batch(batch_commits, cost_tracker, batch_num)
+            batch_results.append(batch_result)
+            
+            # Brief pause between batches to avoid overwhelming Claude Code
+            if i + batch_size < total_commits:
+                import time
+                time.sleep(1.0)
+        
+        # Merge all batch results
+        Logger.info(f"🔄 Merging results from {len(batch_results)} batches...")
+        merged_result = self._merge_batch_results(batch_results)
+        Logger.success(f"✅ Completed AI analysis of {total_commits} commits in {len(batch_results)} batches")
+        
+        return merged_result
+    
+    def _analyze_single_batch(self, enriched_commits: List[EnrichedCommit], cost_tracker: CostTracker = None, batch_num: int = None) -> AnalysisResult:
+        """Analyze a single batch of commits"""
+        
         try:
             # Generate comprehensive prompt
             prompt_content = self._generate_analysis_prompt(enriched_commits)
-            prompt_file = self._create_prompt_file(prompt_content)
+            
+            # Add batch information to filename if this is part of a multi-batch operation
+            if batch_num:
+                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                prompt_file = self.config.claude_logs_dir / "release-notes" / "claude" / f"release-notes-analysis-batch{batch_num}-{timestamp}.md"
+            else:
+                prompt_file = self._create_prompt_file(prompt_content)
+            
+            # Create the file
+            if batch_num:
+                prompt_file.parent.mkdir(parents=True, exist_ok=True)
+                with open(prompt_file, 'w') as f:
+                    f.write(prompt_content)
             
             # Save AI input for debugging if requested
             if self.config.save_ai_input:
-                debug_input_file = self.config.logs_dir / f"ai_input_{datetime.now().strftime('%Y%m%d_%H%M%S')}.md"
+                suffix = f"_batch{batch_num}" if batch_num else ""
+                debug_input_file = self.config.logs_dir / f"ai_input{suffix}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.md"
                 with open(debug_input_file, 'w') as f:
                     f.write(prompt_content)
                 Logger.info(f"💾 Saved AI input to: {debug_input_file}")
             
             # Analyze with Claude Code
-            Logger.info(f"🤖 Sending {len(enriched_commits)} commits to Claude Code for analysis...")
+            batch_info = f" (batch {batch_num})" if batch_num else ""
+            Logger.info(f"🤖 Sending {len(enriched_commits)} commits to Claude Code for analysis{batch_info}...")
             result = self.claude.analyze_from_file_with_json(
                 prompt_file_path=str(prompt_file),
                 timeout=self.config.ai_timeout,
@@ -1459,10 +1601,11 @@ class ReleaseNotesAIAnalyzer:
             # Extract cost and token usage information from result
             cost, token_usage = self._extract_cost_from_result(result)
             if cost_tracker and cost > 0:
-                cost_tracker.add_operation("AI Categorization", cost, len(enriched_commits), token_usage)
+                operation_name = f"AI Categorization{batch_info}" if batch_num else "AI Categorization"
+                cost_tracker.add_operation(operation_name, cost, len(enriched_commits), token_usage)
                 
                 # Show detailed cost breakdown
-                Logger.info(f"💰 AI Analysis cost: ${cost:.4f}")
+                Logger.info(f"💰 AI Analysis cost{batch_info}: ${cost:.4f}")
                 Logger.info(f"📊 Token usage: {token_usage.total_input_tokens():,} input, {token_usage.output_tokens:,} output")
                 if token_usage.cache_creation_input_tokens > 0 or token_usage.cache_read_input_tokens > 0:
                     Logger.info(f"📊 Cache usage: {token_usage.cache_creation_input_tokens:,} write, {token_usage.cache_read_input_tokens:,} read")
@@ -1472,60 +1615,115 @@ class ReleaseNotesAIAnalyzer:
             else:
                 # Force failure instead of fallback - AI analysis is required
                 error_msg = result.get('error', 'JSON extraction failed')
-                Logger.error(f"AI analysis failed: {error_msg}")
+                Logger.error(f"AI analysis failed{batch_info}: {error_msg}")
                 Logger.error("❌ Refusing to use rule-based fallback - AI analysis is required")
-                raise Exception(f"AI analysis failed: {error_msg}. Please check Claude Code integration and JSON output format.")
+                raise Exception(f"AI analysis failed{batch_info}: {error_msg}. Please check Claude Code integration and JSON output format.")
                 
         except Exception as e:
-            Logger.error(f"AI analysis error: {e}")
+            Logger.error(f"AI analysis error{batch_info if batch_num else ''}: {e}")
             Logger.error("❌ AI analysis failed - no fallback available")
             raise
+    
+    def _merge_batch_results(self, batch_results: List[AnalysisResult]) -> AnalysisResult:
+        """Merge multiple AnalysisResult objects from batched analysis"""
+        if not batch_results:
+            return AnalysisResult()
+        
+        if len(batch_results) == 1:
+            return batch_results[0]
+        
+        # Initialize merged result with first batch
+        merged = AnalysisResult()
+        
+        # Collect all highlights and create a master summary
+        all_highlights = []
+        total_features = 0
+        total_bug_fixes = 0
+        total_docs = 0
+        total_other = 0
+        
+        # Merge all categories from all batches
+        for batch_result in batch_results:
+            merged.breaking_changes.extend(batch_result.breaking_changes)
+            merged.features.extend(batch_result.features)
+            merged.bug_fixes.extend(batch_result.bug_fixes)
+            merged.documentation.extend(batch_result.documentation)
+            merged.dependency_upgrades.extend(batch_result.dependency_upgrades)
+            merged.performance.extend(batch_result.performance)
+            merged.build_updates.extend(batch_result.build_updates)
+            merged.security.extend(batch_result.security)
+            merged.noteworthy.extend(batch_result.noteworthy)
+            merged.upgrading_notes.extend(batch_result.upgrading_notes)
+            merged.other.extend(batch_result.other)
+            
+            # Handle deprecated categories for backward compatibility
+            merged.internal.extend(batch_result.internal)
+            merged.accessibility.extend(batch_result.accessibility)
+            
+            # Collect statistics for master highlights
+            total_features += len(batch_result.features)
+            total_bug_fixes += len(batch_result.bug_fixes)
+            total_docs += len(batch_result.documentation)
+            total_other += (len(batch_result.dependency_upgrades) + len(batch_result.performance) + 
+                          len(batch_result.build_updates) + len(batch_result.security) + 
+                          len(batch_result.noteworthy) + len(batch_result.upgrading_notes) + 
+                          len(batch_result.other))
+            
+            # Collect individual highlights
+            if batch_result.highlights:
+                all_highlights.append(batch_result.highlights)
+        
+        # Create master highlights
+        highlight_parts = []
+        if total_features > 0:
+            highlight_parts.append(f"{total_features} new features")
+        if total_bug_fixes > 0:
+            highlight_parts.append(f"{total_bug_fixes} bug fixes")
+        if total_docs > 0:
+            highlight_parts.append(f"{total_docs} documentation improvements")
+        if total_other > 0:
+            highlight_parts.append(f"{total_other} other improvements")
+        
+        if highlight_parts:
+            merged.highlights = f"This release includes {', '.join(highlight_parts)}."
+        
+        Logger.debug(f"Merged {len(batch_results)} batch results:")
+        Logger.debug(f"  ⭐ Features: {len(merged.features)}")
+        Logger.debug(f"  🪲 Bug fixes: {len(merged.bug_fixes)}")  
+        Logger.debug(f"  📚 Documentation: {len(merged.documentation)}")
+        Logger.debug(f"  🔨 Dependency upgrades: {len(merged.dependency_upgrades)}")
+        Logger.debug(f"  ⚡ Performance: {len(merged.performance)}")
+        Logger.debug(f"  🔩 Build updates: {len(merged.build_updates)}")
+        Logger.debug(f"  🔐 Security: {len(merged.security)}")
+        Logger.debug(f"  📢 Noteworthy: {len(merged.noteworthy)}")
+        Logger.debug(f"  ⚠️ Upgrading notes: {len(merged.upgrading_notes)}")
+        Logger.debug(f"  ⏪ Breaking changes: {len(merged.breaking_changes)}")
+        Logger.debug(f"  🔧 Other: {len(merged.other)}")
+        
+        return merged
 
     def _extract_token_usage_from_result(self, result: Dict[str, Any]) -> TokenUsage:
         """Extract detailed token usage from Claude Code result"""
         usage = TokenUsage()
         
         try:
-            # Claude Code wrapper returns detailed usage information in the response
-            response_text = result.get('response', '')
-            
-            # Parse the JSON response to extract usage data
-            import json
-            import re
-            
-            # Look for usage data in the JSON output
-            json_pattern = r'\{"type".*?"usage":\s*\{[^}]*\}'
-            matches = re.findall(json_pattern, response_text, re.DOTALL)
-            
-            total_input_tokens = 0
-            total_output_tokens = 0
-            total_cache_creation = 0
-            total_cache_read = 0
-            
-            for match in matches:
-                try:
-                    # Extract just the usage part
-                    usage_pattern = r'"usage":\s*\{([^}]*)\}'
-                    usage_match = re.search(usage_pattern, match)
-                    if usage_match:
-                        usage_str = '{' + usage_match.group(1) + '}'
-                        usage_data = json.loads(usage_str)
-                        
-                        total_input_tokens += usage_data.get('input_tokens', 0)
-                        total_output_tokens += usage_data.get('output_tokens', 0)  
-                        total_cache_creation += usage_data.get('cache_creation_input_tokens', 0)
-                        total_cache_read += usage_data.get('cache_read_input_tokens', 0)
-                        
-                except json.JSONDecodeError:
-                    continue
-            
-            usage.input_tokens = total_input_tokens
-            usage.output_tokens = total_output_tokens
-            usage.cache_creation_input_tokens = total_cache_creation
-            usage.cache_read_input_tokens = total_cache_read
-            
+            # ClaudeCodeWrapper directly provides token usage information in the result
+            if 'token_usage' in result and result['token_usage']:
+                token_data = result['token_usage']
+                
+                # Extract token counts from ClaudeCodeWrapper format
+                usage.input_tokens = token_data.get('input_tokens', 0)
+                usage.output_tokens = token_data.get('output_tokens', 0)
+                usage.cache_creation_input_tokens = token_data.get('cache_creation_input_tokens', 0)
+                usage.cache_read_input_tokens = token_data.get('cache_read_input_tokens', 0)
+                
+                Logger.debug(f"Extracted token usage: {usage.input_tokens} input, {usage.output_tokens} output, {usage.cache_creation_input_tokens} cache write, {usage.cache_read_input_tokens} cache read")
+            else:
+                Logger.debug("No token_usage found in result, returning empty usage")
+                
         except Exception as e:
-            Logger.debug(f"Could not extract token usage: {e}")
+            Logger.debug(f"Failed to extract token usage from result: {e}")
+            # Return empty usage object as fallback
         
         return usage
 
@@ -1534,47 +1732,21 @@ class ReleaseNotesAIAnalyzer:
         # First extract token usage
         token_usage = self._extract_token_usage_from_result(result)
         
-        # Calculate cost based on token usage (more accurate than parsing text)
-        calculated_cost = token_usage.calculate_cost_sonnet4()
-        
-        # Also try to extract cost from result for comparison/fallback
+        # Try to get cost directly from ClaudeCodeWrapper result first
         try:
-            # Claude Code wrapper might return cost in various formats
-            if 'cost' in result:
-                parsed_cost = float(result['cost'])
-            elif 'usage' in result and 'cost' in result['usage']:
-                parsed_cost = float(result['usage']['cost'])
-            elif 'metadata' in result and 'cost' in result['metadata']:
-                parsed_cost = float(result['metadata']['cost'])
-            else:
-                # Try to parse from stdout/stderr for cost information
-                output = result.get('stdout', '') + result.get('stderr', '')
-                # Look for cost patterns like "$0.1234" or "Cost: $0.1234"
-                import re
-                cost_patterns = [
-                    r'\$(\d+\.\d+)',
-                    r'cost[:\s]+\$(\d+\.\d+)',
-                    r'(\d+\.\d+)\s*cents'
-                ]
-                
-                parsed_cost = 0.0
-                for pattern in cost_patterns:
-                    matches = re.findall(pattern, output, re.IGNORECASE)
-                    if matches:
-                        cost = float(matches[-1])  # Take the last match
-                        if 'cents' in pattern:
-                            cost = cost / 100  # Convert cents to dollars
-                        parsed_cost = cost
-                        break
-            
-            # Use calculated cost if we have tokens, otherwise use parsed cost
-            final_cost = calculated_cost if calculated_cost > 0 else parsed_cost
-            
-        except Exception as e:
-            Logger.debug(f"Could not extract parsed cost: {e}")
-            final_cost = calculated_cost
+            # ClaudeCodeWrapper provides cost_info directly
+            if 'cost_info' in result and result['cost_info']:
+                direct_cost = float(result['cost_info'])
+                Logger.debug(f"Using direct cost from ClaudeCodeWrapper: ${direct_cost:.6f}")
+                return direct_cost, token_usage
+        except (ValueError, TypeError) as e:
+            Logger.debug(f"Could not extract direct cost: {e}")
         
-        return final_cost, token_usage
+        # Fallback: Calculate cost based on token usage
+        calculated_cost = token_usage.calculate_cost_sonnet4()
+        Logger.debug(f"Using calculated cost from token usage: ${calculated_cost:.6f}")
+        
+        return calculated_cost, token_usage
     
     def _generate_analysis_prompt(self, enriched_commits: List[EnrichedCommit]) -> str:
         """Generate comprehensive analysis prompt for Claude Code"""
@@ -1742,16 +1914,43 @@ Focus on changes that affect end users. Group minor related fixes. Make descript
                     categorized_changes.append(change)
             return categorized_changes
         
-        return AnalysisResult(
+        # Parse all Spring ecosystem categories
+        result = AnalysisResult(
             highlights=json_data.get('highlights', ''),
             breaking_changes=create_categorized_changes(json_data.get('breaking_changes', [])),
             features=create_categorized_changes(json_data.get('features', [])),
             bug_fixes=create_categorized_changes(json_data.get('bug_fixes', [])),
             documentation=create_categorized_changes(json_data.get('documentation', [])),
+            dependency_upgrades=create_categorized_changes(json_data.get('dependency_upgrades', [])),
             performance=create_categorized_changes(json_data.get('performance', [])),
+            build_updates=create_categorized_changes(json_data.get('build_updates', [])),
+            security=create_categorized_changes(json_data.get('security', [])),
+            noteworthy=create_categorized_changes(json_data.get('noteworthy', [])),
+            upgrading_notes=create_categorized_changes(json_data.get('upgrading_notes', [])),
+            other=create_categorized_changes(json_data.get('other', [])),
+            # Deprecated categories for backward compatibility
             internal=create_categorized_changes(json_data.get('internal', [])),
-            security=create_categorized_changes(json_data.get('security', []))
+            accessibility=create_categorized_changes(json_data.get('accessibility', []))
         )
+        
+        # Debug log all categories
+        Logger.debug(f"Parsed analysis result categories:")
+        Logger.debug(f"  ⭐ Features: {len(result.features)}")
+        Logger.debug(f"  🪲 Bug fixes: {len(result.bug_fixes)}")  
+        Logger.debug(f"  📚 Documentation: {len(result.documentation)}")
+        Logger.debug(f"  🔨 Dependency upgrades: {len(result.dependency_upgrades)}")
+        Logger.debug(f"  ⚡ Performance: {len(result.performance)}")
+        Logger.debug(f"  🔩 Build updates: {len(result.build_updates)}")
+        Logger.debug(f"  🔐 Security: {len(result.security)}")
+        Logger.debug(f"  📢 Noteworthy: {len(result.noteworthy)}")
+        Logger.debug(f"  ⚠️ Upgrading notes: {len(result.upgrading_notes)}")
+        Logger.debug(f"  ⏪ Breaking changes: {len(result.breaking_changes)}")
+        Logger.debug(f"  🔧 Other: {len(result.other)}")
+        if result.internal or result.accessibility:
+            Logger.debug(f"  📦 Internal (deprecated): {len(result.internal)}")
+            Logger.debug(f"  ♿ Accessibility (deprecated): {len(result.accessibility)}")
+        
+        return result
     
     def _fallback_analysis(self, enriched_commits: List[EnrichedCommit]) -> AnalysisResult:
         """Fallback rule-based analysis when AI is not available"""
@@ -1824,8 +2023,8 @@ class ReleaseNotesGenerator:
         self.config = config
     
     def extract_contributors(self, enriched_commits: List[EnrichedCommit]) -> List[Contributor]:
-        """Extract unique contributors from commits"""
-        contributors_map = {}
+        """Extract unique contributors from commits with smart name-based deduplication"""
+        contributors_by_name = {}
         
         for commit in enriched_commits:
             author = commit.commit.author
@@ -1833,23 +2032,101 @@ class ReleaseNotesGenerator:
             
             # Extract username from email if it's a GitHub noreply email
             username = self._extract_username_from_email(email)
+            is_github_username = 'noreply.github.com' in email
             
-            key = username.lower()
-            if key not in contributors_map:
-                contributors_map[key] = Contributor(
+            # Use normalized author name as primary key for deduplication
+            name_key = self._normalize_contributor_name(author)
+            
+            if name_key not in contributors_by_name:
+                contributors_by_name[name_key] = Contributor(
                     name=author,
                     username=username,
                     email=email,
-                    commits_count=0
+                    commits_count=1
                 )
-            
-            contributors_map[key].commits_count += 1
+            else:
+                existing = contributors_by_name[name_key]
+                existing.commits_count += 1
+                
+                # Update with "better" username using smart preference rules
+                new_username = self._choose_better_username(
+                    existing.username, username, existing.email, email
+                )
+                if new_username != existing.username:
+                    Logger.debug(f"Contributor '{author}': combined commits, using username '{new_username}' (total: {existing.commits_count})")
+                existing.username = new_username
+                
+                # Update email if the new one is a GitHub email and old one isn't
+                if is_github_username and 'noreply.github.com' not in existing.email:
+                    existing.email = email
         
         # Sort contributors by name
-        contributors = list(contributors_map.values())
+        contributors = list(contributors_by_name.values())
         contributors.sort(key=lambda c: c.name.lower())
         
+        Logger.debug(f"Deduplicated contributors: {len(contributors)} unique names from {len(enriched_commits)} commits")
+        
         return contributors
+    
+    def _normalize_contributor_name(self, name: str) -> str:
+        """Normalize contributor name for deduplication"""
+        # Basic normalization - remove extra whitespace and convert to lowercase
+        normalized = ' '.join(name.strip().split()).lower()
+        
+        # Handle common name variations
+        # Remove middle initials/names for better matching (e.g., "John D. Smith" -> "john smith")
+        # This helps catch cases where the same person appears with and without middle names
+        parts = normalized.split()
+        if len(parts) >= 3:
+            # If middle part is just an initial (single letter + optional period), remove it
+            middle_parts = parts[1:-1]  # Everything except first and last
+            filtered_parts = [parts[0]]  # Keep first name
+            
+            for part in middle_parts:
+                # Keep middle part if it's more than just an initial
+                if len(part.replace('.', '')) > 1:
+                    filtered_parts.append(part)
+            
+            filtered_parts.append(parts[-1])  # Keep last name
+            normalized = ' '.join(filtered_parts)
+        
+        return normalized
+    
+    def _choose_better_username(self, existing_username: str, new_username: str, 
+                              existing_email: str, new_email: str) -> str:
+        """Choose the better username when deduplicating contributors by name"""
+        
+        # Preference rules (in order of priority):
+        # 1. Prefer GitHub usernames over email-derived usernames
+        existing_is_github = 'noreply.github.com' in existing_email
+        new_is_github = 'noreply.github.com' in new_email
+        
+        if new_is_github and not existing_is_github:
+            Logger.debug(f"Username upgrade: {existing_username} -> {new_username} (GitHub username preferred)")
+            return new_username
+        elif existing_is_github and not new_is_github:
+            return existing_username
+        
+        # 2. If both are GitHub usernames, prefer the shorter one (usually cleaner)
+        if existing_is_github and new_is_github:
+            if len(new_username) < len(existing_username):
+                Logger.debug(f"Username upgrade: {existing_username} -> {new_username} (shorter GitHub username)")
+                return new_username
+            elif len(existing_username) < len(new_username):
+                return existing_username
+        
+        # 3. Prefer usernames without dots/special characters (cleaner GitHub handles)
+        existing_has_dots = '.' in existing_username
+        new_has_dots = '.' in new_username
+        
+        if not new_has_dots and existing_has_dots:
+            Logger.debug(f"Username upgrade: {existing_username} -> {new_username} (no dots preferred)")
+            return new_username
+        elif not existing_has_dots and new_has_dots:
+            return existing_username
+        
+        # 4. If all else is equal, keep the existing username (first wins)
+        return existing_username
     
     def _extract_username_from_email(self, email: str) -> str:
         """Extract username from email address - reused from get-contributors.py logic"""
@@ -2065,6 +2342,10 @@ Examples:
                        type=int,
                        default=300,
                        help='AI analysis timeout in seconds (default: 300)')
+    parser.add_argument('--ai-batch-size',
+                       type=int,
+                       default=10,
+                       help='Maximum commits per AI analysis batch (default: 10)')
     parser.add_argument('--no-contributors',
                        action='store_true',
                        help='Skip contributor acknowledgments')
@@ -2119,6 +2400,12 @@ Examples:
                        help='Custom title for GitHub release (default: auto-generated)')
     parser.add_argument('--release-discussion',
                        help='Discussion category to enable for release (e.g., "General")')
+    parser.add_argument('--no-tag-date',
+                       action='store_true',
+                       help='Do not use tag creation date for GitHub release (use current time instead)')
+    parser.add_argument('--skip-generation',
+                       action='store_true',
+                       help='Skip release notes generation and use existing RELEASE_NOTES.md (for GitHub release only)')
     
     args = parser.parse_args()
     
@@ -2140,6 +2427,7 @@ Examples:
         use_ai=not args.no_ai,
         ai_model=args.ai_model,
         ai_timeout=args.ai_timeout,
+        ai_batch_size=args.ai_batch_size,
         include_contributors=not args.no_contributors,
         include_stats=not args.no_stats,
         include_debug_data=args.include_debug_data,
@@ -2175,10 +2463,27 @@ Examples:
         if not config.repo_path.exists():
             raise ReleaseNotesError(f"Repository path does not exist: {config.repo_path}")
         
-        # Phase 1: Collect commits
-        Logger.info("Phase 1: Collecting commits...")
-        collector = GitCommitCollector(config)
-        commits = collector.collect_commits_with_metadata()
+        # Check if we should skip generation and go straight to GitHub release
+        if args.skip_generation and args.create_github_release:
+            if not config.output_file.exists():
+                Logger.error(f"❌ Cannot skip generation: {config.output_file} does not exist")
+                Logger.error("Run without --skip-generation first to create the release notes file")
+                return 1
+            
+            Logger.info(f"📄 Using existing release notes file: {config.output_file}")
+            Logger.info("⚡ Skipping analysis phases - going directly to GitHub release creation")
+            
+            # Read existing release notes for GitHub release creation
+            with open(config.output_file, 'r', encoding='utf-8') as f:
+                markdown_content = f.read()
+                
+            # Jump to GitHub release creation
+        else:
+            # Normal generation flow
+            # Phase 1: Collect commits
+            Logger.info("Phase 1: Collecting commits...")
+            collector = GitCommitCollector(config)
+            commits = collector.collect_commits_with_metadata()
         
         if not commits:
             Logger.warn("No commits found - nothing to analyze")
@@ -2313,6 +2618,7 @@ Examples:
                 prerelease=args.release_prerelease,
                 target_commitish=args.release_target,
                 discussion_category=args.release_discussion,
+                use_tag_date=not args.no_tag_date,  # Use tag date unless disabled
                 generate_notes=True  # We just generated the notes
             )
             
@@ -2335,7 +2641,8 @@ Examples:
                         len(analysis_result.dependency_upgrades) + len(analysis_result.performance) + 
                         len(analysis_result.build_updates) + len(analysis_result.security) +
                         len(analysis_result.noteworthy) + len(analysis_result.upgrading_notes) +
-                        len(analysis_result.internal))  # Keep for backward compatibility
+                        len(analysis_result.other) +
+                        len(analysis_result.internal) + len(analysis_result.accessibility))  # Deprecated categories
         
         Logger.info(f"📊 Summary:")
         Logger.info(f"  • {len(enriched_commits)} commits analyzed")

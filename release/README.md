@@ -1058,3 +1058,126 @@ Thanks to @author1, @author2, and @author3 for their contributions.
 - **Repository Access**: Clear error messages for path or permission issues
 
 This script is essential for generating professional release notes that accurately reflect the changes in each Spring AI release, with special support for analyzing maintenance branches like 1.0.x that are crucial for point releases.
+
+## create-github-release.py Integration
+
+The `create-github-release.py` script provides automated GitHub release creation using existing release notes files, completing the release automation pipeline.
+
+### Automated GitHub Release Creation
+
+**Purpose**: Creates and manages GitHub releases with draft/prerelease support and proper URL handling
+
+**Features**:
+- **Smart Release Detection**: Automatically detects existing releases and uses edit vs create operations
+- **Draft/Published Workflow**: Create draft releases for review, then publish when ready
+- **GitHub CLI Integration**: Uses authenticated `gh` CLI for reliable release operations
+- **Proper URL Retrieval**: Returns correct release URLs using `gh release view` 
+- **Tag Validation**: Verifies git tags exist before release creation
+- **Prerelease Support**: Handles milestone and RC releases with automatic detection
+- **Error Recovery**: Comprehensive error handling and validation
+
+**Two-Step Release Process**:
+```bash
+# Step 1: Create draft release for review
+python3 create-github-release.py v1.0.1 --draft --notes-file RELEASE_NOTES.md
+
+# Step 2: Publish the release
+python3 create-github-release.py v1.0.1 --notes-file RELEASE_NOTES.md
+```
+
+**Usage Options**:
+```bash
+# Create draft release (for review)
+python3 create-github-release.py v1.0.1 --draft --notes-file RELEASE_NOTES.md
+
+# Create published release directly  
+python3 create-github-release.py v1.0.1 --notes-file RELEASE_NOTES.md
+
+# Create prerelease (auto-detects M, RC, alpha, beta)
+python3 create-github-release.py v1.1.0-M1 --notes-file RELEASE_NOTES.md
+
+# Custom title and repository
+python3 create-github-release.py v1.0.1 --title "Spring AI 1.0.1 - Production Ready" --repo spring-projects/spring-ai --notes-file RELEASE_NOTES.md
+
+# Test without creating (dry-run mode)
+python3 create-github-release.py v1.0.1 --draft --notes-file RELEASE_NOTES.md --dry-run
+```
+
+**Interactive Workflow**:
+```
+🚀 GITHUB RELEASE CREATOR
+========================================
+[INFO] 🔍 Validating prerequisites...
+[SUCCESS] ✅ All prerequisites validated
+[INFO] 📝 Loaded release notes: 30,526 characters from RELEASE_NOTES.md
+[INFO] 🔧 Creating release via GitHub CLI...
+[SUCCESS] ✅ GitHub release v1.0.1 created successfully!
+
+============================================================
+🎯 REVIEW YOUR GITHUB RELEASE
+============================================================
+[INFO] 🔗 Release URL: https://github.com/spring-projects/spring-ai/releases/tag/v1.0.1
+
+📝 DRAFT RELEASE CREATED:
+[INFO]    • Review the content and formatting
+[INFO]    • Check contributor acknowledgments
+[INFO]    • Verify categorization accuracy  
+[INFO]    • Click 'Publish release' when ready
+
+👆 Click the URL above to review: https://github.com/spring-projects/spring-ai/releases/tag/v1.0.1
+============================================================
+```
+
+**Draft vs Published Workflow**:
+- **Draft Releases**: Created with `--draft`, visible only to repository collaborators, can be edited and reviewed before publishing
+- **Published Releases**: Visible on public releases page, triggers notifications to watchers, cannot be easily unpublished
+- **Smart Conversion**: Script automatically converts existing drafts to published when run without `--draft` flag
+
+**Command Line Options**:
+```bash
+python3 create-github-release.py [OPTIONS] TAG_NAME
+
+Arguments:
+  TAG_NAME                     Git tag name for release (e.g., v1.0.1, v1.1.0-M1)
+
+Options:
+  --title TEXT                 Custom release title (default: auto-generated)
+  --notes-file FILE            Release notes file (default: RELEASE_NOTES.md)
+  --repo TEXT                  GitHub repository (default: spring-projects/spring-ai)
+  --draft                      Create as draft release (for review)
+  --prerelease                 Mark as prerelease (auto-detected from version)
+  --target TEXT                Target commitish for release (default: same as tag)
+  --no-tag-date               Use current time instead of tag creation date
+  --dry-run                   Show what would be done without creating release
+  --verbose                   Enable verbose logging
+  --help                      Show help message and exit
+```
+
+**Prerequisites**:
+- Git tag must exist (create with `git tag -a v1.0.1 -m "Release version 1.0.1"`)
+- GitHub CLI (`gh`) must be installed and authenticated
+- Release notes file must exist (typically created by `generate-release-notes.py`)
+- Push permissions to target repository
+
+**GitHub CLI Integration Details**:
+The script uses different syntax for create vs edit operations:
+- **Create**: Uses `gh release create v1.0.1 --draft` (boolean flag)
+- **Edit**: Uses `gh release edit v1.0.1 --draft=false` (with equals for publishing)
+- **URL Retrieval**: Uses `gh release view v1.0.1 --json url` for accurate URLs
+
+**Error Handling**:
+- **Tag Validation**: Verifies git tag exists before attempting release creation
+- **Release Conflicts**: Detects existing releases and switches to edit mode automatically
+- **GitHub API Errors**: Clear error messages for authentication, permissions, and API issues
+- **CLI Integration**: Handles GitHub CLI availability and configuration issues
+
+**Integration with Complete Release Automation**:
+```bash
+# Complete automated release workflow
+python3 generate-release-notes.py --since-version 1.0.0 --target-version 1.0.1
+python3 create-github-release.py v1.0.1 --draft --notes-file RELEASE_NOTES.md
+# Review draft release, then:
+python3 create-github-release.py v1.0.1 --notes-file RELEASE_NOTES.md
+```
+
+This script completes the full Spring AI release automation pipeline: `Commits` → `AI Analysis` → `Release Notes` → `GitHub Release` → `Repository Updates`, providing professional release management with full automation and safety controls.

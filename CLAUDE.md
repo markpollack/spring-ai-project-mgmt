@@ -258,3 +258,42 @@ cd pr-review && python3 pr_workflow.py --cleanup 1234
 - **1.0.1 Release Board**: https://github.com/orgs/spring-projects/projects/40/
 
 This repository provides comprehensive tooling to support the entire Spring AI project lifecycle from issue tracking through release management.
+
+## Commit Message Guidelines
+
+**IMPORTANT**: When committing code to this repository, commit messages should appear to be authored by humans:
+
+- ❌ **DO NOT include**: Robot emoji (🤖), "Generated with Claude Code", "Co-Authored-By: Claude", or any AI attribution
+- ✅ **DO use**: Professional commit messages following established conventions
+
+### The Seven Rules of a Great Git Commit Message
+
+Based on [Chris Beams' classic guide](https://cbea.ms/git-commit/), follow these rules:
+
+1. **Separate subject from body with a blank line**
+2. **Limit the subject line to 50 characters**
+3. **Capitalize the subject line**
+4. **Do not end the subject line with a period**
+5. **Use the imperative mood in the subject line** ("Add feature" not "Added feature")
+6. **Wrap the body at 72 characters**
+7. **Use the body to explain what and why vs. how**
+
+### Modern Conventions (Recommended)
+
+Combine the classic rules with conventional commit format:
+
+- `feat(scope): add new feature` - new functionality
+- `fix(scope): resolve issue description` - bug fixes  
+- `docs(scope): update documentation` - documentation changes
+- `refactor(scope): restructure without changing behavior` - code refactoring
+- `test(scope): add or update tests` - test changes
+- `chore(scope): maintenance tasks` - build, dependencies, etc.
+
+**Examples**:
+```
+feat: add GitHub release automation and Spring ecosystem category alignment
+
+- Add comprehensive GitHub release automation with GitHubReleaseAutomator class
+- Implement --create-github-release, --release-draft, and --dry-run options
+- Align release note categories with Spring ecosystem standards
+```

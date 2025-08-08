@@ -1,0 +1,7 @@
+# Spring AI Release Management - Future Enhancements
+
+## GitHub Release Automation
+- [ ] Dynamic repository path discovery for create-github-release.py 
+  - Make repo path configurable instead of hardcoded "/home/mark/projects/spring-ai"
+  - Support environment variables and CLI arguments for repo path
+  - Auto-detect repository from current working directory when possible
