@@ -25,20 +25,18 @@ The blog post generator creates content following this structure:
 
 1. **YAML Frontmatter** - Proper metadata for spring.io
 2. **Opening Announcement** - Spring AI community voice
-3. **Getting Started** - Maven BOM and Spring Initializr links
-4. **Release Summary** - Bug fixes, improvements, upgrade focus
-5. **Key Highlights** - Notable improvements from the release
-6. **Upgrading** - Version-specific upgrade guidance
-7. **Community** - Contributor appreciation and help wanted
-8. **What's Next** - Future roadmap teaser
-9. **Resources** - Standard Spring project links
+3. **Release Summary** - Bug fixes, improvements, upgrade focus
+4. **Key Highlights** - Notable improvements from the release
+5. **Community** - Contributor appreciation from RELEASE_NOTES.md
+6. **What's Next** - Future roadmap teaser
+7. **Resources** - Standard Spring project links
 
 ## Example Output
 
-For Spring AI 1.0.1, the generator produces a ~400-line blog post with:
+For Spring AI 1.0.1, the generator produces a focused blog post with:
 - Proper Spring AI tone and community engagement
-- Correct Maven coordinates and documentation links
 - Focus on stability and bug fixes (appropriate for point releases)
+- Contributors extracted from RELEASE_NOTES.md
 - Community appreciation and contribution guidance
 - Professional formatting suitable for spring.io publication
 
@@ -47,7 +45,7 @@ For Spring AI 1.0.1, the generator produces a ~400-line blog post with:
 ### ✅ **Production Ready**
 - Command-line interface with dry-run mode
 - Spring AI voice matching markpollack's style
-- Proper Maven BOM setup and documentation links
+- Contributors extracted from RELEASE_NOTES.md
 - Community-focused messaging
 
 ### ✅ **Flexible Configuration**
@@ -59,7 +57,7 @@ For Spring AI 1.0.1, the generator produces a ~400-line blog post with:
 ### ✅ **Spring Ecosystem Integration**
 - Follows established Spring project patterns
 - Maintains Spring AI's unique community voice
-- Compatible with spring-website-content structure
+- Uses RELEASE_NOTES.md as contributor source
 - Ready for GitHub workflow integration
 
 ## Research Foundation

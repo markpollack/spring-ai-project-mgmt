@@ -20,10 +20,10 @@
 
 **Generator Script**: `/release/generate-blog-post.py`
 - ✅ **Command-line interface**: Version parameter, dry-run mode, contributor analysis
-- ✅ **Blog post structure**: 9 sections following hybrid pattern analysis
-- ✅ **Content generation**: Frontmatter, opening, getting started, release summary, highlights
-- ✅ **Spring AI branding**: Consistent tone, proper Maven coordinates, community focus
-- ✅ **Integration ready**: Hooks for GitHub release data, contributor analysis, commit categorization
+- ✅ **Blog post structure**: 6 focused sections following hybrid pattern analysis
+- ✅ **Content generation**: Frontmatter, opening, release summary, highlights, community, resources
+- ✅ **Spring AI branding**: Consistent tone, community focus, professional messaging
+- ✅ **Integration ready**: Hooks for GitHub release data, RELEASE_NOTES.md contributors
 
 ## 🔧 **PENDING - Integration Development**
 
@@ -33,7 +33,7 @@
 
 **Integration Points**:
 - **Commit analysis**: Use existing AI categorization for bug fixes vs improvements
-- **Contributor data**: Leverage existing contributor collection and deduplication  
+- **Contributor data**: Use RELEASE_NOTES.md contributors section (implemented)  
 - **GitHub release info**: Use existing GitHub API integration for release URLs
 - **Cost optimization**: Share token usage across tools
 

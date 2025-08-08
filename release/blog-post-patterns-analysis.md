@@ -96,13 +96,11 @@ Based on the analysis, Spring AI 1.0.1 should follow a **hybrid approach** combi
 
 ```
 1. Opening Announcement (Spring AI style, enthusiastic)
-2. Getting Started (Brief Maven/Gradle snippets)
-3. Release Summary (Bug fixes, improvements count)
-4. Key Highlights (2-3 notable improvements/fixes)
-5. Upgrade Notes (Link to documentation)
-6. Community Appreciation (Contributors, issue reporters)
-7. What's Next (Brief mention of 1.1 or future plans)
-8. Resource Links (Standard Spring project links)
+2. Release Summary (Bug fixes, improvements count)
+3. Key Highlights (2-3 notable improvements/fixes)
+4. Community Appreciation (Contributors from RELEASE_NOTES.md)
+5. What's Next (Brief mention of 1.1 or future plans)
+6. Resource Links (Standard Spring project links)
 ```
 
 ## Key Differences from Major Releases
@@ -114,12 +112,13 @@ Based on the analysis, Spring AI 1.0.1 should follow a **hybrid approach** combi
 - Deep technical dives
 - Comprehensive contributor lists (500+)
 - Enterprise platform sections
+- Getting started sections (users already know)
+- Upgrade notes (no breaking changes)
 
 **What Point Releases DO Include:**
 - Clear availability announcement
 - Focus on stability and bug fixes
-- Upgrade guidance
-- Community appreciation
+- Community appreciation (from RELEASE_NOTES.md contributors)
 - Resource accessibility
 
 ## Content Tone Guidelines
@@ -139,27 +138,14 @@ Based on the analysis, Spring AI 1.0.1 should follow a **hybrid approach** combi
 
 ## Technical Content Patterns
 
-### **Code Examples Expected:**
-```xml
-<!-- Maven BOM -->
-<dependencyManagement>
-    <dependencies>
-        <dependency>
-            <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-bom</artifactId>
-            <version>1.0.1</version>
-            <type>pom</type>
-            <scope>import</scope>
-        </dependency>
-    </dependencies>
-</dependencyManagement>
-```
+### **Content Sources:**
+- **RELEASE_NOTES.md**: Contributors list for community appreciation
+- **GitHub Release**: Commit counts and change categorization
 
 ### **Link Patterns:**
 - **GitHub Release**: Direct link to detailed release notes
 - **Documentation**: Version-specific documentation URLs  
-- **Upgrade Notes**: Spring AI-specific upgrade guidance
-- **Start.spring.io**: Updated initializer links
+- **Spring.io Resources**: Project page, GitHub, Issues, Stack Overflow
 
 ## Blog Post Metadata Pattern
 

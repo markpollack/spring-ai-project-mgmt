@@ -191,10 +191,47 @@ class SpringAIBlogGenerator:
         }
     
     def _get_contributors(self) -> List[str]:
-        """Get list of contributors for the release"""
-        # This would integrate with contributor analysis
-        # For now, return empty list - would be populated by actual analysis
-        return []
+        """Get list of contributors from RELEASE_NOTES.md"""
+        try:
+            release_notes_path = Path("RELEASE_NOTES.md")
+            if not release_notes_path.exists():
+                Logger.warn("RELEASE_NOTES.md not found, skipping contributor extraction")
+                return []
+            
+            with open(release_notes_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            
+            # Extract contributors from the Contributors section
+            contributors = []
+            lines = content.split('\\n')
+            in_contributors_section = False
+            
+            for line in lines:
+                if "## Contributors" in line or "# Contributors" in line:
+                    in_contributors_section = True
+                    continue
+                elif in_contributors_section and line.startswith('##') or line.startswith('#'):
+                    # End of contributors section
+                    break
+                elif in_contributors_section and line.strip():
+                    # Extract contributor name from various formats
+                    if line.startswith('- '):
+                        # Format: - Name (username)
+                        contributor = line[2:].split('(')[0].strip()
+                        if contributor:
+                            contributors.append(contributor)
+                    elif line.startswith('*'):
+                        # Format: * Name
+                        contributor = line[1:].split('(')[0].strip()
+                        if contributor:
+                            contributors.append(contributor)
+            
+            Logger.info(f"Extracted {len(contributors)} contributors from RELEASE_NOTES.md")
+            return contributors
+            
+        except Exception as e:
+            Logger.warn(f"Could not extract contributors from RELEASE_NOTES.md: {e}")
+            return []
     
     def _generate_key_highlights(self, release_data: ReleaseData) -> List[str]:
         """Generate key highlights for the release"""
@@ -234,10 +271,8 @@ class SpringAIBlogGenerator:
             # Generate each section
             frontmatter = self._generate_frontmatter(release_data)
             opening = self._generate_opening(release_data)
-            getting_started = self._generate_getting_started(release_data)
             release_summary = self._generate_release_summary(release_data)
             key_highlights = self._generate_highlights_section(release_data)
-            upgrade_notes = self._generate_upgrade_notes(release_data)
             community = self._generate_community_section(release_data)
             whats_next = self._generate_whats_next(release_data)
             resources = self._generate_resources_section(release_data)
@@ -246,10 +281,8 @@ class SpringAIBlogGenerator:
             blog_content = "\\n".join([
                 frontmatter,
                 opening,
-                getting_started,
                 release_summary,
                 key_highlights,
-                upgrade_notes,
                 community,
                 whats_next,
                 resources
@@ -277,28 +310,6 @@ On behalf of the Spring AI engineering team and everyone who has contributed, I'
 
 This point release builds on the solid foundation of Spring AI 1.0 GA, delivering important stability improvements and bug fixes to enhance your AI application development experience.'''
     
-    def _generate_getting_started(self, release_data: ReleaseData) -> str:
-        """Generate getting started section"""
-        return f'''
-## Getting Started
-
-The new bits are available in Maven Central. Use the provided BOM to import the dependencies:
-
-```xml
-<dependencyManagement>
-    <dependencies>
-        <dependency>
-            <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-bom</artifactId>
-            <version>{self.version}</version>
-            <type>pom</type>
-            <scope>import</scope>
-        </dependency>
-    </dependencies>
-</dependencyManagement>
-```
-
-You can also get started creating {self.version} applications on the [Spring Initializr website](https://start.spring.io) and read our [Getting Started](https://docs.spring.io/spring-ai/reference/getting-started.html) section in the reference documentation.'''
     
     def _generate_release_summary(self, release_data: ReleaseData) -> str:
         """Generate release summary section"""
@@ -329,14 +340,6 @@ Thanks to all those who have contributed with issue reports and pull requests.''
 
 These improvements ensure that Spring AI continues to provide a robust and reliable foundation for building production-ready AI applications.'''
     
-    def _generate_upgrade_notes(self, release_data: ReleaseData) -> str:
-        """Generate upgrade notes section"""
-        return f'''
-## Upgrading
-
-Upgrading from Spring AI {release_data.previous_version} to {self.version} should be straightforward for most applications. Check out the [Upgrade Notes](https://docs.spring.io/spring-ai/reference/upgrade-notes.html) for any version-specific considerations.
-
-For applications using Spring AI 1.0 GA, this point release maintains API compatibility while delivering important fixes and improvements.'''
     
     def _generate_community_section(self, release_data: ReleaseData) -> str:
         """Generate community appreciation section"""
@@ -351,6 +354,8 @@ For applications using Spring AI 1.0 GA, this point release maintains API compat
 ## Community
 
 The Spring AI community continues to grow and contribute in meaningful ways. This release includes contributions from community members who reported issues, submitted fixes, and provided valuable feedback.{contributor_text}
+
+Thanks to all those who have contributed with issue reports and pull requests.
 
 ### How can you help?
 
