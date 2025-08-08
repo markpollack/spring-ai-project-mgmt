@@ -203,7 +203,7 @@ class SpringAIBlogGenerator:
             
             # Extract contributors from the Contributors section
             contributors = []
-            lines = content.split('\\n')
+            lines = content.split('\n')
             in_contributors_section = False
             
             for line in lines:
@@ -219,14 +219,18 @@ class SpringAIBlogGenerator:
                     # Extract contributor name from various formats
                     if line.startswith('- ['):
                         # Format: - [Name (@username)](https://github.com/username)
-                        # Extract name between [ and ( 
-                        if ' (' in line and ')](' in line:
+                        # Extract name between [ and (@
+                        try:
                             start_idx = line.find('[') + 1
-                            end_idx = line.find(' (')
+                            end_idx = line.find(' (@')
+                            if end_idx == -1:  # Fallback if no @ symbol
+                                end_idx = line.find(']')
                             contributor = line[start_idx:end_idx].strip()
                             if contributor:
                                 contributors.append(contributor)
                                 Logger.debug(f"Added contributor: {contributor}")
+                        except Exception as e:
+                            Logger.debug(f"Error parsing contributor line: {line} - {e}")
                     elif line.startswith('- '):
                         # Format: - Name (username)
                         contributor = line[2:].split('(')[0].strip()
