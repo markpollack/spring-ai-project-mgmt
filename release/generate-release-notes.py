@@ -1344,21 +1344,6 @@ class ReleaseNotesGenerator:
                 lines.append(contributor.markdown_entry)
             lines.append("")
         
-        # Statistics section
-        if self.config.include_stats:
-            lines.append("## 📈 Statistics")
-            
-            # Calculate stats
-            total_prs = sum(len(commit.prs) for commit in enriched_commits)
-            total_issues = sum(len(commit.issues) for commit in enriched_commits)
-            commits_with_prs = len([c for c in enriched_commits if c.prs])
-            
-            lines.append(f"- {len(enriched_commits)} commits from {len(contributors)} contributors")
-            lines.append(f"- {total_prs} pull requests merged")
-            lines.append(f"- {total_issues} issues resolved")
-            lines.append(f"- {commits_with_prs} commits associated with pull requests")
-            lines.append("")
-        
         # Debug data section (if requested)
         if self.config.include_debug_data:
             lines.append("## 🔍 Debug Information")
