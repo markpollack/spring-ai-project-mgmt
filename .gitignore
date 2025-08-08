@@ -59,6 +59,10 @@ release/logs/
 release/state/
 release/spring-ai-release/
 
+# Release notes generation output
+release/RELEASE_NOTES.md
+**/RELEASE_*.md
+
 # Git squash merge tool - working directories (timestamped)
 release/spring-ai-squash-merge-*/
 
