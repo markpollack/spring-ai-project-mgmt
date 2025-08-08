@@ -191,28 +191,35 @@ class EnrichedCommit:
     
     @property
     def link_text(self) -> str:
-        """Generate link text like '(#123 via #456, #789)'"""
+        """Generate markdown hyperlinks like '[#123](url) via [#456](url)'"""
         if not self.prs:
-            return f"({self.commit.short_sha})"
+            # Return commit link: [2082a59](https://github.com/spring-projects/spring-ai/commit/sha)
+            return f"[{self.commit.short_sha}]({self.commit.commit_url})"
         
         pr_links = []
         issue_links = []
         
         for pr in self.prs:
-            pr_links.append(f"#{pr.number}")
+            # Generate PR markdown link: [#123](https://github.com/spring-projects/spring-ai/pull/123)
+            pr_url = f"https://github.com/spring-projects/spring-ai/pull/{pr.number}"
+            pr_links.append(f"[#{pr.number}]({pr_url})")
+            
             for issue_num in pr.closing_issues:
                 if issue_num not in [i.number for i in self.issues]:
-                    issue_links.append(f"#{issue_num}")
+                    # Generate issue markdown link: [#456](https://github.com/spring-projects/spring-ai/issues/456)
+                    issue_url = f"https://github.com/spring-projects/spring-ai/issues/{issue_num}"
+                    issue_links.append(f"[#{issue_num}]({issue_url})")
         
         # Add direct issues
         for issue in self.issues:
-            if f"#{issue.number}" not in issue_links:
-                issue_links.append(f"#{issue.number}")
+            issue_link = f"[#{issue.number}]({issue.url})"
+            if issue_link not in issue_links:
+                issue_links.append(issue_link)
         
         if issue_links:
-            return f"({', '.join(pr_links)} via {', '.join(issue_links)})"
+            return f"{', '.join(pr_links)} via {', '.join(issue_links)}"
         else:
-            return f"({', '.join(pr_links)})"
+            return f"{', '.join(pr_links)}"
 
 
 @dataclass
@@ -1026,7 +1033,8 @@ class ReleaseNotesAIAnalyzer:
         commits_data = []
         for commit in enriched_commits:
             commit_info = {
-                "sha": commit.commit.short_sha,
+                "sha": commit.commit.sha,  # Full SHA for proper commit URLs
+                "short_sha": commit.commit.short_sha,  # Short SHA for display
                 "message": commit.commit.message,
                 "author": commit.commit.author,
                 "prs": [{"number": pr.number, "title": pr.title, "labels": pr.labels} for pr in commit.prs],
@@ -1060,7 +1068,13 @@ Analyze this data and categorize changes into Spring AI appropriate categories. 
 2. **Prefer PR titles** over commit messages when available (they're usually better formatted)
 3. **Group related changes** when multiple commits/PRs address the same feature
 4. **Identify breaking changes** from labels, titles, or descriptions
-5. **Create proper linking** in format: (#PR via #issue1, #issue2) or just (#PR) or (commit-sha)
+5. **Create proper markdown hyperlinks** (IMPORTANT - always use full URLs):
+   - For PRs: [#123](https://github.com/spring-projects/spring-ai/pull/123)  
+   - For issues: [#456](https://github.com/spring-projects/spring-ai/issues/456)
+   - For commits (when no PR): [short_sha](https://github.com/spring-projects/spring-ai/commit/full-sha)
+   - Combined: [#123](https://github.com/spring-projects/spring-ai/pull/123) via [#456](https://github.com/spring-projects/spring-ai/issues/456)
+   - **Never use plain text like (abc1234) or (#123) - always use markdown links**
+   - **For commits: Use short_sha for display text but full sha for URL**
 
 ## Spring AI Specific Considerations
 - Highlight new model providers (OpenAI, Anthropic, Azure, etc.)
@@ -1079,32 +1093,38 @@ Return ONLY valid JSON in this exact format:
     {{
       "title": "Change title",
       "description": "User-facing description",
-      "link_text": "(#123 via #456)"
+      "link_text": "[#123](https://github.com/spring-projects/spring-ai/pull/123) via [#456](https://github.com/spring-projects/spring-ai/issues/456)"
     }}
   ],
   "features": [
     {{
       "title": "Feature title", 
       "description": "User-facing description",
-      "link_text": "(#123)"
+      "link_text": "[#123](https://github.com/spring-projects/spring-ai/pull/123)"
     }}
   ],
   "bug_fixes": [
     {{
       "title": "Fix title",
       "description": "User-facing description", 
-      "link_text": "(#123 via #456)"
+      "link_text": "[#123](https://github.com/spring-projects/spring-ai/pull/123) via [#456](https://github.com/spring-projects/spring-ai/issues/456)"
     }}
   ],
   "documentation": [
     {{
       "title": "Doc change title",
       "description": "Description",
-      "link_text": "(#123)"
+      "link_text": "[#123](https://github.com/spring-projects/spring-ai/pull/123)"
     }}
   ],
   "performance": [],
-  "internal": [],
+  "internal": [
+    {{
+      "title": "Internal change title",
+      "description": "Description",
+      "link_text": "[abc1234](https://github.com/spring-projects/spring-ai/commit/abc1234full-40-char-sha-here)"
+    }}
+  ],
   "security": []
 }}
 ```
