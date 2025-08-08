@@ -63,10 +63,22 @@ Executes release steps up to Maven Central trigger and **stops**:
 python3 spring-ai-point-release.py 1.0.1
 ```
 
-### Phase 2: Post-Maven Central Workflow (5 steps)  
+### Phase 2: Post-Maven Central Workflow (3 steps)  
 Completes development version setup **only after Maven Central success**:
 ```bash
 python3 spring-ai-point-release.py 1.0.1 --post-maven-central
+```
+
+### Manual Steps (14-15): External Repository Updates
+Steps 14-15 are handled by **standalone scripts** for better control and iteration:
+```bash
+# Step 14: Update start.spring.io 
+python3 update-start-spring-io.py 1.0.1 --dry-run
+python3 update-start-spring-io.py 1.0.1
+
+# Step 15: Update spring-website-content
+python3 update-spring-website.py 1.0.1 --dry-run  
+python3 update-spring-website.py 1.0.1
 ```
 
 **Why Two Phases?**
@@ -201,7 +213,7 @@ The main workflow executes steps 1-10 and stops at Maven Central trigger:
 
 ### Phase 2: Post-Maven Central Workflow
 
-After Maven Central deployment succeeds, run with `--post-maven-central`:
+After Maven Central deployment succeeds, run with `--post-maven-central` to execute steps 11-13:
 
 ### 11. Set Next Development Version  
 - **Action**: Updates POM files to next development version
@@ -236,6 +248,12 @@ After Maven Central deployment succeeds, run with `--post-maven-central`:
 - **Note**: This pushes both commits that were accumulated locally during Phase 2
 - **Implementation**: [`_push_dev_changes()`](spring-ai-point-release.py#L1741) → [`ReleaseGitHelper.run_git()`](spring-ai-point-release.py#L123)
 
+---
+
+## Manual Steps: External Repository Updates
+
+Steps 14-15 are implemented as **standalone scripts** for better control and iteration. These should be run manually after Phase 2 completes.
+
 ### 14. Update start.spring.io
 - **Action**: Updates Spring Initializr with new Spring AI version
 - **Commands**:
@@ -248,7 +266,18 @@ After Maven Central deployment succeeds, run with `--post-maven-central`:
   ```
 - **Purpose**: Makes new Spring AI version available in Spring Initializr for new projects
 - **Interactive**: Shows diff preview and PR details before creating pull request
-- **Implementation**: [`_update_start_spring_io()`](spring-ai-point-release.py#L1751) → [`StartSpringIOUpdater`](spring-ai-point-release.py#L866) → [`update_spring_ai_version()`](spring-ai-point-release.py#L928) → [`create_pull_request()`](spring-ai-point-release.py#L1015)
+- **Script**: Use standalone script [`update-start-spring-io.py`](update-start-spring-io.py)
+- **Usage**:
+  ```bash
+  # Preview changes first
+  python3 update-start-spring-io.py 1.0.1 --dry-run
+  
+  # Execute the update with manual confirmations
+  python3 update-start-spring-io.py 1.0.1
+  
+  # Cleanup if needed
+  python3 update-start-spring-io.py 1.0.1 --cleanup
+  ```
 
 ### 15. Update spring-website-content
 - **Action**: Updates Spring AI project documentation on the Spring website
@@ -265,7 +294,18 @@ After Maven Central deployment succeeds, run with `--post-maven-central`:
   ```
 - **Purpose**: Updates Spring AI project page to reflect latest point release information
 - **Interactive**: Shows changes preview and confirmation before creating pull request
-- **Implementation**: [`_update_spring_website()`](spring-ai-point-release.py#L1812) → [`SpringWebsiteUpdater`](spring-ai-point-release.py#L1069) → [`update_documentation()`](spring-ai-point-release.py#L1077) → [`_update_documentation_json()`](spring-ai-point-release.py#L1145)
+- **Script**: Use standalone script [`update-spring-website.py`](update-spring-website.py)
+- **Usage**:
+  ```bash
+  # Preview changes first
+  python3 update-spring-website.py 1.0.1 --dry-run
+  
+  # Execute the update with manual confirmations
+  python3 update-spring-website.py 1.0.1
+  
+  # Cleanup if needed
+  python3 update-spring-website.py 1.0.1 --cleanup
+  ```
 
 ## Interactive Workflow
 
@@ -698,8 +738,265 @@ This ensures the Spring AI project page shows the latest point release while mai
 - **User Control**: Full transparency with changes preview before submission
 - **Error Recovery**: Automatic cleanup and clear error reporting
 
+## Standalone Scripts for External Updates
+
+Steps 14-15 are implemented as standalone scripts for better control and manual verification.
+
+### update-start-spring-io.py
+
+**Purpose**: Updates Spring Initializr (start.spring.io) with new Spring AI releases
+
+**Features**:
+- **Safe Testing**: Comprehensive dry-run mode shows all changes before execution
+- **Step-by-step Confirmation**: Manual approval required for each operation (clone, branch, commit, PR)
+- **Change Preview**: Shows exact diff and PR content before creation
+- **Version Validation**: Ensures version format is correct (X.Y.Z)
+- **Automatic Cleanup**: Removes cloned repository after completion
+- **GitHub CLI Integration**: Uses `gh` for authenticated PR creation
+
+**Usage**:
+```bash
+# Test changes without executing
+python3 update-start-spring-io.py 1.0.1 --dry-run
+
+# Execute with manual confirmations at each step
+python3 update-start-spring-io.py 1.0.1
+
+# Clean up repository directory
+python3 update-start-spring-io.py 1.0.1 --cleanup
+
+# Get help
+python3 update-start-spring-io.py --help
+```
+
+**Interactive Workflow**:
+```
+🚀 SPRING AI START.SPRING.IO UPDATE
+Target Version: 1.0.1
+Repository: https://github.com/spring-io/start.spring.io.git
+
+Proceed with cloning repository? (Y/n): y
+Create feature branch 'update-spring-ai-1.0.1'? (Y/n): y
+Update version from 1.0.0 to 1.0.1? (Y/n): y
+
+📋 CHANGES PREVIEW:
+File: application.yml
+-            version: 1.0.0
++            version: 1.0.1
+
+🎯 PR Title: Update Spring AI to 1.0.1
+📝 PR Body: Updates Spring AI BOM version to 1.0.1...
+
+Proceed with the changes shown above? (Y/n): y
+Commit the changes? (Y/n): y
+⚠️ FINAL CONFIRMATION: Create pull request on GitHub? (Y/n): y
+```
+
+### update-spring-website.py
+
+**Purpose**: Updates Spring website documentation (spring-website-content) for new releases
+
+**Features**:
+- **JSON Processing**: Safely updates documentation.json with version changes
+- **Point Release Optimization**: Updates version and API URLs, preserves reference URLs
+- **Change Validation**: Detects if version is already current, skips gracefully
+- **Git Diff Preview**: Shows exact changes before committing
+- **Safe JSON Handling**: Preserves formatting and structure of documentation.json
+- **Manual Confirmation**: User approval required for all GitHub operations
+
+**Usage**:
+```bash
+# Test changes without executing
+python3 update-spring-website.py 1.0.1 --dry-run
+
+# Execute with manual confirmations at each step
+python3 update-spring-website.py 1.0.1
+
+# Clean up repository directory  
+python3 update-spring-website.py 1.0.1 --cleanup
+
+# Get help
+python3 update-spring-website.py --help
+```
+
+**Interactive Workflow**:
+```
+🌐 SPRING WEBSITE DOCUMENTATION UPDATE
+Target Version: 1.0.1
+Repository: https://github.com/spring-io/spring-website-content.git
+
+Proceed with cloning repository? (Y/n): y
+Create feature branch 'update-spring-ai-1.0.1'? (Y/n): y
+
+📋 SPRING WEBSITE CHANGES PREVIEW
+File: content/projects/spring-ai/documentation.json
+  version: 1.0.0 → 1.0.1
+  api.url: updated to reference 1.0.1
+  reference.url: unchanged (stays at major.minor level)
+
+Proceed with documentation.json update? (Y/n): y
+
+📋 GIT DIFF:
+File: content/projects/spring-ai/documentation.json
+-  "version": "1.0.0",
++  "version": "1.0.1",
+
+Proceed with the changes shown above? (Y/n): y
+Commit the changes? (Y/n): y
+⚠️ FINAL CONFIRMATION: Create pull request on GitHub? (Y/n): y
+```
+
+### Benefits of Standalone Scripts
+
+- **Iterative Development**: Test and refine updates independently
+- **Manual Control**: Full oversight of external repository changes
+- **Risk Reduction**: No accidental commits or PR creation during testing
+- **Error Recovery**: Isolated failure handling and easy retry
+- **Flexibility**: Run steps independently or skip either one
+- **Transparency**: Complete visibility into all operations before execution
+
 ### Getting Help
 - Use `--help` for command options
 - Check error messages for specific guidance
 - Review the workflow steps above for understanding
 - Test with `--dry-run` to preview actions
+
+## generate-release-notes.py Integration
+
+The `generate-release-notes.py` script provides AI-powered release notes generation for Spring AI releases by analyzing commits, pull requests, and issues.
+
+### Automatic Release Notes Generation
+
+**Purpose**: Generates comprehensive GitHub-ready release notes with AI-powered categorization
+
+**Features**:
+- **Automatic Commit Discovery**: Finds commits since last release or specified version
+- **Branch-Specific Analysis**: Analyzes commits from specific branches (e.g., 1.0.x)
+- **GitHub Integration**: Enriches commits with PR and issue associations using GraphQL
+- **AI Categorization**: Uses Claude Code CLI for intelligent change categorization
+- **Professional Output**: Generates GitHub-flavored markdown with proper PR/issue linking
+- **Contributor Acknowledgments**: Includes contributor lists and statistics
+- **Spring AI Specific**: Handles Spring AI project conventions and patterns
+
+**Usage**:
+```bash
+# Auto-detect commits since last release on default branch (1.0.x)
+python3 generate-release-notes.py
+
+# Analyze specific branch for commits since last release
+python3 generate-release-notes.py --branch 1.0.x
+
+# Generate release notes for specific version range
+python3 generate-release-notes.py --since-version 1.0.0 --target-version 1.0.1
+
+# Analyze main branch instead of maintenance branch
+python3 generate-release-notes.py --branch main
+
+# Preview without generating file
+python3 generate-release-notes.py --branch 1.0.x --dry-run --verbose
+
+# Skip AI analysis and use rule-based categorization
+python3 generate-release-notes.py --branch 1.0.x --no-ai
+
+# Custom output file and repository path
+python3 generate-release-notes.py --branch 1.0.x --output RELEASE_1.0.1.md --repo-path /path/to/spring-ai
+```
+
+**Branch Support**:
+The script supports analyzing commits from any branch, which is essential for maintenance releases:
+- **Default**: `1.0.x` (maintenance branch for point releases)
+- **Main Branch**: `--branch main` (for major releases)
+- **Feature Branches**: `--branch feature/new-vector-stores` (for feature analysis)
+- **Release Branches**: `--branch 1.1.x` (for different maintenance lines)
+
+When specifying a branch, the script will:
+1. Checkout the specified branch in the Spring AI repository
+2. Pull the latest changes from origin
+3. Analyze commits from that branch since the specified date/version
+4. Generate release notes specific to that branch's changes
+
+**Example Branch Usage**:
+```bash
+# For 1.0.x maintenance branch point releases
+python3 generate-release-notes.py --branch 1.0.x --since-version 1.0.0 --target-version 1.0.1
+
+# For main branch major releases  
+python3 generate-release-notes.py --branch main --since-version 1.0.0 --target-version 1.1.0
+
+# For milestone releases on main
+python3 generate-release-notes.py --branch main --since-version 1.1.0-M2 --target-version 1.1.0-M3
+```
+
+**Interactive Workflow**:
+```
+🚀 SPRING AI RELEASE NOTES GENERATION
+========================================
+Branch: 1.0.x
+Since Version: 1.0.0 (auto-detected)
+Target Version: 1.0.1 (auto-detected)
+Repository: /home/mark/projects/spring-ai
+========================================
+
+[INFO] Checking out branch: 1.0.x
+[INFO] Pulling latest changes from 1.0.x  
+[INFO] Collecting commits since 2024-11-21 on branch 1.0.x
+[INFO] Found 43 commits since 2024-11-21
+[SUCCESS] Collected 43 commits with metadata
+[INFO] Enriching commits with GitHub PR and issue data...
+[SUCCESS] Enriched 43 commits with GitHub data
+[INFO] Starting AI analysis of changes using Claude Code CLI...
+[SUCCESS] AI analysis completed (Cost: $0.12)
+[INFO] Generating release notes markdown...
+[SUCCESS] Release notes generated: RELEASE_NOTES.md
+```
+
+**Integration with Release Process**:
+- **Complementary**: Works alongside `spring-ai-point-release.py` for complete release automation
+- **Flexible Timing**: Can be run before, during, or after the release process
+- **Branch Awareness**: Automatically analyzes the correct maintenance branch for point releases
+- **AI-Powered**: Provides intelligent categorization that manual processes can't match
+- **Version Detection**: Automatically detects version ranges when not specified
+
+**Output Format**:
+The generated release notes follow GitHub conventions:
+```markdown
+# Spring AI 1.0.1 Release Notes
+
+## 🎯 Highlights
+This release includes 15 changes with focus on bug fixes and OpenAI integration improvements.
+
+## 💥 Breaking Changes
+- Updated OpenAI client configuration format (#1234)
+
+## ✨ New Features  
+- Add support for Claude-3 Haiku model (#1235 via #1240)
+- Enhanced vector store configuration (#1250)
+
+## 🐛 Bug Fixes
+- Fix thread safety in embedding cache (#1245 via #1242, #1243)
+- Resolve Azure OpenAI timeout issues (#1255)
+
+## 🙏 Contributors
+Thanks to @author1, @author2, and @author3 for their contributions.
+
+## 📈 Statistics
+- 43 commits from 8 contributors
+- 26 pull requests merged
+- 12 issues resolved
+```
+
+**Requirements**:
+- Python 3.8+ with required libraries
+- Claude Code CLI integration (uses existing `claude_code_wrapper.py`)
+- GitHub CLI (`gh`) for authenticated API access
+- Access to Spring AI repository (default: `/home/mark/projects/spring-ai`)
+- Internet connection for GitHub GraphQL API calls
+
+**Error Handling**:
+- **Branch Not Found**: Clear error if specified branch doesn't exist
+- **No Commits**: Graceful handling when no commits found in date range
+- **AI Analysis Failure**: Falls back to rule-based categorization
+- **GitHub API Issues**: Continues with available data, warns about missing enrichment
+- **Repository Access**: Clear error messages for path or permission issues
+
+This script is essential for generating professional release notes that accurately reflect the changes in each Spring AI release, with special support for analyzing maintenance branches like 1.0.x that are crucial for point releases.
