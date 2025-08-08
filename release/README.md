@@ -873,6 +873,7 @@ The `generate-release-notes.py` script provides AI-powered release notes generat
 - **Automatic Commit Discovery**: Finds commits since last release or specified version
 - **Branch-Specific Analysis**: Analyzes commits from specific branches (e.g., 1.0.x)
 - **GitHub Integration**: Enriches commits with PR and issue associations using GraphQL
+- **Cross-Branch Backport Analysis**: Links backported commits to their original PRs on main branch
 - **AI Categorization**: Uses Claude Code CLI for intelligent change categorization
 - **Professional Output**: Generates GitHub-flavored markdown with proper PR/issue linking
 - **Contributor Acknowledgments**: Includes contributor lists and statistics
@@ -948,6 +949,63 @@ Repository: /home/mark/projects/spring-ai
 [SUCCESS] AI analysis completed (Cost: $0.12)
 [INFO] Generating release notes markdown...
 [SUCCESS] Release notes generated: RELEASE_NOTES.md
+```
+
+### Cross-Branch Backport Analysis
+
+**Spring AI Backport Workflow**:
+Spring AI uses a specific backport workflow for maintenance releases:
+
+1. **Original PRs**: Features and fixes are merged to the `main` branch with labels like `"for: backport-to-1.0.x"`
+2. **Manual Backports**: Changes are manually backported to maintenance branches (e.g., `1.0.x`) as direct commits
+3. **Reference Preservation**: Backport commit messages typically reference the original PR number (e.g., `"fix: resolve issue (#2774)"`)
+
+**Automated Backport Detection**:
+The script automatically analyzes backport commits and links them to their original PRs:
+
+```
+[INFO] Analyzing backport commits for cross-branch PR linking...
+[INFO] Found PR references in 5 commit messages
+[INFO] Checking 5 PRs for backport labels...
+[DEBUG]   ✅ PR #2774 has backport labels: ['for: backport-to-1.0.x']
+[DEBUG]   ✅ PR #3751 has backport labels: ['for: backport-to-1.0.x'] 
+[DEBUG]   ✅ PR #3810 has backport labels: ['for: backport-to-1.0.x']
+[DEBUG]   ✅ PR #3802 has backport labels: ['for: backport-to-1.0.x']
+[INFO] Found 4 backport PR associations
+[INFO]   Backport fa358331: linked to PR(s) [2774]
+[INFO]   Backport 4da1a23f: linked to PR(s) [3751]
+[INFO]   Backport fba87cab: linked to PR(s) [3810]
+[INFO]   Backport 69a5d8ee: linked to PR(s) [3802]
+```
+
+**Process Details**:
+1. **PR Reference Extraction**: Uses regex patterns to find PR numbers in commit messages:
+   - `#123` - Standard GitHub references
+   - `(#123)` - PR numbers in parentheses  
+   - `PR #123` - Explicit PR mentions
+   - `backport.*#123` - Backport-specific patterns
+   
+2. **Backport Label Verification**: Validates that referenced PRs have backport labels:
+   - `"for: backport-to-1.0.x"` - Primary backport label
+   - `"backport"` - Generic backport label
+   - `"1.0.x"` - Version-specific label
+   - `"backport-candidate"` - Candidate label
+
+3. **PR Enrichment**: Converts verified PRs into proper PR objects with:
+   - Original PR title, URL, and labels
+   - Proper attribution in release notes
+   - Enhanced categorization from PR labels
+
+**Output Enhancement**:
+Instead of generic commit references:
+```markdown
+- Fixed spelling error in documentation [2e579b1](https://github.com/spring-projects/spring-ai/commit/...)
+```
+
+Backport analysis provides proper PR attribution:
+```markdown
+- Resolved issue where method tool calls would throw errors [#2774](https://github.com/spring-projects/spring-ai/pull/2774)
+- Added dynamic MCP client selection example [#3751](https://github.com/spring-projects/spring-ai/pull/3751)
 ```
 
 **Integration with Release Process**:
