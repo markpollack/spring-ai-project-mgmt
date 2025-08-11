@@ -40,6 +40,9 @@ class PRSummary:
     additions: int
     deletions: int
     
+    # Git branch info
+    actual_branch: str = ""  # The actual git branch name for this PR
+    
     # Processing metrics  
     processing_time: Optional[str]
     prompt_size: Optional[str]
@@ -101,6 +104,28 @@ class LowHangingFruitReportGenerator:
         self.context_dir = self.run_dir / "context"
         self.reports_dir = self.run_dir / "reports"
         self.pr_summaries: List[PRSummary] = []
+        # Load branch mapping from state directory
+        self.branch_mapping = self._load_branch_mapping()
+    
+    def _load_branch_mapping(self) -> Dict[str, str]:
+        """Load PR to branch name mapping from state file"""
+        # Try to find the state directory (could be in parent dir)
+        state_file = self.run_dir.parent.parent / "state" / "pr-branch-mapping.json"
+        if not state_file.exists():
+            # Try alternate location
+            state_file = Path(__file__).parent / "state" / "pr-branch-mapping.json"
+        
+        if state_file.exists():
+            try:
+                with open(state_file, 'r') as f:
+                    mapping = json.load(f)
+                    print(f"✅ Loaded branch mapping with {len(mapping)} entries")
+                    return mapping
+            except Exception as e:
+                print(f"⚠️  Could not load branch mapping: {e}")
+        else:
+            print("⚠️  No branch mapping file found")
+        return {}
         
     def generate_report(self) -> Path:
         """Generate the complete HTML report"""
@@ -225,8 +250,12 @@ class LowHangingFruitReportGenerator:
         # Load commit message
         commit_message = self._load_commit_message(str(pr_data["number"]))
         
+        # Get actual branch name from mapping
+        pr_num = str(pr_data["number"])
+        actual_branch = self.branch_mapping.get(pr_num, f"pr-{pr_num}-branch")  # Fallback to placeholder
+        
         return PRSummary(
-            number=str(pr_data["number"]),
+            number=pr_num,
             title=pr_data["title"],
             author=pr_data["author"],
             url=pr_data["url"],
@@ -237,6 +266,7 @@ class LowHangingFruitReportGenerator:
             changed_files=pr_data.get("changed_files", 0),
             additions=pr_data.get("additions", 0),
             deletions=pr_data.get("deletions", 0),
+            actual_branch=actual_branch,
             processing_time=None,  # Will be filled from batch metrics
             prompt_size=None,      # Will be filled from batch metrics
             created_at=pr_data["created_at"],
@@ -510,7 +540,7 @@ class LowHangingFruitReportGenerator:
             return ""  # Only show button for approved PRs
         
         return f"""
-                <button class="btn btn-backport" onclick="openBackportModal({pr.number})">
+                <button class="btn btn-backport" onclick="openBackportModal({pr.number}, '{pr.actual_branch}')">
                     🔄 Prepare Backport
                 </button>
         """
@@ -2960,10 +2990,10 @@ class LowHangingFruitReportGenerator:
         });
         
         // === BACKPORT MODAL FUNCTIONS ===
-        function openBackportModal(prNumber) {
+        function openBackportModal(prNumber, actualBranch) {
             const modal = document.getElementById('backport-modal');
-            const branchName = `pr-${prNumber}-branch`;
-            const command = `cd spring-ai && python3 ../prepare_backport.py ${prNumber}`;
+            const branchName = actualBranch || `pr-${prNumber}-branch`;  // Use actual branch or fallback
+            const command = `cd spring-ai && git checkout ${branchName} && python3 ../prepare_backport.py ${prNumber}`;
             
             // Populate modal content
             document.getElementById('backport-branch').textContent = branchName;
