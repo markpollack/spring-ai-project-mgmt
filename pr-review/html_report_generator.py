@@ -40,12 +40,12 @@ class PRSummary:
     additions: int
     deletions: int
     
-    # Git branch info
-    actual_branch: str = ""  # The actual git branch name for this PR
-    
     # Processing metrics  
     processing_time: Optional[str]
     prompt_size: Optional[str]
+    
+    # Git branch info
+    actual_branch: str = ""  # The actual git branch name for this PR
     
     # PR metadata
     created_at: str
@@ -266,9 +266,9 @@ class LowHangingFruitReportGenerator:
             changed_files=pr_data.get("changed_files", 0),
             additions=pr_data.get("additions", 0),
             deletions=pr_data.get("deletions", 0),
-            actual_branch=actual_branch,
             processing_time=None,  # Will be filled from batch metrics
             prompt_size=None,      # Will be filled from batch metrics
+            actual_branch=actual_branch,
             created_at=pr_data["created_at"],
             state=pr_data["state"],
             draft=pr_data.get("draft", False),
