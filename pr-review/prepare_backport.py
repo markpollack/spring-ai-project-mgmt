@@ -1,115 +1,93 @@
 #!/usr/bin/env python3
 """
-Backport Preparation Script for Spring AI PRs
+Prepare PR for Backport - Add backport directive to PR body
 
-This script handles the complete backport preparation workflow:
-1. Pre-flight checks (repository, branch, git status)
-2. Interactive commit squashing 
-3. Adding backport directive to commit message
-4. Safety features (backup branch, rollback option)
+This script prepares a PR for Spring AI's automated backport system by:
+1. Performing safety checks (correct branch, PR approved for backport)
+2. Adding "Auto-cherry-pick to X.X.x" and "Fixes #XXXX" to the PR body on GitHub
+3. The Spring AI automation then handles the actual cherry-pick when PR is merged
 
 Usage:
-    cd spring-ai
-    python3 ../prepare_backport.py <pr_number>
+    python3 prepare_backport.py <pr_number> [target_branch]
 
-Example:
-    cd spring-ai
-    python3 ../prepare_backport.py 3920
+Examples:
+    python3 prepare_backport.py 4102           # Backport to 1.0.x (default)
+    python3 prepare_backport.py 4102 1.1.x     # Backport to 1.1.x
+
+Note: Run this AFTER pr_workflow.py has prepared the PR
 """
 
 import os
 import sys
 import subprocess
 import json
-import re
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Optional, Tuple
 from dataclasses import dataclass
-from datetime import datetime
 
 
 @dataclass
-class GitStatus:
-    """Git repository status information"""
-    is_repo: bool
-    is_clean: bool
+class BackportInfo:
+    """Information needed for backport"""
+    pr_number: str
+    target_branch: str
     current_branch: str
-    has_upstream: bool
-    commits_ahead: int
-    repo_root: str
-
-
-@dataclass
-class CommitInfo:
-    """Information about a commit"""
-    hash: str
-    message: str
-    author: str
-    date: str
+    is_approved: bool
+    pr_title: str
+    pr_author: str
 
 
 class Logger:
     """Colored logging for terminal output"""
-    
     @staticmethod
     def info(msg): print(f"\033[34m[INFO]\033[0m {msg}")
-    
     @staticmethod
     def success(msg): print(f"\033[32m✅\033[0m {msg}")
-    
     @staticmethod
     def warn(msg): print(f"\033[33m⚠️\033[0m {msg}")
-    
     @staticmethod
     def error(msg): print(f"\033[31m❌\033[0m {msg}")
-    
     @staticmethod
     def header(msg): print(f"\033[1m\033[36m{msg}\033[0m")
-    
     @staticmethod
     def separator(): print("━" * 50)
 
 
 class BackportPreparer:
-    """Main class for backport preparation workflow"""
+    """Prepare PR for automated backport by updating PR body on GitHub"""
     
-    def __init__(self, pr_number: str):
+    def __init__(self, pr_number: str, target_branch: str = "1.0.x"):
         self.pr_number = pr_number
-        self.expected_branch = f"pr-{pr_number}-branch"
-        self.backup_branch = f"pr-{pr_number}-branch-backup"
+        self.target_branch = target_branch
         self.context_dir = Path(__file__).parent
+        self.state_dir = self.context_dir / "state"
+        self.repo = "spring-projects/spring-ai"
         
     def run(self) -> bool:
-        """Execute the complete backport preparation workflow"""
+        """Execute the backport preparation workflow"""
         try:
             Logger.header(f"🔄 Backport Preparation for PR #{self.pr_number}")
             Logger.separator()
             
-            # Step 1: Pre-flight checks
-            if not self._preflight_checks():
+            # Step 1: Gather PR information
+            backport_info = self._gather_pr_info()
+            if not backport_info:
                 return False
-                
-            # Step 2: Analyze commits
-            commits = self._analyze_commits()
-            if not commits:
-                Logger.error("No commits found to squash")
+            
+            # Step 2: Perform pre-flight checks
+            if not self._preflight_checks(backport_info):
                 return False
-                
-            # Step 3: Create backup
-            if not self._create_backup():
+            
+            # Step 3: Update commit message with backport directive
+            if not self._update_commit_message(backport_info):
                 return False
-                
-            # Step 4: Interactive squashing
-            if not self._interactive_squash(commits):
-                return False
-                
-            # Step 5: Add backport directive
-            if not self._add_backport_directive():
-                return False
-                
+            
+            Logger.separator()
             Logger.success("Backport preparation completed successfully!")
-            Logger.info(f"Branch '{self.expected_branch}' is ready for backport")
-            Logger.info("You can now merge this PR - the commit will auto-cherry-pick to 1.0.x")
+            Logger.info(f"PR #{self.pr_number} will be auto-cherry-picked to {self.target_branch} when merged")
+            Logger.info("Next steps:")
+            Logger.info("  1. Review and merge the PR through GitHub")
+            Logger.info("  2. The automation will create a backport PR automatically")
             
             return True
             
@@ -120,392 +98,221 @@ class BackportPreparer:
             Logger.error(f"Unexpected error: {e}")
             return False
     
-    def _preflight_checks(self) -> bool:
+    def _gather_pr_info(self) -> Optional[BackportInfo]:
+        """Gather all necessary PR information"""
+        try:
+            Logger.info(f"Gathering information for PR #{self.pr_number}...")
+            
+            # Get PR details from GitHub
+            result = subprocess.run([
+                "gh", "pr", "view", self.pr_number,
+                "--repo", self.repo,
+                "--json", "title,author,headRefName,body,state"
+            ], capture_output=True, text=True, check=True)
+            
+            pr_data = json.loads(result.stdout)
+            
+            # Get current git branch
+            result = subprocess.run([
+                "git", "branch", "--show-current"
+            ], capture_output=True, text=True)
+            current_branch = result.stdout.strip() if result.returncode == 0 else "unknown"
+            
+            # Check backport approval from context
+            is_approved = self._check_backport_approval()
+            
+            return BackportInfo(
+                pr_number=self.pr_number,
+                target_branch=self.target_branch,
+                current_branch=current_branch,
+                is_approved=is_approved,
+                pr_title=pr_data.get("title", ""),
+                pr_author=pr_data.get("author", {}).get("login", "unknown")
+            )
+            
+        except subprocess.CalledProcessError as e:
+            Logger.error(f"Failed to get PR information: {e}")
+            return None
+        except Exception as e:
+            Logger.error(f"Error gathering PR info: {e}")
+            return None
+    
+    def _preflight_checks(self, info: BackportInfo) -> bool:
         """Perform all pre-flight validation checks"""
         Logger.info("Running pre-flight checks...")
         
-        # Check 1: Verify we're in a git repository
-        git_status = self._get_git_status()
-        if not git_status.is_repo:
-            Logger.error("Not in a git repository")
-            Logger.info("Make sure you're in the spring-ai directory")
-            return False
+        # Check 1: Verify PR exists and is open
+        try:
+            result = subprocess.run([
+                "gh", "pr", "view", self.pr_number,
+                "--repo", self.repo,
+                "--json", "state"
+            ], capture_output=True, text=True, check=True)
             
-        Logger.success(f"Repository: {os.path.basename(git_status.repo_root)}")
-        
-        # Check 2: Verify clean working directory
-        if not git_status.is_clean:
-            Logger.error("Working directory is not clean")
-            Logger.info("Please commit or stash your changes before running backport preparation")
-            self._show_git_status()
-            return False
+            pr_state = json.loads(result.stdout).get("state", "")
+            if pr_state != "OPEN":
+                Logger.error(f"PR #{self.pr_number} is not open (state: {pr_state})")
+                return False
+            Logger.success(f"PR #{self.pr_number}: {info.pr_title}")
             
-        Logger.success("Working directory: clean")
-        
-        # Check 3: Verify correct branch
-        if git_status.current_branch != self.expected_branch:
-            Logger.error(f"Wrong branch: {git_status.current_branch}")
-            Logger.info(f"Expected branch: {self.expected_branch}")
-            Logger.info(f"Run: git checkout {self.expected_branch}")
+        except subprocess.CalledProcessError:
+            Logger.error(f"PR #{self.pr_number} not found or not accessible")
             return False
-            
-        Logger.success(f"Branch: {self.expected_branch}")
         
-        # Check 4: Verify PR context exists
-        pr_context_dir = self.context_dir / "context" / f"pr-{self.pr_number}"
-        if not pr_context_dir.exists():
-            Logger.error(f"PR context not found: {pr_context_dir}")
-            Logger.info(f"Run the PR workflow first: python3 pr_workflow.py {self.pr_number}")
-            return False
-            
-        Logger.success(f"PR context: found")
+        # Check 2: Verify correct branch (if we have branch mapping)
+        expected_branch = self._get_expected_branch()
+        if expected_branch and info.current_branch != expected_branch:
+            Logger.warn(f"Current branch: {info.current_branch}")
+            Logger.warn(f"Expected branch: {expected_branch}")
+            Logger.info(f"Switch to correct branch: git checkout {expected_branch}")
+            # Don't fail, just warn
+        else:
+            Logger.success(f"Branch: {info.current_branch}")
         
-        # Check 5: Verify backport approval
-        if not self._check_backport_approval():
+        # Check 3: Verify backport approval
+        if not info.is_approved:
             Logger.error("PR is not approved for backport")
-            Logger.info("Only approved PRs can be prepared for backport")
+            Logger.info("Run the full PR review workflow first:")
+            Logger.info(f"  python3 pr_workflow.py {self.pr_number}")
             return False
-            
         Logger.success("Backport status: ✅ APPROVED")
+        
+        # Check 4: Check if already has backport directive
+        if self._has_backport_directive():
+            Logger.warn(f"PR already has backport directive for {self.target_branch}")
+            response = input("Continue anyway? [y/N]: ").strip().lower()
+            if response != 'y':
+                return False
         
         return True
     
-    def _get_git_status(self) -> GitStatus:
-        """Get comprehensive git repository status"""
+    def _get_expected_branch(self) -> Optional[str]:
+        """Get the expected branch name from state mapping"""
         try:
-            # Check if we're in a git repo
-            result = subprocess.run(['git', 'rev-parse', '--git-dir'], 
-                                  capture_output=True, text=True)
-            is_repo = result.returncode == 0
-            
-            if not is_repo:
-                return GitStatus(False, False, "", False, 0, "")
-            
-            # Get repository root
-            result = subprocess.run(['git', 'rev-parse', '--show-toplevel'], 
-                                  capture_output=True, text=True)
-            repo_root = result.stdout.strip() if result.returncode == 0 else ""
-            
-            # Check if working directory is clean
-            result = subprocess.run(['git', 'status', '--porcelain'], 
-                                  capture_output=True, text=True)
-            is_clean = len(result.stdout.strip()) == 0
-            
-            # Get current branch
-            result = subprocess.run(['git', 'branch', '--show-current'], 
-                                  capture_output=True, text=True)
-            current_branch = result.stdout.strip() if result.returncode == 0 else ""
-            
-            # Check upstream and commits ahead
-            result = subprocess.run(['git', 'status', '-b', '--porcelain'], 
-                                  capture_output=True, text=True)
-            has_upstream = "..." in result.stdout
-            commits_ahead = 0
-            
-            if has_upstream:
-                # Parse commits ahead from status
-                for line in result.stdout.split('\n'):
-                    if line.startswith('##') and 'ahead' in line:
-                        match = re.search(r'ahead (\d+)', line)
-                        if match:
-                            commits_ahead = int(match.group(1))
-            
-            return GitStatus(is_repo, is_clean, current_branch, has_upstream, commits_ahead, repo_root)
-            
-        except Exception as e:
-            Logger.error(f"Error getting git status: {e}")
-            return GitStatus(False, False, "", False, 0, "")
-    
-    def _show_git_status(self):
-        """Display current git status for user"""
-        try:
-            result = subprocess.run(['git', 'status'], capture_output=True, text=True)
-            if result.returncode == 0:
-                print(result.stdout)
+            mapping_file = self.state_dir / "pr-branch-mapping.json"
+            if mapping_file.exists():
+                with open(mapping_file, 'r') as f:
+                    mapping = json.load(f)
+                    return mapping.get(self.pr_number)
         except Exception:
             pass
+        return None
     
     def _check_backport_approval(self) -> bool:
-        """Check if PR is approved for backport"""
+        """Check if PR is approved for backport from assessment"""
         try:
+            # Check in run directories first
+            runs_dir = self.context_dir / "runs"
+            if runs_dir.exists():
+                for run_dir in sorted(runs_dir.glob("run-*"), reverse=True):
+                    backport_file = run_dir / "context" / f"pr-{self.pr_number}" / "backport-assessment.json"
+                    if backport_file.exists():
+                        with open(backport_file, 'r') as f:
+                            data = json.load(f)
+                            return data.get('decision') == 'APPROVE'
+            
+            # Fallback to context directory
             backport_file = self.context_dir / "context" / f"pr-{self.pr_number}" / "backport-assessment.json"
-            if not backport_file.exists():
-                return False
+            if backport_file.exists():
+                with open(backport_file, 'r') as f:
+                    data = json.load(f)
+                return data.get('decision') == 'APPROVE'
                 
-            with open(backport_file, 'r') as f:
-                data = json.load(f)
-                
-            return data.get('decision') == 'APPROVE'
-            
         except Exception as e:
-            Logger.error(f"Error checking backport approval: {e}")
-            return False
+            Logger.warn(f"Could not check backport approval: {e}")
+        
+        return False
     
-    def _analyze_commits(self) -> List[CommitInfo]:
-        """Analyze commits in the current PR branch"""
+    def _has_backport_directive(self) -> bool:
+        """Check if commit already has backport directive"""
         try:
-            Logger.info("Analyzing commits in PR branch...")
-            
-            # Get commits that are in current branch but not in main
             result = subprocess.run([
-                'git', 'log', '--oneline', '--reverse', 'main..HEAD'
+                "git", "log", "--format=%B", "-n", "1"
             ], capture_output=True, text=True)
             
-            if result.returncode != 0:
-                Logger.error("Error getting commit history")
-                return []
+            if result.returncode == 0:
+                commit_message = result.stdout
+                return f"Auto-cherry-pick to {self.target_branch}" in commit_message
             
-            commit_lines = [line for line in result.stdout.strip().split('\n') if line]
-            
-            if not commit_lines:
-                Logger.warn("No commits found ahead of main branch")
-                return []
-            
-            Logger.success(f"Commits to squash: {len(commit_lines)} commits")
-            print()
-            Logger.info("📋 Current commits:")
-            
-            commits = []
-            for line in commit_lines:
-                hash_part = line.split(' ', 1)[0]
-                message_part = line.split(' ', 1)[1] if ' ' in line else ''
-                
-                # Get detailed commit info
-                result = subprocess.run([
-                    'git', 'show', '--format=%an|%ad', '--no-patch', hash_part
-                ], capture_output=True, text=True)
-                
-                author = "Unknown"
-                date = "Unknown"
-                if result.returncode == 0:
-                    parts = result.stdout.strip().split('|')
-                    if len(parts) >= 2:
-                        author = parts[0]
-                        date = parts[1]
-                
-                commits.append(CommitInfo(hash_part, message_part, author, date))
-                print(f"  {hash_part} {message_part}")
-            
-            print()
-            return commits
-            
-        except Exception as e:
-            Logger.error(f"Error analyzing commits: {e}")
-            return []
-    
-    def _create_backup(self) -> bool:
-        """Create backup branch before making changes"""
-        try:
-            Logger.info(f"Creating backup branch: {self.backup_branch}")
-            
-            # Delete existing backup if present
-            subprocess.run(['git', 'branch', '-D', self.backup_branch], 
-                          capture_output=True)
-            
-            # Create new backup
-            result = subprocess.run([
-                'git', 'checkout', '-b', self.backup_branch
-            ], capture_output=True, text=True)
-            
-            if result.returncode != 0:
-                Logger.error(f"Failed to create backup branch: {result.stderr}")
-                return False
-            
-            # Switch back to original branch
-            result = subprocess.run([
-                'git', 'checkout', self.expected_branch
-            ], capture_output=True, text=True)
-            
-            if result.returncode != 0:
-                Logger.error(f"Failed to switch back to {self.expected_branch}")
-                return False
-            
-            Logger.success(f"Backup created: {self.backup_branch}")
-            return True
-            
-        except Exception as e:
-            Logger.error(f"Error creating backup: {e}")
-            return False
-    
-    def _interactive_squash(self, commits: List[CommitInfo]) -> bool:
-        """Interactive commit squashing with preview"""
-        Logger.info("🔄 Preparing to squash commits...")
-        
-        if len(commits) == 1:
-            Logger.info("Only one commit found - no squashing needed")
-            return True
-        
-        # Generate commit message using existing system
-        commit_message = self._generate_commit_message()
-        if not commit_message:
-            Logger.error("Failed to generate commit message")
-            return False
-        
-        print()
-        Logger.info("📝 Generated squashed commit message:")
-        self._show_commit_message_preview(commit_message)
-        print()
-        
-        # Confirm squashing
-        response = input("Squash commits with this message? [y/N]: ").strip().lower()
-        if response != 'y':
-            Logger.warn("Squashing cancelled by user")
-            return False
-        
-        # Perform the squash
-        return self._perform_squash(commits, commit_message)
-    
-    def _generate_commit_message(self) -> Optional[str]:
-        """Generate commit message using existing commit message generator"""
-        try:
-            # Check if we have a generated commit message from the workflow
-            pr_context_dir = self.context_dir / "context" / f"pr-{self.pr_number}"
-            
-            # Look for existing commit message in various locations
-            possible_files = [
-                pr_context_dir / "commit-message.txt",
-                pr_context_dir / "final-commit-message.txt",
-                self.context_dir / "logs" / f"claude-response-commit-message-{self.pr_number}.txt"
-            ]
-            
-            for file_path in possible_files:
-                if file_path.exists():
-                    with open(file_path, 'r') as f:
-                        content = f.read().strip()
-                        if content:
-                            Logger.success(f"Found existing commit message: {file_path.name}")
-                            return content
-            
-            # Fallback: generate simple message from current commits
-            Logger.warn("No existing commit message found, generating basic message")
-            return self._generate_basic_commit_message()
-            
-        except Exception as e:
-            Logger.error(f"Error generating commit message: {e}")
-            return None
-    
-    def _generate_basic_commit_message(self) -> str:
-        """Generate basic commit message from current commits"""
-        try:
-            # Get first commit message as base
-            result = subprocess.run([
-                'git', 'log', '--format=%s', '-1', 'HEAD'
-            ], capture_output=True, text=True)
-            
-            if result.returncode == 0 and result.stdout.strip():
-                base_message = result.stdout.strip()
-                return f"{base_message}\n\nSquashed from PR #{self.pr_number}"
-            else:
-                return f"feat: Changes from PR #{self.pr_number}"
-                
         except Exception:
-            return f"feat: Changes from PR #{self.pr_number}"
+            pass
+        return False
     
-    def _show_commit_message_preview(self, message: str):
-        """Display commit message in a nice preview format"""
-        lines = message.split('\n')
-        max_width = max(len(line) for line in lines) if lines else 50
-        box_width = min(max_width + 4, 80)
-        
-        print("┌" + "─" * (box_width - 2) + "┐")
-        for line in lines:
-            padding = box_width - len(line) - 4
-            print(f"│ {line}" + " " * padding + " │")
-        print("└" + "─" * (box_width - 2) + "┘")
-    
-    def _perform_squash(self, commits: List[CommitInfo], message: str) -> bool:
-        """Perform the actual git squash operation"""
+    def _update_commit_message(self, info: BackportInfo) -> bool:
+        """Update the git commit message with backport directive"""
         try:
-            Logger.info("🔄 Squashing commits...")
-            
-            # Reset to main and then apply all changes as single commit
-            result = subprocess.run([
-                'git', 'reset', '--soft', 'main'
-            ], capture_output=True, text=True)
-            
-            if result.returncode != 0:
-                Logger.error(f"Failed to soft reset to main: {result.stderr}")
-                return False
-            
-            # Commit all changes with new message
-            result = subprocess.run([
-                'git', 'commit', '--no-verify', '-m', message
-            ], capture_output=True, text=True)
-            
-            if result.returncode != 0:
-                Logger.error(f"Failed to create squashed commit: {result.stderr}")
-                return False
-            
-            Logger.success("Commits squashed successfully")
-            return True
-            
-        except Exception as e:
-            Logger.error(f"Error performing squash: {e}")
-            return False
-    
-    def _add_backport_directive(self) -> bool:
-        """Add backport directive to the commit message"""
-        try:
-            Logger.info("📝 Adding backport directive...")
+            Logger.info("Adding backport directive to git commit message...")
             
             # Get current commit message
             result = subprocess.run([
-                'git', 'log', '--format=%B', '-1', 'HEAD'
-            ], capture_output=True, text=True)
-            
-            if result.returncode != 0:
-                Logger.error("Failed to get current commit message")
-                return False
+                "git", "log", "--format=%B", "-n", "1"
+            ], capture_output=True, text=True, check=True)
             
             current_message = result.stdout.strip()
             
-            # Add backport directive
-            backport_directive = f"\n\nAuto-cherry-pick to 1.0.x\nFixes #{self.pr_number}"
-            updated_message = current_message + backport_directive
+            # Prepare backport text
+            backport_text = f"Auto-cherry-pick to {self.target_branch}\nFixes #{self.pr_number}"
             
-            print()
-            Logger.info("📋 Updated commit message with backport directive:")
-            self._show_commit_message_preview(updated_message)
-            print()
+            # Check if it already exists
+            if f"Auto-cherry-pick to {self.target_branch}" in current_message:
+                Logger.warn("Backport directive already exists in commit message")
+                return True
             
-            # Confirm addition
-            response = input("Apply backport directive? [y/N]: ").strip().lower()
+            # Add to commit message (remove trailing whitespace first)
+            current_message = current_message.rstrip()
+            separator = "\n\n" if current_message else ""
+            new_message = f"{current_message}{separator}{backport_text}"
+            
+            # Show preview
+            Logger.info("📝 Will update commit message to:")
+            print("┌" + "─" * 60 + "┐")
+            for line in new_message.split('\n'):
+                truncated_line = line[:56] + "..." if len(line) > 56 else line
+                print(f"│ {truncated_line:<58} │")
+            print("└" + "─" * 60 + "┘")
+            
+            # Confirm
+            response = input(f"\nUpdate commit message for PR #{self.pr_number}? [y/N]: ").strip().lower()
             if response != 'y':
-                Logger.warn("Backport directive cancelled by user")
+                Logger.warn("Operation cancelled by user")
                 return False
             
-            # Amend commit with updated message
+            # Update commit message using git commit --amend
             result = subprocess.run([
-                'git', 'commit', '--amend', '--no-verify', '-m', updated_message
-            ], capture_output=True, text=True)
+                "git", "commit", "--amend", "-m", new_message
+            ], capture_output=True, text=True, check=True)
             
-            if result.returncode != 0:
-                Logger.error(f"Failed to amend commit: {result.stderr}")
-                return False
-            
-            Logger.success("Backport directive added successfully")
+            Logger.success(f"Backport directive added to commit message")
             return True
             
+        except subprocess.CalledProcessError as e:
+            Logger.error(f"Failed to update commit message: {e}")
+            if e.stderr:
+                Logger.error(f"Error details: {e.stderr}")
+            return False
         except Exception as e:
-            Logger.error(f"Error adding backport directive: {e}")
+            Logger.error(f"Error updating commit message: {e}")
             return False
 
 
 def main():
     """Main entry point"""
-    if len(sys.argv) != 2:
-        print("Usage: python3 prepare_backport.py <pr_number>")
-        print("Example: python3 prepare_backport.py 3920")
+    if len(sys.argv) < 2:
+        print("Usage: python3 prepare_backport.py <pr_number> [target_branch]")
+        print("Examples:")
+        print("  python3 prepare_backport.py 4102           # Backport to 1.0.x")
+        print("  python3 prepare_backport.py 4102 1.1.x     # Backport to 1.1.x")
         sys.exit(1)
     
     pr_number = sys.argv[1]
+    target_branch = sys.argv[2] if len(sys.argv) > 2 else "1.0.x"
     
     # Validate PR number
     if not pr_number.isdigit():
         Logger.error(f"Invalid PR number: {pr_number}")
         sys.exit(1)
     
-    preparer = BackportPreparer(pr_number)
+    preparer = BackportPreparer(pr_number, target_branch)
     success = preparer.run()
     
     sys.exit(0 if success else 1)
