@@ -294,6 +294,16 @@ class EnhancedReportGenerator:
                         Logger.error("❌ AI solution assessment failed - Claude Code returned placeholder data")
                         Logger.error("❌ Cannot continue with incomplete AI analysis")
                         raise RuntimeError("AI solution assessment failed - no fallbacks allowed")
+                    # Also check for severely incomplete data (missing most fields)
+                    expected_fields = ['scope_analysis', 'architecture_impact', 'implementation_quality', 
+                                     'breaking_changes_assessment', 'testing_adequacy', 'documentation_completeness',
+                                     'solution_fitness', 'risk_factors', 'code_quality_score', 
+                                     'complexity_justification', 'final_complexity_score', 'recommendations']
+                    present_fields = [f for f in expected_fields if f in data and data[f]]
+                    if len(present_fields) < 8:  # Less than 2/3 of fields present
+                        Logger.error(f"❌ AI solution assessment incomplete - only {len(present_fields)}/{len(expected_fields)} fields have data")
+                        Logger.error("❌ Cannot continue with severely incomplete AI analysis")
+                        raise RuntimeError(f"AI solution assessment failed - only {len(present_fields)} fields returned")
                     return data
             else:
                 Logger.error(f"❌ AI solution assessment failed: {result.stderr}")

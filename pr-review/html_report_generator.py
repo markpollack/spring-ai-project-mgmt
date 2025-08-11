@@ -149,17 +149,35 @@ class LowHangingFruitReportGenerator:
         changes_file = pr_dir / "file-changes.json"
         backport_file = pr_dir / "backport-assessment.json"
         
-        if not all(f.exists() for f in [pr_data_file, risk_file, changes_file]):
-            print(f"⚠️  Missing data files for PR #{pr_number}")
+        # At minimum, we need pr-data to show something
+        if not pr_data_file.exists():
+            print(f"⚠️  No PR data file for PR #{pr_number}, skipping")
             return None
             
-        # Load JSON data
+        # Load PR data (required)
         with open(pr_data_file) as f:
             pr_data = json.load(f)
-        with open(risk_file) as f:
-            risk_data = json.load(f)
-        with open(changes_file) as f:
-            file_changes = json.load(f)
+        
+        # Load risk assessment (optional - use defaults if missing)
+        if risk_file.exists():
+            with open(risk_file) as f:
+                risk_data = json.load(f)
+        else:
+            print(f"⚠️  Missing risk assessment for PR #{pr_number}, using defaults")
+            risk_data = {
+                "critical_issues": [],
+                "important_issues": [],
+                "risk_factors": [],
+                "positive_findings": ["Risk assessment unavailable"]
+            }
+        
+        # Load file changes (optional - use empty if missing)
+        if changes_file.exists():
+            with open(changes_file) as f:
+                file_changes = json.load(f)
+        else:
+            print(f"⚠️  Missing file changes for PR #{pr_number}, using empty list")
+            file_changes = []
             
         # Load backport assessment if available
         backport_data = {}

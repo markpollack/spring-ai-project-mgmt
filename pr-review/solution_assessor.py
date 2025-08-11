@@ -626,6 +626,27 @@ class AIPoweredSolutionAssessor:
                 missing_fields = [field for field in required_fields if field not in ai_data]
                 if missing_fields:
                     Logger.warn(f"⚠️  Missing fields in assessment: {missing_fields}")
+                    # If more than 3 fields are missing, treat as incomplete response
+                    if len(missing_fields) > 3:
+                        Logger.error(f"❌ AI returned incomplete data - {len(missing_fields)} of {len(required_fields)} fields missing")
+                        pr_data = context_data.get('pr_data', {})
+                        pr_number = pr_data.get('number', 'unknown')
+                        self._log_ai_failure(pr_number, "solution_assessment", f"Incomplete data: missing {len(missing_fields)} fields", str(ai_data))
+                        # Use minimal fallback that will be detected as incomplete
+                        ai_data = {
+                            'scope_analysis': 'Assessment unavailable',
+                            'architecture_impact': [],
+                            'implementation_quality': [],
+                            'breaking_changes_assessment': [],
+                            'testing_adequacy': [],
+                            'documentation_completeness': [],
+                            'solution_fitness': 'Assessment unavailable',
+                            'risk_factors': [],
+                            'code_quality_score': 5,
+                            'complexity_justification': 'Assessment unavailable',
+                            'final_complexity_score': 5,
+                            'recommendations': []
+                        }
                 
                 Logger.success(f"✅ Solution assessment parsing completed with {len(ai_data)} fields")
             
