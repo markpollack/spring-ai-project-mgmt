@@ -38,7 +38,7 @@ class RunSpecificWorkflowConfig(WorkflowConfig):
         self.script_dir = script_dir
         self.run_dir = run_dir
         self.spring_ai_repo = "spring-projects/spring-ai"
-        self.upstream_remote = "upstream"
+        self.upstream_remote = "origin"  # Fixed: spring-ai uses 'origin' not 'upstream'
         self.main_branch = "main"
     
     @property
@@ -366,7 +366,7 @@ class BatchPRWorkflow:
                 result.workflow_phase = "report_generation"
                 result.phases_completed = ["report_generation"]
             else:
-                # Run complete workflow
+                # Run complete workflow with batch mode enabled
                 success = self.workflow.run_complete_workflow(
                     pr_number=pr_number,
                     skip_squash=False,
@@ -375,7 +375,9 @@ class BatchPRWorkflow:
                     auto_resolve=True,  # Use intelligent conflict resolution
                     force=False,
                     generate_report=True,
-                    dry_run=self.config.dry_run
+                    dry_run=self.config.dry_run,
+                    batch_mode=True,  # Enable batch mode for uninterrupted execution
+                    skip_auth_check=True  # Already checked at batch level
                 )
                 result.workflow_phase = "complete_workflow"
                 result.phases_completed = ["setup", "checkout", "build", "squash", "rebase", "report", "tests"]

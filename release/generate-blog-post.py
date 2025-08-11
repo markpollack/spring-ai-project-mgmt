@@ -35,17 +35,17 @@ from dataclasses import dataclass
 # Color logging utility
 class Logger:
     @staticmethod
-    def info(msg): print(f"\\033[34m[INFO]\\033[0m {msg}")
+    def info(msg): print(f"\033[34m[INFO]\033[0m {msg}")
     @staticmethod
-    def success(msg): print(f"\\033[32m[SUCCESS]\\033[0m {msg}")
+    def success(msg): print(f"\033[32m[SUCCESS]\033[0m {msg}")
     @staticmethod
-    def warn(msg): print(f"\\033[33m[WARN]\\033[0m {msg}")
+    def warn(msg): print(f"\033[33m[WARN]\033[0m {msg}")
     @staticmethod
-    def error(msg): print(f"\\033[31m[ERROR]\\033[0m {msg}")
+    def error(msg): print(f"\033[31m[ERROR]\033[0m {msg}")
     @staticmethod
-    def debug(msg): print(f"\\033[36m[DEBUG]\\033[0m {msg}")
+    def debug(msg): print(f"\033[36m[DEBUG]\033[0m {msg}")
     @staticmethod
-    def bold(msg): print(f"\\033[1m{msg}\\033[0m")
+    def bold(msg): print(f"\033[1m{msg}\033[0m")
 
 @dataclass
 class ReleaseData:
@@ -54,8 +54,10 @@ class ReleaseData:
     publish_date: str
     total_commits: int = 0
     bug_fixes: int = 0
-    improvements: int = 0
+    new_features: int = 0
+    documentation: int = 0
     dependency_upgrades: int = 0
+    other_improvements: int = 0
     contributors: List[str] = None
     key_highlights: List[str] = None
     github_release_url: str = ""
@@ -76,7 +78,7 @@ class SpringAIBlogGenerator:
         self.script_dir = Path(__file__).parent
         self.spring_ai_repo = Path("/home/mark/projects/spring-ai")
         self.website_content_repo = self.script_dir / "repos" / "spring-website-content"
-        self.output_file = self.config.get('output_file', f'spring-ai-{version.replace(".", "-")}-available-now.md')
+        self.output_file = self.config.get('output_file') or f'spring-ai-{version.replace(".", "-")}-available-now.md'
         
     def generate_blog_post(self) -> bool:
         """Generate the complete blog post"""
@@ -101,7 +103,7 @@ class SpringAIBlogGenerator:
         # Write blog post
         if self.config.get('dry_run'):
             Logger.info("🧪 DRY RUN - Generated blog post content:")
-            Logger.bold("\\n" + "=" * 60)
+            Logger.bold("\n" + "=" * 60)
             print(blog_content)
             Logger.bold("=" * 60)
             Logger.info("👆 Remove --dry-run to write the actual file")
@@ -125,11 +127,13 @@ class SpringAIBlogGenerator:
             release_data.github_release_url = github_url
             release_data.total_commits = commit_count
             
-            # Analyze commit types (simplified version)
+            # Analyze commit types from RELEASE_NOTES.md
             commit_analysis = self._analyze_commits()
             release_data.bug_fixes = commit_analysis.get('bug_fixes', 0)
-            release_data.improvements = commit_analysis.get('improvements', 0) 
+            release_data.new_features = commit_analysis.get('new_features', 0)
+            release_data.documentation = commit_analysis.get('documentation', 0)
             release_data.dependency_upgrades = commit_analysis.get('dependency_upgrades', 0)
+            release_data.other_improvements = commit_analysis.get('other_improvements', 0)
             
             # Get contributors if requested
             if self.config.get('include_contributors'):
@@ -175,20 +179,100 @@ class SpringAIBlogGenerator:
             return f"https://github.com/spring-projects/spring-ai/releases/tag/v{self.version}", 0
     
     def _estimate_commit_count(self) -> int:
-        """Estimate commit count for the release"""
-        # This is a simplified version - in practice, would integrate with 
-        # the release notes generator or analyze git log
-        return 25  # Default estimate for point releases
+        """Get total commit count from RELEASE_NOTES.md"""
+        try:
+            release_notes_path = Path("RELEASE_NOTES.md")
+            if not release_notes_path.exists():
+                return 25  # Default estimate
+            
+            with open(release_notes_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            
+            # Extract total from highlights line
+            for line in content.split('\n'):
+                if 'new features' in line and 'bug fixes' in line:
+                    import re
+                    numbers = re.findall(r'(\d+)', line)
+                    if numbers:
+                        # Sum all the numbers: new features + bug fixes + doc improvements + other improvements
+                        total = sum(int(n) for n in numbers)
+                        Logger.info(f"Extracted total changes from RELEASE_NOTES.md: {total}")
+                        return total
+            
+            return 25  # Fallback
+        except Exception as e:
+            Logger.warn(f"Could not extract commit count: {e}")
+            return 25
     
     def _analyze_commits(self) -> Dict[str, int]:
-        """Analyze commit types (simplified version)"""
-        # This would integrate with the release notes generator
-        # For now, return reasonable estimates for a point release
-        return {
-            'bug_fixes': 15,
-            'improvements': 8, 
-            'dependency_upgrades': 2
-        }
+        """Analyze commit types from RELEASE_NOTES.md"""
+        try:
+            release_notes_path = Path("RELEASE_NOTES.md")
+            if not release_notes_path.exists():
+                Logger.warn("RELEASE_NOTES.md not found, using defaults")
+                return {
+                    'new_features': 8,
+                    'bug_fixes': 15,
+                    'documentation': 5,
+                    'dependency_upgrades': 2
+                }
+            
+            with open(release_notes_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            
+            # Extract numbers from the highlights section
+            bug_fixes = 0
+            new_features = 0
+            documentation = 0
+            other_improvements = 0
+            dependency_upgrades = 0
+            
+            # Look for the highlights line with numbers
+            for line in content.split('\n'):
+                if 'new features' in line and 'bug fixes' in line:
+                    # Parse: "This release includes 24 new features, 50 bug fixes, 45 documentation improvements, 32 other improvements."
+                    import re
+                    numbers = re.findall(r'(\d+)\s+(\w+(?:\s+\w+)*)', line)
+                    for count, desc in numbers:
+                        count = int(count)
+                        if 'new features' in desc:
+                            new_features = count
+                        elif 'bug fixes' in desc:
+                            bug_fixes = count
+                        elif 'documentation improvements' in desc:
+                            documentation = count
+                        elif 'other improvements' in desc:
+                            other_improvements = count
+                    break
+            
+            # Scan for dependency upgrades in the content
+            dependency_section_found = False
+            for line in content.split('\n'):
+                if '## 🔄 Dependency Upgrades' in line or '## Dependency Upgrades' in line:
+                    dependency_section_found = True
+                elif dependency_section_found and line.startswith('##'):
+                    break
+                elif dependency_section_found and line.startswith('-'):
+                    dependency_upgrades += 1
+            
+            Logger.info(f"Extracted: {new_features} new features, {bug_fixes} bug fixes, {documentation} documentation, {dependency_upgrades} dependency upgrades")
+            
+            return {
+                'new_features': new_features,
+                'bug_fixes': bug_fixes,
+                'documentation': documentation,
+                'dependency_upgrades': dependency_upgrades,
+                'other_improvements': other_improvements
+            }
+            
+        except Exception as e:
+            Logger.warn(f"Could not parse RELEASE_NOTES.md: {e}, using defaults")
+            return {
+                'new_features': 8,
+                'bug_fixes': 15,
+                'documentation': 5,
+                'dependency_upgrades': 2
+            }
     
     def _get_contributors(self) -> List[str]:
         """Get list of contributors from RELEASE_NOTES.md"""
@@ -209,11 +293,11 @@ class SpringAIBlogGenerator:
             for line in lines:
                 if "🙏 Contributors" in line and line.startswith('##'):
                     in_contributors_section = True
-                    Logger.debug(f"Found contributors section: {line}")
+                    if self.config.get('verbose'): Logger.debug(f"Found contributors section: {line}")
                     continue
                 elif in_contributors_section and (line.startswith('##') or line.startswith('#')):
                     # End of contributors section
-                    Logger.debug(f"End of contributors section at: {line}")
+                    if self.config.get('verbose'): Logger.debug(f"End of contributors section at: {line}")
                     break
                 elif in_contributors_section and line.strip():
                     # Extract contributor name from various formats
@@ -228,9 +312,9 @@ class SpringAIBlogGenerator:
                             contributor = line[start_idx:end_idx].strip()
                             if contributor:
                                 contributors.append(contributor)
-                                Logger.debug(f"Added contributor: {contributor}")
+                                if self.config.get('verbose'): Logger.debug(f"Added contributor: {contributor}")
                         except Exception as e:
-                            Logger.debug(f"Error parsing contributor line: {line} - {e}")
+                            if self.config.get('verbose'): Logger.debug(f"Error parsing contributor line: {line} - {e}")
                     elif line.startswith('- '):
                         # Format: - Name (username)
                         contributor = line[2:].split('(')[0].strip()
@@ -253,12 +337,20 @@ class SpringAIBlogGenerator:
         """Generate key highlights for the release"""
         highlights = []
         
-        # Add highlights based on commit analysis
-        if release_data.bug_fixes > 10:
-            highlights.append(f"Significant stability improvements with {release_data.bug_fixes} bug fixes")
+        # Combine new features and other improvements for point release messaging
+        total_improvements = release_data.new_features + release_data.other_improvements
         
-        if release_data.improvements > 5:
-            highlights.append(f"Enhanced functionality with {release_data.improvements} improvements")
+        # Add highlights based on commit analysis
+        if total_improvements > 20:
+            highlights.append(f"Significant functionality enhancements with {total_improvements} improvements")
+        elif total_improvements > 10:
+            highlights.append(f"Enhanced functionality with {total_improvements} improvements")
+        
+        if release_data.bug_fixes > 10:
+            highlights.append(f"Major stability improvements with {release_data.bug_fixes} bug fixes")
+        
+        if release_data.documentation > 20:
+            highlights.append(f"Comprehensive documentation updates with {release_data.documentation} improvements")
             
         if release_data.dependency_upgrades > 0:
             highlights.append(f"Updated dependencies for better security and performance")
@@ -294,7 +386,7 @@ class SpringAIBlogGenerator:
             resources = self._generate_resources_section(release_data)
             
             # Combine all sections
-            blog_content = "\\n".join([
+            blog_content = "\n".join([
                 frontmatter,
                 opening,
                 release_summary,
@@ -324,21 +416,38 @@ author: markpollack
         return f'''
 On behalf of the Spring AI engineering team and everyone who has contributed, I'm happy to announce that Spring AI `{self.version}` has been released and is now available from Maven Central.
 
-This point release builds on the solid foundation of Spring AI 1.0 GA, delivering important stability improvements and bug fixes to enhance your AI application development experience.'''
+This point release delivers important stability improvements and bug fixes.'''
     
     
     def _generate_release_summary(self, release_data: ReleaseData) -> str:
         """Generate release summary section"""
-        total_changes = release_data.bug_fixes + release_data.improvements + release_data.dependency_upgrades
+        total_changes = release_data.bug_fixes + release_data.new_features + release_data.documentation + release_data.dependency_upgrades + release_data.other_improvements
+        
+        # Combine new features with other improvements for point release messaging
+        total_improvements = release_data.new_features + release_data.other_improvements
+        
+        summary_bullets = []
+        
+        if total_improvements > 0:
+            summary_bullets.append(f"- **Improvements**: {total_improvements} enhancements to expand capabilities and functionality")
+        
+        if release_data.bug_fixes > 0:
+            summary_bullets.append(f"- **Stability**: {release_data.bug_fixes} bug fixes addressing community-reported issues")
+        
+        if release_data.documentation > 0:
+            summary_bullets.append(f"- **Documentation**: {release_data.documentation} improvements to help developers")
+        
+        if release_data.dependency_upgrades > 0:
+            summary_bullets.append(f"- **Security**: {release_data.dependency_upgrades} dependency upgrades for enhanced security")
+        
+        bullets_text = "\n".join(summary_bullets)
         
         return f'''
 ## Release Summary
 
-This release includes [{total_changes} bug fixes, improvements, and dependency upgrades]({release_data.github_release_url}). The focus of this point release is on:
+This release includes [{total_changes} improvements, bug fixes, and documentation updates]({release_data.github_release_url}). The focus of this point release is on:
 
-- **Stability**: {release_data.bug_fixes} bug fixes addressing community-reported issues
-- **Performance**: {release_data.improvements} improvements for better application performance
-- **Security**: {release_data.dependency_upgrades} dependency upgrades for enhanced security
+{bullets_text}
 
 Thanks to all those who have contributed with issue reports and pull requests.'''
     
@@ -347,7 +456,7 @@ Thanks to all those who have contributed with issue reports and pull requests.''
         if not release_data.key_highlights:
             return ""
         
-        highlights_text = "\\n".join([f"- {highlight}" for highlight in release_data.key_highlights])
+        highlights_text = "\n".join([f"- {highlight}" for highlight in release_data.key_highlights])
         
         return f'''
 ## Key Highlights
@@ -380,9 +489,51 @@ If you're interested in contributing, check out the ["ideal for contribution" ta
     def _generate_whats_next(self, release_data: ReleaseData) -> str:
         """Generate what's next section"""
         return f'''
-## What's Next?
+## Looking Ahead: Spring AI 1.1 and Beyond
 
-The Spring AI team continues to work on exciting new features and improvements. Stay tuned for future releases that will bring even more capabilities to your AI applications.
+While version {self.version} focused on stability and bug fixes, the Spring AI team is working on new capabilities for version 1.1. However, with a rapidly evolving AI landscape and over 150 open pull requests to manage, we're being thoughtful about prioritization and would value community input on what matters most.
+
+Our [2025 roadmap diagram](https://claude.ai/public/artifacts/e211dc9e-249d-425d-abd6-9425b8a2bf16) provides key dates and shows our planning focus on Spring AI 2.0 with new Spring Boot 4 foundations. The roadmap is primarily date-driven to help the community understand timing, while indicating the major architectural changes we're preparing for the next generation of Spring AI.
+
+**Current Focus Areas for Spring AI 1.1:**
+
+Our roadmap includes a broad range of potential feature areas. Rather than overpromise, we want to share the full "menu" of what we're considering so the community can help us prioritize:
+
+**Core Infrastructure & Maintenance:**
+- Spring Boot 4 support and compatibility
+- CI/CD improvements (Google Vertex, Amazon testing gaps)
+- Issue triage and community PR integration
+- Kotlin null-safety improvements
+
+**AI Model Provider Enhancements:**
+- Chat vendor SDK updates (Azure OpenAI, Google Vertex migrations)
+- Enhanced chat vendor features (prompt caching, message batching, "thinking" models)
+- Non-chat API breadth (Responses API, Image API, Text-to-Speech, Realtime API)
+- Native JSON mode and structured output improvements
+
+**Advanced Capabilities:**
+- Model Context Protocol (MCP) integration and streaming support
+- Vector store improvements and hybrid search (beyond similarity search)
+- Enterprise guardrails and security features
+- Enhanced observability and monitoring
+- Chat memory enhancements and MemGPT-style implementations
+
+**Developer Experience:**
+- Evaluators and testing frameworks for AI applications
+- Agent frameworks and workflow helpers
+- Multi-client configuration improvements
+- API key rotation and supplier patterns
+
+**Emerging Areas:**
+- Agent-to-agent protocols and communication
+- Commercial MCP proxy solutions
+- GraphRAG and advanced retrieval patterns
+
+**Community Guidance Needed:**
+
+We can't tackle everything simultaneously, so community feedback on prioritization is invaluable. If any of these areas are critical to your use cases, please engage with us on [GitHub Issues](https://github.com/spring-projects/spring-ai/issues) or contribute pull requests.
+
+The team is also investing in AI-powered tooling to help manage our growing backlog more efficiently, but your input remains essential for steering the project's direction.
 
 Follow our progress on [GitHub](https://github.com/spring-projects/spring-ai) and join the conversation in our community channels.'''
     
@@ -406,11 +557,11 @@ Follow our progress on [GitHub](https://github.com/spring-projects/spring-ai) an
             Logger.info(f"📄 Content length: {len(content)} characters")
             
             # Show next steps
-            Logger.bold("\\n" + "=" * 60)
+            Logger.bold("\n" + "=" * 60)
             Logger.bold("📝 BLOG POST GENERATION COMPLETE")
             Logger.bold("=" * 60)
             Logger.info(f"📍 File location: {output_path.absolute()}")
-            Logger.info("\\n🔍 Next steps:")
+            Logger.info("\n🔍 Next steps:")
             Logger.info("   1. Review the generated content for accuracy")
             Logger.info("   2. Verify all links and version numbers")
             Logger.info("   3. Add any project-specific highlights")

@@ -868,6 +868,27 @@ class PRWorkflow:
                 Logger.debug(f"Branch {branch_name} doesn't exist, nothing to delete")
                 return True
             
+            # Check for and remove any worktrees using this branch
+            try:
+                worktree_result = self.git.run_git(["worktree", "list", "--porcelain"], capture_output=True)
+                if worktree_result.stdout:
+                    for line in worktree_result.stdout.strip().split('\n'):
+                        if line.startswith('branch ') and line.endswith(f"/{branch_name}"):
+                            # Found a worktree using this branch
+                            Logger.info(f"🔧 Found worktree using branch {branch_name}, removing it...")
+                            # Get the worktree path from the previous line
+                            lines = worktree_result.stdout.strip().split('\n')
+                            for i, l in enumerate(lines):
+                                if l == f"branch refs/heads/{branch_name}" and i > 0:
+                                    worktree_line = lines[i-1]
+                                    if worktree_line.startswith('worktree '):
+                                        worktree_path = worktree_line.replace('worktree ', '')
+                                        self.git.run_git(["worktree", "remove", worktree_path, "--force"])
+                                        Logger.info(f"✅ Removed worktree at {worktree_path}")
+                                        break
+            except Exception as worktree_error:
+                Logger.debug(f"Could not check/remove worktrees: {worktree_error}")
+            
             Logger.info(f"🗑️  Deleting PR branch: {branch_name}")
             self.git.run_git(["branch", "-D", branch_name])
             Logger.info(f"✅ Deleted PR branch: {branch_name}")
@@ -1002,6 +1023,24 @@ class PRWorkflow:
                 current_branch = self.git.run_git(["rev-parse", "--abbrev-ref", "HEAD"], capture_output=True).stdout.strip()
                 if current_branch != self.config.main_branch:
                     Logger.info(f"🔄 Switching from {current_branch} to main branch...")
+                    
+                    # Check for and abort any ongoing rebase/merge operations
+                    try:
+                        # Check if we're in the middle of a rebase
+                        rebase_head = self.config.spring_ai_dir / ".git" / "REBASE_HEAD"
+                        if rebase_head.exists():
+                            Logger.info("🔄 Found ongoing rebase - aborting it...")
+                            self.git.run_git(["rebase", "--abort"])
+                            Logger.info("✅ Aborted stuck rebase")
+                        
+                        # Check if we're in the middle of a merge
+                        merge_head = self.config.spring_ai_dir / ".git" / "MERGE_HEAD"
+                        if merge_head.exists():
+                            Logger.info("🔄 Found ongoing merge - aborting it...")
+                            self.git.run_git(["merge", "--abort"])
+                            Logger.info("✅ Aborted stuck merge")
+                    except Exception as abort_error:
+                        Logger.warn(f"Error aborting rebase/merge: {abort_error}")
                     
                     # Check for uncommitted changes before switching
                     try:
@@ -1210,6 +1249,11 @@ class PRWorkflow:
             Logger.info("Skipping commit squashing as requested")
             return True
         
+        # In dry-run mode, we can't actually squash since we didn't checkout the PR
+        if dry_run:
+            Logger.info("🎭 DRY RUN: Would squash commits for PR")
+            return True
+        
         Logger.info("Using intelligent squash script...")
         
         # Use the new intelligent squash script
@@ -1221,8 +1265,6 @@ class PRWorkflow:
         
         try:
             cmd = ["python3", str(squash_script), pr_number]
-            if dry_run:
-                cmd.append("--dry-run")
             
             Logger.info(f"Executing: {' '.join(cmd)}")
             result = subprocess.run(
@@ -1679,40 +1721,69 @@ File content with conflicts:"""
     
     
     def run_complete_workflow(self, pr_number: str, skip_squash: bool = False, skip_compile: bool = False, 
-                            skip_tests: bool = False, skip_docs: bool = False, auto_resolve: bool = False, force: bool = False, generate_report: bool = True, skip_commit_message: bool = False, resume_after_compile: bool = False, dry_run: bool = False) -> bool:
+                            skip_tests: bool = False, skip_docs: bool = False, auto_resolve: bool = False, force: bool = False, generate_report: bool = True, skip_commit_message: bool = False, resume_after_compile: bool = False, dry_run: bool = False, batch_mode: bool = False, skip_auth_check: bool = False) -> bool:
         """Run the complete PR workflow"""
         Logger.info(f"🚀 Starting complete PR review workflow for PR #{pr_number}")
         
         if dry_run:
             Logger.warn("DRY RUN MODE - No actual changes will be made")
         
+        if batch_mode:
+            Logger.info("🤖 BATCH MODE - Will continue on errors, no human intervention")
+        
+        # Check authentication before proceeding (unless skipped or in dry-run)
+        if not skip_auth_check and not dry_run:
+            from check_auth import AuthChecker
+            checker = AuthChecker()
+            Logger.info("🔐 Checking authentication and permissions...")
+            if not checker.run_all_checks(self.config.spring_ai_dir if self.config.spring_ai_dir.exists() else None):
+                if batch_mode:
+                    Logger.warn("⚠️  Authentication check failed (batch mode - continuing anyway)")
+                else:
+                    Logger.error("❌ Authentication check failed - please run 'gh auth login' or check git credentials")
+                    return False
+        
         # Phase 1: Setup repository (skip when resuming after manual fixes)
         if not resume_after_compile:
             if not self.setup_repository(dry_run):
-                Logger.error("❌ Repository setup failed")
-                return False
+                if batch_mode:
+                    Logger.warn("⚠️  Repository setup failed (batch mode - continuing)")
+                else:
+                    Logger.error("❌ Repository setup failed")
+                    return False
             
             # Phase 1b: Setup MCP SDK repository
             if not self.setup_mcp_sdk_repository(dry_run):
-                Logger.error("❌ MCP SDK repository setup failed")
-                return False
+                if batch_mode:
+                    Logger.warn("⚠️  MCP SDK repository setup failed (batch mode - continuing)")
+                else:
+                    Logger.error("❌ MCP SDK repository setup failed")
+                    return False
             
             # Phase 2: Checkout PR
             if not self.checkout_pr(pr_number, force, dry_run):
-                Logger.error("❌ PR checkout failed")
-                return False
+                if batch_mode:
+                    Logger.warn("⚠️  PR checkout failed (batch mode - continuing)")
+                else:
+                    Logger.error("❌ PR checkout failed")
+                    return False
         else:
             Logger.info("🔄 Resuming after manual compilation fixes - preserving current git state")
             Logger.info(f"💡 Working in current branch with manual fixes intact")
         
         # Phase 3: Build check
         # Skip compilation when resuming after manual fixes
-        effective_skip_compile = skip_compile or resume_after_compile
+        effective_skip_compile = skip_compile or resume_after_compile or batch_mode  # Skip in batch mode too
         if resume_after_compile:
             Logger.info("🔄 Resuming after manual compilation fixes - skipping compilation check")
+        elif batch_mode:
+            Logger.info("🤖 Batch mode - skipping interactive compilation fixes")
         if not self.run_build_check(pr_number, effective_skip_compile, dry_run):
-            Logger.error("❌ Build check failed")
-            return False
+            if batch_mode:
+                Logger.warn("⚠️  Build check failed (batch mode - continuing)")
+            else:
+                Logger.error("❌ Build check failed")
+                return False
         
         # Phase 4: Squash commits (mandatory for multi-commit PRs)
         # Skip squash when resuming to preserve manual fix commits
@@ -1720,15 +1791,21 @@ File content with conflicts:"""
         if resume_after_compile:
             Logger.info("🔄 Skipping squash to preserve manual compilation fix commits")
         if not self.squash_commits(pr_number, effective_skip_squash, dry_run):
-            Logger.error("❌ Squash commits failed - cannot proceed with multi-commit rebase")
-            return False
+            if batch_mode:
+                Logger.warn("⚠️  Squash commits failed (batch mode - continuing)")
+            else:
+                Logger.error("❌ Squash commits failed - cannot proceed with multi-commit rebase")
+                return False
         
         # Phase 4.5: Collect PR context for AI analysis
         if not skip_commit_message or generate_report:
             Logger.info("📋 Collecting PR context for AI analysis...")
             if not self.collect_pr_context(pr_number, dry_run):
-                Logger.error("❌ Context collection failed")
-                return False
+                if batch_mode:
+                    Logger.warn("⚠️  Context collection failed (batch mode - continuing)")
+                else:
+                    Logger.error("❌ Context collection failed")
+                    return False
         
         # Phase 4.6: Generate comprehensive commit message (DISABLED)
         # TODO: Fix commit message generation before re-enabling
@@ -1753,15 +1830,21 @@ File content with conflicts:"""
         
         # Phase 5: Rebase against upstream
         if not self.rebase_against_upstream(pr_number, auto_resolve, dry_run):
-            Logger.error("❌ Rebase failed with conflicts")
-            Logger.info("Resolve conflicts and run the workflow again")
-            return False
+            if batch_mode:
+                Logger.warn("⚠️  Rebase failed with conflicts (batch mode - continuing)")
+            else:
+                Logger.error("❌ Rebase failed with conflicts")
+                Logger.info("Resolve conflicts and run the workflow again")
+                return False
         
         # Phase 5.5: Build documentation if PR contains .adoc files
         # This happens after rebase/conflict resolution and compilation
         if not self.run_antora_docs_build(pr_number, skip_docs=skip_docs, dry_run=dry_run):
-            Logger.error("❌ Documentation build failed")
-            return False
+            if batch_mode:
+                Logger.warn("⚠️  Documentation build failed (batch mode - continuing)")
+            else:
+                Logger.error("❌ Documentation build failed")
+                return False
         
         # Phase 6: Generate PR Analysis Report (if requested)
         report_file = None
@@ -2358,6 +2441,7 @@ Examples:
                        help='Cleanup mode: full (remove everything including spring-ai repo) or light (keep spring-ai repo, remove generated files only)')
     parser.add_argument('--dry-run', action='store_true', help='Show what would be done without executing')
     parser.add_argument('--resume-after-compile', action='store_true', help='Resume workflow after manual compilation fixes (skips compilation check)')
+    parser.add_argument('--batch-mode', action='store_true', help='Run in batch mode (continue on errors, no human intervention, best-effort reporting)')
     
     args = parser.parse_args()
     
@@ -2420,7 +2504,8 @@ Examples:
             generate_report=not args.skip_report,
             skip_commit_message=args.skip_commit_message,
             resume_after_compile=args.resume_after_compile,
-            dry_run=args.dry_run
+            dry_run=args.dry_run,
+            batch_mode=args.batch_mode
         )
     
     sys.exit(0 if success else 1)
