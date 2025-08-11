@@ -411,16 +411,43 @@ The system now includes comprehensive debugging capabilities for AI analysis iss
 ```
 pr-review/
 ├── pr_workflow.py                 # 🎯 Main workflow orchestrator
-├── enhanced_report_generator.py   # AI-powered report generation
-├── commit_message_generator.py    # AI-powered commit message generation
-├── conflict_analyzer.py           # Conflict detection and analysis
-├── compilation_error_resolver.py  # AI-powered compilation fixing
-├── intelligent_squash.py          # Smart commit squashing
-├── templates/                     # Report and prompt templates
-├── context/                       # PR context data and analysis cache
-├── reports/                       # Generated analysis reports  
-├── plans/                         # Workflow plans and progress tracking
-└── spring-ai/                     # Isolated Spring AI repository workspace
+├── batch_pr_workflow.py           # Batch processing for multiple PRs
+├── prepare_backport.py            # Backport preparation script
+│
+├── AI Analysis Components:
+│   ├── ai_conversation_analyzer.py    # AI conversation analysis
+│   ├── ai_risk_assessor.py           # Security and risk assessment
+│   ├── solution_assessor.py          # Technical solution assessment
+│   ├── backport_assessor.py          # Backport candidate evaluation
+│   └── commit_message_generator.py   # AI-powered commit messages
+│
+├── Core Components:
+│   ├── enhanced_report_generator.py  # AI-powered report generation
+│   ├── html_report_generator.py      # HTML dashboard generation
+│   ├── pr_context_collector.py       # GitHub context collection
+│   ├── conflict_analyzer.py          # Conflict detection and analysis
+│   ├── compilation_error_resolver.py # AI-powered compilation fixing
+│   ├── intelligent_squash.py         # Smart commit squashing
+│   └── claude_code_wrapper.py        # Claude Code CLI integration
+│
+├── Supporting Files:
+│   ├── github_utils.py               # GitHub utility functions
+│   ├── animated_progress.py          # Progress animations
+│   ├── ai_failure_tracker.py         # Failure tracking/debugging
+│   └── claude_diagnostics.py         # System diagnostics
+│
+├── Directories:
+│   ├── templates/                    # Report and prompt templates
+│   ├── context/                      # PR context data and analysis cache
+│   ├── reports/                      # Generated analysis reports
+│   ├── plans/                        # Workflow plans and progress tracking
+│   │   ├── completed/               # Completed implementation plans
+│   │   ├── archived/                # Unimplemented plans
+│   │   ├── individual-prs/          # PR-specific analysis outputs
+│   │   └── progress/                # Implementation tracking
+│   ├── spring-ai/                    # Isolated Spring AI repository workspace
+│   ├── archived-scripts/             # Deprecated/outdated scripts
+│   └── logs/                         # Debug logs and Claude Code responses
 ```
 
 ## 🎯 Use Cases
@@ -557,9 +584,8 @@ logs/claude_process_tracking.log  # Process lifecycle monitoring
 #### Performance Diagnostic Tools
 ```bash
 # Validate performance optimizations
-python3 test_system_debug.py           # System debugging validation
-python3 test_fixed_solution_assessor.py # File access pattern testing
 python3 claude_diagnostics.py          # Comprehensive health check
+python3 test_claude_code_wrapper.py    # Claude Code integration testing
 ```
 
 These optimizations ensure reliable, fast, and cost-effective AI analysis for all PR review components.
@@ -634,8 +660,26 @@ python3 commit_message_generator.py 3386     # AI-powered commit message generat
 python3 intelligent_squash.py 3386           # Analyze and squash commits automatically
 python3 intelligent_squash.py --dry-run 3386 # Preview squash operations
 
+# Backport preparation for Spring AI automation
+python3 prepare_backport.py 4102             # Add backport directive to commit message
+python3 prepare_backport.py 4102 1.1.x       # Specify target branch (default: 1.0.x)
+
 # Test the Claude Code integration
 python3 test_claude_code_wrapper.py          # Comprehensive integration testing
+```
+
+### Backport Workflow
+The `prepare_backport.py` script prepares PRs for Spring AI's automated backport system:
+1. Verifies PR is approved for backport (from AI assessment)
+2. Adds "Auto-cherry-pick to X.X.x" and "Fixes #XXXX" to the git commit message
+3. Spring AI's automation detects this in the commit and creates backport PR when merged
+
+**Usage Example:**
+```bash
+cd spring-ai
+git checkout pr-branch-name
+python3 ../prepare_backport.py 4102
+# Type 'y' when prompted to update commit message
 ```
 
 ### Running with Custom Directories
