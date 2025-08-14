@@ -70,7 +70,7 @@ public class GitHubRestService {
     }
     
     /**
-     * Build search query string for GitHub API
+     * Build search query string for GitHub API (backward compatible)
      * @param owner Repository owner
      * @param repo Repository name
      * @param state Issue state (open/closed/all)
@@ -79,6 +79,23 @@ public class GitHubRestService {
      * @return Formatted search query string
      */
     public String buildSearchQuery(String owner, String repo, String state, List<String> labels, String labelMode) {
+        return buildSearchQuery(owner, repo, state, labels, labelMode, null, null, null);
+    }
+    
+    /**
+     * Build search query string for GitHub API with dashboard enhancements
+     * @param owner Repository owner
+     * @param repo Repository name
+     * @param state Issue state (open/closed/all)
+     * @param labels List of labels to filter by
+     * @param labelMode Label matching mode (any/all)
+     * @param sortBy Sort field (updated/created/comments/reactions)
+     * @param sortOrder Sort direction (desc/asc)
+     * @param maxIssues Maximum number of issues to collect (null for unlimited)
+     * @return Formatted search query string
+     */
+    public String buildSearchQuery(String owner, String repo, String state, List<String> labels, String labelMode,
+                                  String sortBy, String sortOrder, Integer maxIssues) {
         StringBuilder query = new StringBuilder();
         query.append("repo:").append(owner).append("/").append(repo);
         query.append(" is:issue");
@@ -103,5 +120,49 @@ public class GitHubRestService {
         }
         
         return query.toString();
+    }
+    
+    /**
+     * Execute GitHub search with sorting and pagination support
+     * @param searchQuery The formatted search query string
+     * @param sortBy Sort field (updated/created/comments/reactions)
+     * @param sortOrder Sort direction (desc/asc)
+     * @param perPage Number of issues per page (max 100)
+     * @param page Page number (1-based)
+     * @return JsonNode containing search results
+     */
+    public JsonNode searchIssues(String searchQuery, String sortBy, String sortOrder, int perPage, int page) {
+        try {
+            String uri = "https://api.github.com/search/issues?q={query}&sort={sort}&order={order}&per_page={perPage}&page={page}";
+            String response = restClient.get()
+                .uri(uri, searchQuery, sortBy, sortOrder, perPage, page)
+                .retrieve()
+                .body(String.class);
+            
+            return objectMapper.readTree(response);
+        } catch (Exception e) {
+            logger.error("Failed to search issues: {}", e.getMessage());
+            return objectMapper.createObjectNode();
+        }
+    }
+    
+    /**
+     * Get total issue count with search parameters
+     * @param searchQuery The formatted search query string
+     * @return Total number of issues matching the query
+     */
+    public int getTotalIssueCount(String searchQuery) {
+        try {
+            String response = restClient.get()
+                .uri("https://api.github.com/search/issues?q={query}", searchQuery)
+                .retrieve()
+                .body(String.class);
+            
+            JsonNode searchResult = objectMapper.readTree(response);
+            return searchResult.path("total_count").asInt(0);
+        } catch (Exception e) {
+            logger.error("Failed to get total issue count: {}", e.getMessage());
+            return 0;
+        }
     }
 }

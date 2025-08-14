@@ -61,20 +61,32 @@ public class IssueCollectionService {
     }
     
     public CollectionResult collectIssues(CollectionRequest request) throws Exception {
-        String[] repoParts = request.repository().split("/");
+        // Validate and apply defaults to the request
+        CollectionRequest validatedRequest = request.validated();
+        
+        String[] repoParts = validatedRequest.repository().split("/");
         String owner = repoParts[0];
         String repoName = repoParts[1];
         
-        // Get total issue count using search query
+        // Build search query with enhanced parameters for dashboard support
         String searchQuery = buildSearchQuery(owner, repoName, 
-            request.issueState(), request.labelFilters(), request.labelMode());
-        int totalIssues = graphQLService.getSearchIssueCount(searchQuery);
-        logger.info("Total issues found with filters: {}", totalIssues);
-        logger.info("Search query: {}", searchQuery);
+            validatedRequest.issueState(), validatedRequest.labelFilters(), validatedRequest.labelMode());
         
-        if (request.dryRun()) {
-            logger.info("DRY RUN: Would collect {} issues in batches of {}", totalIssues, request.batchSize());
-            return new CollectionResult(totalIssues, 0, "dry-run", List.of());
+        // Get total issue count, but respect maxIssues limit for dashboard use cases
+        int totalAvailableIssues = graphQLService.getSearchIssueCount(searchQuery);
+        int effectiveTotal = validatedRequest.maxIssues() != null ? 
+            Math.min(totalAvailableIssues, validatedRequest.maxIssues()) : totalAvailableIssues;
+        
+        logger.info("Total issues available: {}, effective collection target: {}", totalAvailableIssues, effectiveTotal);
+        logger.info("Search query: {}", searchQuery);
+        if (validatedRequest.maxIssues() != null) {
+            logger.info("Dashboard mode: limiting to {} issues, sorted by {} {}", 
+                validatedRequest.maxIssues(), validatedRequest.sortBy(), validatedRequest.sortOrder());
+        }
+        
+        if (validatedRequest.dryRun()) {
+            logger.info("DRY RUN: Would collect {} issues in batches of {}", effectiveTotal, validatedRequest.batchSize());
+            return new CollectionResult(totalAvailableIssues, 0, "dry-run", List.of());
         }
         
         // Setup output directory
@@ -86,13 +98,13 @@ public class IssueCollectionService {
         logger.info("Output directory: {}", outputDir);
         
         // Handle cleanup if requested
-        if (request.clean()) {
+        if (validatedRequest.clean()) {
             logger.info("Cleaning up previous collection data");
             cleanupPreviousData(outputPath);
         }
         
         // Handle incremental collection
-        if (request.incremental()) {
+        if (validatedRequest.incremental()) {
             logger.info("Incremental mode enabled - will skip previously collected issues");
             // The resume state handling in collectInBatches will take care of this
         }
@@ -100,7 +112,7 @@ public class IssueCollectionService {
         // Collect issues in batches with error handling
         CollectionStats stats;
         try {
-            stats = collectInBatches(owner, repoName, request.batchSize(), outputPath, timestamp, searchQuery);
+            stats = collectInBatches(owner, repoName, validatedRequest, outputPath, timestamp, searchQuery, effectiveTotal);
         } catch (Exception e) {
             logger.error("Collection failed: {}", e.getMessage());
             // Save resume state on error so we can restart
@@ -109,12 +121,12 @@ public class IssueCollectionService {
         }
         
         // Create metadata file
-        createMetadataFile(outputPath, request, totalIssues, stats.processedIssues());
+        createMetadataFile(outputPath, validatedRequest, totalAvailableIssues, stats.processedIssues());
         
-        return new CollectionResult(totalIssues, stats.processedIssues(), outputDir, stats.batchFiles());
+        return new CollectionResult(totalAvailableIssues, stats.processedIssues(), outputDir, stats.batchFiles());
     }
     
-    private CollectionStats collectInBatches(String owner, String repoName, int targetBatchSize, Path outputPath, String timestamp, String searchQuery) throws Exception {
+    private CollectionStats collectInBatches(String owner, String repoName, CollectionRequest request, Path outputPath, String timestamp, String searchQuery, int effectiveTotal) throws Exception {
         long startTime = System.currentTimeMillis();
         List<String> batchFiles = new ArrayList<>();
         String cursor = null;
@@ -133,26 +145,44 @@ public class IssueCollectionService {
                        batchNum, cursor != null ? "present" : "null", processedCount.get());
         }
         
-        // Use a larger fetch size for efficiency, but batch adaptively
-        int fetchSize = Math.max(targetBatchSize, 100);
+        // Use dashboard-optimized fetching if maxIssues is specified
+        int targetBatchSize = request.batchSize();
+        boolean isDashboardMode = request.maxIssues() != null;
+        int fetchSize = isDashboardMode ? 
+            Math.min(request.maxIssues(), 100) : // Dashboard: limit to maxIssues but respect API limits
+            Math.max(targetBatchSize, 100);     // Full mode: use larger fetch for efficiency
+        
         List<Issue> pendingIssues = new ArrayList<>();
         
         while (hasMoreFromAPI || !pendingIssues.isEmpty()) {
+            // Check if we've reached the maxIssues limit in dashboard mode
+            if (isDashboardMode && processedCount.get() >= effectiveTotal) {
+                logger.info("Dashboard mode: reached target of {} issues, stopping collection", effectiveTotal);
+                break;
+            }
+            
             // Fetch more issues if needed
             if (pendingIssues.size() < targetBatchSize && hasMoreFromAPI) {
-                logger.info("Fetching issues from API (cursor: {})", cursor != null ? "present" : "null");
+                // Calculate remaining issues to fetch in dashboard mode
+                int remainingToFetch = isDashboardMode ? 
+                    effectiveTotal - processedCount.get() : fetchSize;
+                int actualFetchSize = Math.min(fetchSize, remainingToFetch);
                 
-                // Build GraphQL search query with pagination
-                String query = buildSearchIssuesQuery();
-                Map<String, Object> variables = Map.of(
-                    "query", searchQuery,
-                    "first", fetchSize,
-                    "after", cursor != null ? cursor : ""
-                );
+                if (actualFetchSize <= 0) break;
                 
-                // Execute GraphQL query with retry and backoff
+                logger.info("Fetching issues from API (cursor: {}, fetch size: {}, dashboard mode: {})", 
+                    cursor != null ? "present" : "null", actualFetchSize, isDashboardMode);
+                
+                // Use the enhanced GraphQL service with sorting support
+                final String currentCursor = cursor; // Make effectively final for lambda
                 JsonNode result = executeWithRetryAndBackoff(() -> {
-                    JsonNode response = graphQLService.executeQuery(query, variables);
+                    JsonNode response = graphQLService.searchIssuesWithSorting(
+                        searchQuery, 
+                        request.sortBy(), 
+                        request.sortOrder(), 
+                        actualFetchSize, 
+                        currentCursor
+                    );
                     
                     // Check for errors
                     if (response.has("errors")) {
@@ -172,18 +202,26 @@ public class IssueCollectionService {
                     Issue issue = convertToIssue(issueNode);
                     if (issue != null) {
                         pendingIssues.add(issue);
+                        // In dashboard mode, stop if we've reached the limit
+                        if (isDashboardMode && pendingIssues.size() + processedCount.get() >= effectiveTotal) {
+                            break;
+                        }
                     }
                 }
                 
                 // Update pagination
-                hasMoreFromAPI = pageInfo.path("hasNextPage").asBoolean(false);
+                hasMoreFromAPI = pageInfo.path("hasNextPage").asBoolean(false) && 
+                    (!isDashboardMode || processedCount.get() + pendingIssues.size() < effectiveTotal);
                 cursor = pageInfo.path("endCursor").asText(null);
                 
-                logger.info("Fetched {} issues, {} pending", issues.size(), pendingIssues.size());
+                logger.info("Fetched {} issues, {} pending, dashboard limit: {}", 
+                    issues.size(), pendingIssues.size(), isDashboardMode ? effectiveTotal : "unlimited");
             }
             
-            // Create adaptive batch
-            List<Issue> currentBatch = createAdaptiveBatch(pendingIssues, targetBatchSize);
+            // Create adaptive batch, respecting dashboard limits
+            int maxBatchSize = isDashboardMode ? 
+                Math.min(targetBatchSize, effectiveTotal - processedCount.get()) : targetBatchSize;
+            List<Issue> currentBatch = createAdaptiveBatch(pendingIssues, maxBatchSize);
             
             if (currentBatch.isEmpty()) {
                 break; // No more issues to process
