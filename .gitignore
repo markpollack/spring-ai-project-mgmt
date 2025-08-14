@@ -72,3 +72,8 @@ release/contributors-output/
 # IDE files
 pr-review/.idea/
 .idea/
+
+# Reference repositories (used for documentation/reference only)
+scripts/claude-code-java-sdk
+scripts/tribuo/
+spring-ai-dashboard-project
