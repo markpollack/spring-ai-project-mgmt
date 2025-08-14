@@ -143,25 +143,25 @@ mvnd spring-boot:run -Dspring-boot.run.arguments="--repo spring-projects/spring-
 ### Advanced Filtering
 ```bash
 # Multiple labels (AND logic)
-mvnd spring-boot:run -Dspring-boot.run.arguments="--repo spring-projects/spring-ai --labels 'bug,high priority'"
+mvnd spring-boot:run -Dspring-boot.run.arguments="--repo spring-projects/spring-ai --labels 'bug,enhancement' --label-mode all"
 
-# Milestone-specific issues
-mvnd spring-boot:run -Dspring-boot.run.arguments="--repo spring-projects/spring-ai --milestone '1.1.0.M1'"
+# Open issues only
+mvnd spring-boot:run -Dspring-boot.run.arguments="--repo spring-projects/spring-ai --state open"
 
-# Date range filtering
-mvnd spring-boot:run -Dspring-boot.run.arguments="--repo spring-projects/spring-ai --since 2024-01-01 --until 2024-12-31"
+# Closed issues with specific labels
+mvnd spring-boot:run -Dspring-boot.run.arguments="--repo spring-projects/spring-ai --state closed --labels documentation"
 ```
 
 ### Output Customization
 ```bash
-# CSV output
-mvnd spring-boot:run -Dspring-boot.run.arguments="--repo spring-projects/spring-ai --format csv"
-
-# Custom output directory
-mvnd spring-boot:run -Dspring-boot.run.arguments="--repo spring-projects/spring-ai --output-dir /path/to/output"
-
-# Compressed archive
+# Create compressed archive
 mvnd spring-boot:run -Dspring-boot.run.arguments="--repo spring-projects/spring-ai --zip"
+
+# Custom batch size for large repositories
+mvnd spring-boot:run -Dspring-boot.run.arguments="--repo spring-projects/spring-ai --batch-size 25"
+
+# Verbose logging for debugging
+mvnd spring-boot:run -Dspring-boot.run.arguments="--repo spring-projects/spring-ai --verbose"
 ```
 
 ## Output Structure
@@ -312,22 +312,57 @@ The JBang script remains available for compatibility but new features are added 
 
 The following features are planned but not yet implemented:
 
-### Date Range Filtering
-- `--since YYYY-MM-DD` - Issues created after date
-- `--until YYYY-MM-DD` - Issues created before date  
-- `--updated-since YYYY-MM-DD` - Issues updated after date
+### Planned Features (Not Yet Implemented)
 
-### Advanced Filtering Options
+The following features are planned for future releases:
+
+#### Date Range Filtering
+- `--since YYYY-MM-DD` - Issues/PRs created after date
+- `--since-hours N` - Issues/PRs created in the past N hours (e.g., `--since-hours 24`)
+- `--until YYYY-MM-DD` - Issues/PRs created before date  
+- `--updated-since YYYY-MM-DD` - Issues/PRs updated after date
+- `--limit N` - Limit number of issues/PRs collected
+
+#### Content Type Selection
+- `--type issues` - Collect issues only (default)
+- `--type prs` - Collect pull requests only
+- `--type both` - Collect both issues and pull requests
+
+#### Advanced Filtering Options
 - `--milestone MILESTONE` - Filter by specific milestones
-- `--author USERNAME` - Filter by issue author
-- `--assignee USERNAME` - Filter by assignee
+- `--author USERNAME` - Filter by author (issues/PRs)
+- `--assignee USERNAME` - Filter by assignee (issues/PRs)
+- `--reviewer USERNAME` - Filter PRs by reviewer (PRs only)
 
-### Output Format Options
+#### Output Format Options
 - `--format csv` - CSV export for spreadsheet compatibility
 - `--output-dir PATH` - Custom output directory specification
 
 ### Implementation Notes
-- Date filtering would require GitHub API query parameter additions
-- Milestone/author filtering needs API endpoint parameter support
-- CSV export requires data transformation from current JSON-only output
+- Date filtering would require GitHub API query parameter additions to search queries
+- Milestone/author filtering needs API endpoint parameter support in GitHubRestService
+- CSV export requires data transformation from current JSON-only output in IssueCollectionService
 - Custom output directory needs path validation and creation logic
+- Limit functionality would need integration with batch processing logic
+
+### Priority Implementation Order
+1. **Recent activity tracking (`--since-hours`, `--type`, `--limit`)** - High priority for daily monitoring
+   - `--since-hours 24` for past 24 hours
+   - `--type prs` for pull request tracking
+   - `--limit 50` to avoid overwhelming results
+2. **Date filtering (`--since YYYY-MM-DD`)** - High priority for historical analysis
+3. **Output directory customization** - Medium priority for workflow integration
+4. **CSV export** - Medium priority for analysis workflows
+5. **Advanced filtering (milestone, author, assignee, reviewer)** - Lower priority for specialized use cases
+
+### Use Case Examples (When Implemented)
+```bash
+# New issues in past 24 hours
+mvnd spring-boot:run -Dspring-boot.run.arguments="--repo spring-projects/spring-ai --type issues --state open --since-hours 24 --limit 20"
+
+# New PRs in past 24 hours
+mvnd spring-boot:run -Dspring-boot.run.arguments="--repo spring-projects/spring-ai --type prs --state open --since-hours 24 --limit 20"
+
+# All recent activity (issues + PRs) in past week
+mvnd spring-boot:run -Dspring-boot.run.arguments="--repo spring-projects/spring-ai --type both --since-hours 168 --limit 100"
+```

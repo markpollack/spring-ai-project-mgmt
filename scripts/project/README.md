@@ -91,6 +91,157 @@ mvn --version
 mvnd --version
 ```
 
+## Building and Testing
+
+### Quick Start
+
+```bash
+# 1. Clone and navigate to project
+cd /path/to/collection-project
+
+# 2. Set GitHub token for integration tests (optional)
+export GITHUB_TOKEN="your_github_token_here"
+
+# 3. Build and run unit tests
+mvn clean test
+
+# 4. Run integration tests (requires GitHub token)
+mvn verify -Pintegration-tests
+
+# 5. Build the application
+mvn clean package
+```
+
+### Test Categories
+
+This project follows standard Maven testing conventions:
+
+#### Unit Tests (162 tests)
+```bash
+# Run only unit and component tests (fast)
+mvn test
+
+# Or with Maven Daemon for faster execution
+mvnd test
+```
+
+**What's tested:**
+- Individual class functionality with mocks
+- Spring context wiring and configuration
+- CLI argument parsing and validation
+- Data model serialization/deserialization
+- Service interactions with mocked dependencies
+
+#### Integration Tests (3 test classes)
+```bash
+# Run integration tests (requires GITHUB_TOKEN)
+export GITHUB_TOKEN="your_token"
+mvn verify -Pintegration-tests
+
+# Run ONLY integration tests (skip unit tests)
+export GITHUB_TOKEN="your_token"
+mvn verify -Pintegration-tests -DskipUnitTests
+
+# Run specific integration test
+mvn verify -Pintegration-tests -Dit.test=GitHubRestServiceIT
+```
+
+**What's tested:**
+- Real GitHub API connectivity (REST and GraphQL)
+- Actual JSON file generation and validation
+- End-to-end issue collection workflow
+- Error handling with real API responses
+
+#### Complete Test Suite
+```bash
+# Run both unit and integration tests
+export GITHUB_TOKEN="your_token"
+mvn clean verify -Pintegration-tests
+```
+
+### Build Commands
+
+#### Development Builds
+```bash
+# Fast compilation (no tests, no javadoc)
+mvnd clean compile -Dmaven.javadoc.skip=true -DskipTests
+
+# Quick test run
+mvnd test
+
+# Full build with unit tests
+mvnd clean package
+```
+
+#### Production Builds
+```bash
+# Complete build with all tests
+export GITHUB_TOKEN="your_token"
+mvn clean verify -Pintegration-tests
+
+# Create distribution package
+mvn clean package
+```
+
+#### Test-Specific Commands
+```bash
+# Unit tests only (default)
+mvn test
+
+# Integration tests only (skip unit tests)
+export GITHUB_TOKEN="your_token"
+mvn verify -Pintegration-tests -DskipUnitTests
+
+# Skip both unit and integration tests
+mvn verify -Pintegration-tests -DskipTests
+
+# Run tests with specific patterns
+mvn test -Dtest="*ArgumentParser*"
+mvn verify -Pintegration-tests -Dit.test="*RestService*"
+```
+
+### Build and Test Troubleshooting
+
+#### Integration Tests Skipped
+```
+Tests run: 0, Failures: 0, Errors: 0, Skipped: X
+```
+**Cause**: Missing `GITHUB_TOKEN` environment variable  
+**Solution**: Set the token before running:
+```bash
+export GITHUB_TOKEN="your_github_token_here"
+mvn verify -Pintegration-tests
+```
+
+#### Integration Test Failures
+```
+401 Unauthorized or 403 Forbidden
+```
+**Cause**: Invalid or expired GitHub token  
+**Solution**: Create a new Personal Access Token with `public_repo` scope
+
+#### Build Slow
+**Cause**: Maven downloading dependencies or running all tests  
+**Solution**: Use Maven Daemon and skip unnecessary steps:
+```bash
+mvnd clean compile -DskipTests -Dmaven.javadoc.skip=true
+```
+
+#### Test Compilation Errors
+**Cause**: Missing dependencies or Java version issues  
+**Solution**: Verify Java 17+ and clean rebuild:
+```bash
+java --version  # Should be 17+
+mvnd clean compile
+```
+
+### Performance Tips
+
+- **Use Maven Daemon (`mvnd`)** instead of `mvn` for 2-3x faster builds
+- **Skip tests during development** with `-DskipTests` 
+- **Skip javadoc generation** with `-Dmaven.javadoc.skip=true`
+- **Run integration tests selectively** using `-Dit.test=ClassName`
+
 ## Installation & Setup
 
 1. **Set up GitHub Token**:
