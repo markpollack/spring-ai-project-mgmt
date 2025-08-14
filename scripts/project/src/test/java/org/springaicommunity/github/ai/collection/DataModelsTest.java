@@ -14,7 +14,6 @@ import java.util.Arrays;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.*;
-import static org.springaicommunity.github.ai.collection.DataModels.*;
 
 /**
  * Comprehensive tests for all DataModels record definitions.

@@ -13,7 +13,6 @@ import java.nio.file.Path;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.*;
-import static org.springaicommunity.github.ai.collection.DataModels.*;
 
 /**
  * Simple Integration Tests for GitHub API connectivity.

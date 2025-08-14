@@ -21,7 +21,6 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.ArrayList;
 
-import static org.springaicommunity.github.ai.collection.DataModels.*;
 
 /**
  * GitHub Issues Collection Tool
@@ -106,7 +105,7 @@ public class CollectGithubIssues implements CommandLineRunner {
         }
         
         // Parse and validate arguments
-        ArgumentParser.ParsedConfiguration config = argumentParser.parseAndValidate(args);
+        ParsedConfiguration config = argumentParser.parseAndValidate(args);
         argumentParser.validateEnvironment();
         
         // Apply parsed configuration to instance variables
@@ -189,7 +188,7 @@ public class CollectGithubIssues implements CommandLineRunner {
         }
     }
     
-    private void applyParsedConfiguration(ArgumentParser.ParsedConfiguration config) {
+    private void applyParsedConfiguration(ParsedConfiguration config) {
         this.repo = config.repository;
         this.batchSize = config.batchSize;
         this.dryRun = config.dryRun;

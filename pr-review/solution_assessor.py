@@ -424,7 +424,7 @@ class AIPoweredSolutionAssessor:
         file_changes = context_data.get('file_changes', [])
         
         # Build file changes file path for Claude Code to read
-        file_changes_file_path = str(self.working_dir / "context" / f"pr-{pr_number}" / "file-changes.json")
+        file_changes_file_path = str(self.context_dir / f"pr-{pr_number}" / "file-changes.json")
         
         # Build file types breakdown
         file_types = {}
@@ -773,7 +773,7 @@ def main():
         print(f"   - Recommendations: {len(assessment.recommendations)}")
         sys.exit(0)
     else:
-        print(f"\n❌ Solution assessment failed for PR #{pr_number}")
+        print(f"\n❌ Solution assessment failed for PR #{args.pr_number}")
         sys.exit(1)
 
 

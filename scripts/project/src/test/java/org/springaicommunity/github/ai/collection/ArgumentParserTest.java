@@ -37,7 +37,7 @@ class ArgumentParserTest {
         void shouldParseRepositoryArgument() {
             String[] args = {"--repo", "microsoft/vscode"};
             
-            ArgumentParser.ParsedConfiguration config = argumentParser.parseAndValidate(args);
+            ParsedConfiguration config = argumentParser.parseAndValidate(args);
             
             assertThat(config.repository).isEqualTo("microsoft/vscode");
         }
@@ -47,7 +47,7 @@ class ArgumentParserTest {
         void shouldParseBatchSizeArgument() {
             String[] args = {"--batch-size", "50"};
             
-            ArgumentParser.ParsedConfiguration config = argumentParser.parseAndValidate(args);
+            ParsedConfiguration config = argumentParser.parseAndValidate(args);
             
             assertThat(config.batchSize).isEqualTo(50);
         }
@@ -57,7 +57,7 @@ class ArgumentParserTest {
         void shouldParseBooleanFlags() {
             String[] args = {"--dry-run", "--verbose", "--zip", "--incremental", "--resume"};
             
-            ArgumentParser.ParsedConfiguration config = argumentParser.parseAndValidate(args);
+            ParsedConfiguration config = argumentParser.parseAndValidate(args);
             
             assertThat(config.dryRun).isTrue();
             assertThat(config.verbose).isTrue();
@@ -73,9 +73,9 @@ class ArgumentParserTest {
             String[] noCleanArgs = {"--no-clean"};
             String[] appendArgs = {"--append"};
             
-            ArgumentParser.ParsedConfiguration cleanConfig = argumentParser.parseAndValidate(cleanArgs);
-            ArgumentParser.ParsedConfiguration noCleanConfig = argumentParser.parseAndValidate(noCleanArgs);
-            ArgumentParser.ParsedConfiguration appendConfig = argumentParser.parseAndValidate(appendArgs);
+            ParsedConfiguration cleanConfig = argumentParser.parseAndValidate(cleanArgs);
+            ParsedConfiguration noCleanConfig = argumentParser.parseAndValidate(noCleanArgs);
+            ParsedConfiguration appendConfig = argumentParser.parseAndValidate(appendArgs);
             
             assertThat(cleanConfig.clean).isTrue();
             assertThat(noCleanConfig.clean).isFalse();
@@ -87,7 +87,7 @@ class ArgumentParserTest {
         void shouldUseDefaultValues() {
             String[] args = {}; // Empty arguments
             
-            ArgumentParser.ParsedConfiguration config = argumentParser.parseAndValidate(args);
+            ParsedConfiguration config = argumentParser.parseAndValidate(args);
             
             assertThat(config.repository).isEqualTo(defaultProperties.getDefaultRepository());
             assertThat(config.batchSize).isEqualTo(defaultProperties.getBatchSize());
@@ -110,7 +110,7 @@ class ArgumentParserTest {
             assertThatCode(() -> argumentParser.parseAndValidate(args))
                 .doesNotThrowAnyException();
             
-            ArgumentParser.ParsedConfiguration config = argumentParser.parseAndValidate(args);
+            ParsedConfiguration config = argumentParser.parseAndValidate(args);
             assertThat(config.repository).isEqualTo(validRepo);
         }
 
@@ -150,7 +150,7 @@ class ArgumentParserTest {
             assertThatCode(() -> argumentParser.parseAndValidate(args))
                 .doesNotThrowAnyException();
             
-            ArgumentParser.ParsedConfiguration config = argumentParser.parseAndValidate(args);
+            ParsedConfiguration config = argumentParser.parseAndValidate(args);
             assertThat(config.issueState).isEqualTo(validState.toLowerCase());
         }
 
@@ -175,7 +175,7 @@ class ArgumentParserTest {
         void shouldParseSingleLabel() {
             String[] args = {"--labels", "bug"};
             
-            ArgumentParser.ParsedConfiguration config = argumentParser.parseAndValidate(args);
+            ParsedConfiguration config = argumentParser.parseAndValidate(args);
             
             assertThat(config.labelFilters).containsExactly("bug");
         }
@@ -185,7 +185,7 @@ class ArgumentParserTest {
         void shouldParseMultipleLabels() {
             String[] args = {"--labels", "bug,enhancement,documentation"};
             
-            ArgumentParser.ParsedConfiguration config = argumentParser.parseAndValidate(args);
+            ParsedConfiguration config = argumentParser.parseAndValidate(args);
             
             assertThat(config.labelFilters).containsExactly("bug", "enhancement", "documentation");
         }
@@ -195,7 +195,7 @@ class ArgumentParserTest {
         void shouldHandleLabelsWithSpaces() {
             String[] args = {"--labels", "bug, enhancement , documentation"};
             
-            ArgumentParser.ParsedConfiguration config = argumentParser.parseAndValidate(args);
+            ParsedConfiguration config = argumentParser.parseAndValidate(args);
             
             assertThat(config.labelFilters).containsExactly("bug", "enhancement", "documentation");
         }
@@ -205,7 +205,7 @@ class ArgumentParserTest {
         void shouldFilterOutEmptyLabels() {
             String[] args = {"--labels", "bug,,enhancement,"};
             
-            ArgumentParser.ParsedConfiguration config = argumentParser.parseAndValidate(args);
+            ParsedConfiguration config = argumentParser.parseAndValidate(args);
             
             assertThat(config.labelFilters).containsExactly("bug", "enhancement");
         }
@@ -219,7 +219,7 @@ class ArgumentParserTest {
             assertThatCode(() -> argumentParser.parseAndValidate(args))
                 .doesNotThrowAnyException();
             
-            ArgumentParser.ParsedConfiguration config = argumentParser.parseAndValidate(args);
+            ParsedConfiguration config = argumentParser.parseAndValidate(args);
             assertThat(config.labelMode).isEqualTo(validMode.toLowerCase());
         }
 
@@ -248,7 +248,7 @@ class ArgumentParserTest {
             assertThatCode(() -> argumentParser.parseAndValidate(args))
                 .doesNotThrowAnyException();
             
-            ArgumentParser.ParsedConfiguration config = argumentParser.parseAndValidate(args);
+            ParsedConfiguration config = argumentParser.parseAndValidate(args);
             assertThat(config.batchSize).isEqualTo(Integer.parseInt(validBatchSize));
         }
 
@@ -341,7 +341,7 @@ class ArgumentParserTest {
             
             assertThat(argumentParser.isHelpRequested(args)).isTrue();
             
-            ArgumentParser.ParsedConfiguration config = argumentParser.parseAndValidate(args);
+            ParsedConfiguration config = argumentParser.parseAndValidate(args);
             assertThat(config.helpRequested).isTrue();
         }
 
@@ -352,7 +352,7 @@ class ArgumentParserTest {
             
             assertThat(argumentParser.isHelpRequested(args)).isTrue();
             
-            ArgumentParser.ParsedConfiguration config = argumentParser.parseAndValidate(args);
+            ParsedConfiguration config = argumentParser.parseAndValidate(args);
             assertThat(config.helpRequested).isTrue();
         }
 
@@ -363,7 +363,7 @@ class ArgumentParserTest {
             
             assertThat(argumentParser.isHelpRequested(args)).isTrue();
             
-            ArgumentParser.ParsedConfiguration config = argumentParser.parseAndValidate(args);
+            ParsedConfiguration config = argumentParser.parseAndValidate(args);
             assertThat(config.helpRequested).isTrue();
         }
 
@@ -374,7 +374,7 @@ class ArgumentParserTest {
             
             assertThat(argumentParser.isHelpRequested(args)).isFalse();
             
-            ArgumentParser.ParsedConfiguration config = argumentParser.parseAndValidate(args);
+            ParsedConfiguration config = argumentParser.parseAndValidate(args);
             assertThat(config.helpRequested).isFalse();
         }
     }
@@ -442,7 +442,7 @@ class ArgumentParserTest {
                 "--no-clean"
             };
             
-            ArgumentParser.ParsedConfiguration config = argumentParser.parseAndValidate(args);
+            ParsedConfiguration config = argumentParser.parseAndValidate(args);
             
             assertThat(config.repository).isEqualTo("microsoft/vscode");
             assertThat(config.batchSize).isEqualTo(25);
@@ -466,7 +466,7 @@ class ArgumentParserTest {
                 "--state", "closed"
             };
             
-            ArgumentParser.ParsedConfiguration config = argumentParser.parseAndValidate(args);
+            ParsedConfiguration config = argumentParser.parseAndValidate(args);
             
             assertThat(config.repository).isEqualTo("test/repo");
             assertThat(config.batchSize).isEqualTo(50);
@@ -510,7 +510,7 @@ class ArgumentParserTest {
         void shouldProvideReadableToStringRepresentation() {
             String[] args = {"--repo", "test/repo", "--batch-size", "50", "--dry-run"};
             
-            ArgumentParser.ParsedConfiguration config = argumentParser.parseAndValidate(args);
+            ParsedConfiguration config = argumentParser.parseAndValidate(args);
             String configString = config.toString();
             
             assertThat(configString)

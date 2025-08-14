@@ -40,13 +40,6 @@ class PRSummary:
     additions: int
     deletions: int
     
-    # Processing metrics  
-    processing_time: Optional[str]
-    prompt_size: Optional[str]
-    
-    # Git branch info
-    actual_branch: str = ""  # The actual git branch name for this PR
-    
     # PR metadata
     created_at: str
     state: str
@@ -94,6 +87,17 @@ class PRSummary:
     documentation_completeness: List[str]
     solution_fitness: str
     solution_risk_factors: List[str]
+    
+    # Fields with default values (must be at the end)
+    # Processing metrics 
+    processing_time: Optional[str] = None
+    prompt_size: Optional[str] = None
+    
+    # Git branch info
+    actual_branch: str = ""  # The actual git branch name for this PR
+    
+    # Test discovery data
+    test_discovery: Optional[Dict[str, Any]] = None
 
 
 class LowHangingFruitReportGenerator:
@@ -235,6 +239,17 @@ class LowHangingFruitReportGenerator:
             except Exception as e:
                 print(f"⚠️  Error loading solution data for PR #{pr_number}: {e}")
                 solution_data = {}
+        
+        # Load test discovery data if available
+        test_discovery_file = pr_dir / "test-discovery.json"
+        test_discovery_data = None
+        if test_discovery_file.exists():
+            try:
+                with open(test_discovery_file) as f:
+                    test_discovery_data = json.load(f)
+            except Exception as e:
+                print(f"⚠️  Error loading test discovery data for PR #{pr_number}: {e}")
+                test_discovery_data = None
             
         # Determine PR type from analysis
         pr_type = self._classify_pr_type(pr_data, risk_data, file_changes)
@@ -305,7 +320,8 @@ class LowHangingFruitReportGenerator:
             testing_adequacy=solution_data.get("testing_adequacy", []),
             documentation_completeness=solution_data.get("documentation_completeness", []),
             solution_fitness=solution_data.get("solution_fitness", ""),
-            solution_risk_factors=solution_data.get("risk_factors", [])
+            solution_risk_factors=solution_data.get("risk_factors", []),
+            test_discovery=test_discovery_data  # Add test discovery data
         )
     
     def _classify_pr_type(self, pr_data: Dict, risk_data: Dict, file_changes: List) -> str:
@@ -955,7 +971,9 @@ class LowHangingFruitReportGenerator:
             
             <div class="pr-actions">
                 <a href="{pr.url}" target="_blank" class="btn btn-primary">View on GitHub</a>
-                <a href="{pr.url}/files" target="_blank" class="btn btn-secondary">View Files</a>
+                <button class="btn btn-secondary" onclick="openManualMergeModal({pr.number})">
+                    🔀 Manual Merge
+                </button>
                 <button class="btn btn-details modal-details-btn" onclick="openAssessmentModal({pr.number})">
                     🔍 View Assessments
                 </button>
@@ -1113,6 +1131,43 @@ class LowHangingFruitReportGenerator:
                     <div class="modal-actions">
                         <button class="btn btn-primary" onclick="copyBackportCommand()">📋 Copy Command</button>
                         <button class="btn btn-secondary" onclick="closeBackportModal()">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Manual Merge Modal -->
+        <div id="manual-merge-modal" class="modal-overlay" style="display: none;">
+            <div class="modal-content backport-modal-content">
+                <div class="modal-header">
+                    <h2>🔀 Manual Merge Instructions</h2>
+                    <button class="modal-close" onclick="closeManualMergeModal()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="merge-info">
+                        <h3>📦 Affected Modules</h3>
+                        <div id="affected-modules" class="module-list">
+                            <!-- Populated by JavaScript -->
+                        </div>
+                        
+                        <h3>🧪 Test Commands</h3>
+                        <div id="test-commands" class="command-list">
+                            <!-- Populated by JavaScript -->
+                        </div>
+                        
+                        <h3>📝 Merge Instructions</h3>
+                        <div class="merge-steps">
+                            <ol>
+                                <li>Review the PR on GitHub</li>
+                                <li>Run the test commands above to verify changes</li>
+                                <li>If tests pass, approve and merge via GitHub UI</li>
+                                <li>Or merge via CLI: <code>gh pr merge PR_NUMBER</code></li>
+                            </ol>
+                        </div>
+                    </div>
+                    
+                    <div class="modal-actions">
+                        <button class="btn btn-secondary" onclick="closeManualMergeModal()">Close</button>
                     </div>
                 </div>
             </div>
@@ -2508,8 +2563,22 @@ class LowHangingFruitReportGenerator:
     
     def _generate_javascript(self) -> str:
         """Generate JavaScript for interactivity"""
-        return """
+        
+        # Populate test discovery data for each PR
+        test_discovery_json = {}
+        for pr in self.pr_summaries:
+            if pr.test_discovery:
+                test_discovery_json[pr.number] = pr.test_discovery
+        
+        # Generate the test discovery data as JSON
+        test_data_json = json.dumps(test_discovery_json, indent=2)
+        
+        # Return the JavaScript without f-string to avoid curly brace escaping issues
+        js_code = """
         <script>
+        // Initialize test discovery data
+        window.testDiscoveryData = """ + test_data_json + """;
+        
         document.addEventListener('DOMContentLoaded', function() {
             console.log('🌳 PR Orchard Dashboard loaded');
             
@@ -3044,33 +3113,117 @@ class LowHangingFruitReportGenerator:
             });
         }
         
-        // Enhanced ESC key support for both modals
+        // === MANUAL MERGE MODAL FUNCTIONS ===
+        function openManualMergeModal(prNumber) {
+            const modal = document.getElementById('manual-merge-modal');
+            
+            // Get test discovery data for this PR
+            const testDiscovery = window.testDiscoveryData && window.testDiscoveryData[prNumber];
+            
+            // Populate affected modules
+            const modulesDiv = document.getElementById('affected-modules');
+            if (testDiscovery && testDiscovery.affected_modules && testDiscovery.affected_modules.length > 0) {
+                modulesDiv.innerHTML = '<ul>' + 
+                    testDiscovery.affected_modules.map(module => 
+                        `<li><code>${module === '.' ? 'Root module' : module}</code></li>`
+                    ).join('') + '</ul>';
+            } else {
+                modulesDiv.innerHTML = '<p>No code modules affected - documentation or configuration changes only</p>';
+            }
+            
+            // Populate test commands
+            const commandsDiv = document.getElementById('test-commands');
+            if (testDiscovery && testDiscovery.test_commands) {
+                let commandsHtml = '';
+                for (const [cmdType, command] of Object.entries(testDiscovery.test_commands)) {
+                    if (cmdType !== 'info') {
+                        const readableType = cmdType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                        commandsHtml += `
+                            <div class="command-item" style="margin: 10px 0;">
+                                <strong>${readableType}:</strong>
+                                <div class="command-text" style="display: flex; align-items: center; gap: 10px;">
+                                    <code style="flex: 1; padding: 8px; background: #f5f5f5; border-radius: 4px;">${command}</code>
+                                    <button class="copy-btn" onclick="copyCommand('${command.replace(/'/g, "\\'")}')">📋</button>
+                                </div>
+                            </div>`;
+                    }
+                }
+                if (commandsHtml) {
+                    commandsDiv.innerHTML = commandsHtml;
+                } else if (testDiscovery.test_commands.info) {
+                    commandsDiv.innerHTML = `<p>${testDiscovery.test_commands.info}</p>`;
+                } else {
+                    commandsDiv.innerHTML = '<p>No specific test commands available</p>';
+                }
+            } else {
+                commandsDiv.innerHTML = '<p>Test discovery information not available</p>';
+            }
+            
+            // Update merge command with actual PR number
+            const mergeSteps = modal.querySelector('.merge-steps ol li:last-child code');
+            if (mergeSteps) {
+                mergeSteps.textContent = `gh pr merge ${prNumber}`;
+            }
+            
+            // Show modal
+            modal.style.display = 'flex';
+            document.body.style.overflow = 'hidden'; // Prevent background scrolling
+        }
+        
+        function closeManualMergeModal() {
+            const modal = document.getElementById('manual-merge-modal');
+            modal.style.display = 'none';
+            document.body.style.overflow = ''; // Restore scrolling
+        }
+        
+        function copyCommand(command) {
+            navigator.clipboard.writeText(command).then(() => {
+                // Visual feedback could be added here
+            }).catch(err => {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = command;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+            });
+        }
+        
+        // Enhanced ESC key support for all modals
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
                 const assessmentModal = document.getElementById('assessment-modal');
                 const backportModal = document.getElementById('backport-modal');
+                const manualMergeModal = document.getElementById('manual-merge-modal');
                 
                 if (assessmentModal.style.display === 'flex') {
                     closeAssessmentModal();
                 } else if (backportModal.style.display === 'flex') {
                     closeBackportModal();
+                } else if (manualMergeModal.style.display === 'flex') {
+                    closeManualMergeModal();
                 }
             }
         });
         
-        // Enhanced click outside modal to close for both modals
+        // Enhanced click outside modal to close for all modals
         document.addEventListener('click', function(e) {
             const assessmentModal = document.getElementById('assessment-modal');
             const backportModal = document.getElementById('backport-modal');
+            const manualMergeModal = document.getElementById('manual-merge-modal');
             
             if (e.target === assessmentModal) {
                 closeAssessmentModal();
             } else if (e.target === backportModal) {
                 closeBackportModal();
+            } else if (e.target === manualMergeModal) {
+                closeManualMergeModal();
             }
         });
         </script>
         """
+        return js_code
 
 
 def main():

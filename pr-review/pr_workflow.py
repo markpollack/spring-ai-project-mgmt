@@ -24,6 +24,7 @@ from compilation_error_resolver import CompilationErrorResolver
 from github_utils import GitHubUtils
 from claude_code_wrapper import ClaudeCodeWrapper
 from commit_message_generator import CommitMessageGenerator
+from test_discovery import TestDiscovery
 
 
 @dataclass
@@ -1402,6 +1403,44 @@ class PRWorkflow:
             Logger.error(f"❌ Error during context collection for PR #{pr_number}: {e}")
             return False
     
+    def run_test_discovery(self, pr_number: str, dry_run: bool = False) -> bool:
+        """Run test discovery to identify affected modules and generate test commands"""
+        if dry_run:
+            Logger.info("🎭 DRY RUN: Would run test discovery")
+            return True
+        
+        try:
+            # Initialize test discovery
+            discovery = TestDiscovery(pr_number, self.config.spring_ai_dir)
+            
+            # Run discovery (force refresh to ensure we have the latest data)
+            result = discovery.discover(force_refresh=True)
+            
+            # Log summary
+            Logger.info(f"✅ Test discovery completed for PR #{pr_number}")
+            if result.affected_modules:
+                Logger.info(f"   Affected modules: {len(result.affected_modules)}")
+                for module in result.affected_modules[:3]:  # Show first 3
+                    module_display = "Root module" if module == "." else module
+                    Logger.info(f"     - {module_display}")
+                if len(result.affected_modules) > 3:
+                    Logger.info(f"     ... and {len(result.affected_modules) - 3} more")
+            else:
+                Logger.info("   No code modules affected")
+            
+            if result.test_commands:
+                Logger.info("   Test commands generated:")
+                for cmd_type in list(result.test_commands.keys())[:2]:  # Show first 2 commands
+                    if cmd_type != 'info':
+                        Logger.info(f"     - {cmd_type}")
+            
+            return True
+            
+        except Exception as e:
+            Logger.error(f"❌ Error during test discovery for PR #{pr_number}: {e}")
+            Logger.error("Test discovery is optional, continuing anyway")
+            return False
+    
     def rebase_against_upstream(self, pr_number: str, auto_resolve: bool = False, dry_run: bool = False) -> bool:
         """Rebase against upstream main"""
         Logger.info(f"Rebasing against {self.config.upstream_remote}/{self.config.main_branch}...")
@@ -1806,6 +1845,11 @@ File content with conflicts:"""
                 else:
                     Logger.error("❌ Context collection failed")
                     return False
+            
+            # Run test discovery after context collection
+            Logger.info("🔍 Running test discovery for affected modules...")
+            if not self.run_test_discovery(pr_number, dry_run):
+                Logger.warn("⚠️  Test discovery failed, continuing anyway")
         
         # Phase 4.6: Generate comprehensive commit message (DISABLED)
         # TODO: Fix commit message generation before re-enabling
@@ -1934,6 +1978,11 @@ File content with conflicts:"""
         except (subprocess.CalledProcessError, json.JSONDecodeError, KeyError) as e:
             Logger.warn(f"Could not validate PR branch from GitHub: {e}")
             Logger.info(f"Current branch: '{current_branch}' - ensure this matches PR #{pr_number}")
+        
+        # Run test discovery before generating reports
+        Logger.info("🔍 Running test discovery for affected modules...")
+        if not self.run_test_discovery(pr_number, dry_run):
+            Logger.warn("⚠️  Test discovery failed, continuing anyway")
         
         # Generate reports based on options
         report_file = None

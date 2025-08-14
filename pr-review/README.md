@@ -689,6 +689,60 @@ python3 backport_assessor.py 3386 --context-dir /path/to/context --logs-dir /pat
 python3 ai_conversation_analyzer.py 3386 --context-dir /path/to/context --logs-dir /path/to/logs
 ```
 
+## 📝 Spring AI Commit Message Conventions
+
+When working with Spring AI repository commits, include these required elements:
+
+### Required Elements
+
+**DCO Compliance (Required):**
+```
+Signed-off-by: Your Name <your.email@example.com>
+```
+
+**For Backports:**
+```
+Auto-cherry-pick to 1.0.x
+```
+
+**For Issue Fixes:**
+```
+Fixes #1234
+```
+
+### Complete Examples
+
+```
+feat: add MCP SSE URL configuration documentation and examples
+
+- Provide clear documentation on URL splitting for MCP SSE configuration
+- Add comprehensive JavaDoc with URL splitting guidelines  
+- Create troubleshooting documentation for common 404 errors
+- Include real-world examples of complex URL patterns with tokens
+
+Fixes #3938
+
+Signed-off-by: Mark Pollack <mark.pollack@broadcom.com>
+```
+
+```
+fix: resolve ChatClient observation context test coverage
+
+- Add comprehensive test coverage for ChatClientObservationContext
+- Validate null safety and advisor list handling
+- Cover edge cases for Spring AI observability framework
+
+Auto-cherry-pick to 1.0.x
+Fixes #4098
+
+Signed-off-by: Developer Name <dev@example.com>
+```
+
+### Notes
+- **DCO (Developer Certificate of Origin)**: Required for all Spring AI contributions
+- **Auto-cherry-pick**: Only needed for fixes that should go to maintenance branches
+- **Fixes #**: Links commit to GitHub issue for automatic closure
+
 ---
 
 *This tool transforms Spring AI PR review from a complex manual process into an intelligent, automated workflow that provides insights comparable to senior engineer analysis.*

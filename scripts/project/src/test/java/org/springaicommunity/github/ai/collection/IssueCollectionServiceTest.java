@@ -21,7 +21,6 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
-import static org.springaicommunity.github.ai.collection.DataModels.*;
 
 /**
  * Tests for CollectionService using plain JUnit with mocked dependencies.

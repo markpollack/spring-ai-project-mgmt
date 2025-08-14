@@ -289,6 +289,25 @@ Combine the classic rules with conventional commit format:
 - `test(scope): add or update tests` - test changes
 - `chore(scope): maintenance tasks` - build, dependencies, etc.
 
+### Spring AI Specific Requirements
+
+When working with the Spring AI repository, include these additional elements:
+
+**Required for DCO compliance:**
+```
+Signed-off-by: Your Name <your.email@example.com>
+```
+
+**For backports to maintenance branches:**
+```
+Auto-cherry-pick to 1.0.x
+```
+
+**For issue fixes:**
+```
+Fixes #1358
+```
+
 **Examples**:
 ```
 feat: add GitHub release automation and Spring ecosystem category alignment
@@ -296,4 +315,21 @@ feat: add GitHub release automation and Spring ecosystem category alignment
 - Add comprehensive GitHub release automation with GitHubReleaseAutomator class
 - Implement --create-github-release, --release-draft, and --dry-run options
 - Align release note categories with Spring ecosystem standards
+
+Auto-cherry-pick to 1.0.x
+Fixes #1234
+
+Signed-off-by: Mark Pollack <mark.pollack@broadcom.com>
+```
+
+```
+fix: resolve MCP SSE URL configuration issues
+
+- Update documentation for URL splitting examples
+- Add comprehensive JavaDoc for configuration options
+- Improve error messages for common 404 scenarios
+
+Fixes #3938
+
+Signed-off-by: Developer Name <dev@example.com>
 ```
