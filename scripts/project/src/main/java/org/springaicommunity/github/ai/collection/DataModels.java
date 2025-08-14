@@ -1,4 +1,4 @@
-package org.springaicommunity.github.ai.collection;
+i'package org.springaicommunity.github.ai.collection;
 
 /**
  * @deprecated This class has been refactored. Individual record classes are now separate files:

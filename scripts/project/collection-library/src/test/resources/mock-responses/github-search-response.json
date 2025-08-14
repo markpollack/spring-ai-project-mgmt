@@ -1,0 +1,56 @@
+{
+  "data": {
+    "search": {
+      "issueCount": 42,
+      "edges": [
+        {
+          "node": {
+            "number": 123,
+            "title": "Sample GitHub Issue",
+            "body": "This is a sample issue body for testing",
+            "state": "CLOSED",
+            "createdAt": "2023-01-15T10:30:00Z",
+            "updatedAt": "2023-01-16T14:45:00Z",
+            "closedAt": "2023-01-16T14:45:00Z",
+            "url": "https://github.com/spring-projects/spring-ai/issues/123",
+            "author": {
+              "login": "testuser",
+              "name": "Test User"
+            },
+            "comments": {
+              "nodes": [
+                {
+                  "author": {
+                    "login": "commenter",
+                    "name": "Commenter User"
+                  },
+                  "body": "This is a test comment",
+                  "createdAt": "2023-01-15T11:00:00Z"
+                }
+              ]
+            },
+            "labels": {
+              "nodes": [
+                {
+                  "name": "bug",
+                  "color": "d73a49",
+                  "description": "Something isn't working"
+                },
+                {
+                  "name": "priority:high",
+                  "color": "b60205", 
+                  "description": "High priority issue"
+                }
+              ]
+            }
+          },
+          "cursor": "Y3Vyc29yOnYyOpHOABCDEF=="
+        }
+      ],
+      "pageInfo": {
+        "hasNextPage": true,
+        "endCursor": "Y3Vyc29yOnYyOpHOABCDEF=="
+      }
+    }
+  }
+}
