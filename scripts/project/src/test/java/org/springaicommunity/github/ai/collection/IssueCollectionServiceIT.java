@@ -72,11 +72,11 @@ class IssueCollectionServiceIT {
         // JSON utilities
         JsonNodeUtils jsonUtils = new JsonNodeUtils();
         
-        // Collection properties (use small batch sizes for testing)
+        // Collection properties (use reasonable batch sizes for testing)
         CollectionProperties properties = new CollectionProperties();
-        properties.setBatchSize(2); // Very small batches for testing
-        properties.setMaxRetries(1); // Reduce retries for faster tests
-        properties.setRetryDelay(500); // Faster retry for tests
+        properties.setBatchSize(5); // Small batches to test batching logic
+        properties.setMaxRetries(2); // Reasonable retries
+        properties.setRetryDelay(1000); // Standard retry delay
         
         issueCollectionService = new IssueCollectionService(
             graphQLService, restService, jsonUtils, objectMapper, properties);
@@ -85,10 +85,10 @@ class IssueCollectionServiceIT {
     @Test
     @DisplayName("Should collect real issues and generate valid JSON files")
     void shouldCollectRealIssuesAndGenerateValidJsonFiles() throws Exception {
-        // Test with octocat/Hello-World - use very restrictive filter to get few issues
+        // Test with spring-ai repository with a reasonable limit
         CollectionRequest request = new CollectionRequest(
-            "octocat/Hello-World", 2, false, false, false, true, false,
-            "open", List.of("nonexistent-test-label"), "any" // Use non-existent label to get 0-1 issues
+            "spring-projects/spring-ai", 5, false, false, false, true, false,
+            "closed", List.of("enhancement"), "any" // Use common label to limit results
         );
 
         // Change to temp directory for file operations
@@ -101,7 +101,8 @@ class IssueCollectionServiceIT {
             // Verify the collection completed successfully
             assertThat(result).isNotNull();
             assertThat(result.totalIssues()).isGreaterThanOrEqualTo(0);
-            assertThat(result.totalIssues()).isLessThan(5); // Expect very few issues
+            assertThat(result.totalIssues()).isGreaterThan(3); // Should have some enhancements
+            assertThat(result.totalIssues()).isLessThan(100); // But not too many for testing
             assertThat(result.processedIssues()).isEqualTo(result.totalIssues());
             assertThat(result.outputDirectory()).isNotEmpty();
             
@@ -145,10 +146,10 @@ class IssueCollectionServiceIT {
     @Test
     @DisplayName("Should handle repositories with no issues gracefully")
     void shouldHandleRepositoriesWithNoIssuesGracefully() throws Exception {
-        // Test with a repository that likely has no issues
+        // Test with a very specific filter that should return 0 issues
         CollectionRequest request = new CollectionRequest(
-            "octocat/Hello-World", 2, false, false, false, true, false,
-            "open", List.of("nonexistent-label-xyz"), "any" // Use non-existent label to get 0 results
+            "spring-projects/spring-ai", 5, false, false, false, true, false,
+            "open", List.of("impossible-nonexistent-test-label-xyz-123"), "any" // Use impossible label
         );
 
         System.setProperty("user.dir", tempDir.toString());
@@ -175,10 +176,10 @@ class IssueCollectionServiceIT {
     @Test
     @DisplayName("Should handle label filtering with real GitHub data")
     void shouldHandleLabelFilteringWithRealGitHubData() throws Exception {
-        // Test with a smaller repository and simpler labels
+        // Test with spring-ai repository using a common label
         CollectionRequest request = new CollectionRequest(
-            "octocat/Hello-World", 2, false, false, false, true, false,
-            "all", List.of("bug"), "any" // Use simple label that might exist
+            "spring-projects/spring-ai", 5, false, false, false, true, false,
+            "closed", List.of("status: waiting-for-triage"), "any" // Use common label
         );
 
         String originalDir = System.getProperty("user.dir");
@@ -190,7 +191,8 @@ class IssueCollectionServiceIT {
             assertThat(result).isNotNull();
             // Should have some issues or none
             assertThat(result.totalIssues()).isGreaterThanOrEqualTo(0);
-            assertThat(result.totalIssues()).isLessThan(5); // Keep it very small
+            assertThat(result.totalIssues()).isGreaterThanOrEqualTo(0); // May or may not find labeled issues
+            assertThat(result.totalIssues()).isLessThan(50); // But not too many
             
             if (result.totalIssues() > 0) {
                 // Verify files contain issues

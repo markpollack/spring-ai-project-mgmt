@@ -50,35 +50,35 @@ class GitHubGraphQLServiceIT {
     @Test
     @DisplayName("Should count real issues using GraphQL search")
     void shouldCountRealIssuesUsingGraphQLSearch() {
-        // Test with a specific search query for a well-known repository
-        String searchQuery = "repo:octocat/Hello-World is:issue";
+        // Test with spring-ai repository with date filter to limit results
+        String searchQuery = "repo:spring-projects/spring-ai is:issue is:closed created:>2024-01-01";
         int issueCount = gitHubGraphQLService.getSearchIssueCount(searchQuery);
         
-        // Hello-World is a demo repo, should have some issues but not too many
-        assertThat(issueCount).isGreaterThanOrEqualTo(0);
-        assertThat(issueCount).isLessThan(5000); // Reasonable upper bound
+        // Spring AI should have recent closed issues
+        assertThat(issueCount).isGreaterThanOrEqualTo(10); // Should have some recent issues
+        assertThat(issueCount).isLessThan(1000); // Reasonable upper bound
     }
 
     @Test
     @DisplayName("Should count issues by state accurately")
     void shouldCountIssuesByStateAccurately() {
-        // Test with a smaller repository to avoid downloading too many issues
-        int openIssues = gitHubGraphQLService.getTotalIssueCount("octocat", "Hello-World", "open");
-        int closedIssues = gitHubGraphQLService.getTotalIssueCount("octocat", "Hello-World", "closed");
+        // Test with spring-ai repository
+        int openIssues = gitHubGraphQLService.getTotalIssueCount("spring-projects", "spring-ai", "open");
+        int closedIssues = gitHubGraphQLService.getTotalIssueCount("spring-projects", "spring-ai", "closed");
         
-        // Hello-World should have some issues but not too many
-        assertThat(openIssues).isGreaterThanOrEqualTo(0);
-        assertThat(closedIssues).isGreaterThanOrEqualTo(0);
+        // Spring AI should have both open and closed issues
+        assertThat(openIssues).isGreaterThan(10); // Active project with open issues
+        assertThat(closedIssues).isGreaterThan(50); // Project with closed issues
         
-        // At least one type should have issues
-        assertThat(openIssues + closedIssues).isGreaterThan(0);
+        // Should have reasonable numbers for both
+        assertThat(openIssues + closedIssues).isLessThan(10000); // Sanity check
     }
 
     @Test
     @DisplayName("Should handle complex search queries with filters")
     void shouldHandleComplexSearchQueriesWithFilters() {
-        // Test with a simpler complex search query to avoid large repositories
-        String complexQuery = "repo:octocat/Hello-World is:issue is:closed created:>2020-01-01";
+        // Test with spring-ai repository with label and date filters
+        String complexQuery = "repo:spring-projects/spring-ai is:issue is:closed label:enhancement created:>2024-01-01";
         
         assertThatCode(() -> {
             int count = gitHubGraphQLService.getSearchIssueCount(complexQuery);

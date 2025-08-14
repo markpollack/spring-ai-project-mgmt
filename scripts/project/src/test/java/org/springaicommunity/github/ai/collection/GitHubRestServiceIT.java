@@ -56,35 +56,35 @@ class GitHubRestServiceIT {
     @DisplayName("Should fetch real repository information from GitHub")
     void shouldFetchRealRepositoryInformationFromGitHub() {
         // Test with a well-known public repository
-        JsonNode repoInfo = gitHubRestService.getRepositoryInfo("octocat", "Hello-World");
+        JsonNode repoInfo = gitHubRestService.getRepositoryInfo("spring-projects", "spring-ai");
         
         assertThat(repoInfo).isNotNull();
         assertThat(repoInfo.has("name")).isTrue();
         assertThat(repoInfo.has("full_name")).isTrue();
         assertThat(repoInfo.has("owner")).isTrue();
-        assertThat(repoInfo.get("name").asText()).isEqualTo("Hello-World");
-        assertThat(repoInfo.get("full_name").asText()).isEqualTo("octocat/Hello-World");
+        assertThat(repoInfo.get("name").asText()).isEqualTo("spring-ai");
+        assertThat(repoInfo.get("full_name").asText()).isEqualTo("spring-projects/spring-ai");
     }
 
     @Test
     @DisplayName("Should get real issue count from GitHub API")
     void shouldGetRealIssueCountFromGitHubAPI() {
-        // Test with a smaller repository to avoid too many issues
-        int issueCount = gitHubRestService.getTotalIssueCount("octocat", "Hello-World", "all");
+        // Test with spring-ai repository
+        int issueCount = gitHubRestService.getTotalIssueCount("spring-projects", "spring-ai", "all");
         
-        // Hello-World should have some issues but not too many
-        assertThat(issueCount).isGreaterThanOrEqualTo(0);
-        assertThat(issueCount).isLessThan(1000); // Reasonable upper bound
+        // Spring AI should have a reasonable number of issues
+        assertThat(issueCount).isGreaterThan(50); // Active project
+        assertThat(issueCount).isLessThan(5000); // Reasonable upper bound
     }
 
     @Test
     @DisplayName("Should build valid search queries for different states")
     void shouldBuildValidSearchQueriesForDifferentStates() {
-        String openQuery = gitHubRestService.buildSearchQuery("octocat", "Hello-World", "open", List.of(), "any");
-        String closedQuery = gitHubRestService.buildSearchQuery("octocat", "Hello-World", "closed", List.of(), "any");
-        String allQuery = gitHubRestService.buildSearchQuery("octocat", "Hello-World", "all", List.of(), "any");
+        String openQuery = gitHubRestService.buildSearchQuery("spring-projects", "spring-ai", "open", List.of(), "any");
+        String closedQuery = gitHubRestService.buildSearchQuery("spring-projects", "spring-ai", "closed", List.of(), "any");
+        String allQuery = gitHubRestService.buildSearchQuery("spring-projects", "spring-ai", "all", List.of(), "any");
         
-        assertThat(openQuery).contains("repo:octocat/Hello-World");
+        assertThat(openQuery).contains("repo:spring-projects/spring-ai");
         assertThat(openQuery).contains("is:issue");
         assertThat(openQuery).contains("is:open");
         
@@ -96,12 +96,12 @@ class GitHubRestServiceIT {
     @DisplayName("Should build search queries with labels correctly")
     void shouldBuildSearchQueriesWithLabelsCorrectly() {
         String queryWithSingleLabel = gitHubRestService.buildSearchQuery(
-            "octocat", "Hello-World", "open", List.of("bug"), "any");
+            "spring-projects", "spring-ai", "open", List.of("enhancement"), "any");
         String queryWithMultipleLabels = gitHubRestService.buildSearchQuery(
-            "octocat", "Hello-World", "open", List.of("bug", "enhancement"), "all");
+            "spring-projects", "spring-ai", "open", List.of("enhancement", "status: waiting-for-triage"), "all");
             
-        assertThat(queryWithSingleLabel).contains("label:\"bug\"");
-        assertThat(queryWithMultipleLabels).contains("label:\"bug\"").contains("label:\"enhancement\"");
+        assertThat(queryWithSingleLabel).contains("label:\"enhancement\"");
+        assertThat(queryWithMultipleLabels).contains("label:\"enhancement\"").contains("label:\"status: waiting-for-triage\"");
     }
 
     @Test
@@ -116,7 +116,7 @@ class GitHubRestServiceIT {
     @Test
     @DisplayName("Should validate response structure from real GitHub API")
     void shouldValidateResponseStructureFromRealGitHubAPI() {
-        JsonNode repoInfo = gitHubRestService.getRepositoryInfo("octocat", "Hello-World");
+        JsonNode repoInfo = gitHubRestService.getRepositoryInfo("spring-projects", "spring-ai");
         
         // Validate the actual GitHub API response structure
         assertThat(repoInfo.has("id")).isTrue();
