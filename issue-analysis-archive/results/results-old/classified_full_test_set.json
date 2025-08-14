@@ -1,0 +1,5692 @@
+[
+  {
+    "issue_number": 3578,
+    "predicted_labels": [
+      {
+        "label": "type: backport",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "bug",
+        "confidence": 0.6
+      }
+    ],
+    "explanation": "Issue about 'Fix infinite recursion in `getMimeType(Path)` method' - classified based on content analysis"
+  },
+  {
+    "issue_number": 1776,
+    "predicted_labels": [
+      {
+        "label": "advisors",
+        "confidence": 1.0
+      },
+      {
+        "label": "metadata filters",
+        "confidence": 1.0
+      },
+      {
+        "label": "RAG",
+        "confidence": 1.0
+      },
+      {
+        "label": "vector store",
+        "confidence": 1.0
+      },
+      {
+        "label": "chat client",
+        "confidence": 0.8
+      },
+      {
+        "label": "prompt management",
+        "confidence": 0.8
+      },
+      {
+        "label": "mongo",
+        "confidence": 0.7
+      },
+      {
+        "label": "qdrant",
+        "confidence": 0.7
+      },
+      {
+        "label": "elastic search",
+        "confidence": 0.6
+      },
+      {
+        "label": "embedding",
+        "confidence": 0.6
+      },
+      {
+        "label": "enhancement",
+        "confidence": 0.6
+      },
+      {
+        "label": "model client",
+        "confidence": 0.6
+      },
+      {
+        "label": "opensearch",
+        "confidence": 0.6
+      },
+      {
+        "label": "typesense",
+        "confidence": 0.6
+      }
+    ],
+    "explanation": "Issue about 'Prompt-time filter expressions for RetrievalAugmentationAdvisor/VectorStoreDocumentRetriever' - classified based on content analysis"
+  },
+  {
+    "issue_number": 953,
+    "predicted_labels": [
+      {
+        "label": "advisors",
+        "confidence": 1.0
+      },
+      {
+        "label": "anthropic",
+        "confidence": 1.0
+      },
+      {
+        "label": "AOT/Native",
+        "confidence": 1.0
+      },
+      {
+        "label": "bug",
+        "confidence": 1.0
+      },
+      {
+        "label": "chat client",
+        "confidence": 1.0
+      },
+      {
+        "label": "chat options",
+        "confidence": 1.0
+      },
+      {
+        "label": "configuration",
+        "confidence": 1.0
+      },
+      {
+        "label": "docker-compose",
+        "confidence": 1.0
+      },
+      {
+        "label": "documentation",
+        "confidence": 1.0
+      },
+      {
+        "label": "document-reader",
+        "confidence": 1.0
+      },
+      {
+        "label": "duplicate",
+        "confidence": 1.0
+      },
+      {
+        "label": "elastic search",
+        "confidence": 1.0
+      },
+      {
+        "label": "embedding",
+        "confidence": 1.0
+      },
+      {
+        "label": "enhancement",
+        "confidence": 1.0
+      },
+      {
+        "label": "Evaluation",
+        "confidence": 1.0
+      },
+      {
+        "label": "follow up",
+        "confidence": 1.0
+      },
+      {
+        "label": "gcp",
+        "confidence": 1.0
+      },
+      {
+        "label": "gemfire",
+        "confidence": 1.0
+      },
+      {
+        "label": "gemini",
+        "confidence": 1.0
+      },
+      {
+        "label": "guardrails",
+        "confidence": 1.0
+      },
+      {
+        "label": "huggingface",
+        "confidence": 1.0
+      },
+      {
+        "label": "i18n",
+        "confidence": 1.0
+      },
+      {
+        "label": "image models",
+        "confidence": 1.0
+      },
+      {
+        "label": "invalid",
+        "confidence": 1.0
+      },
+      {
+        "label": "MCP",
+        "confidence": 1.0
+      },
+      {
+        "label": "metadata filters",
+        "confidence": 1.0
+      },
+      {
+        "label": "milvus",
+        "confidence": 1.0
+      },
+      {
+        "label": "mistral",
+        "confidence": 1.0
+      },
+      {
+        "label": "model client",
+        "confidence": 1.0
+      },
+      {
+        "label": "model-option-utils",
+        "confidence": 1.0
+      },
+      {
+        "label": "mongo",
+        "confidence": 1.0
+      },
+      {
+        "label": "moonshot",
+        "confidence": 1.0
+      },
+      {
+        "label": "multimodality",
+        "confidence": 1.0
+      },
+      {
+        "label": "multiple models",
+        "confidence": 1.0
+      },
+      {
+        "label": "Observability",
+        "confidence": 1.0
+      },
+      {
+        "label": "ollama",
+        "confidence": 1.0
+      },
+      {
+        "label": "onxx",
+        "confidence": 1.0
+      },
+      {
+        "label": "openai",
+        "confidence": 1.0
+      },
+      {
+        "label": "opensearch",
+        "confidence": 1.0
+      },
+      {
+        "label": "pinecone",
+        "confidence": 1.0
+      },
+      {
+        "label": "postgresml",
+        "confidence": 1.0
+      },
+      {
+        "label": "prompt management",
+        "confidence": 1.0
+      },
+      {
+        "label": "qdrant",
+        "confidence": 1.0
+      },
+      {
+        "label": "qianfan",
+        "confidence": 1.0
+      },
+      {
+        "label": "question",
+        "confidence": 1.0
+      },
+      {
+        "label": "redis",
+        "confidence": 1.0
+      },
+      {
+        "label": "stabilityai",
+        "confidence": 1.0
+      },
+      {
+        "label": "structured output",
+        "confidence": 1.0
+      },
+      {
+        "label": "tool/function calling",
+        "confidence": 1.0
+      },
+      {
+        "label": "typesense",
+        "confidence": 1.0
+      },
+      {
+        "label": "vector store",
+        "confidence": 1.0
+      },
+      {
+        "label": "vertex",
+        "confidence": 1.0
+      },
+      {
+        "label": "watson",
+        "confidence": 1.0
+      },
+      {
+        "label": "ZhiPu",
+        "confidence": 1.0
+      },
+      {
+        "label": "azure",
+        "confidence": 0.9999999999999999
+      },
+      {
+        "label": "cassandra",
+        "confidence": 0.9999999999999999
+      },
+      {
+        "label": "chromadb",
+        "confidence": 0.9999999999999999
+      },
+      {
+        "label": "claude",
+        "confidence": 0.9999999999999999
+      },
+      {
+        "label": "client timeouts",
+        "confidence": 0.9999999999999999
+      },
+      {
+        "label": "coherence",
+        "confidence": 0.9999999999999999
+      },
+      {
+        "label": "deepseek",
+        "confidence": 0.9999999999999999
+      },
+      {
+        "label": "Getting Started Experience",
+        "confidence": 0.9999999999999999
+      },
+      {
+        "label": "kotlin",
+        "confidence": 0.9999999999999999
+      },
+      {
+        "label": "minimax",
+        "confidence": 0.9999999999999999
+      },
+      {
+        "label": "neo4j",
+        "confidence": 0.9999999999999999
+      },
+      {
+        "label": "status: to-discuss",
+        "confidence": 0.9999999999999999
+      },
+      {
+        "label": "status: waiting-for-feedback",
+        "confidence": 0.9999999999999999
+      },
+      {
+        "label": "transcription models",
+        "confidence": 0.9999999999999999
+      },
+      {
+        "label": "weaviate",
+        "confidence": 0.9999999999999999
+      },
+      {
+        "label": "Bedrock",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "breaking",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "code cleanup",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "couchbase",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "deprecation",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "epic",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "hybrid search",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "Malicious/Attack",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "mariadb",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "messages",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "oracle",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "status: backported",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "status: waiting-for-triage",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "CI/CD",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "cross platform",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "ETL",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "good first issue",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "integration testing",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "pgvector",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "security",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "speech",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "streaming",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "templating",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "testcontainers",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "testing",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "wontfix",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "audio",
+        "confidence": 0.7
+      },
+      {
+        "label": "Chat Memory",
+        "confidence": 0.7
+      },
+      {
+        "label": "for: backport-to-1.0.x",
+        "confidence": 0.7
+      },
+      {
+        "label": "improvement",
+        "confidence": 0.7
+      },
+      {
+        "label": "RAG",
+        "confidence": 0.7
+      },
+      {
+        "label": "refactoring",
+        "confidence": 0.7
+      },
+      {
+        "label": "retry",
+        "confidence": 0.7
+      },
+      {
+        "label": "type: backport",
+        "confidence": 0.7
+      },
+      {
+        "label": "design",
+        "confidence": 0.6
+      },
+      {
+        "label": "help wanted",
+        "confidence": 0.6
+      },
+      {
+        "label": "moderation",
+        "confidence": 0.6
+      },
+      {
+        "label": "next priorities",
+        "confidence": 0.6
+      }
+    ],
+    "explanation": "Issue about '[Observability] Initial Observability for Models' - classified based on content analysis"
+  },
+  {
+    "issue_number": 1878,
+    "predicted_labels": [
+      {
+        "label": "bug",
+        "confidence": 1.0
+      },
+      {
+        "label": "chat client",
+        "confidence": 1.0
+      },
+      {
+        "label": "model client",
+        "confidence": 1.0
+      },
+      {
+        "label": "streaming",
+        "confidence": 1.0
+      },
+      {
+        "label": "tool/function calling",
+        "confidence": 1.0
+      },
+      {
+        "label": "configuration",
+        "confidence": 0.9999999999999999
+      },
+      {
+        "label": "enhancement",
+        "confidence": 0.9999999999999999
+      },
+      {
+        "label": "anthropic",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "Bedrock",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "prompt management",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "structured output",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "multiple models",
+        "confidence": 0.8
+      },
+      {
+        "label": "client timeouts",
+        "confidence": 0.7
+      },
+      {
+        "label": "duplicate",
+        "confidence": 0.7
+      },
+      {
+        "label": "invalid",
+        "confidence": 0.7
+      },
+      {
+        "label": "messages",
+        "confidence": 0.7
+      },
+      {
+        "label": "onxx",
+        "confidence": 0.7
+      },
+      {
+        "label": "openai",
+        "confidence": 0.7
+      },
+      {
+        "label": "stabilityai",
+        "confidence": 0.7
+      },
+      {
+        "label": "advisors",
+        "confidence": 0.6
+      },
+      {
+        "label": "claude",
+        "confidence": 0.6
+      },
+      {
+        "label": "docker-compose",
+        "confidence": 0.6
+      },
+      {
+        "label": "embedding",
+        "confidence": 0.6
+      },
+      {
+        "label": "gemini",
+        "confidence": 0.6
+      },
+      {
+        "label": "i18n",
+        "confidence": 0.6
+      },
+      {
+        "label": "image models",
+        "confidence": 0.6
+      },
+      {
+        "label": "mistral",
+        "confidence": 0.6
+      },
+      {
+        "label": "ollama",
+        "confidence": 0.6
+      },
+      {
+        "label": "postgresml",
+        "confidence": 0.6
+      },
+      {
+        "label": "qdrant",
+        "confidence": 0.6
+      },
+      {
+        "label": "speech",
+        "confidence": 0.6
+      },
+      {
+        "label": "ZhiPu",
+        "confidence": 0.6
+      }
+    ],
+    "explanation": "Issue about 'Bedrock/Converse Chat Model Does not Properly Stream Tools When Using Suppliers vs Functions' - classified based on content analysis"
+  },
+  {
+    "issue_number": 1707,
+    "predicted_labels": [
+      {
+        "label": "streaming",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "testing",
+        "confidence": 0.7
+      }
+    ],
+    "explanation": "Issue about 'Streaming metrics not being captured' - classified based on content analysis"
+  },
+  {
+    "issue_number": 3110,
+    "predicted_labels": [
+      {
+        "label": "bug",
+        "confidence": 1.0
+      },
+      {
+        "label": "client timeouts",
+        "confidence": 1.0
+      },
+      {
+        "label": "messages",
+        "confidence": 0.8
+      },
+      {
+        "label": "ollama",
+        "confidence": 0.6
+      }
+    ],
+    "explanation": "Issue about 'If the MCP server defines content path, the client endpoint can pass the first GET request sent to the/se path, but sending a post request with the response/mcp/message is incorrect, resulting in a 404 error' - classified based on content analysis"
+  },
+  {
+    "issue_number": 2334,
+    "predicted_labels": [
+      {
+        "label": "dependencies",
+        "confidence": 1.0
+      },
+      {
+        "label": "openai",
+        "confidence": 0.8
+      },
+      {
+        "label": "documentation",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "tool/function calling",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "image models",
+        "confidence": 0.7
+      },
+      {
+        "label": "model client",
+        "confidence": 0.7
+      },
+      {
+        "label": "multiple models",
+        "confidence": 0.6000000000000001
+      },
+      {
+        "label": "anthropic",
+        "confidence": 0.6
+      }
+    ],
+    "explanation": "Issue about 'WatsonxAiChatModel is using wrong APIs' - classified based on content analysis"
+  },
+  {
+    "issue_number": 3219,
+    "predicted_labels": [
+      {
+        "label": "advisors",
+        "confidence": 1.0
+      },
+      {
+        "label": "anthropic",
+        "confidence": 1.0
+      },
+      {
+        "label": "Bedrock",
+        "confidence": 1.0
+      },
+      {
+        "label": "bug",
+        "confidence": 1.0
+      },
+      {
+        "label": "chat client",
+        "confidence": 1.0
+      },
+      {
+        "label": "Chat Memory",
+        "confidence": 1.0
+      },
+      {
+        "label": "messages",
+        "confidence": 1.0
+      },
+      {
+        "label": "pgvector",
+        "confidence": 1.0
+      },
+      {
+        "label": "prompt management",
+        "confidence": 1.0
+      },
+      {
+        "label": "streaming",
+        "confidence": 1.0
+      },
+      {
+        "label": "vector store",
+        "confidence": 1.0
+      },
+      {
+        "label": "model client",
+        "confidence": 0.8
+      },
+      {
+        "label": "embedding",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "templating",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "testing",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "cassandra",
+        "confidence": 0.7
+      },
+      {
+        "label": "claude",
+        "confidence": 0.7
+      },
+      {
+        "label": "client timeouts",
+        "confidence": 0.7
+      },
+      {
+        "label": "enhancement",
+        "confidence": 0.7
+      },
+      {
+        "label": "Evaluation",
+        "confidence": 0.7
+      },
+      {
+        "label": "metadata filters",
+        "confidence": 0.7
+      },
+      {
+        "label": "mongo",
+        "confidence": 0.7
+      },
+      {
+        "label": "neo4j",
+        "confidence": 0.7
+      },
+      {
+        "label": "oracle",
+        "confidence": 0.7
+      },
+      {
+        "label": "guardrails",
+        "confidence": 0.6000000000000001
+      },
+      {
+        "label": "configuration",
+        "confidence": 0.6
+      },
+      {
+        "label": "integration testing",
+        "confidence": 0.6
+      },
+      {
+        "label": "qdrant",
+        "confidence": 0.6
+      },
+      {
+        "label": "structured output",
+        "confidence": 0.6
+      }
+    ],
+    "explanation": "Issue about 'VectorStoreChatMemoryAdvisor Never Persist Assistant Response in Database For Bedrock Converse Streaming' - classified based on content analysis"
+  },
+  {
+    "issue_number": 1386,
+    "predicted_labels": [
+      {
+        "label": "bug",
+        "confidence": 1.0
+      },
+      {
+        "label": "ETL",
+        "confidence": 1.0
+      },
+      {
+        "label": "metadata filters",
+        "confidence": 1.0
+      },
+      {
+        "label": "advisors",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "documentation",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "streaming",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "Chat Memory",
+        "confidence": 0.7
+      },
+      {
+        "label": "tool/function calling",
+        "confidence": 0.7
+      },
+      {
+        "label": "qdrant",
+        "confidence": 0.6
+      }
+    ],
+    "explanation": "Issue about 'NullPointerException in TokenTextSplitter' - classified based on content analysis"
+  },
+  {
+    "issue_number": 2105,
+    "predicted_labels": [
+      {
+        "label": "metadata filters",
+        "confidence": 1.0
+      }
+    ],
+    "explanation": "Issue about 'Vector store API for deleting by filter expression' - classified based on content analysis"
+  },
+  {
+    "issue_number": 845,
+    "predicted_labels": [
+      {
+        "label": "duplicate",
+        "confidence": 1.0
+      },
+      {
+        "label": "metadata filters",
+        "confidence": 1.0
+      },
+      {
+        "label": "vector store",
+        "confidence": 1.0
+      },
+      {
+        "label": "bug",
+        "confidence": 0.9999999999999999
+      },
+      {
+        "label": "embedding",
+        "confidence": 0.9999999999999999
+      },
+      {
+        "label": "redis",
+        "confidence": 0.9999999999999999
+      },
+      {
+        "label": "mariadb",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "mongo",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "elastic search",
+        "confidence": 0.7
+      },
+      {
+        "label": "hybrid search",
+        "confidence": 0.7
+      },
+      {
+        "label": "neo4j",
+        "confidence": 0.7
+      },
+      {
+        "label": "opensearch",
+        "confidence": 0.7
+      },
+      {
+        "label": "oracle",
+        "confidence": 0.7
+      },
+      {
+        "label": "qdrant",
+        "confidence": 0.7
+      },
+      {
+        "label": "typesense",
+        "confidence": 0.7
+      },
+      {
+        "label": "chromadb",
+        "confidence": 0.6
+      },
+      {
+        "label": "couchbase",
+        "confidence": 0.6
+      },
+      {
+        "label": "dependencies",
+        "confidence": 0.6
+      },
+      {
+        "label": "weaviate",
+        "confidence": 0.6
+      }
+    ],
+    "explanation": "Issue about 'Exact similarity match with Redis Vector Store always retuning empty list' - classified based on content analysis"
+  },
+  {
+    "issue_number": 883,
+    "predicted_labels": [
+      {
+        "label": "configuration",
+        "confidence": 1.0
+      },
+      {
+        "label": "onxx",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "gemini",
+        "confidence": 0.7
+      },
+      {
+        "label": "i18n",
+        "confidence": 0.7
+      },
+      {
+        "label": "multiple models",
+        "confidence": 0.7
+      },
+      {
+        "label": "ollama",
+        "confidence": 0.7
+      },
+      {
+        "label": "ZhiPu",
+        "confidence": 0.7
+      },
+      {
+        "label": "model client",
+        "confidence": 0.6000000000000001
+      },
+      {
+        "label": "anthropic",
+        "confidence": 0.6
+      },
+      {
+        "label": "client timeouts",
+        "confidence": 0.6
+      },
+      {
+        "label": "enhancement",
+        "confidence": 0.6
+      },
+      {
+        "label": "vertex",
+        "confidence": 0.6
+      }
+    ],
+    "explanation": "Issue about 'Easy way to log requests and responses to LLM's' - classified based on content analysis"
+  },
+  {
+    "issue_number": 2335,
+    "predicted_labels": [
+      {
+        "label": "chat options",
+        "confidence": 0.7
+      },
+      {
+        "label": "anthropic",
+        "confidence": 0.6000000000000001
+      },
+      {
+        "label": "enhancement",
+        "confidence": 0.6
+      }
+    ],
+    "explanation": "Issue about 'Need HTTP header support for Anthropic' - classified based on content analysis"
+  },
+  {
+    "issue_number": 1331,
+    "predicted_labels": [
+      {
+        "label": "bug",
+        "confidence": 1.0
+      },
+      {
+        "label": "security",
+        "confidence": 0.9999999999999999
+      },
+      {
+        "label": "advisors",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "templating",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "Malicious/Attack",
+        "confidence": 0.7
+      },
+      {
+        "label": "prompt management",
+        "confidence": 0.7
+      }
+    ],
+    "explanation": "Issue about 'BUG: Security Vulnerability in StringTemplate' - classified based on content analysis"
+  },
+  {
+    "issue_number": 1591,
+    "predicted_labels": [
+      {
+        "label": "configuration",
+        "confidence": 1.0
+      },
+      {
+        "label": "tool/function calling",
+        "confidence": 0.7
+      }
+    ],
+    "explanation": "Issue about 'Address NestedConfigurationProperties in spring-ai core modules' - classified based on content analysis"
+  },
+  {
+    "issue_number": 1289,
+    "predicted_labels": [
+      {
+        "label": "anthropic",
+        "confidence": 1.0
+      },
+      {
+        "label": "image models",
+        "confidence": 0.8
+      }
+    ],
+    "explanation": "Issue about 'Spring AI projects page mispelled Anthropic \"Claud\" (should be \"Claude\")' - classified based on content analysis"
+  },
+  {
+    "issue_number": 1583,
+    "predicted_labels": [
+      {
+        "label": "anthropic",
+        "confidence": 1.0
+      },
+      {
+        "label": "bug",
+        "confidence": 1.0
+      },
+      {
+        "label": "model client",
+        "confidence": 1.0
+      },
+      {
+        "label": "streaming",
+        "confidence": 1.0
+      },
+      {
+        "label": "chat options",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "claude",
+        "confidence": 0.7
+      },
+      {
+        "label": "prompt management",
+        "confidence": 0.7
+      },
+      {
+        "label": "Bedrock",
+        "confidence": 0.6
+      },
+      {
+        "label": "client timeouts",
+        "confidence": 0.6
+      }
+    ],
+    "explanation": "Issue about 'In Anthropic 3 API, Response body is not showing in stacktrace if ChatModel.stream() fails' - classified based on content analysis"
+  },
+  {
+    "issue_number": 3115,
+    "predicted_labels": [
+      {
+        "label": "bug",
+        "confidence": 1.0
+      },
+      {
+        "label": "cassandra",
+        "confidence": 1.0
+      },
+      {
+        "label": "client timeouts",
+        "confidence": 1.0
+      },
+      {
+        "label": "configuration",
+        "confidence": 1.0
+      },
+      {
+        "label": "embedding",
+        "confidence": 1.0
+      },
+      {
+        "label": "image models",
+        "confidence": 1.0
+      },
+      {
+        "label": "structured output",
+        "confidence": 1.0
+      },
+      {
+        "label": "tool/function calling",
+        "confidence": 1.0
+      },
+      {
+        "label": "vector store",
+        "confidence": 1.0
+      },
+      {
+        "label": "document-reader",
+        "confidence": 0.9999999999999999
+      },
+      {
+        "label": "postgresml",
+        "confidence": 0.9999999999999999
+      },
+      {
+        "label": "stabilityai",
+        "confidence": 0.9999999999999999
+      },
+      {
+        "label": "streaming",
+        "confidence": 0.9999999999999999
+      },
+      {
+        "label": "advisors",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "enhancement",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "Evaluation",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "gemfire",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "gemini",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "mongo",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "ollama",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "openai",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "couchbase",
+        "confidence": 0.8
+      },
+      {
+        "label": "multiple models",
+        "confidence": 0.8
+      },
+      {
+        "label": "documentation",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "elastic search",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "guardrails",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "metadata filters",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "milvus",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "multimodality",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "onxx",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "opensearch",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "qdrant",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "redis",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "retry",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "typesense",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "weaviate",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "chat options",
+        "confidence": 0.7
+      },
+      {
+        "label": "chromadb",
+        "confidence": 0.7
+      },
+      {
+        "label": "coherence",
+        "confidence": 0.7
+      },
+      {
+        "label": "design",
+        "confidence": 0.7
+      },
+      {
+        "label": "i18n",
+        "confidence": 0.7
+      },
+      {
+        "label": "ZhiPu",
+        "confidence": 0.7
+      },
+      {
+        "label": "model client",
+        "confidence": 0.6000000000000001
+      },
+      {
+        "label": "AOT/Native",
+        "confidence": 0.6
+      },
+      {
+        "label": "audio",
+        "confidence": 0.6
+      },
+      {
+        "label": "breaking",
+        "confidence": 0.6
+      },
+      {
+        "label": "ETL",
+        "confidence": 0.6
+      },
+      {
+        "label": "mistral",
+        "confidence": 0.6
+      },
+      {
+        "label": "neo4j",
+        "confidence": 0.6
+      },
+      {
+        "label": "templating",
+        "confidence": 0.6
+      },
+      {
+        "label": "testing",
+        "confidence": 0.6
+      },
+      {
+        "label": "transcription models",
+        "confidence": 0.6
+      },
+      {
+        "label": "vertex",
+        "confidence": 0.6
+      }
+    ],
+    "explanation": "Issue about 'CassandraVectorStore: TypesafeDriverConfig gives Unknown profile 'spring-ai-updates'. Check your configuration' - classified based on content analysis"
+  },
+  {
+    "issue_number": 1843,
+    "predicted_labels": [
+      {
+        "label": "anthropic",
+        "confidence": 1.0
+      },
+      {
+        "label": "azure",
+        "confidence": 1.0
+      },
+      {
+        "label": "bug",
+        "confidence": 1.0
+      },
+      {
+        "label": "gemini",
+        "confidence": 1.0
+      },
+      {
+        "label": "ollama",
+        "confidence": 1.0
+      },
+      {
+        "label": "openai",
+        "confidence": 1.0
+      },
+      {
+        "label": "tool/function calling",
+        "confidence": 1.0
+      },
+      {
+        "label": "prompt management",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "ZhiPu",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "minimax",
+        "confidence": 0.8
+      },
+      {
+        "label": "mistral",
+        "confidence": 0.8
+      },
+      {
+        "label": "model client",
+        "confidence": 0.8
+      },
+      {
+        "label": "Bedrock",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "enhancement",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "claude",
+        "confidence": 0.7
+      },
+      {
+        "label": "multiple models",
+        "confidence": 0.7
+      },
+      {
+        "label": "Observability",
+        "confidence": 0.7
+      },
+      {
+        "label": "onxx",
+        "confidence": 0.7
+      },
+      {
+        "label": "question",
+        "confidence": 0.7
+      },
+      {
+        "label": "streaming",
+        "confidence": 0.7
+      },
+      {
+        "label": "vertex",
+        "confidence": 0.7
+      },
+      {
+        "label": "gcp",
+        "confidence": 0.6000000000000001
+      },
+      {
+        "label": "metadata filters",
+        "confidence": 0.6
+      }
+    ],
+    "explanation": "Issue about 'Fix usage in ChatResponse metadata when tool calling is used' - classified based on content analysis"
+  },
+  {
+    "issue_number": 2486,
+    "predicted_labels": [
+      {
+        "label": "bug",
+        "confidence": 1.0
+      },
+      {
+        "label": "configuration",
+        "confidence": 1.0
+      },
+      {
+        "label": "messages",
+        "confidence": 1.0
+      },
+      {
+        "label": "client timeouts",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "streaming",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "model client",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "ollama",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "qdrant",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "duplicate",
+        "confidence": 0.7
+      },
+      {
+        "label": "docker-compose",
+        "confidence": 0.6
+      },
+      {
+        "label": "MCP",
+        "confidence": 0.6
+      },
+      {
+        "label": "milvus",
+        "confidence": 0.6
+      },
+      {
+        "label": "multiple models",
+        "confidence": 0.6
+      },
+      {
+        "label": "question",
+        "confidence": 0.6
+      },
+      {
+        "label": "redis",
+        "confidence": 0.6
+      },
+      {
+        "label": "typesense",
+        "confidence": 0.6
+      },
+      {
+        "label": "weaviate",
+        "confidence": 0.6
+      }
+    ],
+    "explanation": "Issue about 'Multiple SSE connections issue and SYNC mode startup failure in McpClientAutoConfiguration' - classified based on content analysis"
+  },
+  {
+    "issue_number": 700,
+    "predicted_labels": [
+      {
+        "label": "enhancement",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "duplicate",
+        "confidence": 0.6
+      }
+    ],
+    "explanation": "Issue about 'JPMS' - classified based on content analysis"
+  },
+  {
+    "issue_number": 3659,
+    "predicted_labels": [
+      {
+        "label": "type: backport",
+        "confidence": 0.7999999999999999
+      }
+    ],
+    "explanation": "Issue about '[Refactor] Remove redundant null check in OpenAiApi.Builder#apiKey(String)' - classified based on content analysis"
+  },
+  {
+    "issue_number": 3526,
+    "predicted_labels": [
+      {
+        "label": "messages",
+        "confidence": 1.0
+      },
+      {
+        "label": "prompt management",
+        "confidence": 1.0
+      },
+      {
+        "label": "bug",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "templating",
+        "confidence": 0.6
+      }
+    ],
+    "explanation": "Issue about 'Invalid message type created when using SystemPromptTemplate builder' - classified based on content analysis"
+  },
+  {
+    "issue_number": 1028,
+    "predicted_labels": [
+      {
+        "label": "configuration",
+        "confidence": 1.0
+      },
+      {
+        "label": "image models",
+        "confidence": 1.0
+      },
+      {
+        "label": "documentation",
+        "confidence": 0.9999999999999999
+      },
+      {
+        "label": "embedding",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "ollama",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "vertex",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "gcp",
+        "confidence": 0.7
+      },
+      {
+        "label": "tool/function calling",
+        "confidence": 0.7
+      },
+      {
+        "label": "model client",
+        "confidence": 0.6000000000000001
+      },
+      {
+        "label": "multiple models",
+        "confidence": 0.6000000000000001
+      },
+      {
+        "label": "enhancement",
+        "confidence": 0.6
+      }
+    ],
+    "explanation": "Issue about 'New Vertex AI Embedding functionality breaks existing code' - classified based on content analysis"
+  },
+  {
+    "issue_number": 3741,
+    "predicted_labels": [
+      {
+        "label": "type: backport",
+        "confidence": 0.7999999999999999
+      }
+    ],
+    "explanation": "Issue about 'Incorrect use of ClassUtils.isAssignable' - classified based on content analysis"
+  },
+  {
+    "issue_number": 3092,
+    "predicted_labels": [
+      {
+        "label": "Chat Memory",
+        "confidence": 1.0
+      },
+      {
+        "label": "messages",
+        "confidence": 0.7
+      }
+    ],
+    "explanation": "Issue about 'Remove deprecated get method in ChatMemory' - classified based on content analysis"
+  },
+  {
+    "issue_number": 1373,
+    "predicted_labels": [
+      {
+        "label": "advisors",
+        "confidence": 1.0
+      },
+      {
+        "label": "bug",
+        "confidence": 1.0
+      },
+      {
+        "label": "chat client",
+        "confidence": 1.0
+      },
+      {
+        "label": "client timeouts",
+        "confidence": 1.0
+      },
+      {
+        "label": "configuration",
+        "confidence": 1.0
+      },
+      {
+        "label": "Evaluation",
+        "confidence": 1.0
+      },
+      {
+        "label": "gcp",
+        "confidence": 1.0
+      },
+      {
+        "label": "gemini",
+        "confidence": 1.0
+      },
+      {
+        "label": "guardrails",
+        "confidence": 1.0
+      },
+      {
+        "label": "model client",
+        "confidence": 1.0
+      },
+      {
+        "label": "multimodality",
+        "confidence": 1.0
+      },
+      {
+        "label": "multiple models",
+        "confidence": 1.0
+      },
+      {
+        "label": "ollama",
+        "confidence": 1.0
+      },
+      {
+        "label": "onxx",
+        "confidence": 1.0
+      },
+      {
+        "label": "prompt management",
+        "confidence": 1.0
+      },
+      {
+        "label": "streaming",
+        "confidence": 1.0
+      },
+      {
+        "label": "testing",
+        "confidence": 1.0
+      },
+      {
+        "label": "tool/function calling",
+        "confidence": 1.0
+      },
+      {
+        "label": "vertex",
+        "confidence": 1.0
+      },
+      {
+        "label": "anthropic",
+        "confidence": 0.9999999999999999
+      },
+      {
+        "label": "chat options",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "docker-compose",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "documentation",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "integration testing",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "minimax",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "model-option-utils",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "Observability",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "openai",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "structured output",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "ZhiPu",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "Bedrock",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "claude",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "enhancement",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "image models",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "mistral",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "qdrant",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "weaviate",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "cross platform",
+        "confidence": 0.7
+      },
+      {
+        "label": "deepseek",
+        "confidence": 0.7
+      },
+      {
+        "label": "dependencies",
+        "confidence": 0.7
+      },
+      {
+        "label": "milvus",
+        "confidence": 0.7
+      },
+      {
+        "label": "typesense",
+        "confidence": 0.7
+      },
+      {
+        "label": "watson",
+        "confidence": 0.7
+      },
+      {
+        "label": "kotlin",
+        "confidence": 0.6000000000000001
+      },
+      {
+        "label": "AOT/Native",
+        "confidence": 0.6
+      },
+      {
+        "label": "azure",
+        "confidence": 0.6
+      },
+      {
+        "label": "breaking",
+        "confidence": 0.6
+      },
+      {
+        "label": "chromadb",
+        "confidence": 0.6
+      },
+      {
+        "label": "CI/CD",
+        "confidence": 0.6
+      },
+      {
+        "label": "code cleanup",
+        "confidence": 0.6
+      },
+      {
+        "label": "coherence",
+        "confidence": 0.6
+      },
+      {
+        "label": "deprecation",
+        "confidence": 0.6
+      },
+      {
+        "label": "document-reader",
+        "confidence": 0.6
+      },
+      {
+        "label": "huggingface",
+        "confidence": 0.6
+      },
+      {
+        "label": "i18n",
+        "confidence": 0.6
+      },
+      {
+        "label": "invalid",
+        "confidence": 0.6
+      },
+      {
+        "label": "MCP",
+        "confidence": 0.6
+      },
+      {
+        "label": "mongo",
+        "confidence": 0.6
+      },
+      {
+        "label": "moonshot",
+        "confidence": 0.6
+      },
+      {
+        "label": "postgresml",
+        "confidence": 0.6
+      },
+      {
+        "label": "qianfan",
+        "confidence": 0.6
+      },
+      {
+        "label": "redis",
+        "confidence": 0.6
+      },
+      {
+        "label": "retry",
+        "confidence": 0.6
+      },
+      {
+        "label": "stabilityai",
+        "confidence": 0.6
+      },
+      {
+        "label": "status: backported",
+        "confidence": 0.6
+      },
+      {
+        "label": "templating",
+        "confidence": 0.6
+      },
+      {
+        "label": "testcontainers",
+        "confidence": 0.6
+      },
+      {
+        "label": "wontfix",
+        "confidence": 0.6
+      }
+    ],
+    "explanation": "Issue about 'Vertex Gemini: Unable to submit request because function parameters schema should be of type OBJECT' - classified based on content analysis"
+  },
+  {
+    "issue_number": 1622,
+    "predicted_labels": [
+      {
+        "label": "bug",
+        "confidence": 1.0
+      },
+      {
+        "label": "client timeouts",
+        "confidence": 1.0
+      },
+      {
+        "label": "configuration",
+        "confidence": 1.0
+      },
+      {
+        "label": "dependencies",
+        "confidence": 1.0
+      },
+      {
+        "label": "retry",
+        "confidence": 1.0
+      },
+      {
+        "label": "docker-compose",
+        "confidence": 0.9999999999999999
+      },
+      {
+        "label": "prompt management",
+        "confidence": 0.9999999999999999
+      },
+      {
+        "label": "templating",
+        "confidence": 0.9999999999999999
+      },
+      {
+        "label": "cross platform",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "i18n",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "messages",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "vertex",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "documentation",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "enhancement",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "gcp",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "ollama",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "ZhiPu",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "milvus",
+        "confidence": 0.7
+      },
+      {
+        "label": "qdrant",
+        "confidence": 0.7
+      },
+      {
+        "label": "Evaluation",
+        "confidence": 0.6
+      },
+      {
+        "label": "guardrails",
+        "confidence": 0.6
+      },
+      {
+        "label": "onxx",
+        "confidence": 0.6
+      },
+      {
+        "label": "redis",
+        "confidence": 0.6
+      },
+      {
+        "label": "typesense",
+        "confidence": 0.6
+      },
+      {
+        "label": "weaviate",
+        "confidence": 0.6
+      }
+    ],
+    "explanation": "Issue about 'App fails to boot on Cloud Foundry when using Spring Cloud Services Service Discovery' - classified based on content analysis"
+  },
+  {
+    "issue_number": 739,
+    "predicted_labels": [
+      {
+        "label": "streaming",
+        "confidence": 1.0
+      },
+      {
+        "label": "openai",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "enhancement",
+        "confidence": 0.7
+      },
+      {
+        "label": "mistral",
+        "confidence": 0.7
+      },
+      {
+        "label": "bug",
+        "confidence": 0.6
+      },
+      {
+        "label": "claude",
+        "confidence": 0.6
+      },
+      {
+        "label": "Observability",
+        "confidence": 0.6
+      }
+    ],
+    "explanation": "Issue about 'Add support for custom WebClientBuilder' - classified based on content analysis"
+  },
+  {
+    "issue_number": 3643,
+    "predicted_labels": [
+      {
+        "label": "Chat Memory",
+        "confidence": 1.0
+      },
+      {
+        "label": "type: backport",
+        "confidence": 0.7999999999999999
+      }
+    ],
+    "explanation": "Issue about 'migrate junit4 to junit5 in `JdbcChatMemoryRepositoryHsqldbAutoConfigIT`' - classified based on content analysis"
+  },
+  {
+    "issue_number": 1731,
+    "predicted_labels": [
+      {
+        "label": "enhancement",
+        "confidence": 1.0
+      },
+      {
+        "label": "tool/function calling",
+        "confidence": 1.0
+      },
+      {
+        "label": "image models",
+        "confidence": 0.6
+      }
+    ],
+    "explanation": "Issue about 'Add Builder interface for improved FunctionCallback construction' - classified based on content analysis"
+  },
+  {
+    "issue_number": 1678,
+    "predicted_labels": [
+      {
+        "label": "testing",
+        "confidence": 0.7
+      }
+    ],
+    "explanation": "Issue about 'Fix tests marked with @Disabled(\"GH-1645\")' - classified based on content analysis"
+  },
+  {
+    "issue_number": 847,
+    "predicted_labels": [
+      {
+        "label": "chat options",
+        "confidence": 1.0
+      },
+      {
+        "label": "configuration",
+        "confidence": 1.0
+      },
+      {
+        "label": "model client",
+        "confidence": 1.0
+      },
+      {
+        "label": "openai",
+        "confidence": 1.0
+      },
+      {
+        "label": "prompt management",
+        "confidence": 1.0
+      },
+      {
+        "label": "retry",
+        "confidence": 1.0
+      },
+      {
+        "label": "bug",
+        "confidence": 0.9999999999999999
+      },
+      {
+        "label": "client timeouts",
+        "confidence": 0.9999999999999999
+      },
+      {
+        "label": "streaming",
+        "confidence": 0.9999999999999999
+      },
+      {
+        "label": "templating",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "testing",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "integration testing",
+        "confidence": 0.7
+      },
+      {
+        "label": "multiple models",
+        "confidence": 0.7
+      },
+      {
+        "label": "ollama",
+        "confidence": 0.7
+      },
+      {
+        "label": "anthropic",
+        "confidence": 0.6
+      },
+      {
+        "label": "model-option-utils",
+        "confidence": 0.6
+      },
+      {
+        "label": "onxx",
+        "confidence": 0.6
+      },
+      {
+        "label": "question",
+        "confidence": 0.6
+      },
+      {
+        "label": "vertex",
+        "confidence": 0.6
+      }
+    ],
+    "explanation": "Issue about 'Uneffective RetryTemplate usage on openai chat stream request' - classified based on content analysis"
+  },
+  {
+    "issue_number": 853,
+    "predicted_labels": [
+      {
+        "label": "bug",
+        "confidence": 1.0
+      }
+    ],
+    "explanation": "Issue about 'Spelling mistake on Spring AI website' - classified based on content analysis"
+  },
+  {
+    "issue_number": 1138,
+    "predicted_labels": [
+      {
+        "label": "needs more info",
+        "confidence": 0.5
+      }
+    ],
+    "explanation": "Insufficient information to confidently assign specific labels"
+  },
+  {
+    "issue_number": 3625,
+    "predicted_labels": [
+      {
+        "label": "type: backport",
+        "confidence": 0.7999999999999999
+      }
+    ],
+    "explanation": "Issue about 'Remove hardcoded topK in BedrockConverseProxyChatProperties' - classified based on content analysis"
+  },
+  {
+    "issue_number": 3147,
+    "predicted_labels": [
+      {
+        "label": "vector store",
+        "confidence": 1.0
+      },
+      {
+        "label": "cassandra",
+        "confidence": 0.7
+      },
+      {
+        "label": "Chat Memory",
+        "confidence": 0.6
+      },
+      {
+        "label": "neo4j",
+        "confidence": 0.6
+      }
+    ],
+    "explanation": "Issue about 'pgvector's initializer should use the same name as is used everywhere else (always, never, embedded)' - classified based on content analysis"
+  },
+  {
+    "issue_number": 2337,
+    "predicted_labels": [
+      {
+        "label": "tool/function calling",
+        "confidence": 1.0
+      }
+    ],
+    "explanation": "Issue about 'Reverse the MethodToolCallback's ToolContext validation logic' - classified based on content analysis"
+  },
+  {
+    "issue_number": 3366,
+    "predicted_labels": [
+      {
+        "label": "advisors",
+        "confidence": 1.0
+      },
+      {
+        "label": "bug",
+        "confidence": 1.0
+      },
+      {
+        "label": "chat client",
+        "confidence": 1.0
+      },
+      {
+        "label": "Chat Memory",
+        "confidence": 1.0
+      },
+      {
+        "label": "chat options",
+        "confidence": 1.0
+      },
+      {
+        "label": "embedding",
+        "confidence": 1.0
+      },
+      {
+        "label": "image models",
+        "confidence": 1.0
+      },
+      {
+        "label": "messages",
+        "confidence": 1.0
+      },
+      {
+        "label": "model client",
+        "confidence": 1.0
+      },
+      {
+        "label": "openai",
+        "confidence": 1.0
+      },
+      {
+        "label": "prompt management",
+        "confidence": 1.0
+      },
+      {
+        "label": "streaming",
+        "confidence": 1.0
+      },
+      {
+        "label": "tool/function calling",
+        "confidence": 1.0
+      },
+      {
+        "label": "anthropic",
+        "confidence": 0.9999999999999999
+      },
+      {
+        "label": "cassandra",
+        "confidence": 0.9999999999999999
+      },
+      {
+        "label": "configuration",
+        "confidence": 0.9999999999999999
+      },
+      {
+        "label": "client timeouts",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "metadata filters",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "multiple models",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "neo4j",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "stabilityai",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "azure",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "dependencies",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "mistral",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "mongo",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "vector store",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "AOT/Native",
+        "confidence": 0.7
+      },
+      {
+        "label": "claude",
+        "confidence": 0.7
+      },
+      {
+        "label": "i18n",
+        "confidence": 0.7
+      },
+      {
+        "label": "kotlin",
+        "confidence": 0.7
+      },
+      {
+        "label": "model-option-utils",
+        "confidence": 0.7
+      },
+      {
+        "label": "Observability",
+        "confidence": 0.7
+      },
+      {
+        "label": "ollama",
+        "confidence": 0.7
+      },
+      {
+        "label": "onxx",
+        "confidence": 0.7
+      },
+      {
+        "label": "postgresml",
+        "confidence": 0.7
+      },
+      {
+        "label": "question",
+        "confidence": 0.7
+      },
+      {
+        "label": "speech",
+        "confidence": 0.7
+      },
+      {
+        "label": "ZhiPu",
+        "confidence": 0.7
+      },
+      {
+        "label": "audio",
+        "confidence": 0.6
+      },
+      {
+        "label": "Bedrock",
+        "confidence": 0.6
+      },
+      {
+        "label": "CI/CD",
+        "confidence": 0.6
+      },
+      {
+        "label": "couchbase",
+        "confidence": 0.6
+      },
+      {
+        "label": "cross platform",
+        "confidence": 0.6
+      },
+      {
+        "label": "deepseek",
+        "confidence": 0.6
+      },
+      {
+        "label": "document-reader",
+        "confidence": 0.6
+      },
+      {
+        "label": "duplicate",
+        "confidence": 0.6
+      },
+      {
+        "label": "elastic search",
+        "confidence": 0.6
+      },
+      {
+        "label": "Evaluation",
+        "confidence": 0.6
+      },
+      {
+        "label": "gemfire",
+        "confidence": 0.6
+      },
+      {
+        "label": "gemini",
+        "confidence": 0.6
+      },
+      {
+        "label": "huggingface",
+        "confidence": 0.6
+      },
+      {
+        "label": "hybrid search",
+        "confidence": 0.6
+      },
+      {
+        "label": "mariadb",
+        "confidence": 0.6
+      },
+      {
+        "label": "minimax",
+        "confidence": 0.6
+      },
+      {
+        "label": "moonshot",
+        "confidence": 0.6
+      },
+      {
+        "label": "multimodality",
+        "confidence": 0.6
+      },
+      {
+        "label": "opensearch",
+        "confidence": 0.6
+      },
+      {
+        "label": "oracle",
+        "confidence": 0.6
+      },
+      {
+        "label": "qdrant",
+        "confidence": 0.6
+      },
+      {
+        "label": "qianfan",
+        "confidence": 0.6
+      },
+      {
+        "label": "redis",
+        "confidence": 0.6
+      },
+      {
+        "label": "typesense",
+        "confidence": 0.6
+      },
+      {
+        "label": "watson",
+        "confidence": 0.6
+      }
+    ],
+    "explanation": "Issue about 'Streaming mode AssistantMessage does not retain toolCalls, causing issues with tool confirmation workflows' - classified based on content analysis"
+  },
+  {
+    "issue_number": 1536,
+    "predicted_labels": [
+      {
+        "label": "embedding",
+        "confidence": 1.0
+      },
+      {
+        "label": "ollama",
+        "confidence": 1.0
+      },
+      {
+        "label": "prompt management",
+        "confidence": 0.7
+      }
+    ],
+    "explanation": "Issue about 'Add Ollama embedding usage metadata' - classified based on content analysis"
+  },
+  {
+    "issue_number": 1874,
+    "predicted_labels": [
+      {
+        "label": "tool/function calling",
+        "confidence": 1.0
+      },
+      {
+        "label": "bug",
+        "confidence": 0.6
+      }
+    ],
+    "explanation": "Issue about 'Put builder class inside PortableFunctionCallingOptions' - classified based on content analysis"
+  },
+  {
+    "issue_number": 3131,
+    "predicted_labels": [
+      {
+        "label": "advisors",
+        "confidence": 1.0
+      },
+      {
+        "label": "chat client",
+        "confidence": 1.0
+      },
+      {
+        "label": "chat options",
+        "confidence": 1.0
+      },
+      {
+        "label": "client timeouts",
+        "confidence": 1.0
+      },
+      {
+        "label": "model client",
+        "confidence": 1.0
+      },
+      {
+        "label": "openai",
+        "confidence": 1.0
+      },
+      {
+        "label": "prompt management",
+        "confidence": 1.0
+      },
+      {
+        "label": "bug",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "configuration",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "Observability",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "document-reader",
+        "confidence": 0.7
+      },
+      {
+        "label": "multiple models",
+        "confidence": 0.7
+      },
+      {
+        "label": "ollama",
+        "confidence": 0.7
+      },
+      {
+        "label": "structured output",
+        "confidence": 0.7
+      },
+      {
+        "label": "anthropic",
+        "confidence": 0.6
+      },
+      {
+        "label": "audio",
+        "confidence": 0.6
+      },
+      {
+        "label": "deepseek",
+        "confidence": 0.6
+      },
+      {
+        "label": "Evaluation",
+        "confidence": 0.6
+      },
+      {
+        "label": "guardrails",
+        "confidence": 0.6
+      },
+      {
+        "label": "image models",
+        "confidence": 0.6
+      },
+      {
+        "label": "MCP",
+        "confidence": 0.6
+      },
+      {
+        "label": "model-option-utils",
+        "confidence": 0.6
+      },
+      {
+        "label": "onxx",
+        "confidence": 0.6
+      },
+      {
+        "label": "vertex",
+        "confidence": 0.6
+      }
+    ],
+    "explanation": "Issue about 'Observability don't work' - classified based on content analysis"
+  },
+  {
+    "issue_number": 421,
+    "predicted_labels": [
+      {
+        "label": "enhancement",
+        "confidence": 1.0
+      },
+      {
+        "label": "model client",
+        "confidence": 1.0
+      },
+      {
+        "label": "ollama",
+        "confidence": 1.0
+      },
+      {
+        "label": "image models",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "prompt management",
+        "confidence": 0.8
+      },
+      {
+        "label": "chat options",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "multimodality",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "tool/function calling",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "client timeouts",
+        "confidence": 0.7
+      },
+      {
+        "label": "onxx",
+        "confidence": 0.7
+      },
+      {
+        "label": "advisors",
+        "confidence": 0.6
+      },
+      {
+        "label": "anthropic",
+        "confidence": 0.6
+      },
+      {
+        "label": "chat client",
+        "confidence": 0.6
+      },
+      {
+        "label": "multiple models",
+        "confidence": 0.6
+      },
+      {
+        "label": "streaming",
+        "confidence": 0.6
+      },
+      {
+        "label": "structured output",
+        "confidence": 0.6
+      }
+    ],
+    "explanation": "Issue about 'Add images field support for Ollama generate endpoint (llava model)' - classified based on content analysis"
+  },
+  {
+    "issue_number": 3593,
+    "predicted_labels": [
+      {
+        "label": "advisors",
+        "confidence": 1.0
+      },
+      {
+        "label": "type: backport",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "chat client",
+        "confidence": 0.7
+      }
+    ],
+    "explanation": "Issue about 'feat: `ChatClient#mutate` adds copies of `advisors` and `advisorParams`.' - classified based on content analysis"
+  },
+  {
+    "issue_number": 1248,
+    "predicted_labels": [
+      {
+        "label": "anthropic",
+        "confidence": 1.0
+      },
+      {
+        "label": "streaming",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "claude",
+        "confidence": 0.8
+      },
+      {
+        "label": "bug",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "testing",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "model client",
+        "confidence": 0.7
+      },
+      {
+        "label": "multiple models",
+        "confidence": 0.7
+      },
+      {
+        "label": "integration testing",
+        "confidence": 0.6
+      }
+    ],
+    "explanation": "Issue about 'Anthropic chat model doesn't return the \"finish reason\" when in streaming mode' - classified based on content analysis"
+  },
+  {
+    "issue_number": 368,
+    "predicted_labels": [
+      {
+        "label": "chat client",
+        "confidence": 1.0
+      },
+      {
+        "label": "tool/function calling",
+        "confidence": 1.0
+      },
+      {
+        "label": "chat options",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "structured output",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "messages",
+        "confidence": 0.8
+      },
+      {
+        "label": "prompt management",
+        "confidence": 0.8
+      },
+      {
+        "label": "openai",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "model-option-utils",
+        "confidence": 0.6
+      }
+    ],
+    "explanation": "Issue about 'Function Call Response Is Not Inside ChatResponse Object' - classified based on content analysis"
+  },
+  {
+    "issue_number": 1936,
+    "predicted_labels": [
+      {
+        "label": "bug",
+        "confidence": 1.0
+      },
+      {
+        "label": "embedding",
+        "confidence": 1.0
+      },
+      {
+        "label": "metadata filters",
+        "confidence": 1.0
+      },
+      {
+        "label": "model client",
+        "confidence": 1.0
+      },
+      {
+        "label": "mongo",
+        "confidence": 1.0
+      },
+      {
+        "label": "streaming",
+        "confidence": 1.0
+      },
+      {
+        "label": "vector store",
+        "confidence": 1.0
+      },
+      {
+        "label": "client timeouts",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "couchbase",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "elastic search",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "mariadb",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "model-option-utils",
+        "confidence": 0.8
+      },
+      {
+        "label": "chat options",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "multimodality",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "neo4j",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "opensearch",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "oracle",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "anthropic",
+        "confidence": 0.7
+      },
+      {
+        "label": "documentation",
+        "confidence": 0.7
+      },
+      {
+        "label": "enhancement",
+        "confidence": 0.7
+      },
+      {
+        "label": "hybrid search",
+        "confidence": 0.7
+      },
+      {
+        "label": "qdrant",
+        "confidence": 0.7
+      },
+      {
+        "label": "redis",
+        "confidence": 0.7
+      },
+      {
+        "label": "structured output",
+        "confidence": 0.7
+      },
+      {
+        "label": "typesense",
+        "confidence": 0.7
+      },
+      {
+        "label": "advisors",
+        "confidence": 0.6
+      },
+      {
+        "label": "cassandra",
+        "confidence": 0.6
+      },
+      {
+        "label": "chromadb",
+        "confidence": 0.6
+      },
+      {
+        "label": "dependencies",
+        "confidence": 0.6
+      },
+      {
+        "label": "gemfire",
+        "confidence": 0.6
+      },
+      {
+        "label": "gemini",
+        "confidence": 0.6
+      },
+      {
+        "label": "guardrails",
+        "confidence": 0.6
+      },
+      {
+        "label": "ollama",
+        "confidence": 0.6
+      },
+      {
+        "label": "weaviate",
+        "confidence": 0.6
+      }
+    ],
+    "explanation": "Issue about 'ElasticSearch doSimilaritySearch broken after recent changes in Document ' - classified based on content analysis"
+  },
+  {
+    "issue_number": 295,
+    "predicted_labels": [
+      {
+        "label": "model client",
+        "confidence": 1.0
+      },
+      {
+        "label": "documentation",
+        "confidence": 0.7
+      },
+      {
+        "label": "enhancement",
+        "confidence": 0.7
+      }
+    ],
+    "explanation": "Issue about 'Add Generic Model documentation' - classified based on content analysis"
+  },
+  {
+    "issue_number": 613,
+    "predicted_labels": [
+      {
+        "label": "azure",
+        "confidence": 1.0
+      },
+      {
+        "label": "bug",
+        "confidence": 1.0
+      },
+      {
+        "label": "chat client",
+        "confidence": 1.0
+      },
+      {
+        "label": "chat options",
+        "confidence": 1.0
+      },
+      {
+        "label": "model-option-utils",
+        "confidence": 1.0
+      },
+      {
+        "label": "openai",
+        "confidence": 1.0
+      },
+      {
+        "label": "tool/function calling",
+        "confidence": 1.0
+      },
+      {
+        "label": "documentation",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "messages",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "model client",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "prompt management",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "structured output",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "client timeouts",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "anthropic",
+        "confidence": 0.7
+      },
+      {
+        "label": "guardrails",
+        "confidence": 0.7
+      },
+      {
+        "label": "multimodality",
+        "confidence": 0.7
+      },
+      {
+        "label": "multiple models",
+        "confidence": 0.7
+      },
+      {
+        "label": "configuration",
+        "confidence": 0.6
+      },
+      {
+        "label": "duplicate",
+        "confidence": 0.6
+      },
+      {
+        "label": "ollama",
+        "confidence": 0.6
+      },
+      {
+        "label": "onxx",
+        "confidence": 0.6
+      }
+    ],
+    "explanation": "Issue about '[Azure OpenAI] Function calling - Can't execute multiple function calls' - classified based on content analysis"
+  },
+  {
+    "issue_number": 526,
+    "predicted_labels": [
+      {
+        "label": "ollama",
+        "confidence": 1.0
+      },
+      {
+        "label": "tool/function calling",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "bug",
+        "confidence": 0.7
+      },
+      {
+        "label": "onxx",
+        "confidence": 0.6
+      }
+    ],
+    "explanation": "Issue about 'Function to load model on Spring Ollama' - classified based on content analysis"
+  },
+  {
+    "issue_number": 576,
+    "predicted_labels": [
+      {
+        "label": "cassandra",
+        "confidence": 1.0
+      },
+      {
+        "label": "configuration",
+        "confidence": 1.0
+      },
+      {
+        "label": "enhancement",
+        "confidence": 1.0
+      },
+      {
+        "label": "mongo",
+        "confidence": 1.0
+      },
+      {
+        "label": "vector store",
+        "confidence": 1.0
+      },
+      {
+        "label": "elastic search",
+        "confidence": 0.9999999999999999
+      },
+      {
+        "label": "duplicate",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "opensearch",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "redis",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "typesense",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "gemfire",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "i18n",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "metadata filters",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "qdrant",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "tool/function calling",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "weaviate",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "bug",
+        "confidence": 0.7
+      },
+      {
+        "label": "chromadb",
+        "confidence": 0.7
+      },
+      {
+        "label": "coherence",
+        "confidence": 0.7
+      },
+      {
+        "label": "couchbase",
+        "confidence": 0.7
+      },
+      {
+        "label": "embedding",
+        "confidence": 0.7
+      },
+      {
+        "label": "mariadb",
+        "confidence": 0.7
+      },
+      {
+        "label": "milvus",
+        "confidence": 0.7
+      },
+      {
+        "label": "neo4j",
+        "confidence": 0.7
+      },
+      {
+        "label": "AOT/Native",
+        "confidence": 0.6
+      },
+      {
+        "label": "dependencies",
+        "confidence": 0.6
+      },
+      {
+        "label": "hybrid search",
+        "confidence": 0.6
+      },
+      {
+        "label": "oracle",
+        "confidence": 0.6
+      },
+      {
+        "label": "pinecone",
+        "confidence": 0.6
+      },
+      {
+        "label": "ZhiPu",
+        "confidence": 0.6
+      }
+    ],
+    "explanation": "Issue about 'Should CassandraVectorStoreAutoConfiguration rely on CassandraAutoconfiguration?' - classified based on content analysis"
+  },
+  {
+    "issue_number": 1882,
+    "predicted_labels": [
+      {
+        "label": "Bedrock",
+        "confidence": 1.0
+      },
+      {
+        "label": "documentation",
+        "confidence": 1.0
+      },
+      {
+        "label": "enhancement",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "design",
+        "confidence": 0.6
+      },
+      {
+        "label": "onxx",
+        "confidence": 0.6
+      },
+      {
+        "label": "question",
+        "confidence": 0.6
+      }
+    ],
+    "explanation": "Issue about 'Add support for the new AWS Bedrock Nova models' - classified based on content analysis"
+  },
+  {
+    "issue_number": 1101,
+    "predicted_labels": [
+      {
+        "label": "embedding",
+        "confidence": 0.7
+      }
+    ],
+    "explanation": "Issue about 'Consolidate google vertex starters into one starter' - classified based on content analysis"
+  },
+  {
+    "issue_number": 2301,
+    "predicted_labels": [
+      {
+        "label": "bug",
+        "confidence": 1.0
+      },
+      {
+        "label": "client timeouts",
+        "confidence": 1.0
+      },
+      {
+        "label": "configuration",
+        "confidence": 1.0
+      },
+      {
+        "label": "MCP",
+        "confidence": 1.0
+      },
+      {
+        "label": "model client",
+        "confidence": 1.0
+      },
+      {
+        "label": "tool/function calling",
+        "confidence": 1.0
+      },
+      {
+        "label": "ZhiPu",
+        "confidence": 1.0
+      },
+      {
+        "label": "duplicate",
+        "confidence": 0.9999999999999999
+      },
+      {
+        "label": "i18n",
+        "confidence": 0.9999999999999999
+      },
+      {
+        "label": "multiple models",
+        "confidence": 0.9999999999999999
+      },
+      {
+        "label": "anthropic",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "ollama",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "onxx",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "vertex",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "messages",
+        "confidence": 0.8
+      },
+      {
+        "label": "Bedrock",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "chat options",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "cross platform",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "docker-compose",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "Evaluation",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "gemini",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "minimax",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "testcontainers",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "coherence",
+        "confidence": 0.7
+      },
+      {
+        "label": "dependencies",
+        "confidence": 0.7
+      },
+      {
+        "label": "elastic search",
+        "confidence": 0.7
+      },
+      {
+        "label": "integration testing",
+        "confidence": 0.7
+      },
+      {
+        "label": "metadata filters",
+        "confidence": 0.7
+      },
+      {
+        "label": "mistral",
+        "confidence": 0.7
+      },
+      {
+        "label": "mongo",
+        "confidence": 0.7
+      },
+      {
+        "label": "moonshot",
+        "confidence": 0.7
+      },
+      {
+        "label": "opensearch",
+        "confidence": 0.7
+      },
+      {
+        "label": "qdrant",
+        "confidence": 0.7
+      },
+      {
+        "label": "qianfan",
+        "confidence": 0.7
+      },
+      {
+        "label": "retry",
+        "confidence": 0.7
+      },
+      {
+        "label": "typesense",
+        "confidence": 0.7
+      },
+      {
+        "label": "watson",
+        "confidence": 0.7
+      },
+      {
+        "label": "weaviate",
+        "confidence": 0.7
+      },
+      {
+        "label": "azure",
+        "confidence": 0.6
+      },
+      {
+        "label": "chromadb",
+        "confidence": 0.6
+      },
+      {
+        "label": "deepseek",
+        "confidence": 0.6
+      },
+      {
+        "label": "documentation",
+        "confidence": 0.6
+      },
+      {
+        "label": "document-reader",
+        "confidence": 0.6
+      },
+      {
+        "label": "gcp",
+        "confidence": 0.6
+      },
+      {
+        "label": "huggingface",
+        "confidence": 0.6
+      },
+      {
+        "label": "hybrid search",
+        "confidence": 0.6
+      },
+      {
+        "label": "image models",
+        "confidence": 0.6
+      },
+      {
+        "label": "openai",
+        "confidence": 0.6
+      },
+      {
+        "label": "postgresml",
+        "confidence": 0.6
+      },
+      {
+        "label": "redis",
+        "confidence": 0.6
+      },
+      {
+        "label": "stabilityai",
+        "confidence": 0.6
+      },
+      {
+        "label": "streaming",
+        "confidence": 0.6
+      },
+      {
+        "label": "vector store",
+        "confidence": 0.6
+      }
+    ],
+    "explanation": "Issue about 'There is a bug in MCP client auto configuration, will cause: IllegalStateException: Multiple tools with the same name' - classified based on content analysis"
+  },
+  {
+    "issue_number": 1202,
+    "predicted_labels": [
+      {
+        "label": "tool/function calling",
+        "confidence": 1.0
+      },
+      {
+        "label": "openai",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "prompt management",
+        "confidence": 0.8
+      },
+      {
+        "label": "advisors",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "enhancement",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "question",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "Chat Memory",
+        "confidence": 0.7
+      },
+      {
+        "label": "messages",
+        "confidence": 0.6000000000000001
+      },
+      {
+        "label": "MCP",
+        "confidence": 0.6
+      }
+    ],
+    "explanation": "Issue about 'Possibility to connect function calls with messages they are related to' - classified based on content analysis"
+  },
+  {
+    "issue_number": 1548,
+    "predicted_labels": [
+      {
+        "label": "bug",
+        "confidence": 1.0
+      }
+    ],
+    "explanation": "Issue about 'ChromaApi have  a bug:  when metadata param  equal hnsw:M and value equal 1024 ,chroma's rest api is success ,but   spring-ai-chroma-store  is error' - classified based on content analysis"
+  },
+  {
+    "issue_number": 1665,
+    "predicted_labels": [
+      {
+        "label": "advisors",
+        "confidence": 1.0
+      },
+      {
+        "label": "bug",
+        "confidence": 1.0
+      },
+      {
+        "label": "chat client",
+        "confidence": 1.0
+      },
+      {
+        "label": "messages",
+        "confidence": 1.0
+      },
+      {
+        "label": "multimodality",
+        "confidence": 0.8
+      },
+      {
+        "label": "guardrails",
+        "confidence": 0.7
+      },
+      {
+        "label": "prompt management",
+        "confidence": 0.7
+      }
+    ],
+    "explanation": "Issue about ' userText cannot be null or empty caused by incomplete/incorrect check for messages in DefaultChatClientClass' - classified based on content analysis"
+  },
+  {
+    "issue_number": 2492,
+    "predicted_labels": [
+      {
+        "label": "enhancement",
+        "confidence": 1.0
+      },
+      {
+        "label": "messages",
+        "confidence": 0.8
+      },
+      {
+        "label": "duplicate",
+        "confidence": 0.7999999999999999
+      }
+    ],
+    "explanation": "Issue about 'add deepseek chat model support' - classified based on content analysis"
+  },
+  {
+    "issue_number": 2703,
+    "predicted_labels": [
+      {
+        "label": "azure",
+        "confidence": 1.0
+      },
+      {
+        "label": "chat options",
+        "confidence": 1.0
+      },
+      {
+        "label": "configuration",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "multiple models",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "openai",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "enhancement",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "model-option-utils",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "onxx",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "tool/function calling",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "anthropic",
+        "confidence": 0.7
+      },
+      {
+        "label": "gemini",
+        "confidence": 0.7
+      },
+      {
+        "label": "i18n",
+        "confidence": 0.7
+      },
+      {
+        "label": "mistral",
+        "confidence": 0.7
+      },
+      {
+        "label": "model client",
+        "confidence": 0.7
+      },
+      {
+        "label": "ollama",
+        "confidence": 0.7
+      },
+      {
+        "label": "ZhiPu",
+        "confidence": 0.7
+      },
+      {
+        "label": "advisors",
+        "confidence": 0.6
+      }
+    ],
+    "explanation": "Issue about 'Support \"reasoning_effort\" option in AzureOpenAiChatOptions' - classified based on content analysis"
+  },
+  {
+    "issue_number": 3762,
+    "predicted_labels": [
+      {
+        "label": "type: backport",
+        "confidence": 0.7999999999999999
+      }
+    ],
+    "explanation": "Issue about 'Improve the MCP document to stop referring to outdated DefaultMcpSession' - classified based on content analysis"
+  },
+  {
+    "issue_number": 1098,
+    "predicted_labels": [
+      {
+        "label": "Bedrock",
+        "confidence": 1.0
+      },
+      {
+        "label": "configuration",
+        "confidence": 0.9999999999999999
+      },
+      {
+        "label": "client timeouts",
+        "confidence": 0.7
+      },
+      {
+        "label": "enhancement",
+        "confidence": 0.6
+      },
+      {
+        "label": "gcp",
+        "confidence": 0.6
+      },
+      {
+        "label": "moonshot",
+        "confidence": 0.6
+      },
+      {
+        "label": "multiple models",
+        "confidence": 0.6
+      },
+      {
+        "label": "qianfan",
+        "confidence": 0.6
+      },
+      {
+        "label": "watson",
+        "confidence": 0.6
+      }
+    ],
+    "explanation": "Issue about 'How can I specify AWS profile from the configuration file? Bedrock client' - classified based on content analysis"
+  },
+  {
+    "issue_number": 731,
+    "predicted_labels": [
+      {
+        "label": "documentation",
+        "confidence": 1.0
+      },
+      {
+        "label": "redis",
+        "confidence": 0.7
+      }
+    ],
+    "explanation": "Issue about 'Improve Vector Store documentation' - classified based on content analysis"
+  },
+  {
+    "issue_number": 1139,
+    "predicted_labels": [
+      {
+        "label": "documentation",
+        "confidence": 0.7
+      }
+    ],
+    "explanation": "Issue about 'Official website documentation tutorial error' - classified based on content analysis"
+  },
+  {
+    "issue_number": 2367,
+    "predicted_labels": [
+      {
+        "label": "image models",
+        "confidence": 1.0
+      },
+      {
+        "label": "enhancement",
+        "confidence": 0.9999999999999999
+      },
+      {
+        "label": "structured output",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "tool/function calling",
+        "confidence": 0.8999999999999999
+      }
+    ],
+    "explanation": "Issue about 'Add support for tools returning images' - classified based on content analysis"
+  },
+  {
+    "issue_number": 1715,
+    "predicted_labels": [
+      {
+        "label": "bug",
+        "confidence": 1.0
+      },
+      {
+        "label": "configuration",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "image models",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "client timeouts",
+        "confidence": 0.7
+      },
+      {
+        "label": "mongo",
+        "confidence": 0.6
+      },
+      {
+        "label": "qdrant",
+        "confidence": 0.6
+      },
+      {
+        "label": "typesense",
+        "confidence": 0.6
+      },
+      {
+        "label": "vector store",
+        "confidence": 0.6
+      }
+    ],
+    "explanation": "Issue about 'ChromaDB vector store port configuration doesn't register' - classified based on content analysis"
+  },
+  {
+    "issue_number": 1636,
+    "predicted_labels": [
+      {
+        "label": "RAG",
+        "confidence": 0.9999999999999999
+      },
+      {
+        "label": "duplicate",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "enhancement",
+        "confidence": 0.7999999999999999
+      }
+    ],
+    "explanation": "Issue about 'support KAG' - classified based on content analysis"
+  },
+  {
+    "issue_number": 1487,
+    "predicted_labels": [
+      {
+        "label": "azure",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "enhancement",
+        "confidence": 0.6
+      },
+      {
+        "label": "question",
+        "confidence": 0.6
+      }
+    ],
+    "explanation": "Issue about 'Simplify implementation of Usage in OpenAI support' - classified based on content analysis"
+  },
+  {
+    "issue_number": 860,
+    "predicted_labels": [
+      {
+        "label": "bug",
+        "confidence": 1.0
+      },
+      {
+        "label": "duplicate",
+        "confidence": 1.0
+      },
+      {
+        "label": "messages",
+        "confidence": 1.0
+      },
+      {
+        "label": "metadata filters",
+        "confidence": 1.0
+      },
+      {
+        "label": "tool/function calling",
+        "confidence": 1.0
+      },
+      {
+        "label": "configuration",
+        "confidence": 0.9999999999999999
+      },
+      {
+        "label": "azure",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "testing",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "hybrid search",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "multimodality",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "anthropic",
+        "confidence": 0.7
+      },
+      {
+        "label": "documentation",
+        "confidence": 0.7
+      },
+      {
+        "label": "integration testing",
+        "confidence": 0.7
+      },
+      {
+        "label": "invalid",
+        "confidence": 0.7
+      },
+      {
+        "label": "advisors",
+        "confidence": 0.6
+      },
+      {
+        "label": "chromadb",
+        "confidence": 0.6
+      },
+      {
+        "label": "CI/CD",
+        "confidence": 0.6
+      },
+      {
+        "label": "claude",
+        "confidence": 0.6
+      },
+      {
+        "label": "mariadb",
+        "confidence": 0.6
+      },
+      {
+        "label": "neo4j",
+        "confidence": 0.6
+      },
+      {
+        "label": "openai",
+        "confidence": 0.6
+      },
+      {
+        "label": "qdrant",
+        "confidence": 0.6
+      },
+      {
+        "label": "streaming",
+        "confidence": 0.6
+      },
+      {
+        "label": "typesense",
+        "confidence": 0.6
+      },
+      {
+        "label": "weaviate",
+        "confidence": 0.6
+      }
+    ],
+    "explanation": "Issue about 'Build a function call without input parameter in spring AI' - classified based on content analysis"
+  },
+  {
+    "issue_number": 1126,
+    "predicted_labels": [
+      {
+        "label": "redis",
+        "confidence": 1.0
+      },
+      {
+        "label": "vector store",
+        "confidence": 1.0
+      },
+      {
+        "label": "mongo",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "cassandra",
+        "confidence": 0.7
+      },
+      {
+        "label": "couchbase",
+        "confidence": 0.7
+      },
+      {
+        "label": "mariadb",
+        "confidence": 0.7
+      },
+      {
+        "label": "milvus",
+        "confidence": 0.7
+      },
+      {
+        "label": "neo4j",
+        "confidence": 0.7
+      },
+      {
+        "label": "oracle",
+        "confidence": 0.7
+      },
+      {
+        "label": "typesense",
+        "confidence": 0.7
+      },
+      {
+        "label": "weaviate",
+        "confidence": 0.7
+      },
+      {
+        "label": "bug",
+        "confidence": 0.6
+      },
+      {
+        "label": "chromadb",
+        "confidence": 0.6
+      },
+      {
+        "label": "configuration",
+        "confidence": 0.6
+      },
+      {
+        "label": "elastic search",
+        "confidence": 0.6
+      },
+      {
+        "label": "embedding",
+        "confidence": 0.6
+      },
+      {
+        "label": "gemfire",
+        "confidence": 0.6
+      },
+      {
+        "label": "ollama",
+        "confidence": 0.6
+      },
+      {
+        "label": "opensearch",
+        "confidence": 0.6
+      },
+      {
+        "label": "qdrant",
+        "confidence": 0.6
+      }
+    ],
+    "explanation": "Issue about 'How to wire Redis Sentinel properties with Spring -AI' - classified based on content analysis"
+  },
+  {
+    "issue_number": 1609,
+    "predicted_labels": [
+      {
+        "label": "bug",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "embedding",
+        "confidence": 0.8
+      },
+      {
+        "label": "structured output",
+        "confidence": 0.7
+      }
+    ],
+    "explanation": "Issue about 'Token usage metrics adding up strangely' - classified based on content analysis"
+  },
+  {
+    "issue_number": 549,
+    "predicted_labels": [
+      {
+        "label": "chat options",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "ollama",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "tool/function calling",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "metadata filters",
+        "confidence": 0.7
+      }
+    ],
+    "explanation": "Issue about 'Consider categorising the ChatOptions into Model and Request category of options' - classified based on content analysis"
+  },
+  {
+    "issue_number": 3734,
+    "predicted_labels": [
+      {
+        "label": "type: backport",
+        "confidence": 0.7999999999999999
+      }
+    ],
+    "explanation": "Issue about 'Use diamond operator where possible' - classified based on content analysis"
+  },
+  {
+    "issue_number": 3745,
+    "predicted_labels": [
+      {
+        "label": "prompt management",
+        "confidence": 1.0
+      },
+      {
+        "label": "type: backport",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "messages",
+        "confidence": 0.7
+      },
+      {
+        "label": "templating",
+        "confidence": 0.6
+      }
+    ],
+    "explanation": "Issue about 'Invalid message type created when using SystemPromptTemplate builder' - classified based on content analysis"
+  },
+  {
+    "issue_number": 833,
+    "predicted_labels": [
+      {
+        "label": "azure",
+        "confidence": 1.0
+      },
+      {
+        "label": "bug",
+        "confidence": 1.0
+      },
+      {
+        "label": "chat options",
+        "confidence": 1.0
+      },
+      {
+        "label": "duplicate",
+        "confidence": 1.0
+      },
+      {
+        "label": "embedding",
+        "confidence": 1.0
+      },
+      {
+        "label": "messages",
+        "confidence": 1.0
+      },
+      {
+        "label": "metadata filters",
+        "confidence": 1.0
+      },
+      {
+        "label": "model client",
+        "confidence": 1.0
+      },
+      {
+        "label": "mongo",
+        "confidence": 1.0
+      },
+      {
+        "label": "multimodality",
+        "confidence": 1.0
+      },
+      {
+        "label": "openai",
+        "confidence": 1.0
+      },
+      {
+        "label": "prompt management",
+        "confidence": 1.0
+      },
+      {
+        "label": "streaming",
+        "confidence": 1.0
+      },
+      {
+        "label": "structured output",
+        "confidence": 1.0
+      },
+      {
+        "label": "tool/function calling",
+        "confidence": 1.0
+      },
+      {
+        "label": "typesense",
+        "confidence": 1.0
+      },
+      {
+        "label": "vector store",
+        "confidence": 1.0
+      },
+      {
+        "label": "anthropic",
+        "confidence": 0.9999999999999999
+      },
+      {
+        "label": "cassandra",
+        "confidence": 0.9999999999999999
+      },
+      {
+        "label": "chromadb",
+        "confidence": 0.9999999999999999
+      },
+      {
+        "label": "docker-compose",
+        "confidence": 0.9999999999999999
+      },
+      {
+        "label": "elastic search",
+        "confidence": 0.9999999999999999
+      },
+      {
+        "label": "ollama",
+        "confidence": 0.9999999999999999
+      },
+      {
+        "label": "qdrant",
+        "confidence": 0.9999999999999999
+      },
+      {
+        "label": "redis",
+        "confidence": 0.9999999999999999
+      },
+      {
+        "label": "weaviate",
+        "confidence": 0.9999999999999999
+      },
+      {
+        "label": "couchbase",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "enhancement",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "hybrid search",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "mariadb",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "neo4j",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "onxx",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "opensearch",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "ZhiPu",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "deepseek",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "MCP",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "milvus",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "minimax",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "oracle",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "testcontainers",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "advisors",
+        "confidence": 0.7
+      },
+      {
+        "label": "Bedrock",
+        "confidence": 0.7
+      },
+      {
+        "label": "Chat Memory",
+        "confidence": 0.7
+      },
+      {
+        "label": "client timeouts",
+        "confidence": 0.7
+      },
+      {
+        "label": "coherence",
+        "confidence": 0.7
+      },
+      {
+        "label": "configuration",
+        "confidence": 0.7
+      },
+      {
+        "label": "dependencies",
+        "confidence": 0.7
+      },
+      {
+        "label": "Evaluation",
+        "confidence": 0.7
+      },
+      {
+        "label": "gemfire",
+        "confidence": 0.7
+      },
+      {
+        "label": "guardrails",
+        "confidence": 0.7
+      },
+      {
+        "label": "huggingface",
+        "confidence": 0.7
+      },
+      {
+        "label": "i18n",
+        "confidence": 0.7
+      },
+      {
+        "label": "model-option-utils",
+        "confidence": 0.7
+      },
+      {
+        "label": "multiple models",
+        "confidence": 0.7
+      },
+      {
+        "label": "postgresml",
+        "confidence": 0.7
+      },
+      {
+        "label": "vertex",
+        "confidence": 0.7
+      },
+      {
+        "label": "AOT/Native",
+        "confidence": 0.6
+      },
+      {
+        "label": "chat client",
+        "confidence": 0.6
+      },
+      {
+        "label": "cross platform",
+        "confidence": 0.6
+      },
+      {
+        "label": "deprecation",
+        "confidence": 0.6
+      },
+      {
+        "label": "gcp",
+        "confidence": 0.6
+      },
+      {
+        "label": "gemini",
+        "confidence": 0.6
+      },
+      {
+        "label": "kotlin",
+        "confidence": 0.6
+      },
+      {
+        "label": "mistral",
+        "confidence": 0.6
+      },
+      {
+        "label": "Observability",
+        "confidence": 0.6
+      },
+      {
+        "label": "pgvector",
+        "confidence": 0.6
+      }
+    ],
+    "explanation": "Issue about 'Investigate IllegalArgumentException in Azure Function Calling' - classified based on content analysis"
+  },
+  {
+    "issue_number": 1543,
+    "predicted_labels": [
+      {
+        "label": "documentation",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "tool/function calling",
+        "confidence": 0.7999999999999999
+      }
+    ],
+    "explanation": "Issue about 'Inaccurate warning for VertexAI Gemini Function Calling ' - classified based on content analysis"
+  },
+  {
+    "issue_number": 1329,
+    "predicted_labels": [
+      {
+        "label": "needs more info",
+        "confidence": 0.4
+      }
+    ],
+    "explanation": "Insufficient information to confidently assign specific labels"
+  },
+  {
+    "issue_number": 2983,
+    "predicted_labels": [
+      {
+        "label": "embedding",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "Bedrock",
+        "confidence": 0.6
+      }
+    ],
+    "explanation": "Issue about 'Add Observability to Bedrock Embedding Models' - classified based on content analysis"
+  },
+  {
+    "issue_number": 1307,
+    "predicted_labels": [
+      {
+        "label": "needs more info",
+        "confidence": 0.5
+      }
+    ],
+    "explanation": "Insufficient information to confidently assign specific labels"
+  },
+  {
+    "issue_number": 3205,
+    "predicted_labels": [
+      {
+        "label": "client timeouts",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "configuration",
+        "confidence": 0.7
+      }
+    ],
+    "explanation": "Issue about 'Please add a config of mcp server request timeout, default 10s is too short.' - classified based on content analysis"
+  },
+  {
+    "issue_number": 992,
+    "predicted_labels": [
+      {
+        "label": "ollama",
+        "confidence": 1.0
+      },
+      {
+        "label": "tool/function calling",
+        "confidence": 0.8999999999999999
+      }
+    ],
+    "explanation": "Issue about 'Question about ollama + qwen' - classified based on content analysis"
+  },
+  {
+    "issue_number": 3086,
+    "predicted_labels": [
+      {
+        "label": "documentation",
+        "confidence": 1.0
+      },
+      {
+        "label": "MCP",
+        "confidence": 1.0
+      },
+      {
+        "label": "question",
+        "confidence": 1.0
+      },
+      {
+        "label": "tool/function calling",
+        "confidence": 1.0
+      },
+      {
+        "label": "bug",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "configuration",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "enhancement",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "client timeouts",
+        "confidence": 0.6
+      },
+      {
+        "label": "dependencies",
+        "confidence": 0.6
+      },
+      {
+        "label": "model client",
+        "confidence": 0.6
+      }
+    ],
+    "explanation": "Issue about 'Issue Report: Inconsistency in Spring AI MCP Client documentation regarding default value of toolcallback.enabled' - classified based on content analysis"
+  },
+  {
+    "issue_number": 1617,
+    "predicted_labels": [
+      {
+        "label": "bug",
+        "confidence": 1.0
+      },
+      {
+        "label": "duplicate",
+        "confidence": 1.0
+      },
+      {
+        "label": "metadata filters",
+        "confidence": 1.0
+      },
+      {
+        "label": "vector store",
+        "confidence": 1.0
+      },
+      {
+        "label": "embedding",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "image models",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "oracle",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "hybrid search",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "mariadb",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "mongo",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "milvus",
+        "confidence": 0.7
+      },
+      {
+        "label": "neo4j",
+        "confidence": 0.7
+      },
+      {
+        "label": "qdrant",
+        "confidence": 0.7
+      },
+      {
+        "label": "testing",
+        "confidence": 0.7
+      },
+      {
+        "label": "chromadb",
+        "confidence": 0.6
+      },
+      {
+        "label": "elastic search",
+        "confidence": 0.6
+      },
+      {
+        "label": "integration testing",
+        "confidence": 0.6
+      },
+      {
+        "label": "opensearch",
+        "confidence": 0.6
+      },
+      {
+        "label": "testcontainers",
+        "confidence": 0.6
+      },
+      {
+        "label": "typesense",
+        "confidence": 0.6
+      },
+      {
+        "label": "weaviate",
+        "confidence": 0.6
+      }
+    ],
+    "explanation": "Issue about 'Milvus 2.3.4 Search for bugs' - classified based on content analysis"
+  },
+  {
+    "issue_number": 1341,
+    "predicted_labels": [
+      {
+        "label": "bug",
+        "confidence": 1.0
+      },
+      {
+        "label": "elastic search",
+        "confidence": 1.0
+      },
+      {
+        "label": "embedding",
+        "confidence": 1.0
+      },
+      {
+        "label": "testing",
+        "confidence": 1.0
+      },
+      {
+        "label": "vector store",
+        "confidence": 1.0
+      },
+      {
+        "label": "mongo",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "documentation",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "qdrant",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "metadata filters",
+        "confidence": 0.7
+      },
+      {
+        "label": "opensearch",
+        "confidence": 0.7
+      },
+      {
+        "label": "chromadb",
+        "confidence": 0.6
+      },
+      {
+        "label": "couchbase",
+        "confidence": 0.6
+      },
+      {
+        "label": "Evaluation",
+        "confidence": 0.6
+      },
+      {
+        "label": "integration testing",
+        "confidence": 0.6
+      },
+      {
+        "label": "mariadb",
+        "confidence": 0.6
+      },
+      {
+        "label": "redis",
+        "confidence": 0.6
+      },
+      {
+        "label": "typesense",
+        "confidence": 0.6
+      }
+    ],
+    "explanation": "Issue about 'Possible bug found in TokenCountBatchingStrategy, affecting vector stores' - classified based on content analysis"
+  },
+  {
+    "issue_number": 315,
+    "predicted_labels": [
+      {
+        "label": "needs more info",
+        "confidence": 0.5
+      }
+    ],
+    "explanation": "Insufficient information to confidently assign specific labels"
+  },
+  {
+    "issue_number": 814,
+    "predicted_labels": [
+      {
+        "label": "openai",
+        "confidence": 1.0
+      },
+      {
+        "label": "streaming",
+        "confidence": 1.0
+      },
+      {
+        "label": "chat options",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "prompt management",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "anthropic",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "enhancement",
+        "confidence": 0.7
+      },
+      {
+        "label": "model client",
+        "confidence": 0.6000000000000001
+      },
+      {
+        "label": "mistral",
+        "confidence": 0.6
+      },
+      {
+        "label": "model-option-utils",
+        "confidence": 0.6
+      },
+      {
+        "label": "ollama",
+        "confidence": 0.6
+      },
+      {
+        "label": "onxx",
+        "confidence": 0.6
+      },
+      {
+        "label": "question",
+        "confidence": 0.6
+      },
+      {
+        "label": "ZhiPu",
+        "confidence": 0.6
+      }
+    ],
+    "explanation": "Issue about 'Add Support for get usage tokens' - classified based on content analysis"
+  },
+  {
+    "issue_number": 694,
+    "predicted_labels": [
+      {
+        "label": "azure",
+        "confidence": 1.0
+      },
+      {
+        "label": "chat client",
+        "confidence": 0.8
+      },
+      {
+        "label": "question",
+        "confidence": 0.6
+      },
+      {
+        "label": "structured output",
+        "confidence": 0.6
+      }
+    ],
+    "explanation": "Issue about 'Can not get the usage info when using AzureOpenAiChatClient with stream() method' - classified based on content analysis"
+  },
+  {
+    "issue_number": 3655,
+    "predicted_labels": [
+      {
+        "label": "type: backport",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "testing",
+        "confidence": 0.6
+      }
+    ],
+    "explanation": "Issue about 'fix: Added a license header for `FileDocumentWriterTest`' - classified based on content analysis"
+  },
+  {
+    "issue_number": 1592,
+    "predicted_labels": [
+      {
+        "label": "enhancement",
+        "confidence": 0.7
+      },
+      {
+        "label": "testing",
+        "confidence": 0.7
+      },
+      {
+        "label": "design",
+        "confidence": 0.6
+      }
+    ],
+    "explanation": "Issue about 'Consistent design of Options builder classes' - classified based on content analysis"
+  },
+  {
+    "issue_number": 3415,
+    "predicted_labels": [
+      {
+        "label": "bug",
+        "confidence": 1.0
+      },
+      {
+        "label": "retry",
+        "confidence": 1.0
+      },
+      {
+        "label": "enhancement",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "client timeouts",
+        "confidence": 0.7
+      },
+      {
+        "label": "model client",
+        "confidence": 0.6
+      }
+    ],
+    "explanation": "Issue about 'ResponseErrorHandler used in `RetryUtils` fails with Spring Framework 7.x' - classified based on content analysis"
+  },
+  {
+    "issue_number": 2861,
+    "predicted_labels": [
+      {
+        "label": "advisors",
+        "confidence": 1.0
+      },
+      {
+        "label": "anthropic",
+        "confidence": 1.0
+      },
+      {
+        "label": "chat client",
+        "confidence": 1.0
+      },
+      {
+        "label": "Chat Memory",
+        "confidence": 1.0
+      },
+      {
+        "label": "chat options",
+        "confidence": 1.0
+      },
+      {
+        "label": "embedding",
+        "confidence": 1.0
+      },
+      {
+        "label": "image models",
+        "confidence": 1.0
+      },
+      {
+        "label": "model client",
+        "confidence": 1.0
+      },
+      {
+        "label": "openai",
+        "confidence": 1.0
+      },
+      {
+        "label": "prompt management",
+        "confidence": 1.0
+      },
+      {
+        "label": "tool/function calling",
+        "confidence": 1.0
+      },
+      {
+        "label": "vector store",
+        "confidence": 1.0
+      },
+      {
+        "label": "ollama",
+        "confidence": 0.9999999999999999
+      },
+      {
+        "label": "messages",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "templating",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "Bedrock",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "bug",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "cassandra",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "client timeouts",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "testing",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "code cleanup",
+        "confidence": 0.7
+      },
+      {
+        "label": "configuration",
+        "confidence": 0.7
+      },
+      {
+        "label": "documentation",
+        "confidence": 0.7
+      },
+      {
+        "label": "guardrails",
+        "confidence": 0.7
+      },
+      {
+        "label": "multimodality",
+        "confidence": 0.7
+      },
+      {
+        "label": "neo4j",
+        "confidence": 0.7
+      },
+      {
+        "label": "question",
+        "confidence": 0.7
+      },
+      {
+        "label": "multiple models",
+        "confidence": 0.6000000000000001
+      },
+      {
+        "label": "breaking",
+        "confidence": 0.6
+      },
+      {
+        "label": "deprecation",
+        "confidence": 0.6
+      },
+      {
+        "label": "document-reader",
+        "confidence": 0.6
+      },
+      {
+        "label": "gemini",
+        "confidence": 0.6
+      },
+      {
+        "label": "integration testing",
+        "confidence": 0.6
+      },
+      {
+        "label": "minimax",
+        "confidence": 0.6
+      },
+      {
+        "label": "model-option-utils",
+        "confidence": 0.6
+      },
+      {
+        "label": "mongo",
+        "confidence": 0.6
+      }
+    ],
+    "explanation": "Issue about 'EPIC - Removing deprecated code' - classified based on content analysis"
+  },
+  {
+    "issue_number": 1506,
+    "predicted_labels": [
+      {
+        "label": "documentation",
+        "confidence": 1.0
+      },
+      {
+        "label": "openai",
+        "confidence": 0.7
+      },
+      {
+        "label": "prompt management",
+        "confidence": 0.7
+      },
+      {
+        "label": "enhancement",
+        "confidence": 0.6
+      }
+    ],
+    "explanation": "Issue about 'Add Support for Cached Tokens in OpenAI Usage Model' - classified based on content analysis"
+  },
+  {
+    "issue_number": 3670,
+    "predicted_labels": [
+      {
+        "label": "vector store",
+        "confidence": 1.0
+      },
+      {
+        "label": "embedding",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "type: backport",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "metadata filters",
+        "confidence": 0.6
+      },
+      {
+        "label": "mongo",
+        "confidence": 0.6
+      }
+    ],
+    "explanation": "Issue about 'Remove `@Nullable` from VectorStore similaritySearch' - classified based on content analysis"
+  },
+  {
+    "issue_number": 1431,
+    "predicted_labels": [
+      {
+        "label": "prompt management",
+        "confidence": 0.8
+      },
+      {
+        "label": "documentation",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "onxx",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "gemini",
+        "confidence": 0.7
+      },
+      {
+        "label": "tool/function calling",
+        "confidence": 0.7
+      },
+      {
+        "label": "anthropic",
+        "confidence": 0.6
+      }
+    ],
+    "explanation": "Issue about 'Remove PALM2 Model' - classified based on content analysis"
+  },
+  {
+    "issue_number": 1589,
+    "predicted_labels": [
+      {
+        "label": "bug",
+        "confidence": 1.0
+      },
+      {
+        "label": "embedding",
+        "confidence": 1.0
+      },
+      {
+        "label": "vector store",
+        "confidence": 1.0
+      },
+      {
+        "label": "mongo",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "Bedrock",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "elastic search",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "opensearch",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "structured output",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "hybrid search",
+        "confidence": 0.7
+      },
+      {
+        "label": "metadata filters",
+        "confidence": 0.7
+      },
+      {
+        "label": "chromadb",
+        "confidence": 0.6
+      },
+      {
+        "label": "configuration",
+        "confidence": 0.6
+      },
+      {
+        "label": "couchbase",
+        "confidence": 0.6
+      },
+      {
+        "label": "gemfire",
+        "confidence": 0.6
+      },
+      {
+        "label": "mariadb",
+        "confidence": 0.6
+      },
+      {
+        "label": "qdrant",
+        "confidence": 0.6
+      },
+      {
+        "label": "redis",
+        "confidence": 0.6
+      },
+      {
+        "label": "typesense",
+        "confidence": 0.6
+      }
+    ],
+    "explanation": "Issue about 'Opensearch vector store bugs' - classified based on content analysis"
+  },
+  {
+    "issue_number": 1681,
+    "predicted_labels": [
+      {
+        "label": "structured output",
+        "confidence": 1.0
+      },
+      {
+        "label": "enhancement",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "openai",
+        "confidence": 0.6
+      }
+    ],
+    "explanation": "Issue about 'OpenAI ResponseFormat handling is broken' - classified based on content analysis"
+  },
+  {
+    "issue_number": 3828,
+    "predicted_labels": [
+      {
+        "label": "streaming",
+        "confidence": 0.9999999999999999
+      },
+      {
+        "label": "type: backport",
+        "confidence": 0.7999999999999999
+      }
+    ],
+    "explanation": "Issue about 'Fix exmaple code for \"Streaming Responses\"' - classified based on content analysis"
+  },
+  {
+    "issue_number": 2414,
+    "predicted_labels": [
+      {
+        "label": "configuration",
+        "confidence": 1.0
+      },
+      {
+        "label": "documentation",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "redis",
+        "confidence": 0.6
+      }
+    ],
+    "explanation": "Issue about 'Documentation: \"spring.data.redis.uri\" must be \"spring.data.redis.url\"' - classified based on content analysis"
+  },
+  {
+    "issue_number": 1459,
+    "predicted_labels": [
+      {
+        "label": "bug",
+        "confidence": 1.0
+      },
+      {
+        "label": "streaming",
+        "confidence": 1.0
+      },
+      {
+        "label": "chat client",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "image models",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "ollama",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "openai",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "model client",
+        "confidence": 0.8
+      },
+      {
+        "label": "prompt management",
+        "confidence": 0.8
+      },
+      {
+        "label": "anthropic",
+        "confidence": 0.7
+      },
+      {
+        "label": "multimodality",
+        "confidence": 0.7
+      },
+      {
+        "label": "testing",
+        "confidence": 0.7
+      },
+      {
+        "label": "client timeouts",
+        "confidence": 0.6
+      },
+      {
+        "label": "enhancement",
+        "confidence": 0.6
+      },
+      {
+        "label": "onxx",
+        "confidence": 0.6
+      }
+    ],
+    "explanation": "Issue about 'NullPointerException with Ollama + streaming + image' - classified based on content analysis"
+  },
+  {
+    "issue_number": 601,
+    "predicted_labels": [
+      {
+        "label": "transcription models",
+        "confidence": 0.9999999999999999
+      },
+      {
+        "label": "chat options",
+        "confidence": 0.7
+      },
+      {
+        "label": "model client",
+        "confidence": 0.7
+      },
+      {
+        "label": "openai",
+        "confidence": 0.7
+      },
+      {
+        "label": "client timeouts",
+        "confidence": 0.6
+      },
+      {
+        "label": "model-option-utils",
+        "confidence": 0.6
+      },
+      {
+        "label": "onxx",
+        "confidence": 0.6
+      }
+    ],
+    "explanation": "Issue about 'The merging is done in the wrong order' - classified based on content analysis"
+  },
+  {
+    "issue_number": 897,
+    "predicted_labels": [
+      {
+        "label": "vector store",
+        "confidence": 1.0
+      },
+      {
+        "label": "metadata filters",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "oracle",
+        "confidence": 0.6
+      }
+    ],
+    "explanation": "Issue about 'vector store delete by filter' - classified based on content analysis"
+  },
+  {
+    "issue_number": 3542,
+    "predicted_labels": [
+      {
+        "label": "vector store",
+        "confidence": 1.0
+      },
+      {
+        "label": "mongo",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "chromadb",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "configuration",
+        "confidence": 0.7
+      },
+      {
+        "label": "metadata filters",
+        "confidence": 0.7
+      },
+      {
+        "label": "oracle",
+        "confidence": 0.7
+      },
+      {
+        "label": "qdrant",
+        "confidence": 0.7
+      },
+      {
+        "label": "typesense",
+        "confidence": 0.7
+      },
+      {
+        "label": "weaviate",
+        "confidence": 0.7
+      },
+      {
+        "label": "bug",
+        "confidence": 0.6
+      },
+      {
+        "label": "elastic search",
+        "confidence": 0.6
+      },
+      {
+        "label": "embedding",
+        "confidence": 0.6
+      },
+      {
+        "label": "mariadb",
+        "confidence": 0.6
+      },
+      {
+        "label": "Observability",
+        "confidence": 0.6
+      },
+      {
+        "label": "opensearch",
+        "confidence": 0.6
+      }
+    ],
+    "explanation": "Issue about 'Chroma DB default tenant and database : should be able to ovverride through application properties' - classified based on content analysis"
+  },
+  {
+    "issue_number": 2095,
+    "predicted_labels": [
+      {
+        "label": "needs more info",
+        "confidence": 0.4
+      }
+    ],
+    "explanation": "Insufficient information to confidently assign specific labels"
+  },
+  {
+    "issue_number": 749,
+    "predicted_labels": [
+      {
+        "label": "bug",
+        "confidence": 1.0
+      },
+      {
+        "label": "enhancement",
+        "confidence": 1.0
+      },
+      {
+        "label": "structured output",
+        "confidence": 1.0
+      },
+      {
+        "label": "tool/function calling",
+        "confidence": 1.0
+      },
+      {
+        "label": "configuration",
+        "confidence": 0.9999999999999999
+      },
+      {
+        "label": "document-reader",
+        "confidence": 0.9999999999999999
+      },
+      {
+        "label": "documentation",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "testing",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "i18n",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "Evaluation",
+        "confidence": 0.6
+      },
+      {
+        "label": "integration testing",
+        "confidence": 0.6
+      },
+      {
+        "label": "metadata filters",
+        "confidence": 0.6
+      },
+      {
+        "label": "qdrant",
+        "confidence": 0.6
+      },
+      {
+        "label": "streaming",
+        "confidence": 0.6
+      },
+      {
+        "label": "vertex",
+        "confidence": 0.6
+      },
+      {
+        "label": "ZhiPu",
+        "confidence": 0.6
+      }
+    ],
+    "explanation": "Issue about 'Support JSON Type Detection for Parsing Arrays and Objects' - classified based on content analysis"
+  },
+  {
+    "issue_number": 343,
+    "predicted_labels": [
+      {
+        "label": "streaming",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "chat client",
+        "confidence": 0.6000000000000001
+      },
+      {
+        "label": "enhancement",
+        "confidence": 0.6
+      }
+    ],
+    "explanation": "Issue about 'Implement Bedrock Jurassic ChatClient' - classified based on content analysis"
+  },
+  {
+    "issue_number": 1345,
+    "predicted_labels": [
+      {
+        "label": "chat client",
+        "confidence": 0.8
+      }
+    ],
+    "explanation": "Issue about '`chatClient\u2026entity(Foo::class.java)` in Kotlin doesn\u2019t work with Kotlin data classes when it does work in Java records ' - classified based on content analysis"
+  },
+  {
+    "issue_number": 753,
+    "predicted_labels": [
+      {
+        "label": "enhancement",
+        "confidence": 1.0
+      },
+      {
+        "label": "metadata filters",
+        "confidence": 1.0
+      },
+      {
+        "label": "bug",
+        "confidence": 0.9999999999999999
+      },
+      {
+        "label": "image models",
+        "confidence": 0.8
+      },
+      {
+        "label": "testing",
+        "confidence": 0.7
+      },
+      {
+        "label": "tool/function calling",
+        "confidence": 0.7
+      }
+    ],
+    "explanation": "Issue about 'PDFReader Test `doesNotContains` -> `contain` and Replace `Collectors.joining()` to `String.join()`' - classified based on content analysis"
+  },
+  {
+    "issue_number": 1234,
+    "predicted_labels": [
+      {
+        "label": "advisors",
+        "confidence": 1.0
+      },
+      {
+        "label": "embedding",
+        "confidence": 1.0
+      },
+      {
+        "label": "metadata filters",
+        "confidence": 1.0
+      },
+      {
+        "label": "prompt management",
+        "confidence": 1.0
+      },
+      {
+        "label": "vector store",
+        "confidence": 1.0
+      },
+      {
+        "label": "model client",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "ollama",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "redis",
+        "confidence": 0.8999999999999999
+      },
+      {
+        "label": "chat client",
+        "confidence": 0.8
+      },
+      {
+        "label": "messages",
+        "confidence": 0.8
+      },
+      {
+        "label": "bug",
+        "confidence": 0.7
+      },
+      {
+        "label": "client timeouts",
+        "confidence": 0.7
+      },
+      {
+        "label": "mariadb",
+        "confidence": 0.7
+      },
+      {
+        "label": "mongo",
+        "confidence": 0.7
+      },
+      {
+        "label": "neo4j",
+        "confidence": 0.7
+      },
+      {
+        "label": "templating",
+        "confidence": 0.7
+      },
+      {
+        "label": "anthropic",
+        "confidence": 0.6
+      },
+      {
+        "label": "configuration",
+        "confidence": 0.6
+      },
+      {
+        "label": "elastic search",
+        "confidence": 0.6
+      },
+      {
+        "label": "hybrid search",
+        "confidence": 0.6
+      },
+      {
+        "label": "opensearch",
+        "confidence": 0.6
+      },
+      {
+        "label": "oracle",
+        "confidence": 0.6
+      },
+      {
+        "label": "qdrant",
+        "confidence": 0.6
+      },
+      {
+        "label": "typesense",
+        "confidence": 0.6
+      }
+    ],
+    "explanation": "Issue about 'QuestionAnswerAdvisor only uses userText for similarity search and does not take parameters into account' - classified based on content analysis"
+  },
+  {
+    "issue_number": 445,
+    "predicted_labels": [
+      {
+        "label": "needs more info",
+        "confidence": 0.5
+      }
+    ],
+    "explanation": "Insufficient information to confidently assign specific labels"
+  },
+  {
+    "issue_number": 179,
+    "predicted_labels": [
+      {
+        "label": "enhancement",
+        "confidence": 0.6
+      }
+    ],
+    "explanation": "Issue about 'Add support for Google Gemini' - classified based on content analysis"
+  },
+  {
+    "issue_number": 2691,
+    "predicted_labels": [
+      {
+        "label": "azure",
+        "confidence": 1.0
+      },
+      {
+        "label": "bug",
+        "confidence": 1.0
+      },
+      {
+        "label": "chat client",
+        "confidence": 1.0
+      },
+      {
+        "label": "model client",
+        "confidence": 1.0
+      },
+      {
+        "label": "openai",
+        "confidence": 1.0
+      },
+      {
+        "label": "streaming",
+        "confidence": 1.0
+      },
+      {
+        "label": "metadata filters",
+        "confidence": 0.8
+      },
+      {
+        "label": "prompt management",
+        "confidence": 0.8
+      },
+      {
+        "label": "anthropic",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "Observability",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "structured output",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "tool/function calling",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "client timeouts",
+        "confidence": 0.7
+      },
+      {
+        "label": "guardrails",
+        "confidence": 0.7
+      },
+      {
+        "label": "multiple models",
+        "confidence": 0.7
+      },
+      {
+        "label": "messages",
+        "confidence": 0.6000000000000001
+      },
+      {
+        "label": "advisors",
+        "confidence": 0.6
+      },
+      {
+        "label": "audio",
+        "confidence": 0.6
+      },
+      {
+        "label": "moderation",
+        "confidence": 0.6
+      },
+      {
+        "label": "stabilityai",
+        "confidence": 0.6
+      }
+    ],
+    "explanation": "Issue about 'Nullpointer when using Azure Open AI and streaming' - classified based on content analysis"
+  },
+  {
+    "issue_number": 392,
+    "predicted_labels": [
+      {
+        "label": "bug",
+        "confidence": 0.7999999999999999
+      },
+      {
+        "label": "image models",
+        "confidence": 0.7
+      },
+      {
+        "label": "tool/function calling",
+        "confidence": 0.6
+      }
+    ],
+    "explanation": "Issue about 'Some links in Javadoc are invalid' - classified based on content analysis"
+  }
+]

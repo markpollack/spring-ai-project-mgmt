@@ -1,0 +1,102 @@
+[
+  {
+    "issue_number": 3578,
+    "predicted_labels": [
+      {
+        "label": "bug",
+        "confidence": 1.0
+      },
+      {
+        "label": "type: backport",
+        "confidence": 1.0
+      }
+    ],
+    "explanation": "Issue explicitly describes fixing an infinite recursion bug and states it's a backport. Both labels are directly stated in the title and body."
+  },
+  {
+    "issue_number": 1776,
+    "predicted_labels": [
+      {
+        "label": "enhancement",
+        "confidence": 0.9
+      },
+      {
+        "label": "RAG",
+        "confidence": 0.9
+      },
+      {
+        "label": "metadata filters",
+        "confidence": 0.85
+      }
+    ],
+    "explanation": "Issue requests adding FILTER_EXPRESSION support to RetrievalAugmentationAdvisor, which is clearly an enhancement to RAG functionality with metadata filtering capabilities."
+  },
+  {
+    "issue_number": 953,
+    "predicted_labels": [
+      {
+        "label": "Observability",
+        "confidence": 1.0
+      },
+      {
+        "label": "enhancement",
+        "confidence": 0.8
+      }
+    ],
+    "explanation": "Issue title explicitly mentions 'Observability' and the comprehensive proposal focuses on implementing observability features for Spring AI models."
+  },
+  {
+    "issue_number": 1878,
+    "predicted_labels": [
+      {
+        "label": "bug",
+        "confidence": 0.9
+      },
+      {
+        "label": "tool/function calling",
+        "confidence": 0.9
+      },
+      {
+        "label": "Bedrock",
+        "confidence": 0.85
+      },
+      {
+        "label": "streaming",
+        "confidence": 0.7
+      }
+    ],
+    "explanation": "Issue reports a specific bug with Bedrock model tool calling when using Suppliers vs Functions in streaming mode. All labels are explicitly mentioned in the description."
+  },
+  {
+    "issue_number": 1707,
+    "predicted_labels": [
+      {
+        "label": "bug",
+        "confidence": 0.8
+      },
+      {
+        "label": "Observability",
+        "confidence": 0.9
+      },
+      {
+        "label": "streaming",
+        "confidence": 0.85
+      }
+    ],
+    "explanation": "Issue reports a bug where streaming metrics are not being captured correctly, specifically mentioning the 'spring.ai.chat.client.stream' metric."
+  },
+  {
+    "issue_number": 3110,
+    "predicted_labels": [
+      {
+        "label": "bug",
+        "confidence": 0.9
+      },
+      {
+        "label": "MCP",
+        "confidence": 0.9
+      }
+    ],
+    "explanation": "Issue describes a bug with MCP (Model Context Protocol) server configuration where POST requests fail with 404 errors. Both the bug nature and MCP context are explicitly stated."
+  }
+]

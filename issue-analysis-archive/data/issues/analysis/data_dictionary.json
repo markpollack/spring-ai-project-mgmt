@@ -1,7 +1,7 @@
 {
   "description": "Spring AI GitHub Issues Analysis Dataset",
   "filtering": {
-    "no_labels_filtered": false,
+    "no_labels_filtered": true,
     "note": "Issues with no labels may be excluded if filtering was enabled"
   },
   "fields": {

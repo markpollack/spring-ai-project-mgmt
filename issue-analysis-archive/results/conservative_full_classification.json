@@ -1,0 +1,1700 @@
+[
+  {
+    "issue_number": 3578,
+    "predicted_labels": [
+      {
+        "label": "bug",
+        "confidence": 1.0
+      },
+      {
+        "label": "type: backport",
+        "confidence": 1.0
+      }
+    ],
+    "explanation": "Issue title explicitly mentions 'Fix infinite recursion' which indicates a bug. Body confirms this is a 'Backport of gh-3576'."
+  },
+  {
+    "issue_number": 1776,
+    "predicted_labels": [
+      {
+        "label": "enhancement",
+        "confidence": 0.9
+      },
+      {
+        "label": "RAG",
+        "confidence": 0.9
+      },
+      {
+        "label": "metadata filters",
+        "confidence": 0.8
+      }
+    ],
+    "explanation": "Issue requests adding filter expressions to RetrievalAugmentationAdvisor, which is clearly an enhancement to RAG functionality with metadata filtering support."
+  },
+  {
+    "issue_number": 953,
+    "predicted_labels": [
+      {
+        "label": "Observability",
+        "confidence": 1.0
+      }
+    ],
+    "explanation": "Issue title and body extensively discuss 'Initial Observability for Models' - this is clearly about observability infrastructure and telemetry."
+  },
+  {
+    "issue_number": 1878,
+    "predicted_labels": [
+      {
+        "label": "bug",
+        "confidence": 1.0
+      },
+      {
+        "label": "tool/function calling",
+        "confidence": 0.9
+      },
+      {
+        "label": "Bedrock",
+        "confidence": 0.9
+      }
+    ],
+    "explanation": "Bug description clearly states streaming tools don't work with Suppliers. Issue specifically involves BedrockProxyChatModel and tool/function calling."
+  },
+  {
+    "issue_number": 1707,
+    "predicted_labels": [
+      {
+        "label": "bug",
+        "confidence": 0.9
+      },
+      {
+        "label": "Observability",
+        "confidence": 0.8
+      },
+      {
+        "label": "streaming",
+        "confidence": 0.8
+      }
+    ],
+    "explanation": "Reports streaming metrics not being captured correctly - a bug in observability functionality related to streaming."
+  },
+  {
+    "issue_number": 3110,
+    "predicted_labels": [
+      {
+        "label": "bug",
+        "confidence": 1.0
+      },
+      {
+        "label": "MCP",
+        "confidence": 1.0
+      }
+    ],
+    "explanation": "Bug description indicates MCP server content path issues causing 404 errors. Issue is specifically about MCP functionality."
+  },
+  {
+    "issue_number": 2334,
+    "predicted_labels": [
+      {
+        "label": "bug",
+        "confidence": 0.9
+      },
+      {
+        "label": "watson",
+        "confidence": 1.0
+      }
+    ],
+    "explanation": "Reports WatsonxAiChatModel using wrong APIs - clearly a bug in the Watson integration using incorrect endpoints."
+  },
+  {
+    "issue_number": 3219,
+    "predicted_labels": [
+      {
+        "label": "bug",
+        "confidence": 1.0
+      },
+      {
+        "label": "Chat Memory",
+        "confidence": 0.9
+      },
+      {
+        "label": "vector store",
+        "confidence": 0.8
+      }
+    ],
+    "explanation": "Bug description states VectorStoreChatMemoryAdvisor never persists assistant responses in database. This is clearly about chat memory and vector store functionality."
+  },
+  {
+    "issue_number": 1386,
+    "predicted_labels": [
+      {
+        "label": "bug",
+        "confidence": 1.0
+      },
+      {
+        "label": "ETL",
+        "confidence": 0.9
+      }
+    ],
+    "explanation": "Issue reports NullPointerException in TokenTextSplitter when processing documents, which is clearly a bug in the ETL/document processing functionality."
+  },
+  {
+    "issue_number": 2105,
+    "predicted_labels": [
+      {
+        "label": "enhancement",
+        "confidence": 0.9
+      },
+      {
+        "label": "vector store",
+        "confidence": 1.0
+      }
+    ],
+    "explanation": "Issue requests new API for deleting documents using filter expressions in vector stores - clearly an enhancement to vector store functionality."
+  },
+  {
+    "issue_number": 845,
+    "predicted_labels": [
+      {
+        "label": "bug",
+        "confidence": 1.0
+      },
+      {
+        "label": "vector store",
+        "confidence": 1.0
+      },
+      {
+        "label": "redis",
+        "confidence": 1.0
+      }
+    ],
+    "explanation": "Bug description states exact similarity match with Redis Vector Store always returns empty list - clearly a bug in Redis vector store functionality."
+  },
+  {
+    "issue_number": 883,
+    "predicted_labels": [
+      {
+        "label": "enhancement",
+        "confidence": 0.9
+      },
+      {
+        "label": "configuration",
+        "confidence": 0.8
+      }
+    ],
+    "explanation": "Issue requests easy way to log LLM requests/responses as configuration property - this is an enhancement to configuration capabilities."
+  },
+  {
+    "issue_number": 2335,
+    "predicted_labels": [
+      {
+        "label": "enhancement",
+        "confidence": 0.9
+      },
+      {
+        "label": "anthropic",
+        "confidence": 1.0
+      },
+      {
+        "label": "chat options",
+        "confidence": 0.8
+      }
+    ],
+    "explanation": "Issue requests HTTP header support for AnthropicChatOptions - clearly an enhancement to Anthropic integration with chat options."
+  },
+  {
+    "issue_number": 1331,
+    "predicted_labels": [
+      {
+        "label": "bug",
+        "confidence": 0.9
+      },
+      {
+        "label": "advisors",
+        "confidence": 0.8
+      },
+      {
+        "label": "security",
+        "confidence": 0.7
+      }
+    ],
+    "explanation": "Issue reports security vulnerability in StringTemplate with advisor rendering - a bug with security implications in advisor functionality."
+  },
+  {
+    "issue_number": 1591,
+    "predicted_labels": [
+      {
+        "label": "enhancement",
+        "confidence": 0.8
+      },
+      {
+        "label": "configuration",
+        "confidence": 1.0
+      }
+    ],
+    "explanation": "Issue addresses NestedConfigurationProperties functionality - enhancement to configuration system for nested properties."
+  },
+  {
+    "issue_number": 1289,
+    "predicted_labels": [
+      {
+        "label": "documentation",
+        "confidence": 1.0
+      }
+    ],
+    "explanation": "Issue reports typo on Spring AI projects page - clearly a documentation issue with spelling correction needed."
+  },
+  {
+    "issue_number": 1583,
+    "predicted_labels": [
+      {
+        "label": "bug",
+        "confidence": 1.0
+      },
+      {
+        "label": "anthropic",
+        "confidence": 1.0
+      }
+    ],
+    "explanation": "Bug description states response body not showing in stacktrace when ChatModel.stream() fails - clearly a bug in Anthropic API error handling."
+  },
+  {
+    "issue_number": 3115,
+    "predicted_labels": [
+      {
+        "label": "bug",
+        "confidence": 1.0
+      },
+      {
+        "label": "cassandra",
+        "confidence": 1.0
+      }
+    ],
+    "explanation": "Issue reports CassandraVectorStore configuration error with unknown profile - clearly a bug in Cassandra vector store configuration."
+  },
+  {
+    "issue_number": 1843,
+    "predicted_labels": [
+      {
+        "label": "bug",
+        "confidence": 1.0
+      },
+      {
+        "label": "tool/function calling",
+        "confidence": 0.8
+      },
+      {
+        "label": "epic",
+        "confidence": 1.0
+      }
+    ],
+    "explanation": "Issue is about fixing usage metadata not accumulating during tool calling - clearly a bug. It's marked as epic and relates to tool/function calling functionality."
+  },
+  {
+    "issue_number": 2486,
+    "predicted_labels": [
+      {
+        "label": "bug",
+        "confidence": 1.0
+      },
+      {
+        "label": "MCP",
+        "confidence": 1.0
+      }
+    ],
+    "explanation": "Issue reports multiple SSE connections and SYNC mode startup failure in MCP client - clearly bugs in MCP functionality."
+  },
+  {
+    "issue_number": 700,
+    "predicted_labels": [
+      {
+        "label": "enhancement",
+        "confidence": 1.0
+      }
+    ],
+    "explanation": "Issue requests JPMS (Java Platform Module System) support - clearly an enhancement request for module system support."
+  },
+  {
+    "issue_number": 3659,
+    "predicted_labels": [
+      {
+        "label": "code cleanup",
+        "confidence": 1.0
+      },
+      {
+        "label": "type: backport",
+        "confidence": 1.0
+      }
+    ],
+    "explanation": "Issue title mentions 'Remove redundant null check' which is code cleanup. Body confirms this is a backport."
+  },
+  {
+    "issue_number": 3526,
+    "predicted_labels": [
+      {
+        "label": "bug",
+        "confidence": 1.0
+      },
+      {
+        "label": "prompt management",
+        "confidence": 1.0
+      }
+    ],
+    "explanation": "Bug description states SystemPromptTemplate builder creates wrong message type - clearly a bug in prompt management functionality."
+  },
+  {
+    "issue_number": 1028,
+    "predicted_labels": [
+      {
+        "label": "bug",
+        "confidence": 1.0
+      },
+      {
+        "label": "vertex",
+        "confidence": 0.9
+      },
+      {
+        "label": "embedding",
+        "confidence": 0.8
+      }
+    ],
+    "explanation": "Issue reports new Vertex AI embedding functionality breaking existing code - clearly a bug in Vertex AI embedding integration."
+  },
+  {
+    "issue_number": 3741,
+    "predicted_labels": [
+      {
+        "label": "bug",
+        "confidence": 1.0
+      },
+      {
+        "label": "type: backport",
+        "confidence": 1.0
+      }
+    ],
+    "explanation": "Issue title mentions 'Incorrect use of ClassUtils.isAssignable' which indicates a bug. Body confirms this is a backport."
+  },
+  {
+    "issue_number": 3092,
+    "predicted_labels": [
+      {
+        "label": "refactoring",
+        "confidence": 0.9
+      },
+      {
+        "label": "Chat Memory",
+        "confidence": 1.0
+      }
+    ],
+    "explanation": "Issue requests removal of deprecated method in ChatMemory - this is refactoring work on chat memory functionality."
+  },
+  {
+    "issue_number": 1373,
+    "predicted_labels": [
+      {
+        "label": "bug",
+        "confidence": 1.0
+      },
+      {
+        "label": "vertex",
+        "confidence": 1.0
+      },
+      {
+        "label": "tool/function calling",
+        "confidence": 0.9
+      }
+    ],
+    "explanation": "Bug description shows function calling failure with Vertex Gemini due to schema validation error - clearly a bug in Vertex AI function calling."
+  },
+  {
+    "issue_number": 1622,
+    "predicted_labels": [
+      {
+        "label": "bug",
+        "confidence": 1.0
+      },
+      {
+        "label": "configuration",
+        "confidence": 0.8
+      }
+    ],
+    "explanation": "Issue reports application boot failure on Cloud Foundry with Spring Cloud Services - clearly a bug in configuration/integration."
+  },
+  {
+    "issue_number": 739,
+    "predicted_labels": [
+      {
+        "label": "enhancement",
+        "confidence": 1.0
+      },
+      {
+        "label": "configuration",
+        "confidence": 0.7
+      }
+    ],
+    "explanation": "Issue requests support for custom WebClientBuilder - clearly an enhancement request for configuration capabilities."
+  },
+  {
+    "issue_number": 1731,
+    "predicted_labels": [
+      {
+        "label": "enhancement",
+        "confidence": 0.9
+      },
+      {
+        "label": "tool/function calling",
+        "confidence": 1.0
+      },
+      {
+        "label": "design",
+        "confidence": 0.8
+      }
+    ],
+    "explanation": "Issue proposes adding Builder interface for improved FunctionCallback construction - clearly an enhancement to tool/function calling with design considerations."
+  },
+  {
+    "issue_number": 1678,
+    "predicted_labels": [
+      {
+        "label": "bug",
+        "confidence": 1.0
+      },
+      {
+        "label": "testing",
+        "confidence": 0.8
+      }
+    ],
+    "explanation": "Issue is about fixing disabled tests - clearly a bug in testing infrastructure that needs to be resolved."
+  },
+  {
+    "issue_number": 847,
+    "predicted_labels": [
+      {
+        "label": "bug",
+        "confidence": 1.0
+      },
+      {
+        "label": "retry",
+        "confidence": 1.0
+      },
+      {
+        "label": "openai",
+        "confidence": 0.9
+      }
+    ],
+    "explanation": "Bug description states RetryTemplate usage is ineffective on OpenAI chat stream requests - clearly a bug in retry functionality for OpenAI."
+  },
+  {
+    "issue_number": 853,
+    "predicted_labels": [
+      {
+        "label": "documentation",
+        "confidence": 1.0
+      }
+    ],
+    "explanation": "Issue reports spelling mistake on Spring AI website - clearly a documentation error that needs correction."
+  },
+  {
+    "issue_number": 1138,
+    "predicted_labels": [
+      {
+        "label": "enhancement",
+        "confidence": 1.0
+      },
+      {
+        "label": "vector store",
+        "confidence": 0.9
+      },
+      {
+        "label": "mariadb",
+        "confidence": 0.8
+      }
+    ],
+    "explanation": "Issue requests adding MariaDB Vector support - clearly an enhancement to vector store functionality with MariaDB integration."
+  },
+  {
+    "issue_number": 3625,
+    "predicted_labels": [
+      {
+        "label": "code cleanup",
+        "confidence": 1.0
+      },
+      {
+        "label": "Bedrock",
+        "confidence": 1.0
+      },
+      {
+        "label": "type: backport",
+        "confidence": 1.0
+      }
+    ],
+    "explanation": "Issue removes hardcoded topK in BedrockConverseProxyChatProperties - code cleanup for Bedrock functionality, confirmed as backport."
+  },
+  {
+    "issue_number": 3147,
+    "predicted_labels": [
+      {
+        "label": "usability",
+        "confidence": 0.8
+      },
+      {
+        "label": "pgvector",
+        "confidence": 0.9
+      },
+      {
+        "label": "configuration",
+        "confidence": 0.7
+      }
+    ],
+    "explanation": "Issue requests consistent naming for pgvector initializer schema property - usability improvement for pgvector configuration."
+  },
+  {
+    "issue_number": 2337,
+    "predicted_labels": [
+      {
+        "label": "enhancement",
+        "confidence": 0.8
+      },
+      {
+        "label": "tool/function calling",
+        "confidence": 1.0
+      }
+    ],
+    "explanation": "Issue requests reversing MethodToolCallback's ToolContext validation logic - enhancement to tool/function calling validation."
+  },
+  {
+    "issue_number": 3366,
+    "predicted_labels": [
+      {
+        "label": "bug",
+        "confidence": 1.0
+      },
+      {
+        "label": "tool/function calling",
+        "confidence": 1.0
+      },
+      {
+        "label": "streaming",
+        "confidence": 0.9
+      }
+    ],
+    "explanation": "Bug description states streaming mode AssistantMessage doesn't retain toolCalls - clearly a bug in tool/function calling during streaming."
+  },
+  {
+    "issue_number": 1536,
+    "predicted_labels": [
+      {
+        "label": "enhancement",
+        "confidence": 0.9
+      },
+      {
+        "label": "embedding",
+        "confidence": 1.0
+      },
+      {
+        "label": "ollama",
+        "confidence": 1.0
+      }
+    ],
+    "explanation": "Issue requests adding Ollama embedding usage metadata - enhancement to embedding functionality for Ollama model client."
+  },
+  {
+    "issue_number": 1874,
+    "predicted_labels": [
+      {
+        "label": "refactoring",
+        "confidence": 0.9
+      },
+      {
+        "label": "design",
+        "confidence": 1.0
+      }
+    ],
+    "explanation": "Issue requests moving builder class inside PortableFunctionCallingOptions - refactoring work with design pattern improvements."
+  },
+  {
+    "issue_number": 3131,
+    "predicted_labels": [
+      {
+        "label": "bug",
+        "confidence": 0.9
+      },
+      {
+        "label": "Observability",
+        "confidence": 1.0
+      }
+    ],
+    "explanation": "Issue reports observability configuration not working despite proper setup - bug in observability functionality."
+  },
+  {
+    "issue_number": 421,
+    "predicted_labels": [
+      {
+        "label": "enhancement",
+        "confidence": 1.0
+      },
+      {
+        "label": "multimodality",
+        "confidence": 0.9
+      },
+      {
+        "label": "ollama",
+        "confidence": 0.8
+      }
+    ],
+    "explanation": "Issue requests adding images field support for Ollama generate endpoint - enhancement for multimodality support in Ollama."
+  },
+  {
+    "issue_number": 3593,
+    "predicted_labels": [
+      {
+        "label": "bug",
+        "confidence": 1.0
+      },
+      {
+        "label": "chat client",
+        "confidence": 1.0
+      },
+      {
+        "label": "type: backport",
+        "confidence": 1.0
+      }
+    ],
+    "explanation": "Issue about ChatClient mutate adding copies of advisors and advisorParams - bug in chat client functionality, confirmed as backport."
+  },
+  {
+    "issue_number": 1248,
+    "predicted_labels": [
+      {
+        "label": "bug",
+        "confidence": 1.0
+      },
+      {
+        "label": "anthropic",
+        "confidence": 1.0
+      },
+      {
+        "label": "streaming",
+        "confidence": 0.9
+      }
+    ],
+    "explanation": "Bug description states Anthropic chat model doesn't return finish reason in streaming mode - clearly a bug in Anthropic streaming functionality."
+  },
+  {
+    "issue_number": 368,
+    "predicted_labels": [
+      {
+        "label": "bug",
+        "confidence": 0.8
+      },
+      {
+        "label": "tool/function calling",
+        "confidence": 1.0
+      }
+    ],
+    "explanation": "Issue reports function call response not being included in ChatResponse object - bug in tool/function calling response handling."
+  },
+  {
+    "issue_number": 1936,
+    "predicted_labels": [
+      {
+        "label": "bug",
+        "confidence": 1.0
+      },
+      {
+        "label": "elastic search",
+        "confidence": 1.0
+      }
+    ],
+    "explanation": "Issue reports ElasticSearch doSimilaritySearch broken after Document changes - clearly a bug in elastic search functionality."
+  },
+  {
+    "issue_number": 613,
+    "predicted_labels": [
+      {
+        "label": "bug",
+        "confidence": 1.0
+      },
+      {
+        "label": "tool/function calling",
+        "confidence": 1.0
+      },
+      {
+        "label": "azure",
+        "confidence": 0.9
+      }
+    ],
+    "explanation": "Bug description shows Azure OpenAI can't execute multiple function calls due to missing tools context - clearly a bug in Azure tool/function calling."
+  },
+  {
+    "issue_number": 526,
+    "predicted_labels": [
+      {
+        "label": "enhancement",
+        "confidence": 1.0
+      },
+      {
+        "label": "ollama",
+        "confidence": 1.0
+      }
+    ],
+    "explanation": "Issue requests function to load and check if model is loaded in Spring Ollama - clearly an enhancement request for Ollama functionality."
+  },
+  {
+    "issue_number": 576,
+    "predicted_labels": [
+      {
+        "label": "enhancement",
+        "confidence": 0.9
+      },
+      {
+        "label": "vector store",
+        "confidence": 1.0
+      },
+      {
+        "label": "cassandra",
+        "confidence": 0.8
+      }
+    ],
+    "explanation": "Issue suggests CassandraVectorStoreAutoConfiguration should rely on CassandraAutoconfiguration - enhancement to vector store configuration for Cassandra."
+  },
+  {
+    "issue_number": 1882,
+    "predicted_labels": [
+      {
+        "label": "enhancement",
+        "confidence": 1.0
+      },
+      {
+        "label": "Bedrock",
+        "confidence": 1.0
+      }
+    ],
+    "explanation": "Issue requests adding support for new AWS Bedrock Nova models - clearly an enhancement to Bedrock functionality."
+  },
+  {
+    "issue_number": 1101,
+    "predicted_labels": [
+      {
+        "label": "design",
+        "confidence": 1.0
+      },
+      {
+        "label": "vertex",
+        "confidence": 1.0
+      }
+    ],
+    "explanation": "Issue requests consolidating Google Vertex starters into one starter - design decision for Vertex AI integration consistency."
+  },
+  {
+    "issue_number": 2301,
+    "predicted_labels": [
+      {
+        "label": "bug",
+        "confidence": 1.0
+      },
+      {
+        "label": "MCP",
+        "confidence": 1.0
+      }
+    ],
+    "explanation": "Bug description shows MCP client auto configuration causing IllegalStateException with multiple tools - clearly a bug in MCP functionality."
+  },
+  {
+    "issue_number": 1202,
+    "predicted_labels": [
+      {
+        "label": "enhancement",
+        "confidence": 1.0
+      },
+      {
+        "label": "tool/function calling",
+        "confidence": 1.0
+      }
+    ],
+    "explanation": "Issue requests ability to connect function calls with messages for validation - enhancement to tool/function calling functionality."
+  },
+  {
+    "issue_number": 1548,
+    "predicted_labels": [
+      {
+        "label": "bug",
+        "confidence": 1.0
+      },
+      {
+        "label": "chromadb",
+        "confidence": 1.0
+      }
+    ],
+    "explanation": "Issue reports ChromaApi bug with metadata parameter causing errors - clearly a bug in ChromaDB functionality."
+  },
+  {
+    "issue_number": 1665,
+    "predicted_labels": [
+      {
+        "label": "bug",
+        "confidence": 1.0
+      },
+      {
+        "label": "chat client",
+        "confidence": 1.0
+      }
+    ],
+    "explanation": "Issue reports userText null validation error due to incorrect message order assumptions - clearly a bug in chat client functionality."
+  },
+  {
+    "issue_number": 2492,
+    "predicted_labels": [
+      {
+        "label": "enhancement",
+        "confidence": 1.0
+      },
+      {
+        "label": "deepseek",
+        "confidence": 1.0
+      }
+    ],
+    "explanation": "Issue requests adding DeepSeek chat model support with reasoning_content - enhancement for DeepSeek model integration."
+  },
+  {
+    "issue_number": 2703,
+    "predicted_labels": [
+      {
+        "label": "enhancement",
+        "confidence": 1.0
+      },
+      {
+        "label": "azure",
+        "confidence": 1.0
+      }
+    ],
+    "explanation": "Issue requests supporting reasoning_effort option in AzureOpenAiChatOptions - enhancement to Azure OpenAI functionality."
+  },
+  {
+    "issue_number": 3762,
+    "predicted_labels": [
+      {
+        "label": "documentation",
+        "confidence": 1.0
+      },
+      {
+        "label": "MCP",
+        "confidence": 1.0
+      },
+      {
+        "label": "type: backport",
+        "confidence": 1.0
+      }
+    ],
+    "explanation": "Issue improves MCP documentation to stop referring to outdated DefaultMcpSession - documentation improvement for MCP, confirmed as backport."
+  },
+  {
+    "issue_number": 1098,
+    "predicted_labels": [
+      {
+        "label": "enhancement",
+        "confidence": 0.9
+      },
+      {
+        "label": "Bedrock",
+        "confidence": 1.0
+      },
+      {
+        "label": "configuration",
+        "confidence": 0.8
+      }
+    ],
+    "explanation": "Issue requests ability to specify AWS profile from configuration file for Bedrock - enhancement to Bedrock configuration capabilities."
+  },
+  {
+    "issue_number": 731,
+    "predicted_labels": [
+      {
+        "label": "documentation",
+        "confidence": 1.0
+      },
+      {
+        "label": "vector store",
+        "confidence": 0.8
+      }
+    ],
+    "explanation": "Issue requests improving Vector Store documentation for outdated adoc files - documentation improvement for vector store."
+  },
+  {
+    "issue_number": 1139,
+    "predicted_labels": [
+      {
+        "label": "documentation",
+        "confidence": 1.0
+      }
+    ],
+    "explanation": "Issue reports tutorial error in official website documentation - clearly a documentation correction needed."
+  },
+  {
+    "issue_number": 2367,
+    "predicted_labels": [
+      {
+        "label": "enhancement",
+        "confidence": 1.0
+      },
+      {
+        "label": "tool/function calling",
+        "confidence": 1.0
+      }
+    ],
+    "explanation": "Issue requests adding support for tools returning images - enhancement to tool/function calling functionality for image handling."
+  },
+  {
+    "issue_number": 1715,
+    "predicted_labels": [
+      {
+        "label": "bug",
+        "confidence": 1.0
+      },
+      {
+        "label": "vector store",
+        "confidence": 1.0
+      },
+      {
+        "label": "chromadb",
+        "confidence": 1.0
+      }
+    ],
+    "explanation": "Bug description shows ChromaDB port configuration doesn't register properly causing connection errors - clearly a bug in ChromaDB vector store configuration."
+  },
+  {
+    "issue_number": 1636,
+    "predicted_labels": [
+      {
+        "label": "enhancement",
+        "confidence": 1.0
+      },
+      {
+        "label": "RAG",
+        "confidence": 1.0
+      }
+    ],
+    "explanation": "Issue requests KAG (Knowledge Augmented Generation) feature like RAG - enhancement to RAG functionality for next-generation augmented generation."
+  },
+  {
+    "issue_number": 1487,
+    "predicted_labels": [
+      {
+        "label": "refactoring",
+        "confidence": 0.9
+      },
+      {
+        "label": "openai",
+        "confidence": 1.0
+      }
+    ],
+    "explanation": "Issue requests simplifying OpenAI Usage implementation by removing Azure SDK dependency - refactoring work for OpenAI integration."
+  },
+  {
+    "issue_number": 860,
+    "predicted_labels": [
+      {
+        "label": "bug",
+        "confidence": 1.0
+      },
+      {
+        "label": "tool/function calling",
+        "confidence": 1.0
+      }
+    ],
+    "explanation": "Bug description shows function calls without input parameters fail with schema validation error - clearly a bug in tool/function calling for void parameters."
+  },
+  {
+    "issue_number": 1126,
+    "predicted_labels": [
+      {
+        "label": "question",
+        "confidence": 1.0
+      },
+      {
+        "label": "vector store",
+        "confidence": 0.9
+      },
+      {
+        "label": "redis",
+        "confidence": 0.8
+      }
+    ],
+    "explanation": "Issue asks how to wire Redis Sentinel properties with Spring AI - user question about Redis vector store configuration."
+  },
+  {
+    "issue_number": 1609,
+    "predicted_labels": [
+      {
+        "label": "bug",
+        "confidence": 0.9
+      },
+      {
+        "label": "Observability",
+        "confidence": 1.0
+      }
+    ],
+    "explanation": "Issue reports token usage metrics adding up strangely with double counting - likely a bug in observability token metrics calculation."
+  },
+  {
+    "issue_number": 549,
+    "predicted_labels": [
+      {
+        "label": "design",
+        "confidence": 1.0
+      },
+      {
+        "label": "enhancement",
+        "confidence": 0.8
+      }
+    ],
+    "explanation": "Issue suggests categorizing ChatOptions into Model and Request categories - design enhancement for better option management structure."
+  },
+  {
+    "issue_number": 3734,
+    "predicted_labels": [
+      {
+        "label": "code cleanup",
+        "confidence": 1.0
+      },
+      {
+        "label": "type: backport",
+        "confidence": 1.0
+      }
+    ],
+    "explanation": "Issue uses diamond operator where possible - code cleanup improvement, confirmed as backport."
+  },
+  {
+    "issue_number": 3745,
+    "predicted_labels": [
+      {
+        "label": "bug",
+        "confidence": 1.0
+      },
+      {
+        "label": "prompt management",
+        "confidence": 1.0
+      },
+      {
+        "label": "type: backport",
+        "confidence": 1.0
+      }
+    ],
+    "explanation": "Issue about invalid message type from SystemPromptTemplate builder - bug in prompt management functionality, confirmed as backport."
+  },
+  {
+    "issue_number": 833,
+    "predicted_labels": [
+      {
+        "label": "bug",
+        "confidence": 1.0
+      },
+      {
+        "label": "azure",
+        "confidence": 1.0
+      },
+      {
+        "label": "tool/function calling",
+        "confidence": 0.9
+      }
+    ],
+    "explanation": "Bug description shows IllegalArgumentException in Azure function calling - clearly a bug in Azure tool/function calling functionality."
+  },
+  {
+    "issue_number": 1543,
+    "predicted_labels": [
+      {
+        "label": "documentation",
+        "confidence": 1.0
+      },
+      {
+        "label": "vertex",
+        "confidence": 1.0
+      }
+    ],
+    "explanation": "Issue reports inaccurate warning in VertexAI Gemini function calling documentation - documentation correction needed for Vertex AI."
+  },
+  {
+    "issue_number": 1329,
+    "predicted_labels": [
+      {
+        "label": "documentation",
+        "confidence": 1.0
+      },
+      {
+        "label": "openai",
+        "confidence": 0.8
+      }
+    ],
+    "explanation": "Issue reports incorrect comment and missing parameter in OpenAI API constructors - documentation correction for OpenAI integration."
+  },
+  {
+    "issue_number": 2983,
+    "predicted_labels": [
+      {
+        "label": "enhancement",
+        "confidence": 1.0
+      },
+      {
+        "label": "Observability",
+        "confidence": 1.0
+      },
+      {
+        "label": "Bedrock",
+        "confidence": 1.0
+      }
+    ],
+    "explanation": "Issue requests adding observability to Bedrock embedding models - enhancement to observability functionality for Bedrock embeddings."
+  },
+  {
+    "issue_number": 1307,
+    "predicted_labels": [
+      {
+        "label": "question",
+        "confidence": 1.0
+      },
+      {
+        "label": "streaming",
+        "confidence": 0.8
+      }
+    ],
+    "explanation": "Issue asks why usage values are 0 in Stream method but not in call method - user question about streaming functionality behavior."
+  },
+  {
+    "issue_number": 3205,
+    "predicted_labels": [
+      {
+        "label": "enhancement",
+        "confidence": 0.9
+      },
+      {
+        "label": "MCP",
+        "confidence": 1.0
+      },
+      {
+        "label": "configuration",
+        "confidence": 0.8
+      }
+    ],
+    "explanation": "Issue requests adding config for MCP server request timeout because default 10s is too short - enhancement to MCP configuration."
+  },
+  {
+    "issue_number": 992,
+    "predicted_labels": [
+      {
+        "label": "question",
+        "confidence": 1.0
+      },
+      {
+        "label": "ollama",
+        "confidence": 0.9
+      },
+      {
+        "label": "tool/function calling",
+        "confidence": 0.8
+      }
+    ],
+    "explanation": "Issue asks questions about Ollama + Qwen support and function calling capabilities - user question about Ollama functionality."
+  },
+  {
+    "issue_number": 3086,
+    "predicted_labels": [
+      {
+        "label": "documentation",
+        "confidence": 1.0
+      },
+      {
+        "label": "MCP",
+        "confidence": 1.0
+      }
+    ],
+    "explanation": "Issue reports inconsistency in Spring AI MCP Client documentation regarding default value - documentation correction needed for MCP."
+  },
+  {
+    "issue_number": 1617,
+    "predicted_labels": [
+      {
+        "label": "bug",
+        "confidence": 1.0
+      },
+      {
+        "label": "vector store",
+        "confidence": 1.0
+      },
+      {
+        "label": "milvus",
+        "confidence": 1.0
+      }
+    ],
+    "explanation": "Bug description shows Milvus search interface missing databaseName parameter causing queries to only support default library - bug in Milvus vector store."
+  },
+  {
+    "issue_number": 1341,
+    "predicted_labels": [
+      {
+        "label": "bug",
+        "confidence": 1.0
+      },
+      {
+        "label": "ETL",
+        "confidence": 0.8
+      }
+    ],
+    "explanation": "Issue reports bug in TokenCountBatchingStrategy affecting vector stores with empty embeddings - bug in ETL/document processing functionality."
+  },
+  {
+    "issue_number": 295,
+    "predicted_labels": [
+      {
+        "label": "documentation",
+        "confidence": 1.0
+      },
+      {
+        "label": "enhancement",
+        "confidence": 0.8
+      }
+    ],
+    "explanation": "Issue requests adding Generic Model documentation describing the meta API patterns - documentation enhancement for contributors."
+  },
+  {
+    "issue_number": 315,
+    "predicted_labels": [
+      {
+        "label": "enhancement",
+        "confidence": 1.0
+      },
+      {
+        "label": "vector store",
+        "confidence": 1.0
+      },
+      {
+        "label": "usability",
+        "confidence": 0.7
+      }
+    ],
+    "explanation": "Issue requests adding vector data upload log for status tracking - enhancement to vector store usability for progress monitoring."
+  },
+  {
+    "issue_number": 814,
+    "predicted_labels": [
+      {
+        "label": "enhancement",
+        "confidence": 1.0
+      },
+      {
+        "label": "streaming",
+        "confidence": 0.8
+      }
+    ],
+    "explanation": "Issue requests adding support for getting usage tokens in ChatResponse and streaming - enhancement to usage tracking functionality."
+  },
+  {
+    "issue_number": 694,
+    "predicted_labels": [
+      {
+        "label": "bug",
+        "confidence": 1.0
+      },
+      {
+        "label": "azure",
+        "confidence": 1.0
+      },
+      {
+        "label": "streaming",
+        "confidence": 0.8
+      }
+    ],
+    "explanation": "Issue reports cannot get usage info when using AzureOpenAiChatClient with stream method - bug in Azure streaming functionality."
+  },
+  {
+    "issue_number": 3643,
+    "predicted_labels": [
+      {
+        "label": "testing",
+        "confidence": 1.0
+      },
+      {
+        "label": "code cleanup",
+        "confidence": 0.9
+      },
+      {
+        "label": "type: backport",
+        "confidence": 1.0
+      }
+    ],
+    "explanation": "Issue migrates JUnit4 to JUnit5 in test class - testing improvement and code cleanup, confirmed as backport."
+  },
+  {
+    "issue_number": 3655,
+    "predicted_labels": [
+      {
+        "label": "code cleanup",
+        "confidence": 1.0
+      },
+      {
+        "label": "type: backport",
+        "confidence": 1.0
+      }
+    ],
+    "explanation": "Issue adds license header for FileDocumentWriterTest - code cleanup improvement, confirmed as backport."
+  },
+  {
+    "issue_number": 1592,
+    "predicted_labels": [
+      {
+        "label": "design",
+        "confidence": 1.0
+      },
+      {
+        "label": "refactoring",
+        "confidence": 0.8
+      }
+    ],
+    "explanation": "Issue requests consistent design of Options builder classes with interfaces and inner classes - design improvement requiring refactoring."
+  },
+  {
+    "issue_number": 3415,
+    "predicted_labels": [
+      {
+        "label": "enhancement",
+        "confidence": 1.0
+      },
+      {
+        "label": "configuration",
+        "confidence": 0.7
+      }
+    ],
+    "explanation": "Issue addresses ResponseErrorHandler compatibility with Spring Framework 7.x - enhancement for forward compatibility."
+  },
+  {
+    "issue_number": 2861,
+    "predicted_labels": [
+      {
+        "label": "epic",
+        "confidence": 1.0
+      },
+      {
+        "label": "deprecation",
+        "confidence": 1.0
+      }
+    ],
+    "explanation": "Issue is marked as EPIC for removing deprecated code - clearly an epic about deprecation cleanup work."
+  },
+  {
+    "issue_number": 1506,
+    "predicted_labels": [
+      {
+        "label": "enhancement",
+        "confidence": 1.0
+      },
+      {
+        "label": "openai",
+        "confidence": 1.0
+      }
+    ],
+    "explanation": "Issue requests adding support for cached tokens in OpenAI Usage Model - enhancement to OpenAI functionality for token caching."
+  },
+  {
+    "issue_number": 3670,
+    "predicted_labels": [
+      {
+        "label": "enhancement",
+        "confidence": 0.8
+      },
+      {
+        "label": "vector store",
+        "confidence": 1.0
+      },
+      {
+        "label": "type: backport",
+        "confidence": 1.0
+      }
+    ],
+    "explanation": "Issue removes @Nullable from VectorStore similaritySearch - enhancement to vector store API, confirmed as backport."
+  },
+  {
+    "issue_number": 1431,
+    "predicted_labels": [
+      {
+        "label": "deprecation",
+        "confidence": 1.0
+      },
+      {
+        "label": "gcp",
+        "confidence": 1.0
+      }
+    ],
+    "explanation": "Issue requests removing PALM2 Model due to Google API deprecation - deprecation work for GCP integration."
+  },
+  {
+    "issue_number": 1589,
+    "predicted_labels": [
+      {
+        "label": "bug",
+        "confidence": 1.0
+      },
+      {
+        "label": "vector store",
+        "confidence": 1.0
+      },
+      {
+        "label": "opensearch",
+        "confidence": 1.0
+      }
+    ],
+    "explanation": "Issue reports OpenSearch vector store bugs with incorrect property locations and similarity search failures - bugs in OpenSearch vector store."
+  },
+  {
+    "issue_number": 1681,
+    "predicted_labels": [
+      {
+        "label": "bug",
+        "confidence": 1.0
+      },
+      {
+        "label": "openai",
+        "confidence": 1.0
+      },
+      {
+        "label": "structured output",
+        "confidence": 1.0
+      }
+    ],
+    "explanation": "Issue reports OpenAI ResponseFormat handling is broken - bug in OpenAI structured output functionality."
+  },
+  {
+    "issue_number": 3828,
+    "predicted_labels": [
+      {
+        "label": "documentation",
+        "confidence": 1.0
+      },
+      {
+        "label": "type: backport",
+        "confidence": 1.0
+      }
+    ],
+    "explanation": "Issue fixes example code for Streaming Responses - documentation correction, confirmed as backport."
+  },
+  {
+    "issue_number": 2414,
+    "predicted_labels": [
+      {
+        "label": "documentation",
+        "confidence": 1.0
+      },
+      {
+        "label": "redis",
+        "confidence": 0.8
+      }
+    ],
+    "explanation": "Issue reports incorrect property name in documentation - documentation correction for Redis configuration."
+  },
+  {
+    "issue_number": 1459,
+    "predicted_labels": [
+      {
+        "label": "bug",
+        "confidence": 1.0
+      },
+      {
+        "label": "ollama",
+        "confidence": 1.0
+      },
+      {
+        "label": "streaming",
+        "confidence": 0.8
+      }
+    ],
+    "explanation": "Issue reports NullPointerException with Ollama streaming and unsupported image types - bug in Ollama streaming functionality."
+  },
+  {
+    "issue_number": 601,
+    "predicted_labels": [
+      {
+        "label": "bug",
+        "confidence": 1.0
+      },
+      {
+        "label": "openai",
+        "confidence": 0.8
+      }
+    ],
+    "explanation": "Issue reports merging done in wrong order with default options taking precedence over runtime ones - bug in OpenAI audio functionality."
+  },
+  {
+    "issue_number": 897,
+    "predicted_labels": [
+      {
+        "label": "enhancement",
+        "confidence": 1.0
+      },
+      {
+        "label": "vector store",
+        "confidence": 1.0
+      }
+    ],
+    "explanation": "Issue requests vector store delete by filter functionality - enhancement to vector store capabilities for conditional deletion."
+  },
+  {
+    "issue_number": 3542,
+    "predicted_labels": [
+      {
+        "label": "enhancement",
+        "confidence": 0.9
+      },
+      {
+        "label": "vector store",
+        "confidence": 1.0
+      },
+      {
+        "label": "chromadb",
+        "confidence": 0.9
+      }
+    ],
+    "explanation": "Issue requests ability to override ChromaDB default tenant and database through application properties - enhancement to ChromaDB vector store configuration."
+  },
+  {
+    "issue_number": 2095,
+    "predicted_labels": [
+      {
+        "label": "refactoring",
+        "confidence": 0.9
+      },
+      {
+        "label": "dependencies",
+        "confidence": 1.0
+      }
+    ],
+    "explanation": "Issue requests removing boot logging dependency and depending on commons logging - refactoring work for dependency management."
+  },
+  {
+    "issue_number": 749,
+    "predicted_labels": [
+      {
+        "label": "enhancement",
+        "confidence": 1.0
+      },
+      {
+        "label": "structured output",
+        "confidence": 1.0
+      }
+    ],
+    "explanation": "Issue requests supporting JSON type detection for parsing arrays and objects - enhancement to structured output functionality."
+  },
+  {
+    "issue_number": 343,
+    "predicted_labels": [
+      {
+        "label": "enhancement",
+        "confidence": 1.0
+      },
+      {
+        "label": "Bedrock",
+        "confidence": 0.9
+      }
+    ],
+    "explanation": "Issue requests implementing Bedrock Jurassic ChatClient - enhancement to Bedrock functionality with help wanted label."
+  },
+  {
+    "issue_number": 1345,
+    "predicted_labels": [
+      {
+        "label": "bug",
+        "confidence": 0.9
+      },
+      {
+        "label": "kotlin",
+        "confidence": 1.0
+      }
+    ],
+    "explanation": "Issue reports ChatClient entity method doesn't work with Kotlin data classes - bug in Kotlin integration functionality."
+  },
+  {
+    "issue_number": 753,
+    "predicted_labels": [
+      {
+        "label": "enhancement",
+        "confidence": 0.8
+      },
+      {
+        "label": "ETL",
+        "confidence": 0.9
+      },
+      {
+        "label": "testing",
+        "confidence": 0.7
+      }
+    ],
+    "explanation": "Issue requests PDFReader test improvements with correct assertions and string handling - enhancement to ETL testing functionality."
+  },
+  {
+    "issue_number": 1234,
+    "predicted_labels": [
+      {
+        "label": "bug",
+        "confidence": 1.0
+      },
+      {
+        "label": "advisors",
+        "confidence": 1.0
+      }
+    ],
+    "explanation": "Bug description shows QuestionAnswerAdvisor only uses userText for similarity search and ignores parameters - bug in advisor functionality."
+  },
+  {
+    "issue_number": 445,
+    "predicted_labels": [
+      {
+        "label": "enhancement",
+        "confidence": 0.8
+      },
+      {
+        "label": "azure",
+        "confidence": 1.0
+      }
+    ],
+    "explanation": "Issue requests updating Azure Acme application to 1.0.0-M2 - enhancement to Azure integration examples."
+  },
+  {
+    "issue_number": 179,
+    "predicted_labels": [
+      {
+        "label": "enhancement",
+        "confidence": 1.0
+      },
+      {
+        "label": "gcp",
+        "confidence": 0.8
+      }
+    ],
+    "explanation": "Issue requests adding support for Google Gemini - enhancement to GCP integration with help wanted label."
+  },
+  {
+    "issue_number": 2691,
+    "predicted_labels": [
+      {
+        "label": "bug",
+        "confidence": 1.0
+      },
+      {
+        "label": "azure",
+        "confidence": 1.0
+      },
+      {
+        "label": "streaming",
+        "confidence": 0.9
+      }
+    ],
+    "explanation": "Bug description shows NullPointerException when using Azure OpenAI with streaming - bug in Azure streaming functionality."
+  },
+  {
+    "issue_number": 392,
+    "predicted_labels": [
+      {
+        "label": "documentation",
+        "confidence": 1.0
+      }
+    ],
+    "explanation": "Issue reports invalid links in Javadoc due to non-qualified class names - documentation improvement needed."
+  }
+]

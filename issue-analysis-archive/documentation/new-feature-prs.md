@@ -1,0 +1,14 @@
+- Huggingface text-image: #1162
+- Anthropic API support within Vertex AI: #1213
+- StabilityAI Image Edit API: #1344
+- Semantic Caching (Redis): #2295
+- AWS Bedrock Prompt Caching support: #3213
+- MongoDB ChatMemory Repository: #2679
+- File based ChatMemory Repository: #3210
+- Mistral OCR API Integration: #2404
+- Jinja2 TemplateRenderer: #3259
+- SpEL TemplateRenderer: #3262
+- Custom StreamCallingHelper: #3602
+- Exception Handling: #3614
+- Deepseek Chain of Thought: #3703
+- Prompt template fixes: #3304

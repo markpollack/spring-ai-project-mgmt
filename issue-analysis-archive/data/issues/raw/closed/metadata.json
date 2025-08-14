@@ -1,0 +1,28 @@
+{
+    "collection_info": {
+        "timestamp": "2025-07-16_14-13-50",
+        "start_time": "1752689631",
+        "end_time": "1752689758",
+        "duration_seconds": 127,
+        "gh_version": "gh version 2.66.1 (2025-01-31)",
+        "script_version": "1.0.0"
+    },
+    "repository": {
+        "name": "spring-projects/spring-ai",
+        "url": "https://github.com/spring-projects/spring-ai"
+    },
+    "collection_stats": {
+        "total_issues": 1114,
+        "processed_issues": 1114,
+        "batch_size": 100,
+        "batches_created": 12,
+        "individual_files": 0
+    },
+    "configuration": {
+        "batch_size": 100,
+        "large_issue_threshold": 50,
+        "size_threshold": 102400,
+        "compressed": false
+    },
+    "rate_limit": {"resources":{"core":{"limit":5000,"used":60,"remaining":4940,"reset":1752690125},"search":{"limit":30,"used":0,"remaining":30,"reset":1752689818},"graphql":{"limit":5000,"used":539,"remaining":4461,"reset":1752690199},"integration_manifest":{"limit":5000,"used":0,"remaining":5000,"reset":1752693358},"source_import":{"limit":100,"used":0,"remaining":100,"reset":1752689818},"code_scanning_upload":{"limit":5000,"used":60,"remaining":4940,"reset":1752690125},"code_scanning_autofix":{"limit":10,"used":0,"remaining":10,"reset":1752689818},"actions_runner_registration":{"limit":10000,"used":0,"remaining":10000,"reset":1752693358},"scim":{"limit":15000,"used":0,"remaining":15000,"reset":1752693358},"dependency_snapshots":{"limit":100,"used":0,"remaining":100,"reset":1752689818},"dependency_sbom":{"limit":100,"used":0,"remaining":100,"reset":1752689818},"audit_log":{"limit":1750,"used":0,"remaining":1750,"reset":1752693358},"audit_log_streaming":{"limit":15,"used":0,"remaining":15,"reset":1752693358},"code_search":{"limit":10,"used":0,"remaining":10,"reset":1752689818}},"rate":{"limit":5000,"used":60,"remaining":4940,"reset":1752690125}}
+}
