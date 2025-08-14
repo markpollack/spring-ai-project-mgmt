@@ -27,6 +27,11 @@ public class ParsedConfiguration {
     public List<String> labelFilters = new ArrayList<>();
     public String labelMode;
     
+    // Dashboard enhancement parameters (Phase 1)
+    public Integer maxIssues; // null = unlimited
+    public String sortBy; // updated/created/comments/reactions
+    public String sortOrder; // desc/asc
+    
     public ParsedConfiguration(CollectionProperties defaultProperties) {
         // Initialize with defaults
         this.repository = defaultProperties.getDefaultRepository();
@@ -34,6 +39,11 @@ public class ParsedConfiguration {
         this.issueState = defaultProperties.getDefaultState();
         this.labelMode = defaultProperties.getDefaultLabelMode();
         this.verbose = defaultProperties.isVerbose();
+        
+        // Dashboard parameters - set defaults
+        this.maxIssues = null; // unlimited by default (backward compatible)
+        this.sortBy = "updated"; // default GitHub sort
+        this.sortOrder = "desc"; // most recent first
     }
     
     @Override
@@ -51,6 +61,9 @@ public class ParsedConfiguration {
                 ", issueState='" + issueState + '\'' +
                 ", labelFilters=" + labelFilters +
                 ", labelMode='" + labelMode + '\'' +
+                ", maxIssues=" + maxIssues +
+                ", sortBy='" + sortBy + '\'' +
+                ", sortOrder='" + sortOrder + '\'' +
                 '}';
     }
 }

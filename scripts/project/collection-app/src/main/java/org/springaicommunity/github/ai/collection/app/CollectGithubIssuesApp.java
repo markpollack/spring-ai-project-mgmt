@@ -58,6 +58,11 @@ public class CollectGithubIssuesApp implements CommandLineRunner {
     private List<String> labelFilters = new ArrayList<>();
     private String labelMode;
     
+    // Dashboard enhancement parameters
+    private Integer maxIssues;
+    private String sortBy;
+    private String sortOrder;
+    
     public CollectGithubIssuesApp(
             GitHubGraphQLService graphQLService,
             GitHubRestService restService,
@@ -103,12 +108,16 @@ public class CollectGithubIssuesApp implements CommandLineRunner {
         logger.info("  Issue state: {}", issueState);
         logger.info("  Label filters: {}", labelFilters);
         logger.info("  Label mode: {}", labelMode);
+        logger.info("  Max issues: {}", maxIssues != null ? maxIssues : "unlimited");
+        logger.info("  Sort by: {}", sortBy);
+        logger.info("  Sort order: {}", sortOrder);
         
         try {
-            // Create collection request
+            // Create collection request with dashboard enhancements
             CollectionRequest request = new CollectionRequest(
                 repo, batchSize, dryRun, incremental, zip, clean, resume,
-                issueState, labelFilters, labelMode
+                issueState, labelFilters, labelMode,
+                maxIssues, sortBy, sortOrder
             );
             
             // Execute collection
@@ -149,5 +158,8 @@ public class CollectGithubIssuesApp implements CommandLineRunner {
         this.issueState = config.issueState;
         this.labelFilters = config.labelFilters;
         this.labelMode = config.labelMode;
+        this.maxIssues = config.maxIssues;
+        this.sortBy = config.sortBy;
+        this.sortOrder = config.sortOrder;
     }
 }

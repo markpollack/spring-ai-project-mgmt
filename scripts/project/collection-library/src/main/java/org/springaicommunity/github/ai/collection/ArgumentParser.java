@@ -102,6 +102,37 @@ public class ArgumentParser {
                     i++; // Skip next argument since we consumed it
                     break;
                     
+                case "--max-issues":
+                    String maxIssuesStr = getRequiredValue(args, i, "max-issues");
+                    try {
+                        config.maxIssues = Integer.parseInt(maxIssuesStr);
+                        if (config.maxIssues <= 0) {
+                            throw new IllegalArgumentException("Max issues must be positive: " + config.maxIssues);
+                        }
+                    } catch (NumberFormatException e) {
+                        throw new IllegalArgumentException("Invalid max issues '" + maxIssuesStr + "': must be a positive integer");
+                    }
+                    i++; // Skip next argument since we consumed it
+                    break;
+                    
+                case "--sort-by":
+                    String sortBy = getRequiredValue(args, i, "sort-by").toLowerCase();
+                    if (!List.of("updated", "created", "comments", "reactions").contains(sortBy)) {
+                        throw new IllegalArgumentException("Invalid sort field '" + sortBy + "': must be 'updated', 'created', 'comments', or 'reactions'");
+                    }
+                    config.sortBy = sortBy;
+                    i++; // Skip next argument since we consumed it
+                    break;
+                    
+                case "--sort-order":
+                    String sortOrder = getRequiredValue(args, i, "sort-order").toLowerCase();
+                    if (!List.of("desc", "asc").contains(sortOrder)) {
+                        throw new IllegalArgumentException("Invalid sort order '" + sortOrder + "': must be 'desc' or 'asc'");
+                    }
+                    config.sortOrder = sortOrder;
+                    i++; // Skip next argument since we consumed it
+                    break;
+                    
                 case "-h", "--help":
                     config.helpRequested = true;
                     break;
@@ -162,6 +193,12 @@ public class ArgumentParser {
         help.append("    --label-mode <mode>     Label matching mode: any, all (default: ").append(defaultProperties.getDefaultLabelMode()).append(")\n");
         help.append("                           Note: 'any' mode uses first label only due to API limitations\n");
         help.append("\n");
+        help.append("DASHBOARD OPTIONS (Phase 1 Enhancement):\n");
+        help.append("    --max-issues <count>    Limit total issues collected (default: unlimited)\n");
+        help.append("    --sort-by <field>       Sort field: updated, created, comments, reactions (default: updated)\n");
+        help.append("    --sort-order <order>    Sort order: desc, asc (default: desc)\n");
+        help.append("                           Use these for dashboard queries like '20 most recent issues'\n");
+        help.append("\n");
         help.append("CONFIGURATION:\n");
         help.append("    Configuration can be customized via application.yaml file\n");
         help.append("    All settings under 'github.issues' prefix can be overridden\n");
@@ -186,6 +223,11 @@ public class ArgumentParser {
         help.append("    # Combined filtering\n");
         help.append("    ./collect_github_issues.java --state open --labels bug --verbose\n");
         help.append("    ./collect_github_issues.java --state closed --labels documentation,enhancement\n");
+        help.append("\n");
+        help.append("    # Dashboard use cases (Phase 1 Enhancement)\n");
+        help.append("    ./collect_github_issues.java --max-issues 20 --sort-by updated --sort-order desc\n");
+        help.append("    ./collect_github_issues.java --max-issues 50 --sort-by created --state open\n");
+        help.append("    ./collect_github_issues.java --max-issues 10 --sort-by comments --sort-order desc --labels bug\n");
         help.append("\n");
         
         return help.toString();
