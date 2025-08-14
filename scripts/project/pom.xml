@@ -16,6 +16,7 @@
     <modules>
         <module>collection-library</module>
         <module>collection-app</module>
+        <module>classification-engine</module>
     </modules>
 
     <properties>
