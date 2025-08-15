@@ -3,8 +3,11 @@ package org.springaicommunity.github.ai.classification.domain;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Represents a stratified train/test split of issues for evaluation.
@@ -15,16 +18,26 @@ import java.util.List;
  * 
  * @param trainSet Issues assigned to training set
  * @param testSet Issues assigned to test set
- * @param splitRatio The ratio used for splitting (e.g., 0.8 for 80/20)
+ * @param splitRatio The ratio used for splitting (e.g., 0.2 for 20% test)
+ * @param rareThreshold Threshold for rare label detection
  * @param randomSeed Seed used for reproducible splitting
- * @param rareLabels Labels with < 3 occurrences (forced to training set)
+ * @param totalIssues Total number of issues processed
+ * @param rareLabels Labels with < threshold occurrences (forced to training set)
+ * @param rareIssuesCount Number of issues forced to training due to rare labels
+ * @param executionTime Time taken to perform the split
+ * @param timestamp When the split was performed
  */
 public record DataSplit(
     @JsonProperty("train_set") List<Integer> trainSet,
     @JsonProperty("test_set") List<Integer> testSet,
     @JsonProperty("split_ratio") double splitRatio,
+    @JsonProperty("rare_threshold") int rareThreshold,
     @JsonProperty("random_seed") long randomSeed,
-    @JsonProperty("rare_labels") List<String> rareLabels
+    @JsonProperty("total_issues") int totalIssues,
+    @JsonProperty("rare_labels") Set<String> rareLabels,
+    @JsonProperty("rare_issues_count") int rareIssuesCount,
+    @JsonProperty("execution_time") Duration executionTime,
+    @JsonProperty("timestamp") Instant timestamp
 ) {
     
     /**
@@ -34,6 +47,18 @@ public record DataSplit(
     public DataSplit {
         if (splitRatio <= 0.0 || splitRatio >= 1.0) {
             throw new IllegalArgumentException("Split ratio must be between 0.0 and 1.0, got: " + splitRatio);
+        }
+        
+        if (rareThreshold < 1) {
+            throw new IllegalArgumentException("Rare threshold must be >= 1, got: " + rareThreshold);
+        }
+        
+        if (totalIssues < 0) {
+            throw new IllegalArgumentException("Total issues must be >= 0, got: " + totalIssues);
+        }
+        
+        if (rareIssuesCount < 0) {
+            throw new IllegalArgumentException("Rare issues count must be >= 0, got: " + rareIssuesCount);
         }
         
         // Ensure immutable collections
@@ -50,19 +75,90 @@ public record DataSplit(
         }
         
         if (rareLabels == null) {
-            rareLabels = Collections.emptyList();
+            rareLabels = Collections.emptySet();
         } else {
-            rareLabels = List.copyOf(rareLabels);
+            rareLabels = Set.copyOf(rareLabels);
         }
     }
     
     /**
-     * Returns the total number of issues in the split.
+     * Creates a new builder instance.
      * 
-     * @return train set size + test set size
+     * @return new builder for DataSplit
      */
-    public int getTotalIssues() {
-        return trainSet.size() + testSet.size();
+    public static Builder builder() {
+        return new Builder();
+    }
+    
+    /**
+     * Builder for creating DataSplit instances.
+     */
+    public static class Builder {
+        private List<Integer> trainSet = Collections.emptyList();
+        private List<Integer> testSet = Collections.emptyList();
+        private double splitRatio = 0.2;
+        private int rareThreshold = 3;
+        private long randomSeed = 42L;
+        private int totalIssues = 0;
+        private Set<String> rareLabels = Collections.emptySet();
+        private int rareIssuesCount = 0;
+        private Duration executionTime = Duration.ZERO;
+        private Instant timestamp = Instant.now();
+        
+        public Builder trainSet(List<Integer> trainSet) {
+            this.trainSet = trainSet;
+            return this;
+        }
+        
+        public Builder testSet(List<Integer> testSet) {
+            this.testSet = testSet;
+            return this;
+        }
+        
+        public Builder splitRatio(double splitRatio) {
+            this.splitRatio = splitRatio;
+            return this;
+        }
+        
+        public Builder rareThreshold(int rareThreshold) {
+            this.rareThreshold = rareThreshold;
+            return this;
+        }
+        
+        public Builder randomSeed(long randomSeed) {
+            this.randomSeed = randomSeed;
+            return this;
+        }
+        
+        public Builder totalIssues(int totalIssues) {
+            this.totalIssues = totalIssues;
+            return this;
+        }
+        
+        public Builder rareLabels(Set<String> rareLabels) {
+            this.rareLabels = rareLabels;
+            return this;
+        }
+        
+        public Builder rareIssuesCount(int rareIssuesCount) {
+            this.rareIssuesCount = rareIssuesCount;
+            return this;
+        }
+        
+        public Builder executionTime(Duration executionTime) {
+            this.executionTime = executionTime;
+            return this;
+        }
+        
+        public Builder timestamp(Instant timestamp) {
+            this.timestamp = timestamp;
+            return this;
+        }
+        
+        public DataSplit build() {
+            return new DataSplit(trainSet, testSet, splitRatio, rareThreshold, randomSeed,
+                               totalIssues, rareLabels, rareIssuesCount, executionTime, timestamp);
+        }
     }
     
     /**
@@ -71,8 +167,7 @@ public record DataSplit(
      * @return actual train size / total size
      */
     public double getActualTrainRatio() {
-        int total = getTotalIssues();
-        return total > 0 ? (double) trainSet.size() / total : 0.0;
+        return totalIssues > 0 ? (double) trainSet.size() / totalIssues : 0.0;
     }
     
     /**
@@ -81,18 +176,17 @@ public record DataSplit(
      * @return actual test size / total size
      */
     public double getActualTestRatio() {
-        int total = getTotalIssues();
-        return total > 0 ? (double) testSet.size() / total : 0.0;
+        return totalIssues > 0 ? (double) testSet.size() / totalIssues : 0.0;
     }
     
     /**
      * Checks if this split is well-balanced (within 5% of target ratio).
      * 
-     * @return true if actual ratio is within 5% of target
+     * @return true if actual test ratio is within 5% of target
      */
     public boolean isWellBalanced() {
-        double actualRatio = getActualTrainRatio();
-        double difference = Math.abs(actualRatio - splitRatio);
+        double actualTestRatio = getActualTestRatio();
+        double difference = Math.abs(actualTestRatio - splitRatio);
         return difference <= 0.05; // 5% tolerance
     }
     
