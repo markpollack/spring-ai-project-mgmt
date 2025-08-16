@@ -204,4 +204,4 @@
 
 **Conclusion**: Filtering out problematic labels significantly improved classification performance, achieving 82.1% F1 with much better precision (76.6%). The approach successfully focuses on technical, domain-specific labels where the classifier performs exceptionally well.
 
-*Generated on: 2025-07-16 18:07:07*
+*Generated on: 2025-08-16 13:04:59*

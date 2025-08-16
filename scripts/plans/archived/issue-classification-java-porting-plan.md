@@ -7,7 +7,13 @@
 ## Last Update: Added LLM client abstraction and evaluation report patterns for better testability and extensibility
 
 ### Background
-The Python-based GitHub issue classification system achieved **82.1% F1 score** with 76.6% precision and 88.5% recall on Spring AI issues. This plan guides the systematic porting of this classification system to Java as a new Maven module within the existing multi-module project structure.
+The Python-based GitHub issue classification system achieved **82.1% F1 score** with 76.6% precision and 88.5% recall on Spring AI issues through **LLM-based classification + post-processing label filtering**. 
+
+**BASELINE VALIDATED (2025-08-16):** Python results successfully reproduced and confirmed:
+- **Unfiltered**: 70.7% F1 (63.2% precision, 80.3% recall)
+- **Filtered (excluding 12 labels)**: 82.1% F1 (76.6% precision, 88.5% recall)
+
+This plan guides the systematic porting to achieve parity with the validated 82.1% baseline.
 
 ### Objectives
 - Port the proven Python classification algorithms to Java
