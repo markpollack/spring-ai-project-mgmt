@@ -25,6 +25,13 @@
             <version>${project.version}</version>
         </dependency>
         
+        <!-- Claude Code Java SDK for LLM integration -->
+        <dependency>
+            <groupId>com.anthropic.claude</groupId>
+            <artifactId>claude-code-sdk</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
+        </dependency>
+        
         <!-- Spring Framework (no Spring Boot for library) -->
         <dependency>
             <groupId>org.springframework</groupId>
