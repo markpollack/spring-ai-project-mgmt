@@ -77,3 +77,4 @@ pr-review/.idea/
 scripts/claude-code-java-sdk
 scripts/tribuo/
 spring-ai-dashboard-project
+__pycache__/
