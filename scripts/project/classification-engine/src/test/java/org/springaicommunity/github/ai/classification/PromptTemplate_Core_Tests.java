@@ -37,12 +37,12 @@ class PromptTemplate_Core_Tests extends ClassificationTestBase {
         assertThat(systemPrompt).isNotEmpty();
         assertThat(systemPrompt).containsIgnoringCase("GitHub Issue Multi-Label Classifier");
         assertThat(systemPrompt).containsIgnoringCase("Spring AI");
-        assertThat(systemPrompt).containsIgnoringCase("conservative");
+        assertThat(systemPrompt).containsIgnoringCase("liberal");
         assertThat(systemPrompt).containsIgnoringCase("confidence");
         assertThat(systemPrompt).containsIgnoringCase("vector store");
-        assertThat(systemPrompt).containsIgnoringCase("avoid");
-        assertThat(systemPrompt).contains("bug"); // Should mention avoiding bug label
-        assertThat(systemPrompt).contains("enhancement"); // Should mention avoiding enhancement label
+        assertThat(systemPrompt).containsIgnoringCase("include");
+        assertThat(systemPrompt).contains("bug"); // Should mention including bug label
+        assertThat(systemPrompt).contains("enhancement"); // Should mention including enhancement label
     }
     
     @Test
@@ -73,9 +73,9 @@ class PromptTemplate_Core_Tests extends ClassificationTestBase {
         assertThat(labels).contains("MCP"); // 100% F1
         assertThat(labels).contains("design"); // 76.9% F1
         
-        // Should not contain problematic labels
-        assertThat(labels).doesNotContain("bug");
-        assertThat(labels).doesNotContain("enhancement");
+        // Should now contain previously problematic labels (liberal approach)
+        assertThat(labels).contains("bug");
+        assertThat(labels).contains("enhancement");
     }
     
     @Test
@@ -109,7 +109,7 @@ class PromptTemplate_Core_Tests extends ClassificationTestBase {
         // Should contain final instructions
         assertThat(prompt).contains("Instructions");
         assertThat(prompt).contains("confidence >= 0.7");
-        assertThat(prompt).contains("maximum 2 labels");
+        assertThat(prompt).contains("maximum 3 labels");
     }
     
     @Test
@@ -133,11 +133,11 @@ class PromptTemplate_Core_Tests extends ClassificationTestBase {
         assertThat(prompt).contains("3 issues"); // Issue count
         
         // Should contain all issues
-        assertThat(prompt).contains("Issue #100");
+        assertThat(prompt).contains("ID: #100");
         assertThat(prompt).contains("First Issue");
-        assertThat(prompt).contains("Issue #200");
+        assertThat(prompt).contains("ID: #200");
         assertThat(prompt).contains("Second Issue");
-        assertThat(prompt).contains("Issue #300");
+        assertThat(prompt).contains("ID: #300");
         assertThat(prompt).contains("Third Issue");
         
         // Should contain JSON array format
@@ -146,7 +146,7 @@ class PromptTemplate_Core_Tests extends ClassificationTestBase {
         
         // Should contain batch-specific instructions
         assertThat(prompt).contains("0.7+ threshold");
-        assertThat(prompt).contains("Maximum 2 labels per issue");
+        assertThat(prompt).contains("Maximum 3 labels per issue");
     }
     
     @Test
@@ -172,9 +172,9 @@ class PromptTemplate_Core_Tests extends ClassificationTestBase {
     void singleIssuePromptLabelPrioritization() {
         List<String> mixedLabels = List.of(
             "vector store",     // High-performing
-            "bug",              // Problematic (should be filtered)
+            "bug",              // Now included (liberal approach)
             "documentation",    // High-performing
-            "enhancement",      // Problematic (should be filtered)
+            "enhancement",      // Now included (liberal approach)
             "custom-label"      // Other
         );
         
@@ -194,12 +194,12 @@ class PromptTemplate_Core_Tests extends ClassificationTestBase {
         assertThat(prompt).contains("documentation");
         
         // Should include other labels in separate section
-        assertThat(prompt).contains("Other Available Labels");
+        assertThat(prompt).contains("Additional Available Labels");
         assertThat(prompt).contains("custom-label");
         
-        // Should exclude problematic labels entirely
-        assertThat(prompt).doesNotContain("`bug`");
-        assertThat(prompt).doesNotContain("`enhancement`");
+        // Should now include previously problematic labels (liberal approach)
+        assertThat(prompt).contains("`bug`");
+        assertThat(prompt).contains("`enhancement`");
     }
     
     @Test
