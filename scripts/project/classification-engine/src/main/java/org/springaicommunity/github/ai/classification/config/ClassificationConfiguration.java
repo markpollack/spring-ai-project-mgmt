@@ -3,8 +3,11 @@ package org.springaicommunity.github.ai.classification.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springaicommunity.github.ai.classification.domain.ClassificationConfig;
+import org.springaicommunity.github.ai.classification.service.PromptTemplateService;
+import org.springaicommunity.github.ai.classification.service.PythonCompatiblePromptTemplateService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import java.util.concurrent.Executor;
@@ -23,17 +26,26 @@ import java.util.concurrent.Executor;
 public class ClassificationConfiguration {
     
     /**
-     * Default classification configuration with proven settings from Python implementation.
+     * Default classification configuration matching Python's exact settings.
      */
     @Bean
     public ClassificationConfig defaultClassificationConfig() {
         return ClassificationConfig.builder()
-            .confidenceThreshold(0.7)
-            .maxLabelsPerIssue(2)
+            .confidenceThreshold(0.6)  // Python used 0.6 threshold
+            .maxLabelsPerIssue(5)      // Python allowed multiple labels  
             .batchSize(25)
             .trainTestSplitRatio(0.8)
             .randomSeed(42)
             .build();
+    }
+    
+    /**
+     * Python-compatible prompt template service for EXACT parity.
+     */
+    @Bean
+    @Primary
+    public PromptTemplateService pythonCompatiblePromptTemplateService() {
+        return new PythonCompatiblePromptTemplateService();
     }
     
     /**
