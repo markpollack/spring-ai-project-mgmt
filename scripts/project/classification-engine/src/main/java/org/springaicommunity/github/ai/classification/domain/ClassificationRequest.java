@@ -33,10 +33,18 @@ public record ClassificationRequest(
      * @throws IllegalArgumentException if required fields are invalid
      */
     public ClassificationRequest {
-        Objects.requireNonNull(title, "Title cannot be null");
-        Objects.requireNonNull(body, "Body cannot be null");
-        Objects.requireNonNull(availableLabels, "Available labels cannot be null");
-        Objects.requireNonNull(config, "Classification config cannot be null");
+        if (title == null) {
+            throw new IllegalArgumentException("Title cannot be null");
+        }
+        if (body == null) {
+            throw new IllegalArgumentException("Body cannot be null");
+        }
+        if (availableLabels == null) {
+            throw new IllegalArgumentException("Available labels cannot be null");
+        }
+        if (config == null) {
+            throw new IllegalArgumentException("Classification config cannot be null");
+        }
         
         if (issueNumber <= 0) {
             throw new IllegalArgumentException("Issue number must be positive");
