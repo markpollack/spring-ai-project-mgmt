@@ -2,6 +2,7 @@ package org.springaicommunity.github.ai.classification.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springaicommunity.github.ai.classification.domain.IssueData;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -110,12 +111,30 @@ public class ManualClaudePromptService {
             
             
             
-            ### Output Handling
-            - Respond only with the JSON output—no extra commentary.
-            - Return the JSON array in a markdown code block
-            - After confirming that the output looks correct, we will continue with the next batch (e.g., 5 more issues per step)
+            ### CRITICAL OUTPUT REQUIREMENTS - NON-NEGOTIABLE
             
-            Only respond with the JSON output—no extra explanation.
+            YOU MUST RESPOND WITH ONLY RAW JSON. NO EXCEPTIONS.
+            
+            REQUIRED FORMAT:
+            - Start your response with: [
+            - End your response with: ]
+            - NO markdown code blocks (```json ... ```)
+            - NO explanatory text before or after the JSON
+            - NO commentary like "Here are the classifications:" 
+            - NO "I have successfully classified..." statements
+            - NO additional formatting or wrapping
+            
+            EXAMPLES OF FORBIDDEN RESPONSES:
+            ❌ "Here are the classifications: [...]"
+            ❌ "```json [...] ```"
+            ❌ "I have classified the issues: [...]"
+            ❌ Any text before or after the JSON array
+            
+            REQUIRED RESPONSE FORMAT:
+            ✅ [{"issue_number": 123, "predicted_labels": [...], "explanation": "..."}]
+            
+            VIOLATION OF THESE RULES WILL CAUSE SYSTEM FAILURE.
+            RAW JSON ONLY - NO EXCEPTIONS - NO NEGOTIATIONS.
             """;
     }
     
@@ -163,6 +182,25 @@ public class ManualClaudePromptService {
         systemPrompt.append("These files are now loaded into memory and ready for classification tasks.");
         
         return systemPrompt.toString();
+    }
+    
+    /**
+     * Convenient overload that accepts type-safe IssueData objects
+     */
+    public String generatePrompt(List<IssueData> issueDataList) {
+        // Simple prompt for analysis and debugging purposes
+        StringBuilder prompt = new StringBuilder();
+        prompt.append("Please analyze these GitHub issues:\n\n");
+        
+        for (IssueData issue : issueDataList) {
+            prompt.append("Issue #").append(issue.issueNumber()).append("\n");
+            prompt.append("Title: ").append(issue.title()).append("\n");
+            prompt.append("Body: ").append(issue.body().length() > 500 ? 
+                issue.body().substring(0, 500) + "..." : issue.body()).append("\n");
+            prompt.append("Labels: ").append(issue.labels()).append("\n\n");
+        }
+        
+        return prompt.toString();
     }
     
     /**

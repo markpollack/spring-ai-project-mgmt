@@ -83,6 +83,25 @@ public class ClaudeCodeWrapperService {
             // Extract text content from the result (same logic as Python)
             String rawResponse = extractTextContent(result);
             
+            // CRITICAL: Validate for empty response bug (Claude CLI returns 0 chars despite token usage)
+            if (rawResponse == null || rawResponse.trim().isEmpty()) {
+                logger.error("🚨 EMPTY RESPONSE DETECTED - Claude CLI returned 0 characters despite successful execution");
+                logger.error("📊 Token usage: {}", result.metadata().usage());
+                logger.error("💰 Cost charged: {}", result.metadata().cost());
+                logger.error("⏱️ Duration: {}ms", result.metadata().durationMs());
+                
+                return ClassificationAnalysisResult.builder()
+                    .success(false)
+                    .rawResponse("")
+                    .jsonData(null)
+                    .model(model)
+                    .tokenUsage(result.metadata().usage())
+                    .cost(result.metadata().cost())
+                    .durationMs(result.metadata().durationMs())
+                    .error("EMPTY_RESPONSE_BUG: Claude CLI returned empty output despite token usage - potential CLI buffering issue")
+                    .build();
+            }
+            
             logger.info("✅ Claude CLI analysis completed");
             logger.info("📊 Response length: {} chars", rawResponse.length());
             logger.info("🔍 Response preview: {}...", rawResponse.substring(0, Math.min(200, rawResponse.length())));
@@ -127,7 +146,7 @@ public class ClaudeCodeWrapperService {
     /**
      * Extract text content from Claude CLI response (matches Python logic)
      */
-    private String extractTextContent(QueryResult result) {
+    protected String extractTextContent(QueryResult result) {
         // Find assistant messages and extract text content
         StringBuilder content = new StringBuilder();
         
@@ -147,7 +166,7 @@ public class ClaudeCodeWrapperService {
     /**
      * Extract JSON from Claude response using the same fallback strategies as Python
      */
-    private JsonNode extractJsonFromResponse(String textContent) {
+    protected JsonNode extractJsonFromResponse(String textContent) {
         if (textContent == null || textContent.trim().isEmpty()) {
             logger.warn("🔍 extractJsonFromResponse: Empty text content provided");
             return null;
