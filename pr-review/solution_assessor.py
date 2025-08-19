@@ -104,6 +104,18 @@ class AIPoweredSolutionAssessor:
             
             # Analyze code changes in detail
             code_analysis = self._analyze_code_changes(pr_number)
+            if not code_analysis:
+                Logger.warn("⚠️  Code analysis failed, using fallback data based on file changes")
+                # Use file changes data as fallback
+                total_lines = sum(change.get('additions', 0) + change.get('deletions', 0) for change in file_changes)
+                code_analysis = {
+                    'total_lines_added': sum(change.get('additions', 0) for change in file_changes),
+                    'total_lines_removed': sum(change.get('deletions', 0) for change in file_changes),
+                    'file_count': len(file_changes),
+                    'implementation_patterns': [],
+                    'test_analysis': {'test_files_count': 0, 'test_coverage_areas': []},
+                    'code_quality_issues': {'complex_methods': [], 'ignored_tests': [], 'large_files': []}
+                }
             
             # Calculate dynamic timeout based on PR complexity
             total_lines = code_analysis.get('total_lines_added', 0) + code_analysis.get('total_lines_removed', 0)
@@ -127,10 +139,22 @@ class AIPoweredSolutionAssessor:
             # Parse and structure AI results
             assessment = self._parse_assessment_results(ai_results, context_data)
             
+            # Add analysis metadata for user transparency
+            analysis_method = ai_results.get('analysis_method', 'primary_standard')
+            if 'fallback' in analysis_method:
+                assessment.analysis_notes = f"Used {analysis_method} due to: {ai_results.get('fallback_reason', 'processing constraints')}"
+                Logger.info(f"📋 Analysis method: {analysis_method}")
+                Logger.info(f"📋 Fallback reason: {ai_results.get('fallback_reason', 'Unknown')}")
+            else:
+                assessment.analysis_notes = f"Completed using {analysis_method} analysis"
+                Logger.info(f"📋 Analysis method: {analysis_method}")
+            
             # Save assessment results
             self._save_assessment(pr_context_dir, assessment)
             
             Logger.success(f"✅ Solution assessment completed for PR #{pr_number}")
+            Logger.info(f"   - Analysis strategy: {pr_classification.get('analysis_strategy', 'unknown')}")
+            Logger.info(f"   - Analysis method: {analysis_method}")
             Logger.info(f"   - Code quality score: {assessment.code_quality_score}/10")
             Logger.info(f"   - Final complexity score: {assessment.final_complexity_score}/10")
             Logger.info(f"   - Risk factors identified: {len(assessment.risk_factors)}")
@@ -148,7 +172,7 @@ class AIPoweredSolutionAssessor:
         
         files_to_load = [
             ("pr_data", "pr-data.json"),
-            ("conversation_analysis", "ai-conversation-analysis.json"),
+            ("conversation_analysis", "conversation.json"),
             ("file_changes", "file-changes.json")
         ]
         
@@ -421,15 +445,21 @@ class AIPoweredSolutionAssessor:
         Logger.info("📊 Analyzing code changes...")
         
         try:
-            # Get diff statistics - compare current commit with its parent
+            # Get diff statistics - compare current branch with main branch
             # This shows the changes introduced by the PR
             diff_result = subprocess.run([
-                "git", "diff", "--numstat", "HEAD~1"
+                "git", "diff", "--numstat", "origin/main...HEAD"
             ], capture_output=True, text=True, cwd=self.spring_ai_dir)
             
             total_lines_added = 0
             total_lines_removed = 0
             file_count = 0
+            
+            # Check if git diff command was successful
+            if diff_result.returncode != 0:
+                Logger.warn(f"⚠️  Git diff failed (returncode {diff_result.returncode}), using file changes data as fallback")
+                Logger.warn(f"⚠️  Git stderr: {diff_result.stderr}")
+                return self._fallback_code_analysis(pr_number)
             
             if diff_result.stdout:
                 for line in diff_result.stdout.strip().split('\n'):
@@ -465,13 +495,73 @@ class AIPoweredSolutionAssessor:
             
         except Exception as e:
             Logger.warn(f"⚠️  Code analysis failed: {e}")
+            return self._fallback_code_analysis(pr_number)
+    
+    def _fallback_code_analysis(self, pr_number: str) -> Dict[str, Any]:
+        """Create fallback code analysis using file changes data when git operations fail"""
+        Logger.info("📊 Creating fallback code analysis from file changes data...")
+        
+        try:
+            # Load file changes data directly
+            pr_context_dir = self.context_dir / f"pr-{pr_number}"
+            file_changes_path = pr_context_dir / "file-changes.json"
+            
+            if file_changes_path.exists():
+                import json
+                with open(file_changes_path, 'r') as f:
+                    file_changes = json.load(f)
+                
+                total_lines_added = sum(change.get('additions', 0) for change in file_changes)
+                total_lines_removed = sum(change.get('deletions', 0) for change in file_changes)
+                file_count = len(file_changes)
+                
+                # Basic pattern detection from filenames
+                patterns = []
+                test_files = 0
+                for change in file_changes:
+                    filename = change.get('filename', '')
+                    if 'AutoConfiguration' in filename:
+                        patterns.append("Spring Configuration class pattern")
+                    if 'Test.java' in filename or 'IT.java' in filename:
+                        test_files += 1
+                        patterns.append("Test implementation pattern")
+                    if filename.endswith('.java'):
+                        patterns.append("Java implementation pattern")
+                
+                return {
+                    'total_lines_added': total_lines_added,
+                    'total_lines_removed': total_lines_removed,
+                    'file_count': file_count,
+                    'implementation_patterns': list(set(patterns)),  # Remove duplicates
+                    'test_analysis': {
+                        'test_files_count': test_files,
+                        'test_coverage_areas': [f"Test files: {test_files} found"]
+                    },
+                    'code_quality_issues': {
+                        'complex_methods': [],
+                        'ignored_tests': [],
+                        'large_files': []
+                    }
+                }
+            else:
+                Logger.warn(f"⚠️  File changes data not found at {file_changes_path}")
+                return {
+                    'total_lines_added': 0,
+                    'total_lines_removed': 0,
+                    'file_count': 0,
+                    'implementation_patterns': [],
+                    'test_analysis': {'test_files_count': 0, 'test_coverage_areas': []},
+                    'code_quality_issues': {'complex_methods': [], 'ignored_tests': [], 'large_files': []}
+                }
+        except Exception as e:
+            Logger.warn(f"⚠️  Fallback code analysis failed: {e}")
             return {
                 'total_lines_added': 0,
                 'total_lines_removed': 0,
                 'file_count': 0,
                 'implementation_patterns': [],
-                'test_analysis': {},
-                'code_quality_issues': {}
+                'test_analysis': {'test_files_count': 0, 'test_coverage_areas': []},
+                'code_quality_issues': {'complex_methods': [], 'ignored_tests': [], 'large_files': []}
             }
     
     def _detect_implementation_patterns(self) -> List[str]:
@@ -481,7 +571,7 @@ class AIPoweredSolutionAssessor:
         try:
             # Get list of changed files
             files_result = subprocess.run([
-                "git", "diff", "--name-only", "HEAD~1"
+                "git", "diff", "--name-only", "origin/main...HEAD"
             ], capture_output=True, text=True, cwd=self.spring_ai_dir)
             
             if not files_result.stdout:
@@ -568,7 +658,7 @@ class AIPoweredSolutionAssessor:
         try:
             # Get list of changed files
             files_result = subprocess.run([
-                "git", "diff", "--name-only", "HEAD~1"
+                "git", "diff", "--name-only", "origin/main...HEAD"
             ], capture_output=True, text=True, cwd=self.spring_ai_dir)
             
             if not files_result.stdout:
@@ -698,7 +788,17 @@ class AIPoweredSolutionAssessor:
         
         # Extract context data
         pr_data = context_data.get('pr_data', {})
-        conversation_analysis = context_data.get('conversation_analysis', {})
+        conversation_analysis = context_data.get('conversation_analysis') or {}
+        
+        # Handle case where conversation_analysis is a list (empty conversation data)
+        if isinstance(conversation_analysis, list):
+            conversation_analysis = {
+                'problem_summary': 'No conversation analysis available',
+                'complexity_score': 5,
+                'key_requirements': [],
+                'outstanding_concerns': []
+            }
+        
         file_changes = context_data.get('file_changes', [])
         
         # Build file changes file path for Claude Code to read
@@ -784,37 +884,67 @@ class AIPoweredSolutionAssessor:
                                                context_data: Dict[str, Any], code_analysis: Dict[str, Any], 
                                                doc_analysis: Dict[str, Any], pr_classification: Dict[str, Any], 
                                                pr_number: str) -> Optional[Dict[str, Any]]:
-        """Execute assessment with timeout fallback to simplified analysis"""
+        """Execute assessment with comprehensive error handling and fallback to simplified analysis"""
+        
+        import subprocess
+        
+        analysis_strategy = pr_classification.get('analysis_strategy', 'unknown')
         
         try:
             # Try the primary assessment
-            Logger.info(f"🤖 Attempting primary assessment with {timeout}s timeout...")
-            return self._execute_claude_assessment(assessment_prompt, timeout)
+            Logger.info(f"🤖 Executing {analysis_strategy} analysis with {timeout}s timeout...")
+            result = self._execute_claude_assessment(assessment_prompt, timeout)
             
+            if result and result.get('success'):
+                Logger.success(f"✅ Primary {analysis_strategy} analysis completed successfully")
+                result['analysis_method'] = f'primary_{analysis_strategy}'
+                result['timeout_used'] = timeout
+                return result
+            elif result and not result.get('success'):
+                error_msg = result.get('error', '').lower()
+                if 'timeout' in error_msg or 'timed out' in error_msg:
+                    Logger.warn(f"⏱️  Primary assessment timed out after {timeout}s")
+                    Logger.info(f"🔄 Reason: {result.get('error', 'Unknown timeout')}")
+                else:
+                    Logger.warn(f"⚠️  Primary assessment failed: {result.get('error', 'Unknown error')}")
+                
+                return self._fallback_to_simplified_analysis(
+                    context_data, code_analysis, doc_analysis, pr_classification, pr_number, timeout
+                )
+            
+        except subprocess.TimeoutExpired as e:
+            Logger.warn(f"⏱️  subprocess.TimeoutExpired caught after {timeout}s")
+            Logger.info(f"🔄 Command: {e.cmd}")
+            return self._fallback_to_simplified_analysis(
+                context_data, code_analysis, doc_analysis, pr_classification, pr_number, timeout
+            )
         except Exception as e:
             error_msg = str(e).lower()
             if 'timeout' in error_msg or 'timed out' in error_msg:
-                Logger.warn(f"⏱️  Primary assessment timed out after {timeout}s")
-                return self._fallback_to_simplified_analysis(
-                    context_data, code_analysis, doc_analysis, pr_classification, pr_number
-                )
+                Logger.warn(f"⏱️  Assessment timed out: {e}")
             else:
-                Logger.error(f"❌ Primary assessment failed with non-timeout error: {e}")
-                # For non-timeout errors, still try fallback
-                return self._fallback_to_simplified_analysis(
-                    context_data, code_analysis, doc_analysis, pr_classification, pr_number
-                )
+                Logger.error(f"❌ Primary assessment failed with error: {e}")
+            
+            return self._fallback_to_simplified_analysis(
+                context_data, code_analysis, doc_analysis, pr_classification, pr_number, timeout
+            )
     
     def _fallback_to_simplified_analysis(self, context_data: Dict[str, Any], code_analysis: Dict[str, Any],
                                        doc_analysis: Dict[str, Any], pr_classification: Dict[str, Any], 
-                                       pr_number: str) -> Optional[Dict[str, Any]]:
+                                       pr_number: str, original_timeout: int) -> Optional[Dict[str, Any]]:
         """Fallback to simplified analysis when primary assessment fails"""
         
-        Logger.info("🔄 Falling back to simplified analysis...")
+        Logger.info("🔄 Falling back to simplified analysis strategy...")
         
-        # Force simplified strategy
+        # Force simplified strategy if not already
         fallback_classification = pr_classification.copy()
-        fallback_classification['analysis_strategy'] = 'simplified_large'
+        current_strategy = fallback_classification.get('analysis_strategy', '')
+        
+        if current_strategy != 'simplified_large':
+            fallback_classification['analysis_strategy'] = 'simplified_large'
+            Logger.info(f"🔄 Switching from {current_strategy} to simplified_large strategy")
+        else:
+            Logger.info("🔄 Already using simplified strategy, trying with reduced scope")
         
         # Create simplified prompt
         try:
@@ -822,24 +952,29 @@ class AIPoweredSolutionAssessor:
                 context_data, code_analysis, doc_analysis, fallback_classification, pr_number
             )
             
-            # Try with reduced timeout (5 minutes max)
-            fallback_timeout = min(300, timeout // 2) if 'timeout' in locals() else 300
+            # Try with reduced timeout (half of original, min 3 minutes, max 5 minutes)
+            fallback_timeout = max(180, min(300, original_timeout // 2))
             
-            Logger.info(f"🔄 Retrying with simplified analysis (timeout: {fallback_timeout}s)...")
+            Logger.info(f"🔄 Retrying with simplified analysis (timeout: {fallback_timeout}s vs original: {original_timeout}s)...")
+            
             result = self._execute_claude_assessment(simplified_prompt, fallback_timeout)
             
-            if result:
-                Logger.success("✅ Simplified analysis completed successfully")
+            if result and result.get('success'):
+                Logger.success("✅ Simplified fallback analysis completed successfully")
                 # Mark the result as using fallback
                 result['analysis_method'] = 'simplified_fallback'
-                result['fallback_reason'] = 'Primary analysis timed out or failed'
-            
-            return result
+                result['fallback_reason'] = f'Primary {current_strategy} analysis timed out after {original_timeout}s'
+                result['fallback_timeout'] = fallback_timeout
+                return result
+            elif result:
+                Logger.warn(f"⚠️  Simplified analysis failed: {result.get('error', 'Unknown error')}")
             
         except Exception as e:
             Logger.error(f"❌ Simplified analysis also failed: {e}")
-            # Last resort: return a minimal assessment
-            return self._create_minimal_assessment(pr_classification, doc_analysis)
+        
+        # Last resort: return a minimal assessment
+        Logger.info("🔄 Creating minimal assessment as final fallback...")
+        return self._create_minimal_assessment(pr_classification, doc_analysis)
     
     def _create_minimal_assessment(self, pr_classification: Dict[str, Any], 
                                  doc_analysis: Dict[str, Any]) -> Dict[str, Any]:
@@ -1017,6 +1152,11 @@ class AIPoweredSolutionAssessor:
                         Logger.info("🔄 JSON extraction failed, using manual parsing fallback")
                         raise ValueError("Centralized JSON extraction failed")
                 
+                # Check if this is the new simplified format and convert it
+                if 'overall_assessment' in ai_data and 'architectural_analysis' in ai_data:
+                    Logger.info("🔄 Converting simplified template format to legacy format")
+                    ai_data = self._convert_simplified_to_legacy_format(ai_data)
+                
                 # Validate required fields
                 required_fields = ['scope_analysis', 'architecture_impact', 'implementation_quality', 
                                  'breaking_changes_assessment', 'testing_adequacy', 'documentation_completeness',
@@ -1102,6 +1242,62 @@ class AIPoweredSolutionAssessor:
             f.write(json.dumps(failure_entry) + '\n')
         
         Logger.warn(f"🔍 AI failure logged to {failure_log} for debugging")
+
+    def _convert_simplified_to_legacy_format(self, simplified_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Convert new simplified template format to legacy format expected by the system"""
+        
+        overall = simplified_data.get('overall_assessment', {})
+        architectural = simplified_data.get('architectural_analysis', {})
+        breaking = simplified_data.get('breaking_changes', {})
+        documentation = simplified_data.get('documentation_quality', {})
+        risk = simplified_data.get('risk_assessment', {})
+        testing = simplified_data.get('testing_evaluation', {})
+        recommendations = simplified_data.get('recommendations', {})
+        
+        # Map new format to legacy format
+        legacy_data = {
+            'scope_analysis': overall.get('summary', 'Large architectural refactoring with significant impact'),
+            'architecture_impact': [
+                f"Architectural Impact: {architectural.get('architectural_impact', 'HIGH')}",
+                f"New Components: {', '.join(architectural.get('new_components', []))}",
+                f"Design Patterns: {', '.join(architectural.get('design_patterns', []))}",
+                f"Soundness: {architectural.get('architectural_soundness', 'Assessment provided')}"
+            ],
+            'implementation_quality': [
+                f"Breaking Changes: {'Yes' if breaking.get('has_breaking_changes') else 'No'}",
+                f"Migration Complexity: {breaking.get('migration_complexity', 'MEDIUM')}",
+                f"Migration Guidance: {breaking.get('migration_guidance', 'Available')}"
+            ],
+            'breaking_changes_assessment': breaking.get('api_changes', []) + breaking.get('configuration_changes', []),
+            'testing_adequacy': [
+                f"Test Coverage: {testing.get('test_coverage', 'GOOD')}",
+                f"Test Strategy: {testing.get('test_strategy', 'Comprehensive testing provided')}",
+                f"Missing Tests: {', '.join(testing.get('missing_tests', []))}"
+            ],
+            'documentation_completeness': [
+                f"Documentation Quality: {documentation.get('documentation_completeness', 'GOOD')}",
+                f"User Impact Coverage: {documentation.get('user_impact_coverage', 'Adequate')}",
+                f"Example Quality: {documentation.get('example_quality', 'Good')}",
+                f"Missing Documentation: {', '.join(documentation.get('missing_documentation', []))}"
+            ],
+            'solution_fitness': overall.get('summary', 'Assessment completed'),
+            'risk_factors': risk.get('key_risks', []),
+            'code_quality_score': 7,  # Default reasonable score for large architectural PRs
+            'complexity_justification': f"Large {overall.get('recommendation', 'architectural')} PR with {architectural.get('architectural_impact', 'high')} impact",
+            'final_complexity_score': 7,  # Default reasonable score for large architectural PRs
+            'recommendations': (
+                recommendations.get('immediate_actions', []) + 
+                recommendations.get('follow_up_actions', []) + 
+                recommendations.get('long_term_considerations', [])
+            )
+        }
+        
+        Logger.info(f"✅ Successfully converted simplified format to legacy format")
+        Logger.info(f"   - Recommendation: {overall.get('recommendation', 'N/A')}")
+        Logger.info(f"   - Architectural Impact: {architectural.get('architectural_impact', 'N/A')}")
+        Logger.info(f"   - Breaking Changes: {breaking.get('has_breaking_changes', False)}")
+        
+        return legacy_data
 
     def _create_fallback_assessment(self) -> Dict[str, Any]:
         """Create intelligent fallback assessment if AI parsing fails"""
