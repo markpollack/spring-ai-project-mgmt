@@ -84,6 +84,9 @@ class ClaudeCodeWrapperSmallBatchTest {
         int totalOutputTokens = 0;
         int successfulBatches = 0;
         int failedBatches = 0;
+        List<Integer> emptyResponseBatches = new ArrayList<>();
+        List<Integer> jsonFailedBatches = new ArrayList<>();
+        List<Integer> completeFailureBatches = new ArrayList<>();
         
         // Process each batch
         for (int batchNum = 0; batchNum < totalBatches; batchNum++) {
@@ -107,7 +110,14 @@ class ClaudeCodeWrapperSmallBatchTest {
                 claudeWrapper.analyzeFromFile(combinedPrompt, Duration.ofMinutes(5), "sonnet");
             
             if (result.isSuccess()) {
-                System.out.println("  • ✅ Success: " + result.getRawResponse().length() + " chars response");
+                int responseLength = result.getRawResponse() != null ? result.getRawResponse().length() : 0;
+                System.out.println("  • ✅ Success: " + responseLength + " chars response");
+                
+                // ENHANCED DEBUGGING: Check for empty response issue
+                if (responseLength == 0) {
+                    System.out.println("  • 🚨 EMPTY RESPONSE DETECTED - Adding to empty response list");
+                    emptyResponseBatches.add(batchNum + 1);
+                }
                 
                 // Track costs and tokens
                 if (result.getCost() != null) {
@@ -140,11 +150,13 @@ class ClaudeCodeWrapperSmallBatchTest {
                     }
                 } else {
                     System.out.println("  • ❌ JSON parsing failed for batch " + (batchNum + 1));
+                    jsonFailedBatches.add(batchNum + 1);
                     failedBatches++;
                 }
                 
             } else {
                 System.out.println("  • ❌ Failed: " + result.getError());
+                completeFailureBatches.add(batchNum + 1);
                 failedBatches++;
                 // Continue with next batch despite failure
             }
@@ -169,6 +181,30 @@ class ClaudeCodeWrapperSmallBatchTest {
         System.out.println("📊 Total Predictions: " + allPredictions.size());
         System.out.println("✅ Successful Batches: " + successfulBatches + "/" + totalBatches);
         System.out.println("❌ Failed Batches: " + failedBatches + "/" + totalBatches);
+        
+        // ENHANCED DEBUGGING: Detailed failure analysis
+        System.out.println("\n🔍 DETAILED FAILURE ANALYSIS:");
+        if (!emptyResponseBatches.isEmpty()) {
+            System.out.println("🚨 Empty Response Batches: " + emptyResponseBatches + " (Count: " + emptyResponseBatches.size() + ")");
+        }
+        if (!jsonFailedBatches.isEmpty()) {
+            System.out.println("📝 JSON Parsing Failed Batches: " + jsonFailedBatches + " (Count: " + jsonFailedBatches.size() + ")");
+        }
+        if (!completeFailureBatches.isEmpty()) {
+            System.out.println("💥 Complete Failure Batches: " + completeFailureBatches + " (Count: " + completeFailureBatches.size() + ")");
+        }
+        
+        // Calculate missing issues
+        int missingIssues = testIssues.size() - allPredictions.size();
+        if (missingIssues > 0) {
+            System.out.println("📊 Missing Issues: " + missingIssues + " (Expected: " + testIssues.size() + ", Got: " + allPredictions.size() + ")");
+            System.out.println("🎯 ROOT CAUSE ANALYSIS:");
+            System.out.println("  → Empty responses likely cause " + (emptyResponseBatches.size() * batchSize) + " missing issues");
+            System.out.println("  → JSON parsing failures likely cause " + (jsonFailedBatches.size() * batchSize) + " missing issues");
+            System.out.println("  → Complete failures likely cause " + (completeFailureBatches.size() * batchSize) + " missing issues");
+        } else {
+            System.out.println("🎉 No missing issues - full coverage achieved!");
+        }
         
         // Report how many predictions we got
         System.out.println("📊 Expected " + testIssues.size() + " predictions, got " + allPredictions.size());
