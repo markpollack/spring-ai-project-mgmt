@@ -109,50 +109,50 @@ Identify potential risks:
 Provide your assessment in the following JSON structure:
 
 ```json
-{
-  "overall_assessment": {
+{{
+  "overall_assessment": {{
     "recommendation": "APPROVE|APPROVE_WITH_CHANGES|NEEDS_WORK|REJECT",
     "confidence_level": "HIGH|MEDIUM|LOW",
     "summary": "Brief overall assessment in 2-3 sentences"
-  },
-  "architectural_analysis": {
+  }},
+  "architectural_analysis": {{
     "architectural_impact": "HIGH|MEDIUM|LOW",
     "new_components": ["List of major new components"],
     "design_patterns": ["Key patterns introduced or modified"],
     "integration_concerns": ["Potential integration issues"],
     "architectural_soundness": "Assessment of overall architecture decisions"
-  },
-  "breaking_changes": {
+  }},
+  "breaking_changes": {{
     "has_breaking_changes": true|false,
     "api_changes": ["List of API modifications"],
     "configuration_changes": ["New or modified config requirements"],
     "migration_complexity": "HIGH|MEDIUM|LOW",
     "migration_guidance": "Quality of provided migration documentation"
-  },
-  "documentation_quality": {
+  }},
+  "documentation_quality": {{
     "documentation_completeness": "EXCELLENT|GOOD|ADEQUATE|INSUFFICIENT",
     "user_impact_coverage": "How well docs cover user-facing changes",
     "example_quality": "Quality and completeness of code examples",
     "missing_documentation": ["Areas where docs could be improved"]
-  },
-  "risk_assessment": {
+  }},
+  "risk_assessment": {{
     "implementation_risk": "HIGH|MEDIUM|LOW",
     "user_impact_risk": "HIGH|MEDIUM|LOW",
     "maintenance_risk": "HIGH|MEDIUM|LOW",
     "key_risks": ["Primary concerns with this change"],
     "mitigation_suggestions": ["Recommendations to reduce risks"]
-  },
-  "testing_evaluation": {
+  }},
+  "testing_evaluation": {{
     "test_coverage": "EXCELLENT|GOOD|ADEQUATE|INSUFFICIENT",
     "test_strategy": "Assessment of testing approach",
     "missing_tests": ["Areas where additional testing would be valuable"]
-  },
-  "recommendations": {
+  }},
+  "recommendations": {{
     "immediate_actions": ["Actions needed before merge"],
     "follow_up_actions": ["Suggested follow-up work"],
     "long_term_considerations": ["Future architectural considerations"]
-  }
-}
+  }}
+}}
 ```
 
 **IMPORTANT NOTES:**
