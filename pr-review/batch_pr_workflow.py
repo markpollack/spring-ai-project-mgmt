@@ -91,6 +91,7 @@ class PRProcessingResult:
 class BatchProcessingConfig:
     """Configuration for batch processing"""
     cleanup_between_prs: bool = True  # Only workspace cleanup (build cache, git branches)
+    delete_branches: bool = False  # Delete PR branches after processing (default: preserve for review/merge)
     continue_on_error: bool = True
     max_parallel_jobs: int = 1  # Start with sequential processing
     dry_run: bool = False
@@ -360,12 +361,16 @@ class BatchPRWorkflow:
         # Generate AI failure analysis for this batch
         self._generate_ai_failure_analysis(pr_numbers)
         
+        # Reset to main branch at the end, leaving all prepared PR branches available
+        self._reset_to_main_after_batch()
+        
         if self.monitor:
             self.monitor.finalize_batch()
         
         Logger.info(f"\n🎉 Batch processing completed!")
         Logger.info(f"📊 Processed {len(self.results)} PRs")
         Logger.info(f"✅ Success rate: {len([r for r in self.results if r.success])}/{len(self.results)}")
+        Logger.info(f"📋 All prepared PR branches are available for review and merging")
         
         return batch_success
     
@@ -435,18 +440,35 @@ class BatchPRWorkflow:
         return result
     
     def _cleanup_between_prs(self, pr_number: str):
-        """Cleanup state between PR processing, preserving context for dashboard"""
-        Logger.info(f"🧹 Cleaning up after PR #{pr_number}")
+        """Cleanup state between PR processing, preserving context for dashboard and optionally PR branches"""
+        cleanup_mode = 'light' if self.config.delete_branches else 'preserve-branches'
+        branch_msg = "deleting prepared branch" if self.config.delete_branches else "preserving prepared branch"
+        Logger.info(f"🧹 Cleaning up after PR #{pr_number} ({branch_msg})")
         
         try:
             # Run cleanup for the current PR, but preserve context for dashboard generation
             if not self.config.dry_run:
-                self.workflow.cleanup_pr_workspace(pr_number, cleanup_mode='light', preserve_context=True)
+                self.workflow.cleanup_pr_workspace(pr_number, cleanup_mode=cleanup_mode, preserve_context=True)
             else:
-                Logger.info("🎭 DRY RUN: Would run cleanup")
+                Logger.info(f"🎭 DRY RUN: Would run cleanup ({cleanup_mode} mode)")
                 
         except Exception as e:
             Logger.warn(f"⚠️  Cleanup warning for PR #{pr_number}: {e}")
+    
+    def _reset_to_main_after_batch(self):
+        """Reset repository to main branch after batch processing, keeping all prepared PR branches"""
+        Logger.info("🔄 Resetting to main branch (all prepared PR branches preserved)")
+        
+        try:
+            if not self.config.dry_run:
+                # Just switch to main - don't delete any PR branches
+                self.workflow.cleanup_pr_workspace("", cleanup_mode='preserve-branches', preserve_context=True)
+                Logger.success("✅ Reset to main branch complete - prepared PR branches ready for review")
+            else:
+                Logger.info("🎭 DRY RUN: Would reset to main branch")
+                
+        except Exception as e:
+            Logger.warn(f"⚠️  Warning resetting to main branch: {e}")
     
     def _initial_fresh_start_cleanup(self):
         """Complete fresh start cleanup before beginning batch processing"""
@@ -563,6 +585,7 @@ class BatchPRWorkflow:
         summary_content += f"""
 ## Configuration Used
 - **Cleanup Between PRs**: {self.config.cleanup_between_prs}
+- **Delete Branches**: {self.config.delete_branches} ({"deletes" if self.config.delete_branches else "preserves"} PR branches)
 - **Continue on Error**: {self.config.continue_on_error}
 - **Dry Run Mode**: {self.config.dry_run}
 - **Report Only Mode**: {self.config.report_only}
@@ -673,7 +696,9 @@ Examples:
   python3 batch_pr_workflow.py 3922 3921 3920                    # Process 3 PRs with full workflow + HTML dashboard
   python3 batch_pr_workflow.py --dry-run 3922 3921 3920          # Preview what would happen
   python3 batch_pr_workflow.py --report-only 3922 3921 3920      # Generate reports only + HTML dashboard
-  python3 batch_pr_workflow.py --no-cleanup 3922 3921 3920       # Skip cleanup between PRs
+  python3 batch_pr_workflow.py 3922 3921 3920                    # Keep branches for review/merge (DEFAULT)
+  python3 batch_pr_workflow.py --delete-branches 3922 3921 3920   # Delete branches after processing
+  python3 batch_pr_workflow.py --no-cleanup 3922 3921 3920        # Skip cleanup entirely
   python3 batch_pr_workflow.py --stop-on-error 3922 3921 3920    # Stop on first error
   python3 batch_pr_workflow.py --open-browser 3922 3921 3920     # Auto-open HTML dashboard in browser
   python3 batch_pr_workflow.py --no-html 3922 3921 3920          # Skip HTML dashboard generation
@@ -685,6 +710,7 @@ Examples:
     parser.add_argument('--dry-run', action='store_true', help='Preview the workflow without executing')
     parser.add_argument('--report-only', action='store_true', help='Generate only analysis reports (assumes PRs already prepared)')
     parser.add_argument('--no-cleanup', action='store_true', help='Skip cleanup between PRs')
+    parser.add_argument('--delete-branches', action='store_true', help='Delete PR branches after processing (default: preserve branches for review/merge)')
     parser.add_argument('--stop-on-error', action='store_true', help='Stop processing on first error (default: continue)')
     parser.add_argument('--force-reprocess', action='store_true', help='Force reprocessing of PRs that already have reports')
     parser.add_argument('--no-metrics', action='store_true', help='Disable performance metrics collection')
@@ -703,6 +729,7 @@ Examples:
     # Setup configuration
     config = BatchProcessingConfig(
         cleanup_between_prs=not args.no_cleanup,
+        delete_branches=args.delete_branches,
         continue_on_error=not args.stop_on_error,
         dry_run=args.dry_run,
         report_only=args.report_only,

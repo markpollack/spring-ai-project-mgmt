@@ -975,7 +975,8 @@ class PRWorkflow:
         
         Args:
             pr_number: PR number to clean up
-            cleanup_mode: 'full' (remove everything), 'light' (keep spring-ai repo), 'reports' (reports only), 'ai-cache' (AI cache only)
+            cleanup_mode: 'full' (remove everything), 'light' (keep spring-ai repo, delete PR branch), 
+                         'preserve-branches' (keep spring-ai repo, preserve PR branch), 'reports' (reports only), 'ai-cache' (AI cache only)
             dry_run: Show what would be done without executing
             preserve_context: Skip cleaning context data (for batch processing)
             force_ai_refresh: Force removal of AI assessment cache for fresh analysis
@@ -1063,6 +1064,49 @@ class PRWorkflow:
                 # Still try to delete PR branch if we know what it was
                 if hasattr(self, 'current_pr_branch') and self.current_pr_branch:
                     self._delete_pr_branch(self.current_pr_branch, pr_number)
+        elif cleanup_mode == 'preserve-branches' and self.config.spring_ai_dir.exists():
+            # For preserve-branches cleanup, switch to main but keep all PR branches
+            try:
+                current_branch = self.git.run_git(["rev-parse", "--abbrev-ref", "HEAD"], capture_output=True).stdout.strip()
+                if current_branch != self.config.main_branch:
+                    Logger.info(f"🔄 Switching from {current_branch} to main branch (preserving PR branches)...")
+                    
+                    # Check for and abort any ongoing rebase/merge operations
+                    try:
+                        # Check if we're in the middle of a rebase
+                        rebase_head = self.config.spring_ai_dir / ".git" / "REBASE_HEAD"
+                        if rebase_head.exists():
+                            Logger.info("🔄 Found ongoing rebase - aborting it...")
+                            self.git.run_git(["rebase", "--abort"])
+                            Logger.info("✅ Aborted stuck rebase")
+                        
+                        # Check if we're in the middle of a merge
+                        merge_head = self.config.spring_ai_dir / ".git" / "MERGE_HEAD"
+                        if merge_head.exists():
+                            Logger.info("🔄 Found ongoing merge - aborting it...")
+                            self.git.run_git(["merge", "--abort"])
+                            Logger.info("✅ Aborted stuck merge")
+                    except Exception as abort_error:
+                        Logger.warn(f"Error aborting rebase/merge: {abort_error}")
+                    
+                    # Check for uncommitted changes before switching
+                    try:
+                        status_result = self.git.run_git(["status", "--porcelain"], capture_output=True)
+                        if status_result.stdout.strip():
+                            Logger.info("🔄 Found uncommitted changes - discarding them...")
+                            self.git.run_git(["reset", "--hard", "HEAD"])
+                            self.git.run_git(["clean", "-fd"])
+                    except Exception as reset_error:
+                        Logger.warn(f"Error resetting changes: {reset_error}")
+                    
+                    self.git.run_git(["checkout", self.config.main_branch])
+                    Logger.info(f"✅ Switched to main branch (PR branch '{current_branch}' preserved for review)")
+                    
+                    # DO NOT delete the PR branch - it's prepared and ready for merging
+                else:
+                    Logger.info("📍 Already on main branch")
+            except Exception as e:
+                Logger.warn(f"Error switching to main branch: {e}")
         elif cleanup_mode == 'full':
             # For full cleanup, the entire spring-ai directory will be removed
             Logger.info("📁 Spring AI directory will be completely removed (full cleanup)")
@@ -2467,8 +2511,9 @@ Examples:
   python3 pr_workflow.py --report-only 3386        # Generate only the analysis report
   python3 pr_workflow.py --test-only 3386          # Run only the changed tests
   python3 pr_workflow.py --plan-only 3386          # Generate enhanced workflow plan
-  python3 pr_workflow.py --cleanup 3386            # Clean up PR workspace (light mode - keeps spring-ai repo)
-  python3 pr_workflow.py --cleanup 3386 --cleanup-mode full  # Full cleanup (removes everything)
+  python3 pr_workflow.py --cleanup 3386            # Clean up workspace, preserve branch for review/merge (NEW DEFAULT)
+  python3 pr_workflow.py --cleanup 3386 --delete-branch      # Clean up workspace, delete PR branch (OLD DEFAULT)
+  python3 pr_workflow.py --cleanup 3386 --full               # Complete cleanup - remove everything
   python3 pr_workflow.py --dry-run 3386            # Preview the workflow
   python3 pr_workflow.py --resume-after-compile 3386 # Resume after manually fixing compilation errors
         """
@@ -2492,8 +2537,10 @@ Examples:
     parser.add_argument('--test-only', action='store_true', help='Run only the changed tests (assumes PR already prepared)')
     parser.add_argument('--plan-only', action='store_true', help='Generate enhanced workflow plan with progress tracking')
     parser.add_argument('--cleanup', action='store_true', help='Clean up PR workspace and generated files')
-    parser.add_argument('--cleanup-mode', choices=['full', 'light'], default='light', 
-                       help='Cleanup mode: full (remove everything including spring-ai repo) or light (keep spring-ai repo, remove generated files only)')
+    parser.add_argument('--delete-branch', action='store_true', 
+                       help='Delete PR branch after cleanup (default: preserve branch for review/merge)')
+    parser.add_argument('--full', action='store_true', 
+                       help='Complete cleanup - remove spring-ai repo and all files')
     parser.add_argument('--dry-run', action='store_true', help='Show what would be done without executing')
     parser.add_argument('--resume-after-compile', action='store_true', help='Resume workflow after manual compilation fixes (skips compilation check)')
     parser.add_argument('--batch-mode', action='store_true', help='Run in batch mode (continue on errors, no human intervention, best-effort reporting)')
@@ -2542,7 +2589,15 @@ Examples:
         else:
             Logger.error("❌ Failed to generate enhanced plan")
     elif args.cleanup:
-        success = workflow.cleanup_pr_workspace(args.pr_number, cleanup_mode=args.cleanup_mode, dry_run=args.dry_run)
+        # Determine cleanup mode from new flags
+        if args.full:
+            cleanup_mode = 'full'
+        elif args.delete_branch:
+            cleanup_mode = 'light'  # Old behavior: delete branch
+        else:
+            cleanup_mode = 'preserve-branches'  # New default: preserve branch
+        
+        success = workflow.cleanup_pr_workspace(args.pr_number, cleanup_mode=cleanup_mode, dry_run=args.dry_run)
         if success:
             Logger.success(f"🧹 PR #{args.pr_number} workspace cleaned successfully")
         else:
