@@ -279,11 +279,15 @@ class EnhancedReportGenerator:
             Logger.info("Running AI solution assessment...")
             assessor_script = self.script_dir / "solution_assessor.py"
             
+            # Calculate appropriate timeout for this PR
+            subprocess_timeout = self._calculate_subprocess_timeout(pr_number, pr_context_dir)
+            Logger.info(f"⏱️  Using {subprocess_timeout}s timeout for solution assessment subprocess")
+            
             result = subprocess.run([
                 "python3", str(assessor_script), pr_number,
                 "--context-dir", str(self.context_dir),
                 "--logs-dir", str(self.logs_dir)
-            ], text=True, timeout=300)  # Removed capture_output to show progress animation
+            ], text=True, timeout=subprocess_timeout)  # Dynamic timeout based on PR size
             
             if result.returncode == 0 and assessment_file.exists():
                 Logger.success("AI solution assessment completed")
@@ -312,6 +316,58 @@ class EnhancedReportGenerator:
         except Exception as e:
             Logger.error(f"Error running AI solution assessment: {e}")
             raise RuntimeError(f"AI solution assessment failed: {e}")
+
+    def _calculate_subprocess_timeout(self, pr_number: str, pr_context_dir: Path) -> int:
+        """Calculate appropriate subprocess timeout based on PR size and complexity"""
+        try:
+            # Load file changes to assess PR size
+            file_changes_path = pr_context_dir / "file-changes.json"
+            if not file_changes_path.exists():
+                Logger.warn("⚠️  File changes not found, using default 5-minute timeout")
+                return 300  # Default 5 minutes
+            
+            with open(file_changes_path, 'r') as f:
+                file_changes = json.load(f)
+            
+            file_count = len(file_changes)
+            total_lines = sum(change.get('additions', 0) + change.get('deletions', 0) for change in file_changes)
+            
+            # Count documentation files for architectural significance
+            doc_files = sum(1 for change in file_changes 
+                          if any(change.get('filename', '').lower().endswith(ext) 
+                                for ext in ['.adoc', '.md', '.rst', '.txt']))
+            
+            # Determine architectural significance
+            if doc_files >= 5 and total_lines >= 5000:
+                architectural_significance = 'high'
+            elif doc_files >= 3 or total_lines >= 3000:
+                architectural_significance = 'medium'
+            else:
+                architectural_significance = 'low'
+            
+            # Calculate timeout using same logic as solution assessor
+            base_timeout = 180  # 3 minutes base
+            file_timeout = (file_count // 10) * 15  # 15s per 10 files
+            lines_timeout = (total_lines // 1000) * 30  # 30s per 1000 lines
+            
+            arch_multipliers = {'low': 1.0, 'medium': 1.2, 'high': 1.4}
+            arch_multiplier = arch_multipliers.get(architectural_significance, 1.0)
+            
+            calculated_timeout = int((base_timeout + file_timeout + lines_timeout) * arch_multiplier)
+            
+            # Cap at 12 minutes (720s) for subprocess - slightly higher than internal 10min cap
+            final_timeout = min(calculated_timeout, 720)
+            
+            Logger.info(f"📊 Subprocess timeout calculation:")
+            Logger.info(f"   - PR size: {file_count} files, {total_lines} lines")
+            Logger.info(f"   - Documentation files: {doc_files} (significance: {architectural_significance})")
+            Logger.info(f"   - Calculated: {calculated_timeout}s, Final: {final_timeout}s")
+            
+            return final_timeout
+            
+        except Exception as e:
+            Logger.warn(f"⚠️  Error calculating timeout: {e}, using default 10-minute timeout")
+            return 600  # Default 10 minutes if calculation fails
 
     def _run_backport_assessment(self, pr_number: str, pr_context_dir: Path) -> Dict[str, Any]:
         """Run backport candidate assessment using backport_assessor.py"""
