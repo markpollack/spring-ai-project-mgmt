@@ -62,6 +62,25 @@ This is a Spring Boot Maven application for collecting GitHub issues with advanc
 - Using `@SpringBootTest` triggers full Spring context including CommandLineRunner
 - This causes accidental production operations (real GitHub API calls, data collection)
 
+**REQUIRED PATTERN: Use @SpringJUnitConfig with ClassificationConfiguration**
+```java
+// CORRECT PATTERN - Used by EvaluationParityTest (F1 calculation)
+@SpringJUnitConfig(ClassificationConfiguration.class)
+public class EvaluationParityTest {
+    @Autowired
+    private FilteredEvaluationService evaluationService;
+    @Autowired
+    private ObjectMapper objectMapper;
+    // Minimal Spring context, no production operations
+}
+
+// WRONG - DO NOT USE @SpringBootTest
+@SpringBootTest  // ❌ Triggers CommandLineRunner
+public class BadTest {
+    // This will cause production GitHub API calls!
+}
+```
+
 **Safe Testing Approaches:**
 ```java
 // For data models - use plain JUnit
@@ -71,15 +90,17 @@ class CollectionPropertiesPlainTest {
     // No Spring context, safe for data validation
 }
 
-// For Spring beans - use minimal context
-@Nested
-@SpringJUnitConfig
-@Import({GitHubConfigTest.TestConfig.class})
-@TestPropertySource(properties = {"GITHUB_TOKEN=test-token"})
-static class GitHubConfigTest {
-    // Minimal Spring context, no CommandLineRunner execution
+// For Spring beans - use @SpringJUnitConfig with ClassificationConfiguration
+@SpringJUnitConfig(ClassificationConfiguration.class)
+static class GoodSpringTest {
+    // Minimal Spring context, specific configuration, no CommandLineRunner
 }
 ```
+
+**IMPORTANT: ClassificationConfiguration Pattern**
+- ALL tests requiring Spring context MUST use `@SpringJUnitConfig(ClassificationConfiguration.class)`
+- This provides access to evaluation services, ObjectMapper, and other beans WITHOUT triggering production operations
+- Example: `EvaluationParityTest` successfully calculated F1 scores using this pattern
 
 ### Build Commands
 
@@ -165,10 +186,47 @@ CollectGithubIssues.java (main)
 - No real GitHub API calls in automated tests
 - Verify all CLI argument combinations work correctly
 
+### Large-Scale Testing (100+ Issues)
+- **Run in background** using `timeout 3600 mvn test -Dtest=TestName` with `run_in_background=true`
+- **Monitor progress** using `BashOutput` tool to track batch completion
+- **Set appropriate timeouts** (1 hour minimum for full 111-issue runs)
+- **Enable detailed logging** to track success/failure rates per batch
+
 ### Safety Testing
 - Verify no production operations occur during test execution
 - Confirm proper cleanup of temporary files
 - Test error handling and recovery scenarios
+
+## Claude Code Java SDK Integration
+
+**Source Location:** `/home/mark/claude/bud/experiments/spring-ai-agents/supporting-repos/claude-code-java-sdk`
+
+### Known Issues and Enhancement Opportunities
+
+**Empty Response Bug (Intermittent Claude CLI Issue):**
+- **Symptoms**: Claude CLI returns 0 characters despite successful execution and token charging
+- **Occurrence**: Intermittent, load-dependent, more frequent during high-volume batch processing
+- **Current Detection**: Implemented in CLITransport.java with warning logs
+- **Recommended Fix**: Implement retry logic with exponential backoff in CLITransport.executeQuery()
+- **Evidence**: Confirmed in batches during debugging - some batches fail 3+ consecutive attempts
+
+**Format Inconsistency (Prompt Engineering Issue):**
+- **Symptoms**: Claude returns markdown-wrapped JSON instead of raw JSON despite `--output-format json`
+- **Current Solution**: Robust JSON extraction with multiple fallback strategies
+- **Location**: ClaudeCodeWrapperService.extractJsonFromResponse()
+
+### SDK Enhancement Plan
+
+**High Priority - CLITransport Retry Logic:**
+```java
+// In CLITransport.executeQuery() around line 98
+// Add retry logic for empty responses with:
+// 1. Configurable max attempts (default: 3)
+// 2. Exponential backoff delays (1s, 2s, 4s)
+// 3. Empty response detection (result.outputUTF8().trim().isEmpty())
+// 4. Preserve original exception on final failure
+// 5. Log retry attempts for debugging
+```
 
 ## Troubleshooting
 
@@ -185,6 +243,12 @@ CollectGithubIssues.java (main)
 **Accidental Data Generation:**
 - Problem: Test execution or development runs create `issues/`, `logs/`, `batch_*` files
 - Solution: Always use `--dry-run` flag and clean up before commits
+
+**Empty Response Failures:**
+- Problem: Claude CLI returns empty output despite token usage during batch processing
+- Symptoms: 0-character responses, tokens charged, intermittent occurrence
+- Current Workaround: Application-level retry logic in FailedBatchesDebugTest
+- Long-term Solution: Implement retry logic in Claude Code Java SDK CLITransport layer
 
 ### Debug Commands
 
