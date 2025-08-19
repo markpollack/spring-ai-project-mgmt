@@ -550,16 +550,6 @@ class LowHangingFruitReportGenerator:
         
         return f"{scope_html}{architecture_html}{implementation_html}{testing_html}{fitness_html}"
     
-    def _generate_backport_button(self, pr: 'PRSummary') -> str:
-        """Generate backport preparation button for approved PRs"""
-        if pr.backport_decision != 'APPROVE':
-            return ""  # Only show button for approved PRs
-        
-        return f"""
-                <button class="btn btn-backport" onclick="openBackportModal({pr.number}, '{pr.actual_branch}')">
-                    🔄 Prepare Backport
-                </button>
-        """
     
     def _load_commit_message(self, pr_number: str) -> str:
         """Load the AI-generated commit message for a PR"""
@@ -971,13 +961,12 @@ class LowHangingFruitReportGenerator:
             
             <div class="pr-actions">
                 <a href="{pr.url}" target="_blank" class="btn btn-primary">View on GitHub</a>
-                <button class="btn btn-secondary" onclick="openManualMergeModal({pr.number})">
-                    🔀 Manual Merge
+                <button class="btn btn-secondary" onclick="openManualMergeModal({pr.number}, '{pr.actual_branch}')">
+                    🔀 Checkout & Merge
                 </button>
                 <button class="btn btn-details modal-details-btn" onclick="openAssessmentModal({pr.number})">
                     🔍 View Assessments
                 </button>
-                {self._generate_backport_button(pr)}
             </div>
             
             <!-- Hidden assessment data for modal population -->
@@ -1090,79 +1079,29 @@ class LowHangingFruitReportGenerator:
             </div>
         </div>
         
-        <!-- Backport Command Modal -->
-        <div id="backport-modal" class="modal-overlay" style="display: none;">
-            <div class="modal-content backport-modal-content">
-                <div class="modal-header">
-                    <h2>🔄 Backport Command Ready</h2>
-                    <button class="modal-close" onclick="closeBackportModal()">&times;</button>
-                </div>
-                <div class="modal-body">
-                    <div class="backport-info">
-                        <div class="branch-info">
-                            <strong>Branch:</strong> <span id="backport-branch"></span>
-                        </div>
-                        <div class="status-info">
-                            <strong>Status:</strong> <span class="status-approved">✅ APPROVED for backport</span>
-                        </div>
-                    </div>
-                    
-                    <div class="command-section">
-                        <h3>📋 Command to run (click to copy):</h3>
-                        <div class="command-box" id="backport-command" onclick="copyBackportCommand()">
-                            <code id="backport-command-text"></code>
-                        </div>
-                        <div class="copy-feedback" id="copy-feedback" style="display: none;">
-                            ✅ Copied to clipboard!
-                        </div>
-                    </div>
-                    
-                    <div class="safety-warnings">
-                        <div class="warning-item">
-                            <span class="warning-icon">⚠️</span>
-                            <span>Make sure you're in: <strong>spring-ai</strong> directory</span>
-                        </div>
-                        <div class="warning-item">
-                            <span class="warning-icon">⚠️</span>
-                            <span>Make sure you're on: <strong id="warning-branch"></strong> branch</span>
-                        </div>
-                    </div>
-                    
-                    <div class="modal-actions">
-                        <button class="btn btn-primary" onclick="copyBackportCommand()">📋 Copy Command</button>
-                        <button class="btn btn-secondary" onclick="closeBackportModal()">Close</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
         <!-- Manual Merge Modal -->
         <div id="manual-merge-modal" class="modal-overlay" style="display: none;">
             <div class="modal-content backport-modal-content">
                 <div class="modal-header">
-                    <h2>🔀 Manual Merge Instructions</h2>
+                    <h2>🔀 Checkout & Merge Commands</h2>
                     <button class="modal-close" onclick="closeManualMergeModal()">&times;</button>
                 </div>
                 <div class="modal-body">
-                    <div class="merge-info">
-                        <h3>📦 Affected Modules</h3>
-                        <div id="affected-modules" class="module-list">
-                            <!-- Populated by JavaScript -->
+                    <div class="warning-section" style="margin-bottom: 20px;">
+                        <h3>📍 Branch Information</h3>
+                        <p>PR Branch: <code id="merge-branch-name"></code></p>
+                        <div id="merge-warning" style="display: none;">
+                            <p style="color: #d4851f; font-weight: bold;">⚠️ Make sure you're on the correct branch: <span id="merge-warning-branch"></span></p>
                         </div>
-                        
-                        <h3>🧪 Test Commands</h3>
-                        <div id="test-commands" class="command-list">
-                            <!-- Populated by JavaScript -->
+                    </div>
+                    
+                    <div class="command-section">
+                        <h3>📋 Commands to run (click to copy):</h3>
+                        <div class="command-box" id="merge-command" onclick="copyMergeCommand()">
+                            <pre id="merge-command-text"></pre>
                         </div>
-                        
-                        <h3>📝 Merge Instructions</h3>
-                        <div class="merge-steps">
-                            <ol>
-                                <li>Review the PR on GitHub</li>
-                                <li>Run the test commands above to verify changes</li>
-                                <li>If tests pass, approve and merge via GitHub UI</li>
-                                <li>Or merge via CLI: <code>gh pr merge PR_NUMBER</code></li>
-                            </ol>
+                        <div class="copy-feedback" id="merge-copy-feedback" style="display: none;">
+                            ✅ Copied to clipboard!
                         </div>
                     </div>
                     
@@ -3058,111 +2997,55 @@ class LowHangingFruitReportGenerator:
             }
         });
         
-        // === BACKPORT MODAL FUNCTIONS ===
-        function openBackportModal(prNumber, actualBranch) {
-            const modal = document.getElementById('backport-modal');
-            const branchName = actualBranch || `pr-${prNumber}-branch`;  // Use actual branch or fallback
-            const command = `cd spring-ai && git checkout ${branchName} && python3 ../prepare_backport.py ${prNumber}`;
-            
-            // Populate modal content
-            document.getElementById('backport-branch').textContent = branchName;
-            document.getElementById('backport-command-text').textContent = command;
-            document.getElementById('warning-branch').textContent = branchName;
-            
-            // Show modal
-            modal.style.display = 'flex';
-            document.body.style.overflow = 'hidden'; // Prevent background scrolling
-        }
-        
-        function closeBackportModal() {
-            const modal = document.getElementById('backport-modal');
-            modal.style.display = 'none';
-            document.body.style.overflow = ''; // Restore scrolling
-            
-            // Hide copy feedback
-            document.getElementById('copy-feedback').style.display = 'none';
-        }
-        
-        function copyBackportCommand() {
-            const commandText = document.getElementById('backport-command-text').textContent;
-            const feedback = document.getElementById('copy-feedback');
-            
-            // Copy to clipboard
-            navigator.clipboard.writeText(commandText).then(function() {
-                // Show success feedback
-                feedback.style.display = 'block';
-                
-                // Hide feedback after 2 seconds
-                setTimeout(function() {
-                    feedback.style.display = 'none';
-                }, 2000);
-            }).catch(function(err) {
-                console.error('Failed to copy command: ', err);
-                // Fallback for older browsers
-                const textArea = document.createElement('textarea');
-                textArea.value = commandText;
-                document.body.appendChild(textArea);
-                textArea.select();
-                document.execCommand('copy');
-                document.body.removeChild(textArea);
-                
-                feedback.style.display = 'block';
-                setTimeout(function() {
-                    feedback.style.display = 'none';
-                }, 2000);
-            });
-        }
         
         // === MANUAL MERGE MODAL FUNCTIONS ===
-        function openManualMergeModal(prNumber) {
+        function openManualMergeModal(prNumber, actualBranch) {
             const modal = document.getElementById('manual-merge-modal');
+            const branchName = actualBranch || `pr-${prNumber}-branch`;  // Use actual branch or fallback
             
-            // Get test discovery data for this PR
-            const testDiscovery = window.testDiscoveryData && window.testDiscoveryData[prNumber];
+            // Check if this PR is a backport candidate
+            const prData = window.prData && window.prData.find(pr => pr.number === prNumber);
+            const isBackportCandidate = prData && prData.backport_assessment && 
+                (prData.backport_assessment.recommendation === 'RECOMMEND' || 
+                 prData.backport_assessment.recommendation === 'CONDITIONAL');
             
-            // Populate affected modules
-            const modulesDiv = document.getElementById('affected-modules');
-            if (testDiscovery && testDiscovery.affected_modules && testDiscovery.affected_modules.length > 0) {
-                modulesDiv.innerHTML = '<ul>' + 
-                    testDiscovery.affected_modules.map(module => 
-                        `<li><code>${module === '.' ? 'Root module' : module}</code></li>`
-                    ).join('') + '</ul>';
-            } else {
-                modulesDiv.innerHTML = '<p>No code modules affected - documentation or configuration changes only</p>';
+            // Build command sequence
+            let commands = [];
+            
+            // Navigation command
+            commands.push("# Navigate to Spring AI repository");
+            commands.push("cd /home/mark/project-mgmt/spring-ai-project-mgmt/pr-review/spring-ai");
+            commands.push("");
+            
+            // Checkout command
+            commands.push("# Checkout PR branch");
+            commands.push(`git checkout ${branchName}`);
+            commands.push("");
+            
+            // Backport commands if applicable (FIRST, before merge)
+            if (isBackportCandidate) {
+                commands.push("# Prepare backport to 1.0.x branch (do this BEFORE merging to main)");
+                commands.push(`python3 /home/mark/project-mgmt/spring-ai-project-mgmt/pr-review/prepare_backport.py ${prNumber}`);
+                commands.push("");
             }
             
-            // Populate test commands
-            const commandsDiv = document.getElementById('test-commands');
-            if (testDiscovery && testDiscovery.test_commands) {
-                let commandsHtml = '';
-                for (const [cmdType, command] of Object.entries(testDiscovery.test_commands)) {
-                    if (cmdType !== 'info') {
-                        const readableType = cmdType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-                        commandsHtml += `
-                            <div class="command-item" style="margin: 10px 0;">
-                                <strong>${readableType}:</strong>
-                                <div class="command-text" style="display: flex; align-items: center; gap: 10px;">
-                                    <code style="flex: 1; padding: 8px; background: #f5f5f5; border-radius: 4px;">${command}</code>
-                                    <button class="copy-btn" onclick="copyCommand('${command.replace(/'/g, "\\'")}')">📋</button>
-                                </div>
-                            </div>`;
-                    }
-                }
-                if (commandsHtml) {
-                    commandsDiv.innerHTML = commandsHtml;
-                } else if (testDiscovery.test_commands.info) {
-                    commandsDiv.innerHTML = `<p>${testDiscovery.test_commands.info}</p>`;
-                } else {
-                    commandsDiv.innerHTML = '<p>No specific test commands available</p>';
-                }
-            } else {
-                commandsDiv.innerHTML = '<p>Test discovery information not available</p>';
-            }
+            // Final merge command
+            commands.push("# After review, merge via GitHub");
+            commands.push(`gh pr merge ${prNumber}`);
             
-            // Update merge command with actual PR number
-            const mergeSteps = modal.querySelector('.merge-steps ol li:last-child code');
-            if (mergeSteps) {
-                mergeSteps.textContent = `gh pr merge ${prNumber}`;
+            const commandText = commands.join('\n');
+            
+            // Populate modal content
+            document.getElementById('merge-branch-name').textContent = branchName;
+            document.getElementById('merge-command-text').textContent = commandText;
+            document.getElementById('merge-warning-branch').textContent = branchName;
+            
+            // Show warning if not using placeholder branch name
+            const warningDiv = document.getElementById('merge-warning');
+            if (actualBranch && actualBranch !== `pr-${prNumber}-branch`) {
+                warningDiv.style.display = 'block';
+            } else {
+                warningDiv.style.display = 'none';
             }
             
             // Show modal
@@ -3174,6 +3057,37 @@ class LowHangingFruitReportGenerator:
             const modal = document.getElementById('manual-merge-modal');
             modal.style.display = 'none';
             document.body.style.overflow = ''; // Restore scrolling
+            
+            // Hide copy feedback
+            document.getElementById('merge-copy-feedback').style.display = 'none';
+        }
+        
+        function copyMergeCommand() {
+            const commandText = document.getElementById('merge-command-text').textContent;
+            const feedback = document.getElementById('merge-copy-feedback');
+            
+            // Copy to clipboard
+            navigator.clipboard.writeText(commandText).then(function() {
+                // Show success feedback
+                feedback.style.display = 'block';
+                feedback.style.color = '#2d6e3b';
+                feedback.textContent = '✅ Copied to clipboard!';
+                
+                // Hide feedback after 2 seconds
+                setTimeout(function() {
+                    feedback.style.display = 'none';
+                }, 2000);
+            }).catch(function(err) {
+                // Show error feedback
+                feedback.style.display = 'block';
+                feedback.style.color = '#d32f2f';
+                feedback.textContent = '❌ Copy failed - please select and copy manually';
+                
+                // Hide feedback after 3 seconds
+                setTimeout(function() {
+                    feedback.style.display = 'none';
+                }, 3000);
+            });
         }
         
         function copyCommand(command) {
@@ -3194,13 +3108,10 @@ class LowHangingFruitReportGenerator:
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
                 const assessmentModal = document.getElementById('assessment-modal');
-                const backportModal = document.getElementById('backport-modal');
                 const manualMergeModal = document.getElementById('manual-merge-modal');
                 
                 if (assessmentModal.style.display === 'flex') {
                     closeAssessmentModal();
-                } else if (backportModal.style.display === 'flex') {
-                    closeBackportModal();
                 } else if (manualMergeModal.style.display === 'flex') {
                     closeManualMergeModal();
                 }
@@ -3210,13 +3121,10 @@ class LowHangingFruitReportGenerator:
         // Enhanced click outside modal to close for all modals
         document.addEventListener('click', function(e) {
             const assessmentModal = document.getElementById('assessment-modal');
-            const backportModal = document.getElementById('backport-modal');
             const manualMergeModal = document.getElementById('manual-merge-modal');
             
             if (e.target === assessmentModal) {
                 closeAssessmentModal();
-            } else if (e.target === backportModal) {
-                closeBackportModal();
             } else if (e.target === manualMergeModal) {
                 closeManualMergeModal();
             }
