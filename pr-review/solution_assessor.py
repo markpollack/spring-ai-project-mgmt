@@ -94,14 +94,26 @@ class AIPoweredSolutionAssessor:
                 Logger.error("❌ Failed to load assessment context")
                 return None
             
+            # Analyze documentation changes first (for large PRs)
+            file_changes = context_data.get('file_changes', [])
+            doc_analysis = self._analyze_documentation_changes(pr_number, file_changes)
+            
             # Analyze code changes in detail
             code_analysis = self._analyze_code_changes(pr_number)
             
-            # Create comprehensive assessment prompt
-            assessment_prompt = self._create_assessment_prompt(context_data, code_analysis, pr_number)
+            # Calculate dynamic timeout based on PR complexity
+            total_lines = code_analysis.get('total_lines_added', 0) + code_analysis.get('total_lines_removed', 0)
+            timeout = self._calculate_timeout(
+                file_count=len(file_changes),
+                lines_changed=total_lines,
+                architectural_significance=doc_analysis.get('architectural_significance', 'low')
+            )
             
-            # Execute AI assessment using Claude Code
-            ai_results = self._execute_claude_assessment(assessment_prompt)
+            # Create comprehensive assessment prompt
+            assessment_prompt = self._create_assessment_prompt(context_data, code_analysis, doc_analysis, pr_number)
+            
+            # Execute AI assessment using Claude Code with dynamic timeout
+            ai_results = self._execute_claude_assessment(assessment_prompt, timeout)
             if not ai_results:
                 Logger.error("❌ AI assessment failed")
                 return None
@@ -148,6 +160,172 @@ class AIPoweredSolutionAssessor:
                 context_data[key] = None
         
         return context_data
+    
+    def _analyze_documentation_changes(self, pr_number: str, file_changes: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """Analyze documentation changes to understand high-level PR impact"""
+        Logger.info("📚 Analyzing documentation changes...")
+        
+        doc_extensions = ['.adoc', '.md', '.rst', '.txt']
+        doc_files = []
+        
+        # Find documentation files in PR changes
+        for change in file_changes:
+            filename = change.get('filename', '')
+            if any(filename.lower().endswith(ext) for ext in doc_extensions):
+                doc_files.append({
+                    'filename': filename,
+                    'status': change.get('status', 'unknown'),
+                    'additions': change.get('additions', 0),
+                    'deletions': change.get('deletions', 0),
+                    'type': self._classify_doc_type(filename)
+                })
+        
+        if not doc_files:
+            Logger.info("📚 No documentation files found in PR")
+            return {
+                'doc_files_count': 0,
+                'doc_files': [],
+                'architectural_significance': 'low',
+                'documentation_summary': 'No documentation changes - likely internal code changes only'
+            }
+        
+        Logger.info(f"📚 Found {len(doc_files)} documentation files")
+        
+        # Analyze architectural significance based on doc files
+        architectural_significance = self._assess_architectural_significance(doc_files)
+        
+        # Generate documentation summary
+        doc_summary = self._generate_documentation_summary(doc_files)
+        
+        return {
+            'doc_files_count': len(doc_files),
+            'doc_files': doc_files,
+            'architectural_significance': architectural_significance,
+            'documentation_summary': doc_summary
+        }
+    
+    def _classify_doc_type(self, filename: str) -> str:
+        """Classify documentation file type"""
+        filename_lower = filename.lower()
+        
+        if 'mcp' in filename_lower:
+            return 'mcp_documentation'
+        elif 'api' in filename_lower:
+            return 'api_documentation'
+        elif 'nav.adoc' in filename_lower:
+            return 'navigation_structure'
+        elif filename_lower.endswith('.adoc'):
+            return 'asciidoc_documentation'
+        elif filename_lower.endswith('.md'):
+            return 'markdown_documentation'
+        else:
+            return 'other_documentation'
+    
+    def _assess_architectural_significance(self, doc_files: List[Dict[str, Any]]) -> str:
+        """Assess the architectural significance based on documentation changes"""
+        # High significance indicators
+        high_indicators = [
+            lambda f: 'mcp' in f['filename'].lower() and f['status'] == 'added',  # New MCP modules
+            lambda f: 'nav.adoc' in f['filename'].lower(),  # Navigation structure changes
+            lambda f: f['additions'] > 100,  # Large documentation additions
+            lambda f: 'boot-starter' in f['filename'].lower()  # New Spring Boot starters
+        ]
+        
+        # Medium significance indicators
+        medium_indicators = [
+            lambda f: f['status'] == 'added',  # New documentation files
+            lambda f: f['additions'] > 50,  # Moderate documentation additions
+            lambda f: 'api' in f['filename'].lower()  # API documentation changes
+        ]
+        
+        high_count = sum(1 for f in doc_files for indicator in high_indicators if indicator(f))
+        medium_count = sum(1 for f in doc_files for indicator in medium_indicators if indicator(f))
+        
+        if high_count >= 2 or (high_count >= 1 and len(doc_files) >= 5):
+            return 'high'
+        elif high_count >= 1 or medium_count >= 3:
+            return 'medium'
+        else:
+            return 'low'
+    
+    def _generate_documentation_summary(self, doc_files: List[Dict[str, Any]]) -> str:
+        """Generate a summary of documentation changes"""
+        if not doc_files:
+            return "No documentation changes"
+        
+        # Group by type
+        by_type = {}
+        for doc_file in doc_files:
+            doc_type = doc_file['type']
+            if doc_type not in by_type:
+                by_type[doc_type] = []
+            by_type[doc_type].append(doc_file)
+        
+        summary_parts = []
+        
+        # Analyze MCP documentation specifically (relevant for PR #4179)
+        if 'mcp_documentation' in by_type:
+            mcp_files = by_type['mcp_documentation']
+            new_mcp = [f for f in mcp_files if f['status'] == 'added']
+            modified_mcp = [f for f in mcp_files if f['status'] == 'modified']
+            
+            if new_mcp:
+                summary_parts.append(f"NEW MCP Documentation: {len(new_mcp)} new files suggest major MCP feature additions")
+            if modified_mcp:
+                summary_parts.append(f"Updated MCP Documentation: {len(modified_mcp)} files updated")
+        
+        # Analyze navigation changes
+        if 'navigation_structure' in by_type:
+            summary_parts.append("Navigation structure updated - indicates significant feature additions")
+        
+        # Analyze API documentation
+        if 'api_documentation' in by_type:
+            api_files = by_type['api_documentation']
+            summary_parts.append(f"API Documentation: {len(api_files)} files changed")
+        
+        # Overall summary
+        total_additions = sum(f['additions'] for f in doc_files)
+        total_deletions = sum(f['deletions'] for f in doc_files)
+        
+        if total_additions > 200:
+            summary_parts.append(f"MAJOR documentation changes: +{total_additions} lines added")
+        elif total_additions > 50:
+            summary_parts.append(f"Significant documentation changes: +{total_additions} lines added")
+        
+        return " | ".join(summary_parts) if summary_parts else f"{len(doc_files)} documentation files updated"
+    
+    def _calculate_timeout(self, file_count: int, lines_changed: int, architectural_significance: str = 'low') -> int:
+        """Calculate appropriate timeout based on PR complexity"""
+        base_timeout = 180  # 3 minutes base for small PRs
+        
+        # Add time for file count (15 seconds per 10 files)
+        file_timeout = (file_count // 10) * 15
+        
+        # Add time for line changes (30 seconds per 1000 lines)
+        lines_timeout = (lines_changed // 1000) * 30
+        
+        # Architectural significance multiplier
+        arch_multiplier = {
+            'low': 1.0,
+            'medium': 1.2,
+            'high': 1.4
+        }.get(architectural_significance, 1.0)
+        
+        # Calculate total timeout
+        calculated_timeout = int((base_timeout + file_timeout + lines_timeout) * arch_multiplier)
+        
+        # Cap at 5 minutes (300 seconds) - reasonable maximum
+        final_timeout = min(calculated_timeout, 300)
+        
+        Logger.info(f"⏱️  Timeout calculation:")
+        Logger.info(f"   - Base: {base_timeout}s")
+        Logger.info(f"   - Files ({file_count}): +{file_timeout}s") 
+        Logger.info(f"   - Lines ({lines_changed}): +{lines_timeout}s")
+        Logger.info(f"   - Architecture ({architectural_significance}): {arch_multiplier}x")
+        Logger.info(f"   - Calculated: {calculated_timeout}s")
+        Logger.info(f"   - Final (capped): {final_timeout}s ({final_timeout//60}m{final_timeout%60:02d}s)")
+        
+        return final_timeout
     
     def _analyze_code_changes(self, pr_number: str) -> Dict[str, Any]:
         """Analyze code changes for patterns and quality indicators"""
@@ -406,7 +584,7 @@ class AIPoweredSolutionAssessor:
                     brace_count = 0
     
     def _create_assessment_prompt(self, context_data: Dict[str, Any], 
-                                 code_analysis: Dict[str, Any], pr_number: str) -> str:
+                                 code_analysis: Dict[str, Any], doc_analysis: Dict[str, Any], pr_number: str) -> str:
         """Create structured assessment prompt using template"""
         
         # Load template
@@ -489,7 +667,11 @@ class AIPoweredSolutionAssessor:
             test_coverage_areas=', '.join(code_analysis.get('test_analysis', {}).get('test_coverage_areas', [])),
             code_quality_issues_summary=code_quality_issues_summary,
             key_requirements_list='\n'.join(f"- {req}" for req in conversation_analysis.get('key_requirements', [])),
-            outstanding_concerns_list='\n'.join(f"- {concern}" for concern in conversation_analysis.get('outstanding_concerns', []))
+            outstanding_concerns_list='\n'.join(f"- {concern}" for concern in conversation_analysis.get('outstanding_concerns', [])),
+            # Documentation analysis
+            doc_files_count=doc_analysis.get('doc_files_count', 0),
+            documentation_summary=doc_analysis.get('documentation_summary', 'No documentation changes'),
+            architectural_significance=doc_analysis.get('architectural_significance', 'low')
         )
         
         return formatted_prompt
@@ -530,7 +712,7 @@ class AIPoweredSolutionAssessor:
         
         return '\n'.join(details)
     
-    def _execute_claude_assessment(self, prompt: str) -> Optional[Dict[str, Any]]:
+    def _execute_claude_assessment(self, prompt: str, timeout: int = 300) -> Optional[Dict[str, Any]]:
         """Execute assessment using Claude Code with centralized JSON extraction"""
         try:
             Logger.info("🤖 Running Claude Code solution assessment...")
@@ -555,7 +737,7 @@ class AIPoweredSolutionAssessor:
             result = claude.analyze_from_file_with_json(
                 str(debug_prompt_file), 
                 str(debug_response_file), 
-                timeout=300, 
+                timeout=timeout, 
                 show_progress=True
             )
             
