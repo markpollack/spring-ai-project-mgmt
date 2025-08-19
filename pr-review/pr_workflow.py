@@ -347,9 +347,12 @@ class PRAnalyzer:
             
             Logger.info(f"🔍 DEBUG: Command being executed: {' '.join(cmd)}")
             
+            Logger.info(f"🔍 Starting enhanced report generation for PR #{pr_number}...")
             result = subprocess.run(cmd, 
                 cwd=self.config.script_dir, 
-                timeout=600  # Increase to 10 minutes for debugging
+                timeout=600,  # Increase to 10 minutes for debugging
+                capture_output=True,
+                text=True
             )
             
             if result.returncode == 0:
@@ -395,8 +398,35 @@ class PRAnalyzer:
                 
                 return report_file
             else:
-                Logger.error("Enhanced PR analysis failed")
-                Logger.error(f"Enhanced report generation return code: {result.returncode}")
+                Logger.error(f"❌ Enhanced PR analysis failed for PR #{pr_number}")
+                Logger.error(f"❌ Enhanced report generation return code: {result.returncode}")
+                
+                # Log stdout and stderr for debugging
+                if result.stdout:
+                    Logger.error("❌ STDOUT from enhanced report generator:")
+                    for line in result.stdout.splitlines()[-20:]:  # Last 20 lines
+                        Logger.error(f"   {line}")
+                
+                if result.stderr:
+                    Logger.error("❌ STDERR from enhanced report generator:")
+                    for line in result.stderr.splitlines()[-20:]:  # Last 20 lines
+                        Logger.error(f"   {line}")
+                
+                # Check for partial analysis artifacts to understand where it failed
+                context_dir = self.config.context_dir / f"pr-{pr_number}"
+                if context_dir.exists():
+                    analysis_files = ['ai-risk-assessment.json', 'solution-assessment.json', 
+                                    'ai-conversation-analysis.json', 'backport-assessment.json']
+                    missing_files = []
+                    for analysis_file in analysis_files:
+                        if not (context_dir / analysis_file).exists():
+                            missing_files.append(analysis_file)
+                    
+                    if missing_files:
+                        Logger.error(f"❌ Missing analysis files: {', '.join(missing_files)}")
+                    else:
+                        Logger.info("✅ All analysis files present - failure was in report generation stage")
+                
                 return None
                 
         except subprocess.TimeoutExpired:

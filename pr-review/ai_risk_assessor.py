@@ -773,7 +773,8 @@ class AIRiskAssessor:
                     str(debug_response_file), 
                     timeout=300, 
                     show_progress=True,
-                    system_debug_mode=True
+                    system_debug_mode=True,
+                    pr_number=pr_number
                 )
                 
                 # Debug logging to trace the 'list' object error

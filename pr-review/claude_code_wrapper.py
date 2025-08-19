@@ -205,7 +205,7 @@ class ClaudeCodeWrapper:
     def analyze_from_file(self, prompt_file_path: str, output_file_path: Optional[str] = None, 
                          timeout: int = 300, use_json_output: bool = True, show_progress: bool = True,
                          debug_mode: bool = False, system_debug_mode: bool = False,
-                         model: str = "sonnet") -> Dict[str, Any]:
+                         model: str = "sonnet", pr_number: Optional[str] = None) -> Dict[str, Any]:
         """
         Analyze using Claude Code by having it read the prompt file directly
         
@@ -217,6 +217,7 @@ class ClaudeCodeWrapper:
             show_progress: Show animated progress during execution (default True)
             debug_mode: Enable detailed debug logging with real-time output streaming
             system_debug_mode: Enable system-level debugging (strace, file access monitoring)
+            pr_number: Optional PR number to include in log filenames for easier debugging
             model: Model to use (default 'sonnet' for cost control)
             
         Returns:
@@ -562,8 +563,9 @@ class ClaudeCodeWrapper:
             # ENHANCED LOGGING: Save both request and response with pairing
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
             
-            # Create a response log file paired with the prompt
-            response_log_path = self.logs_dir / f"claude-response-{prompt_path.stem}-{timestamp}.md"
+            # Create a response log file paired with the prompt (include PR number if available)
+            pr_suffix = f"-pr-{pr_number}" if pr_number else ""
+            response_log_path = self.logs_dir / f"claude-response-{prompt_path.stem}{pr_suffix}-{timestamp}.md"
             try:
                 # Ensure duration is available (it should be from the main execution path)
                 duration_str = f"{duration:.1f} seconds" if 'duration' in locals() else "Unknown"
@@ -852,7 +854,8 @@ class ClaudeCodeWrapper:
     
     def analyze_from_file_with_json(self, prompt_file_path: str, output_file_path: Optional[str] = None,
                                    timeout: int = 300, show_progress: bool = True,
-                                   system_debug_mode: bool = False, model: str = "sonnet") -> Dict[str, Any]:
+                                   system_debug_mode: bool = False, model: str = "sonnet", 
+                                   pr_number: Optional[str] = None) -> Dict[str, Any]:
         """
         Analyze from file and automatically extract JSON from the response.
         
@@ -865,6 +868,7 @@ class ClaudeCodeWrapper:
             show_progress: Show animated progress
             system_debug_mode: Enable system-level debugging
             model: Model to use (default 'sonnet' for cost control)
+            pr_number: Optional PR number to include in log filenames
             
         Returns:
             Dict with keys: success, response (raw text), json_data (parsed), error, etc.
@@ -877,7 +881,8 @@ class ClaudeCodeWrapper:
             use_json_output=True,  # Force JSON mode for better parsing
             show_progress=show_progress,
             system_debug_mode=system_debug_mode,
-            model=model
+            model=model,
+            pr_number=pr_number
         )
         
         # If the call failed, return as-is

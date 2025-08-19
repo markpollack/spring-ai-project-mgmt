@@ -88,21 +88,28 @@ class AIPoweredSolutionAssessor:
             return None
         
         try:
-            # Load all required context data
+            # Progress: Load all required context data
+            Logger.info(f"📂 [Step 1/8] Loading context data from {pr_context_dir}...")
             context_data = self._load_assessment_context(pr_context_dir)
             if not context_data:
                 Logger.error("❌ Failed to load assessment context")
                 return None
+            Logger.success("✅ Context data loaded successfully")
             
-            # Analyze documentation changes first (for large PRs)
+            # Progress: Analyze documentation changes first (for large PRs)
+            Logger.info(f"📄 [Step 2/8] Analyzing documentation changes...")
             file_changes = context_data.get('file_changes', [])
             doc_analysis = self._analyze_documentation_changes(pr_number, file_changes)
+            Logger.success(f"✅ Documentation analysis complete: {doc_analysis.get('architectural_significance', 'low')} significance")
             
-            # Classify PR size and determine analysis strategy
+            # Progress: Classify PR size and determine analysis strategy
+            Logger.info(f"📊 [Step 3/8] Classifying PR size and determining strategy...")
             total_lines = sum(change.get('additions', 0) + change.get('deletions', 0) for change in file_changes)
             pr_classification = self._classify_pr_size(len(file_changes), total_lines, doc_analysis)
+            Logger.success(f"✅ PR classified as {pr_classification.get('size_category', 'unknown')} with {pr_classification.get('analysis_strategy', 'unknown')} strategy")
             
-            # Analyze code changes in detail
+            # Progress: Analyze code changes in detail
+            Logger.info(f"🔍 [Step 4/8] Analyzing code changes in detail...")
             code_analysis = self._analyze_code_changes(pr_number)
             if not code_analysis:
                 Logger.warn("⚠️  Code analysis failed, using fallback data based on file changes")
@@ -116,27 +123,37 @@ class AIPoweredSolutionAssessor:
                     'test_analysis': {'test_files_count': 0, 'test_coverage_areas': []},
                     'code_quality_issues': {'complex_methods': [], 'ignored_tests': [], 'large_files': []}
                 }
+                Logger.info("📊 Using fallback code analysis data")
+            else:
+                Logger.success(f"✅ Code analysis complete: {code_analysis.get('file_count', 0)} files, {code_analysis.get('total_lines_added', 0)}+/{code_analysis.get('total_lines_removed', 0)}- lines")
             
-            # Calculate dynamic timeout based on PR complexity
+            # Progress: Calculate dynamic timeout based on PR complexity
+            Logger.info(f"⏱️  [Step 5/8] Calculating dynamic timeout...")
             total_lines = code_analysis.get('total_lines_added', 0) + code_analysis.get('total_lines_removed', 0)
             timeout = self._calculate_timeout(
                 file_count=len(file_changes),
                 lines_changed=total_lines,
                 architectural_significance=doc_analysis.get('architectural_significance', 'low')
             )
+            Logger.success(f"✅ Timeout calculated: {timeout}s ({timeout//60}m{timeout%60:02d}s)")
             
-            # Create assessment prompt using appropriate strategy
+            # Progress: Create assessment prompt using appropriate strategy
+            Logger.info(f"📝 [Step 6/8] Creating assessment prompt...")
             assessment_prompt = self._create_assessment_prompt(context_data, code_analysis, doc_analysis, pr_classification, pr_number)
+            Logger.success(f"✅ Assessment prompt created ({len(assessment_prompt)} chars)")
             
-            # Execute AI assessment using Claude Code with dynamic timeout and fallback
+            # Progress: Execute AI assessment using Claude Code with dynamic timeout and fallback
+            Logger.info(f"🤖 [Step 7/8] Executing AI assessment with {pr_classification.get('analysis_strategy', 'unknown')} strategy...")
             ai_results = self._execute_claude_assessment_with_fallback(
                 assessment_prompt, timeout, context_data, code_analysis, doc_analysis, pr_classification, pr_number
             )
             if not ai_results:
                 Logger.error("❌ AI assessment failed even with fallback")
                 return None
+            Logger.success(f"✅ AI assessment completed using {ai_results.get('analysis_method', 'unknown')} method")
             
-            # Parse and structure AI results
+            # Progress: Parse and structure AI results
+            Logger.info(f"📊 [Step 8/8] Parsing and structuring AI assessment results...")
             assessment = self._parse_assessment_results(ai_results, context_data)
             
             # Add analysis metadata for user transparency
@@ -164,7 +181,33 @@ class AIPoweredSolutionAssessor:
             
         except Exception as e:
             Logger.error(f"❌ Solution assessment failed: {e}")
+            # Log the failure with context for debugging
+            self._log_assessment_failure(pr_number, str(e), context_data if 'context_data' in locals() else {})
             return None
+    
+    def _log_assessment_failure(self, pr_number: str, error_message: str, context_data: Dict[str, Any]):
+        """Log assessment failure with context for debugging"""
+        try:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            failure_log = self.logs_dir / f"solution-assessment-failure-{pr_number}-{timestamp}.json"
+            
+            failure_data = {
+                'pr_number': pr_number,
+                'timestamp': timestamp,
+                'error_message': error_message,
+                'context_loaded': bool(context_data),
+                'pr_data_available': bool(context_data.get('pr_data')),
+                'file_changes_count': len(context_data.get('file_changes', [])),
+                'conversation_data_available': bool(context_data.get('conversation_analysis'))
+            }
+            
+            with open(failure_log, 'w') as f:
+                json.dump(failure_data, f, indent=2)
+                
+            Logger.info(f"📝 Failure details logged to: {failure_log}")
+            
+        except Exception as log_error:
+            Logger.warn(f"⚠️  Could not log failure details: {log_error}")
     
     def _load_assessment_context(self, pr_context_dir: Path) -> Dict[str, Any]:
         """Load all context data needed for assessment"""
@@ -893,7 +936,7 @@ class AIPoweredSolutionAssessor:
         try:
             # Try the primary assessment
             Logger.info(f"🤖 Executing {analysis_strategy} analysis with {timeout}s timeout...")
-            result = self._execute_claude_assessment(assessment_prompt, timeout)
+            result = self._execute_claude_assessment(assessment_prompt, timeout, pr_number)
             
             if result and result.get('success'):
                 Logger.success(f"✅ Primary {analysis_strategy} analysis completed successfully")
@@ -957,7 +1000,7 @@ class AIPoweredSolutionAssessor:
             
             Logger.info(f"🔄 Retrying with simplified analysis (timeout: {fallback_timeout}s vs original: {original_timeout}s)...")
             
-            result = self._execute_claude_assessment(simplified_prompt, fallback_timeout)
+            result = self._execute_claude_assessment(simplified_prompt, fallback_timeout, pr_number)
             
             if result and result.get('success'):
                 Logger.success("✅ Simplified fallback analysis completed successfully")
@@ -1065,7 +1108,7 @@ class AIPoweredSolutionAssessor:
         
         return '\n'.join(details)
     
-    def _execute_claude_assessment(self, prompt: str, timeout: int = 300) -> Optional[Dict[str, Any]]:
+    def _execute_claude_assessment(self, prompt: str, timeout: int = 300, pr_number: Optional[str] = None) -> Optional[Dict[str, Any]]:
         """Execute assessment using Claude Code with centralized JSON extraction"""
         try:
             Logger.info("🤖 Running Claude Code solution assessment...")
@@ -1077,21 +1120,23 @@ class AIPoweredSolutionAssessor:
                 Logger.error("❌ Claude Code is not available")
                 return None
             
-            # Save prompt to logs for debugging
+            # Save prompt to logs for debugging with PR number
             logs_dir = self.working_dir / "logs"
             logs_dir.mkdir(exist_ok=True)
-            debug_prompt_file = logs_dir / "claude-prompt-solution-assessor.txt"
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            debug_prompt_file = logs_dir / f"solution-assessment-prompt-{pr_number or 'unknown'}-{timestamp}.txt"
             with open(debug_prompt_file, 'w') as f:
                 f.write(prompt)
             Logger.info(f"🔍 Saved prompt to: {debug_prompt_file}")
             
             # Use centralized JSON extraction from ClaudeCodeWrapper
-            debug_response_file = logs_dir / "claude-response-solution-assessor.txt"
+            debug_response_file = logs_dir / f"solution-assessment-response-{pr_number or 'unknown'}-{timestamp}.txt"
             result = claude.analyze_from_file_with_json(
                 str(debug_prompt_file), 
                 str(debug_response_file), 
                 timeout=timeout, 
-                show_progress=True
+                show_progress=True,
+                pr_number=pr_number
             )
             
             if result['success'] and result['response']:

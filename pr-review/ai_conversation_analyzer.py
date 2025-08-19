@@ -299,7 +299,8 @@ class AIPoweredConversationAnalyzer:
                 str(debug_response_file), 
                 timeout=300, 
                 show_progress=True,
-                system_debug_mode=True
+                system_debug_mode=True,
+                pr_number=pr_number
             )
             
             if result['success'] and result['response']:

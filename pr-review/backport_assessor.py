@@ -462,7 +462,8 @@ Please provide your assessment following the exact format specified in the templ
                 str(output_file), 
                 timeout=300,  # 5 minutes for thorough analysis
                 show_progress=True,  # Show progress animation during analysis
-                system_debug_mode=True
+                system_debug_mode=True,
+                pr_number=pr_number
             )
             
             if result['success'] and result['response']:
