@@ -265,24 +265,34 @@ class PRContextCollector:
         return issues_data
     
     def _collect_file_changes(self, pr_number: str) -> List[FileChange]:
-        """Collect file change information"""
+        """Collect file change information with pagination support"""
         try:
-            # Get PR file changes
-            files_data = self._gh_api_call([
-                "api", f"repos/{self.repository}/pulls/{pr_number}/files"
-            ])
-            
             file_changes = []
-            for file_info in files_data:
-                file_changes.append(FileChange(
-                    filename=file_info.get("filename", ""),
-                    status=file_info.get("status", ""),
-                    additions=file_info.get("additions", 0),
-                    deletions=file_info.get("deletions", 0),
-                    changes=file_info.get("changes", 0),
-                    patch=file_info.get("patch", "")
-                ))
+            page = 1
+            per_page = 100  # Maximum allowed by GitHub API
             
+            while True:
+                # Get PR file changes with pagination
+                files_data = self._gh_api_call([
+                    "api", f"repos/{self.repository}/pulls/{pr_number}/files",
+                    "--paginate"  # Use gh CLI's built-in pagination
+                ])
+                
+                # Process all files from paginated response
+                for file_info in files_data:
+                    file_changes.append(FileChange(
+                        filename=file_info.get("filename", ""),
+                        status=file_info.get("status", ""),
+                        additions=file_info.get("additions", 0),
+                        deletions=file_info.get("deletions", 0),
+                        changes=file_info.get("changes", 0),
+                        patch=file_info.get("patch", "")
+                    ))
+                
+                # With --paginate, gh CLI handles all pagination automatically
+                break
+            
+            Logger.info(f"📁 Collected {len(file_changes)} file changes")
             return file_changes
             
         except Exception as e:
