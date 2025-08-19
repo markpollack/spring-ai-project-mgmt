@@ -290,10 +290,36 @@ class BatchPRWorkflow:
             # If directory exists but no summary, assume it's the current run
             return run_dir
     
+    def _ensure_main_branch(self) -> bool:
+        """Ensure the spring-ai repository is on the main branch before batch processing"""
+        try:
+            if self.config.dry_run:
+                Logger.info("🎭 DRY RUN: Would ensure repository is on main branch")
+                return True
+            
+            # Call the workflow's repository setup method which handles branch switching
+            success = self.workflow.setup_repository(dry_run=False)
+            if success:
+                Logger.success("✅ Repository is now on main branch")
+            else:
+                Logger.error("❌ Failed to setup repository and switch to main branch")
+            
+            return success
+            
+        except Exception as e:
+            Logger.error(f"❌ Error ensuring main branch: {e}")
+            return False
+    
     def process_pr_list(self, pr_numbers: List[str]) -> bool:
         """Process a list of PRs through the complete workflow"""
         # Perform fresh start cleanup if requested
         self._initial_fresh_start_cleanup()
+        
+        # Ensure repository is on main branch before starting batch processing
+        Logger.info("🔄 Ensuring repository is on main branch before batch processing...")
+        if not self._ensure_main_branch():
+            Logger.error("❌ Failed to switch to main branch - cannot continue with batch processing")
+            return False
         
         Logger.info(f"🚀 Starting batch processing of {len(pr_numbers)} PRs")
         Logger.info(f"📋 PRs to process: {', '.join(pr_numbers)}")

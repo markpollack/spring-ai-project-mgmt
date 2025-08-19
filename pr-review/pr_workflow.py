@@ -1952,7 +1952,13 @@ File content with conflicts:"""
             Logger.error("Please run the full workflow first to prepare the PR")
             return False
         
-        # Ensure we're on the correct branch for this PR
+        # Ensure repository is set up and on main branch first (this prevents merge conflicts)
+        Logger.info("🔄 Ensuring repository is properly set up and on main branch...")
+        if not self.setup_repository(dry_run):
+            Logger.error("❌ Failed to setup repository and switch to main branch")
+            return False
+        
+        # Now ensure we're on the correct branch for this PR
         if not self.github_utils.ensure_correct_branch(pr_number, self.config.spring_ai_dir):
             Logger.error(f"Failed to switch to correct branch for PR #{pr_number}")
             return False
