@@ -113,13 +113,15 @@ class AIPoweredSolutionAssessor:
                 architectural_significance=doc_analysis.get('architectural_significance', 'low')
             )
             
-            # Create comprehensive assessment prompt
-            assessment_prompt = self._create_assessment_prompt(context_data, code_analysis, doc_analysis, pr_number)
+            # Create assessment prompt using appropriate strategy
+            assessment_prompt = self._create_assessment_prompt(context_data, code_analysis, doc_analysis, pr_classification, pr_number)
             
-            # Execute AI assessment using Claude Code with dynamic timeout
-            ai_results = self._execute_claude_assessment(assessment_prompt, timeout)
+            # Execute AI assessment using Claude Code with dynamic timeout and fallback
+            ai_results = self._execute_claude_assessment_with_fallback(
+                assessment_prompt, timeout, context_data, code_analysis, doc_analysis, pr_classification, pr_number
+            )
             if not ai_results:
-                Logger.error("❌ AI assessment failed")
+                Logger.error("❌ AI assessment failed even with fallback")
                 return None
             
             # Parse and structure AI results
@@ -671,11 +673,22 @@ class AIPoweredSolutionAssessor:
                     brace_count = 0
     
     def _create_assessment_prompt(self, context_data: Dict[str, Any], 
-                                 code_analysis: Dict[str, Any], doc_analysis: Dict[str, Any], pr_number: str) -> str:
-        """Create structured assessment prompt using template"""
+                                 code_analysis: Dict[str, Any], doc_analysis: Dict[str, Any], 
+                                 pr_classification: Dict[str, Any], pr_number: str) -> str:
+        """Create structured assessment prompt using appropriate template based on analysis strategy"""
+        
+        # Select template based on analysis strategy
+        analysis_strategy = pr_classification.get('analysis_strategy', 'detailed_small')
+        
+        if analysis_strategy in ['documentation_first', 'simplified_large']:
+            template_name = "solution_assessment_simplified_prompt.md"
+            Logger.info(f"📋 Using simplified template for large/architectural PR (strategy: {analysis_strategy})")
+        else:
+            template_name = "solution_assessment_prompt.md"
+            Logger.info(f"📋 Using detailed template for {analysis_strategy} analysis")
         
         # Load template
-        template_path = self.working_dir / "templates" / "solution_assessment_prompt.md"
+        template_path = self.working_dir / "templates" / template_name
         if not template_path.exists():
             Logger.error(f"❌ Template not found: {template_path}")
             raise FileNotFoundError(f"Solution assessment template not found: {template_path}")
@@ -758,10 +771,128 @@ class AIPoweredSolutionAssessor:
             # Documentation analysis
             doc_files_count=doc_analysis.get('doc_files_count', 0),
             documentation_summary=doc_analysis.get('documentation_summary', 'No documentation changes'),
-            architectural_significance=doc_analysis.get('architectural_significance', 'low')
+            architectural_significance=doc_analysis.get('architectural_significance', 'low'),
+            # PR classification
+            size_category=pr_classification.get('size_category', 'unknown'),
+            analysis_strategy=pr_classification.get('analysis_strategy', 'unknown'),
+            is_architectural=pr_classification.get('is_architectural', False)
         )
         
         return formatted_prompt
+    
+    def _execute_claude_assessment_with_fallback(self, assessment_prompt: str, timeout: int,
+                                               context_data: Dict[str, Any], code_analysis: Dict[str, Any], 
+                                               doc_analysis: Dict[str, Any], pr_classification: Dict[str, Any], 
+                                               pr_number: str) -> Optional[Dict[str, Any]]:
+        """Execute assessment with timeout fallback to simplified analysis"""
+        
+        try:
+            # Try the primary assessment
+            Logger.info(f"🤖 Attempting primary assessment with {timeout}s timeout...")
+            return self._execute_claude_assessment(assessment_prompt, timeout)
+            
+        except Exception as e:
+            error_msg = str(e).lower()
+            if 'timeout' in error_msg or 'timed out' in error_msg:
+                Logger.warn(f"⏱️  Primary assessment timed out after {timeout}s")
+                return self._fallback_to_simplified_analysis(
+                    context_data, code_analysis, doc_analysis, pr_classification, pr_number
+                )
+            else:
+                Logger.error(f"❌ Primary assessment failed with non-timeout error: {e}")
+                # For non-timeout errors, still try fallback
+                return self._fallback_to_simplified_analysis(
+                    context_data, code_analysis, doc_analysis, pr_classification, pr_number
+                )
+    
+    def _fallback_to_simplified_analysis(self, context_data: Dict[str, Any], code_analysis: Dict[str, Any],
+                                       doc_analysis: Dict[str, Any], pr_classification: Dict[str, Any], 
+                                       pr_number: str) -> Optional[Dict[str, Any]]:
+        """Fallback to simplified analysis when primary assessment fails"""
+        
+        Logger.info("🔄 Falling back to simplified analysis...")
+        
+        # Force simplified strategy
+        fallback_classification = pr_classification.copy()
+        fallback_classification['analysis_strategy'] = 'simplified_large'
+        
+        # Create simplified prompt
+        try:
+            simplified_prompt = self._create_assessment_prompt(
+                context_data, code_analysis, doc_analysis, fallback_classification, pr_number
+            )
+            
+            # Try with reduced timeout (5 minutes max)
+            fallback_timeout = min(300, timeout // 2) if 'timeout' in locals() else 300
+            
+            Logger.info(f"🔄 Retrying with simplified analysis (timeout: {fallback_timeout}s)...")
+            result = self._execute_claude_assessment(simplified_prompt, fallback_timeout)
+            
+            if result:
+                Logger.success("✅ Simplified analysis completed successfully")
+                # Mark the result as using fallback
+                result['analysis_method'] = 'simplified_fallback'
+                result['fallback_reason'] = 'Primary analysis timed out or failed'
+            
+            return result
+            
+        except Exception as e:
+            Logger.error(f"❌ Simplified analysis also failed: {e}")
+            # Last resort: return a minimal assessment
+            return self._create_minimal_assessment(pr_classification, doc_analysis)
+    
+    def _create_minimal_assessment(self, pr_classification: Dict[str, Any], 
+                                 doc_analysis: Dict[str, Any]) -> Dict[str, Any]:
+        """Create minimal assessment when all AI analysis fails"""
+        
+        Logger.warn("⚠️  Creating minimal assessment as last resort")
+        
+        # Basic assessment based on classification and documentation
+        size_category = pr_classification.get('size_category', 'unknown')
+        is_architectural = pr_classification.get('is_architectural', False)
+        doc_files_count = doc_analysis.get('doc_files_count', 0)
+        
+        # Determine basic recommendation
+        if is_architectural and doc_files_count >= 5:
+            recommendation = "NEEDS_MANUAL_REVIEW"
+            confidence = "LOW"
+        elif size_category == 'large':
+            recommendation = "NEEDS_MANUAL_REVIEW" 
+            confidence = "LOW"
+        elif size_category == 'small':
+            recommendation = "APPROVE_WITH_CHANGES"
+            confidence = "MEDIUM"
+        else:
+            recommendation = "NEEDS_WORK"
+            confidence = "LOW"
+        
+        return {
+            'success': True,
+            'response': 'Minimal assessment generated due to analysis failure',
+            'json_data': {
+                'overall_assessment': {
+                    'recommendation': recommendation,
+                    'confidence_level': confidence,
+                    'summary': f'Large {size_category} PR with {doc_files_count} documentation files requires manual review due to analysis limitations.'
+                },
+                'architectural_analysis': {
+                    'architectural_impact': 'HIGH' if is_architectural else 'MEDIUM',
+                    'new_components': ['Unable to analyze - manual review required'],
+                    'design_patterns': ['Analysis incomplete'],
+                    'integration_concerns': ['Requires manual assessment'],
+                    'architectural_soundness': 'Manual review required for large architectural changes'
+                },
+                'risk_assessment': {
+                    'implementation_risk': 'HIGH',
+                    'user_impact_risk': 'HIGH' if is_architectural else 'MEDIUM',
+                    'maintenance_risk': 'MEDIUM',
+                    'key_risks': ['Analysis incomplete due to size/complexity', 'Manual review strongly recommended'],
+                    'mitigation_suggestions': ['Conduct thorough manual review', 'Consider breaking into smaller PRs']
+                }
+            },
+            'analysis_method': 'minimal_fallback',
+            'fallback_reason': 'All automated analysis methods failed'
+        }
     
     def _build_file_changes_detail(self, file_changes: List[Dict[str, Any]]) -> str:
         """Build detailed file changes summary with absolute paths"""
