@@ -98,6 +98,10 @@ class AIPoweredSolutionAssessor:
             file_changes = context_data.get('file_changes', [])
             doc_analysis = self._analyze_documentation_changes(pr_number, file_changes)
             
+            # Classify PR size and determine analysis strategy
+            total_lines = sum(change.get('additions', 0) + change.get('deletions', 0) for change in file_changes)
+            pr_classification = self._classify_pr_size(len(file_changes), total_lines, doc_analysis)
+            
             # Analyze code changes in detail
             code_analysis = self._analyze_code_changes(pr_number)
             
@@ -314,8 +318,8 @@ class AIPoweredSolutionAssessor:
         # Calculate total timeout
         calculated_timeout = int((base_timeout + file_timeout + lines_timeout) * arch_multiplier)
         
-        # Cap at 5 minutes (300 seconds) - reasonable maximum
-        final_timeout = min(calculated_timeout, 300)
+        # Cap at 10 minutes (600 seconds) - reasonable maximum for very large PRs
+        final_timeout = min(calculated_timeout, 600)
         
         Logger.info(f"⏱️  Timeout calculation:")
         Logger.info(f"   - Base: {base_timeout}s")
@@ -326,6 +330,89 @@ class AIPoweredSolutionAssessor:
         Logger.info(f"   - Final (capped): {final_timeout}s ({final_timeout//60}m{final_timeout%60:02d}s)")
         
         return final_timeout
+    
+    def _classify_pr_size(self, file_count: int, lines_changed: int, doc_analysis: Dict[str, Any]) -> Dict[str, str]:
+        """Classify PR size and type for appropriate analysis strategy"""
+        
+        # Basic size classification
+        if file_count < 10 and lines_changed < 1000:
+            size_category = 'small'
+        elif file_count < 40 and lines_changed < 5000:
+            size_category = 'medium'
+        else:
+            size_category = 'large'
+        
+        # Detect architectural changes
+        architectural_significance = doc_analysis.get('architectural_significance', 'low')
+        is_architectural = self._detect_architectural_changes(file_count, lines_changed, doc_analysis)
+        
+        # Override size for architectural changes
+        if is_architectural and size_category == 'small':
+            size_category = 'medium'
+        elif is_architectural and size_category == 'medium':
+            analysis_strategy = 'architectural_focused'
+        else:
+            analysis_strategy = f'{size_category}_standard'
+        
+        # Determine analysis strategy
+        if size_category == 'large' or is_architectural:
+            if doc_analysis.get('doc_files_count', 0) > 0:
+                analysis_strategy = 'documentation_first'
+            else:
+                analysis_strategy = 'simplified_large'
+        elif size_category == 'medium':
+            analysis_strategy = 'focused_medium'
+        else:
+            analysis_strategy = 'detailed_small'
+        
+        classification = {
+            'size_category': size_category,
+            'analysis_strategy': analysis_strategy,
+            'is_architectural': is_architectural,
+            'architectural_significance': architectural_significance
+        }
+        
+        Logger.info(f"📊 PR Classification:")
+        Logger.info(f"   - Size: {size_category} ({file_count} files, {lines_changed} lines)")
+        Logger.info(f"   - Architectural: {is_architectural} ({architectural_significance} significance)")
+        Logger.info(f"   - Strategy: {analysis_strategy}")
+        
+        return classification
+    
+    def _detect_architectural_changes(self, file_count: int, lines_changed: int, doc_analysis: Dict[str, Any]) -> bool:
+        """Detect if PR represents architectural changes"""
+        
+        # Strong architectural indicators
+        strong_indicators = [
+            doc_analysis.get('architectural_significance', 'low') == 'high',  # High doc significance
+            doc_analysis.get('doc_files_count', 0) >= 5,  # Many doc files changed
+            file_count >= 50,  # Very large file count
+            lines_changed >= 8000,  # Very large line changes
+        ]
+        
+        # Medium architectural indicators  
+        medium_indicators = [
+            doc_analysis.get('architectural_significance', 'low') == 'medium',
+            doc_analysis.get('doc_files_count', 0) >= 3,  # Several doc files
+            file_count >= 30,  # Large file count
+            lines_changed >= 5000,  # Large line changes
+            'NEW' in doc_analysis.get('documentation_summary', ''),  # New feature docs
+            'Navigation structure' in doc_analysis.get('documentation_summary', '')  # Nav changes
+        ]
+        
+        # Count indicators
+        strong_count = sum(1 for indicator in strong_indicators if indicator)
+        medium_count = sum(1 for indicator in medium_indicators if indicator)
+        
+        # Decision logic
+        is_architectural = strong_count >= 1 or medium_count >= 2
+        
+        Logger.info(f"🏗️  Architectural detection:")
+        Logger.info(f"   - Strong indicators: {strong_count}/4")
+        Logger.info(f"   - Medium indicators: {medium_count}/6") 
+        Logger.info(f"   - Result: {is_architectural}")
+        
+        return is_architectural
     
     def _analyze_code_changes(self, pr_number: str) -> Dict[str, Any]:
         """Analyze code changes for patterns and quality indicators"""

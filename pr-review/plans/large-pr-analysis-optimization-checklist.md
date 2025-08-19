@@ -30,20 +30,22 @@ PR #4179 (MCP server restructure) timed out after 5 minutes during AI solution a
 - [x] Test with PR #4179 to verify documentation extraction works
 - [x] **VERIFICATION**: PR #4179 shows 7 documentation files, high architectural significance, 1,072+ lines of MCP documentation
 
-## Phase 2: Dynamic Timeout Implementation  
-- [ ] Add `_calculate_timeout()` method based on PR size
-- [ ] Base timeout: 300s + 30s per 10 files + 60s per 1000 lines
-- [ ] Cap maximum timeout at 20 minutes (1200s)
-- [ ] Update timeout parameter in `solution_assessor.py:558`
-- [ ] Add logging for timeout decisions
+## Phase 2: Dynamic Timeout Implementation (COMPLETED)
+- [x] Add `_calculate_timeout()` method based on PR size
+- [x] Base timeout: 180s + 15s per 10 files + 30s per 1000 lines (optimized formula)
+- [x] Cap maximum timeout at 10 minutes (600s) - reasonable maximum for very large PRs
+- [x] Update timeout parameter in `solution_assessor.py:740`
+- [x] Add logging for timeout decisions
+- [x] **VERIFICATION**: Small PRs get 3min, Medium PRs get ~4m48s, Large PRs get 10min (PR #4179 gets full 10min)
 
-## Phase 3: PR Size Classification
-- [ ] Implement `classify_pr_size()` method with thresholds:
-  - [ ] Small: <10 files, <1000 lines
-  - [ ] Medium: 10-40 files, 1000-5000 lines  
-  - [ ] Large: 40+ files, 5000+ lines
-- [ ] Add architectural change detection (new modules, major restructures)
-- [ ] Log classification decisions for debugging
+## Phase 3: PR Size Classification (COMPLETED)
+- [x] Implement `classify_pr_size()` method with thresholds:
+  - [x] Small: <10 files, <1000 lines
+  - [x] Medium: 10-40 files, 1000-5000 lines  
+  - [x] Large: 40+ files, 5000+ lines
+- [x] Add architectural change detection (new modules, major restructures)
+- [x] Log classification decisions for debugging
+- [x] **VERIFICATION**: PR #4179 correctly classified as `large`, `architectural`, with `documentation_first` strategy
 
 ## Phase 4: Analysis Strategy Selection
 - [ ] Create simplified analysis template for large PRs
@@ -80,13 +82,15 @@ For large PRs, prioritize reading documentation files (*.adoc, *.md, README) to 
 - Feature additions and modifications
 - Impact on existing functionality
 
-### Timeout Calculation Formula
+### Timeout Calculation Formula (UPDATED)
 ```python
-def _calculate_timeout(self, file_count: int, lines_changed: int) -> int:
-    base_timeout = 300  # 5 minutes
-    file_timeout = (file_count // 10) * 30  # 30s per 10 files
-    lines_timeout = (lines_changed // 1000) * 60  # 1 minute per 1000 lines
-    return min(base_timeout + file_timeout + lines_timeout, 1200)  # Cap at 20 minutes
+def _calculate_timeout(self, file_count: int, lines_changed: int, architectural_significance: str = 'low') -> int:
+    base_timeout = 180  # 3 minutes base for small PRs
+    file_timeout = (file_count // 10) * 15  # 15s per 10 files
+    lines_timeout = (lines_changed // 1000) * 30  # 30s per 1000 lines
+    arch_multiplier = {'low': 1.0, 'medium': 1.2, 'high': 1.4}.get(architectural_significance, 1.0)
+    calculated = int((base_timeout + file_timeout + lines_timeout) * arch_multiplier)
+    return min(calculated, 600)  # Cap at 10 minutes
 ```
 
 ### Analysis Strategy Selection
