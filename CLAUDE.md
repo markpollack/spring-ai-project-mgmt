@@ -52,11 +52,17 @@ python3 pr_workflow.py 3914
 # Generate enhanced report only
 python3 pr_workflow.py --report-only 3914
 
-# Clean up PR workspace
+# Clean up PR workspace (preserves branch for review/merge)
 python3 pr_workflow.py --cleanup 3914
 
-# Batch processing multiple PRs
+# Clean up and delete PR branch (old behavior)
+python3 pr_workflow.py --cleanup 3914 --delete-branch
+
+# Batch processing multiple PRs (preserves prepared branches)
 python3 batch_pr_workflow.py 3920 3919 3921 3922 3927 3929
+
+# Batch processing with branch deletion (old behavior)
+python3 batch_pr_workflow.py --delete-branches 3920 3919 3921
 ```
 
 ### GitHub Issues Collection
