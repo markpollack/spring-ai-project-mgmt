@@ -1083,7 +1083,7 @@ class LowHangingFruitReportGenerator:
         <div id="manual-merge-modal" class="modal-overlay" style="display: none;">
             <div class="modal-content backport-modal-content">
                 <div class="modal-header">
-                    <h2>🔀 Checkout & Merge Commands</h2>
+                    <h2>🔀 Merge Automation & Commands</h2>
                     <button class="modal-close" onclick="closeManualMergeModal()">&times;</button>
                 </div>
                 <div class="modal-body">
@@ -3009,6 +3009,21 @@ class LowHangingFruitReportGenerator:
             
             // Build command sequence
             let commands = [];
+            
+            // Recommended automation script section
+            commands.push("# === RECOMMENDED: Use the All-in-One Automation Script ===");
+            commands.push("");
+            commands.push("# Interactive mode (prompts for each step):");
+            commands.push(`python3 merge_pr.py ${prNumber} ${branchName}`);
+            commands.push("");
+            commands.push("# Automatic mode (no prompts):");
+            commands.push(`python3 merge_pr.py ${prNumber} ${branchName} --auto`);
+            commands.push("");
+            commands.push("# Preview commands without executing:");
+            commands.push(`python3 merge_pr.py ${prNumber} ${branchName} --dry-run`);
+            commands.push("");
+            commands.push("# === OR: Manual Git Commands (if you prefer step-by-step) ===");
+            commands.push("");
             
             // 1. Navigate to repository
             commands.push("# Navigate to Spring AI repository");
