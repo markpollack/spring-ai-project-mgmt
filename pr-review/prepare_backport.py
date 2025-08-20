@@ -56,9 +56,11 @@ class Logger:
 class BackportPreparer:
     """Prepare PR for automated backport by updating PR body on GitHub"""
     
-    def __init__(self, pr_number: str, target_branch: str = "1.0.x"):
+    def __init__(self, pr_number: str, target_branch: str = "1.0.x", override_approval: bool = False, auto_confirm: bool = False):
         self.pr_number = pr_number
         self.target_branch = target_branch
+        self.override_approval = override_approval
+        self.auto_confirm = auto_confirm
         self.context_dir = Path(__file__).parent
         self.state_dir = self.context_dir / "state"
         self.repo = "spring-projects/spring-ai"
@@ -118,8 +120,8 @@ class BackportPreparer:
             ], capture_output=True, text=True)
             current_branch = result.stdout.strip() if result.returncode == 0 else "unknown"
             
-            # Check backport approval from context
-            is_approved = self._check_backport_approval()
+            # Check backport approval from context (or override)
+            is_approved = self.override_approval or self._check_backport_approval()
             
             return BackportInfo(
                 pr_number=self.pr_number,
@@ -174,8 +176,13 @@ class BackportPreparer:
             Logger.error("PR is not approved for backport")
             Logger.info("Run the full PR review workflow first:")
             Logger.info(f"  python3 pr_workflow.py {self.pr_number}")
+            Logger.info("Or use --override to bypass approval check")
             return False
-        Logger.success("Backport status: ✅ APPROVED")
+        
+        if self.override_approval:
+            Logger.success("Backport status: ✅ APPROVED (OVERRIDDEN)")
+        else:
+            Logger.success("Backport status: ✅ APPROVED")
         
         # Check 4: Check if already has backport directive
         if self._has_backport_directive():
@@ -271,11 +278,14 @@ class BackportPreparer:
                 print(f"│ {truncated_line:<58} │")
             print("└" + "─" * 60 + "┘")
             
-            # Confirm
-            response = input(f"\nUpdate commit message for PR #{self.pr_number}? [y/N]: ").strip().lower()
-            if response != 'y':
-                Logger.warn("Operation cancelled by user")
-                return False
+            # Confirm (skip if auto_confirm is enabled)
+            if self.auto_confirm:
+                Logger.info("Auto-confirming commit message update")
+            else:
+                response = input(f"\nUpdate commit message for PR #{self.pr_number}? [y/N]: ").strip().lower()
+                if response != 'y':
+                    Logger.warn("Operation cancelled by user")
+                    return False
             
             # Update commit message using git commit --amend
             result = subprocess.run([
@@ -298,21 +308,35 @@ class BackportPreparer:
 def main():
     """Main entry point"""
     if len(sys.argv) < 2:
-        print("Usage: python3 prepare_backport.py <pr_number> [target_branch]")
+        print("Usage: python3 prepare_backport.py <pr_number> [target_branch] [--override] [--auto]")
         print("Examples:")
         print("  python3 prepare_backport.py 4102           # Backport to 1.0.x")
         print("  python3 prepare_backport.py 4102 1.1.x     # Backport to 1.1.x")
+        print("  python3 prepare_backport.py 4102 --override # Override approval check")
+        print("  python3 prepare_backport.py 4102 --auto     # Skip confirmation prompts")
         sys.exit(1)
     
     pr_number = sys.argv[1]
-    target_branch = sys.argv[2] if len(sys.argv) > 2 else "1.0.x"
+    
+    # Parse arguments
+    target_branch = "1.0.x"
+    override_approval = False
+    auto_confirm = False
+    
+    for arg in sys.argv[2:]:
+        if arg == "--override":
+            override_approval = True
+        elif arg == "--auto":
+            auto_confirm = True
+        elif not arg.startswith("--"):
+            target_branch = arg
     
     # Validate PR number
     if not pr_number.isdigit():
         Logger.error(f"Invalid PR number: {pr_number}")
         sys.exit(1)
     
-    preparer = BackportPreparer(pr_number, target_branch)
+    preparer = BackportPreparer(pr_number, target_branch, override_approval, auto_confirm)
     success = preparer.run()
     
     sys.exit(0 if success else 1)

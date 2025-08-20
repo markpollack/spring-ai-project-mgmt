@@ -1095,13 +1095,27 @@ class LowHangingFruitReportGenerator:
                         </div>
                     </div>
                     
-                    <div class="command-section">
-                        <h3>📋 Commands to run (click to copy):</h3>
-                        <div class="command-box" id="merge-command" onclick="copyMergeCommand()">
-                            <pre id="merge-command-text"></pre>
+                    <div class="automation-command-section">
+                        <h3>🚀 Quick Copy - Automation Command:</h3>
+                        <div class="command-box copyable" id="automation-command" onclick="copyAutomationCommand()">
+                            <pre id="automation-command-text"></pre>
                         </div>
-                        <div class="copy-feedback" id="merge-copy-feedback" style="display: none;">
+                        <div class="copy-feedback" id="automation-copy-feedback" style="display: none;">
                             ✅ Copied to clipboard!
+                        </div>
+                        <div class="automation-options">
+                            <h4>Command Options:</h4>
+                            <ul>
+                                <li><code>--auto</code> - Run without prompts</li>
+                                <li><code>--dry-run</code> - Preview commands without executing</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="manual-commands-section">
+                        <h3>📋 Manual Git Commands (Reference Only):</h3>
+                        <div class="command-reference" id="manual-commands">
+                            <pre id="manual-command-text"></pre>
                         </div>
                     </div>
                     
@@ -2464,6 +2478,83 @@ class LowHangingFruitReportGenerator:
         .copy-feedback {
             margin-top: 8px;
             color: #28a745;
+        }
+        
+        /* New styling for split command sections */
+        .automation-command-section {
+            margin-bottom: 30px;
+        }
+        
+        .automation-command-section h3 {
+            color: #2d6e3b;
+            margin-bottom: 10px;
+            font-size: 16px;
+            font-weight: 600;
+        }
+        
+        .command-box.copyable {
+            background: #1e3a8a;
+            border: 2px solid #3b82f6;
+            cursor: pointer;
+        }
+        
+        .command-box.copyable:hover {
+            border-color: #60a5fa;
+            background: #1e40af;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+        
+        .automation-options {
+            margin-top: 15px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border-left: 4px solid #3b82f6;
+        }
+        
+        .automation-options h4 {
+            margin: 0 0 8px 0;
+            font-size: 14px;
+            color: #374151;
+        }
+        
+        .automation-options ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        
+        .automation-options li {
+            margin-bottom: 4px;
+            color: #6b7280;
+            font-size: 13px;
+        }
+        
+        .manual-commands-section {
+            margin-bottom: 20px;
+        }
+        
+        .manual-commands-section h3 {
+            color: #6b7280;
+            margin-bottom: 10px;
+            font-size: 16px;
+            font-weight: 600;
+        }
+        
+        .command-reference {
+            background: #f9fafb;
+            color: #374151;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            border: 1px solid #d1d5db;
+            white-space: pre-wrap;
+            word-break: break-all;
+            font-size: 12px;
+            line-height: 1.4;
+            max-height: 300px;
+            overflow-y: auto;
+        }
             font-weight: 600;
             text-align: center;
         }
@@ -3007,75 +3098,64 @@ class LowHangingFruitReportGenerator:
             const prData = window.prData && window.prData.find(pr => pr.number === prNumber);
             const isBackportCandidate = prData && prData.backport_eligible === true;
             
-            // Build command sequence
-            let commands = [];
+            // Build automation command (for easy copy-paste)
+            const automationCommand = `python3 merge_pr.py ${prNumber} ${branchName}`;
             
-            // Recommended automation script section
-            commands.push("# === RECOMMENDED: Use the All-in-One Automation Script ===");
-            commands.push("");
-            commands.push("# Interactive mode (prompts for each step):");
-            commands.push(`python3 merge_pr.py ${prNumber} ${branchName}`);
-            commands.push("");
-            commands.push("# Automatic mode (no prompts):");
-            commands.push(`python3 merge_pr.py ${prNumber} ${branchName} --auto`);
-            commands.push("");
-            commands.push("# Preview commands without executing:");
-            commands.push(`python3 merge_pr.py ${prNumber} ${branchName} --dry-run`);
-            commands.push("");
-            commands.push("# === OR: Manual Git Commands (if you prefer step-by-step) ===");
-            commands.push("");
+            // Build manual commands sequence (for reference)
+            let manualCommands = [];
             
             // 1. Navigate to repository
-            commands.push("# Navigate to Spring AI repository");
-            commands.push("cd /home/mark/project-mgmt/spring-ai-project-mgmt/pr-review/spring-ai");
-            commands.push("");
+            manualCommands.push("# Navigate to Spring AI repository");
+            manualCommands.push("cd /home/mark/project-mgmt/spring-ai-project-mgmt/pr-review/spring-ai");
+            manualCommands.push("");
             
             // 2. Checkout PR branch
-            commands.push("# Checkout PR branch");
-            commands.push(`git checkout ${branchName}`);
-            commands.push("");
+            manualCommands.push("# Checkout PR branch");
+            manualCommands.push(`git checkout ${branchName}`);
+            manualCommands.push("");
             
             // 3. Update main branch without switching
-            commands.push("# Update main branch without leaving current branch");
-            commands.push("git fetch origin main:main");
-            commands.push("");
+            manualCommands.push("# Update main branch without leaving current branch");
+            manualCommands.push("git fetch origin main:main");
+            manualCommands.push("");
             
             // 4. Rebase current branch on main
-            commands.push("# Rebase PR branch on latest main");
-            commands.push("git rebase main");
-            commands.push("");
+            manualCommands.push("# Rebase PR branch on latest main");
+            manualCommands.push("git rebase main");
+            manualCommands.push("");
             
             // 5. Backport preparation (if approved)
             if (isBackportCandidate) {
-                commands.push("# ✅ APPROVED FOR BACKPORT - Add backport directive");
-                commands.push(`python3 ../prepare_backport.py ${prNumber}`);
-                commands.push("");
+                manualCommands.push("# ✅ APPROVED FOR BACKPORT - Add backport directive");
+                manualCommands.push(`python3 ../prepare_backport.py ${prNumber}`);
+                manualCommands.push("");
             }
             
             // 6. Switch to main branch
-            commands.push("# Switch to main branch");
-            commands.push("git checkout main");
-            commands.push("");
+            manualCommands.push("# Switch to main branch");
+            manualCommands.push("git checkout main");
+            manualCommands.push("");
             
             // 7. Merge PR branch into main
-            commands.push("# Merge PR branch (already rebased)");
-            commands.push(`git merge ${branchName}`);
-            commands.push("");
+            manualCommands.push("# Merge PR branch (already rebased)");
+            manualCommands.push(`git merge ${branchName}`);
+            manualCommands.push("");
             
             // 8. Push to origin
-            commands.push("# Push merged changes to origin");
-            commands.push("git push origin main");
-            commands.push("");
+            manualCommands.push("# Push merged changes to origin");
+            manualCommands.push("git push origin main");
+            manualCommands.push("");
             
             // 9. Reminder to close issue
-            commands.push("# 📝 REMINDER: Go to GitHub and close the associated issue(s)");
-            commands.push(`# https://github.com/spring-projects/spring-ai/pull/${prNumber}`);
+            manualCommands.push("# 📝 REMINDER: Go to GitHub and close the associated issue(s)");
+            manualCommands.push(`# https://github.com/spring-projects/spring-ai/pull/${prNumber}`);
             
-            const commandText = commands.join('\\n');
+            const manualCommandText = manualCommands.join('\\n');
             
             // Populate modal content
             document.getElementById('merge-branch-name').textContent = branchName;
-            document.getElementById('merge-command-text').textContent = commandText;
+            document.getElementById('automation-command-text').textContent = automationCommand;
+            document.getElementById('manual-command-text').textContent = manualCommandText;
             document.getElementById('merge-warning-branch').textContent = branchName;
             
             // Show warning if not using placeholder branch name
@@ -3097,12 +3177,12 @@ class LowHangingFruitReportGenerator:
             document.body.style.overflow = ''; // Restore scrolling
             
             // Hide copy feedback
-            document.getElementById('merge-copy-feedback').style.display = 'none';
+            document.getElementById('automation-copy-feedback').style.display = 'none';
         }
         
-        function copyMergeCommand() {
-            const commandText = document.getElementById('merge-command-text').textContent;
-            const feedback = document.getElementById('merge-copy-feedback');
+        function copyAutomationCommand() {
+            const commandText = document.getElementById('automation-command-text').textContent;
+            const feedback = document.getElementById('automation-copy-feedback');
             
             // Copy to clipboard
             navigator.clipboard.writeText(commandText).then(function() {

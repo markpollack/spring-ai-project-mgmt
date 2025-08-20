@@ -12,7 +12,7 @@ This script automates the complete merge process for Spring AI PRs including:
 Usage:
     python3 merge_pr.py <pr_number> <branch_name>           # Interactive mode
     python3 merge_pr.py <pr_number> <branch_name> --auto    # Automatic mode
-    python3 merge_pr.py <pr_number> <branch_name> --backport # Force backport
+    python3 merge_pr.py <pr_number> <branch_name> --backport # Force backport (overrides approval)
     python3 merge_pr.py <pr_number> <branch_name> --dry-run # Show commands only
 
 Examples:
@@ -181,7 +181,13 @@ def merge_workflow(pr_number: str, branch_name: str, auto: bool = False,
     if should_backport:
         print_step(current_step, total_steps, "Add backport directive to PR")
         backport_script = Path(__file__).parent / "prepare_backport.py"
-        success, output = run_command(f"python3 {backport_script} {pr_number}", dry_run, confirm, str(spring_ai_dir))
+        # When --backport is used, pass both --override and --auto to make it "just work"
+        # Otherwise, only pass --auto to prevent hanging
+        if force_backport:
+            flags = "--override --auto"
+        else:
+            flags = "--auto"
+        success, output = run_command(f"python3 {backport_script} {pr_number} {flags}".strip(), dry_run, confirm, str(spring_ai_dir))
         if not success:
             print_error("Backport preparation failed")
             return False
@@ -231,7 +237,7 @@ def main():
     parser.add_argument('pr_number', help='GitHub PR number to merge')
     parser.add_argument('branch_name', help='Local branch name to merge')
     parser.add_argument('--auto', action='store_true', help='Run without prompts')
-    parser.add_argument('--backport', action='store_true', help='Force backport even if not approved')
+    parser.add_argument('--backport', action='store_true', help='Force backport (overrides approval check)')
     parser.add_argument('--dry-run', action='store_true', help='Show commands without executing')
     
     args = parser.parse_args()
