@@ -3033,7 +3033,7 @@ class LowHangingFruitReportGenerator:
             commands.push("# After review, merge via GitHub");
             commands.push(`gh pr merge ${prNumber}`);
             
-            const commandText = commands.join('\n');
+            const commandText = commands.join('\\n');
             
             // Populate modal content
             document.getElementById('merge-branch-name').textContent = branchName;
