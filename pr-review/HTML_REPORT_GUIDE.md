@@ -55,6 +55,31 @@ The HTML dashboard is automatically generated after:
 3. Backport assessment
 4. Test discovery
 
+## PR Merge Automation
+
+Use the **merge_pr.py** script to automate the complete merge process:
+
+```bash
+# Interactive mode (prompts for each step)
+python3 merge_pr.py 4174 feature/document-comprehensive-tests
+
+# Automatic mode (no prompts)
+python3 merge_pr.py 4174 feature/document-comprehensive-tests --auto
+
+# Preview commands without executing
+python3 merge_pr.py 4174 feature/document-comprehensive-tests --dry-run
+
+# Force backport even if not approved
+python3 merge_pr.py 4174 feature/document-comprehensive-tests --backport
+```
+
+**Script Features:**
+- ✅ Proper Git workflow: fetch → rebase → merge → push
+- ✅ Automatic backport detection and execution
+- ✅ Interactive or automatic modes
+- ✅ Colored output with step-by-step progress
+- ✅ Comprehensive error handling
+
 ## Browser Access
 
 Open the generated file directly:
