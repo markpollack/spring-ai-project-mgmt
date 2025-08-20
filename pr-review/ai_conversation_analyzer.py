@@ -93,7 +93,7 @@ class AIPoweredConversationAnalyzer:
             analysis_prompt = self._create_analysis_prompt(context_data, pr_number)
             
             # Execute AI analysis using Claude Code
-            ai_results = self._execute_claude_analysis(analysis_prompt)
+            ai_results = self._execute_claude_analysis(analysis_prompt, pr_number)
             if not ai_results:
                 Logger.error("❌ AI analysis failed")
                 return None
@@ -265,7 +265,7 @@ class AIPoweredConversationAnalyzer:
         scored_entries.sort(key=lambda x: x[0], reverse=True)
         return [entry for score, entry in scored_entries[:8]]
     
-    def _execute_claude_analysis(self, prompt: str) -> Optional[Dict[str, Any]]:
+    def _execute_claude_analysis(self, prompt: str, pr_number: str) -> Optional[Dict[str, Any]]:
         """Execute analysis using Claude Code with centralized JSON extraction"""
         try:
             Logger.info("🤖 Running Claude Code analysis...")
@@ -447,7 +447,7 @@ def main():
         print(f"   - Recommendations: {len(analysis.recommendations)}")
         sys.exit(0)
     else:
-        print(f"\n❌ AI analysis failed for PR #{pr_number}")
+        print(f"\n❌ AI analysis failed for PR #{args.pr_number}")
         sys.exit(1)
 
 
