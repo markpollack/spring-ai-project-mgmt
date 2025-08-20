@@ -3005,33 +3005,56 @@ class LowHangingFruitReportGenerator:
             
             // Check if this PR is a backport candidate
             const prData = window.prData && window.prData.find(pr => pr.number === prNumber);
-            const isBackportCandidate = prData && prData.backport_assessment && 
-                (prData.backport_assessment.recommendation === 'RECOMMEND' || 
-                 prData.backport_assessment.recommendation === 'CONDITIONAL');
+            const isBackportCandidate = prData && prData.backport_eligible === true;
             
             // Build command sequence
             let commands = [];
             
-            // Navigation command
+            // 1. Navigate to repository
             commands.push("# Navigate to Spring AI repository");
             commands.push("cd /home/mark/project-mgmt/spring-ai-project-mgmt/pr-review/spring-ai");
             commands.push("");
             
-            // Checkout command
+            // 2. Checkout PR branch
             commands.push("# Checkout PR branch");
             commands.push(`git checkout ${branchName}`);
             commands.push("");
             
-            // Backport commands if applicable (FIRST, before merge)
+            // 3. Update main branch without switching
+            commands.push("# Update main branch without leaving current branch");
+            commands.push("git fetch origin main:main");
+            commands.push("");
+            
+            // 4. Rebase current branch on main
+            commands.push("# Rebase PR branch on latest main");
+            commands.push("git rebase main");
+            commands.push("");
+            
+            // 5. Backport preparation (if approved)
             if (isBackportCandidate) {
-                commands.push("# Prepare backport to 1.0.x branch (do this BEFORE merging to main)");
-                commands.push(`python3 /home/mark/project-mgmt/spring-ai-project-mgmt/pr-review/prepare_backport.py ${prNumber}`);
+                commands.push("# ✅ APPROVED FOR BACKPORT - Add backport directive");
+                commands.push(`python3 ../prepare_backport.py ${prNumber}`);
                 commands.push("");
             }
             
-            // Final merge command
-            commands.push("# After review, merge via GitHub");
-            commands.push(`gh pr merge ${prNumber}`);
+            // 6. Switch to main branch
+            commands.push("# Switch to main branch");
+            commands.push("git checkout main");
+            commands.push("");
+            
+            // 7. Merge PR branch into main
+            commands.push("# Merge PR branch (already rebased)");
+            commands.push(`git merge ${branchName}`);
+            commands.push("");
+            
+            // 8. Push to origin
+            commands.push("# Push merged changes to origin");
+            commands.push("git push origin main");
+            commands.push("");
+            
+            // 9. Reminder to close issue
+            commands.push("# 📝 REMINDER: Go to GitHub and close the associated issue(s)");
+            commands.push(`# https://github.com/spring-projects/spring-ai/pull/${prNumber}`);
             
             const commandText = commands.join('\\n');
             
