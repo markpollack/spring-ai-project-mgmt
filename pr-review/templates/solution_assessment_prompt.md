@@ -78,6 +78,25 @@ When analyzing the code changes, pay special attention to:
 ### Outstanding Concerns (from Conversation Analysis)
 {outstanding_concerns_list}
 
+## Testing Reality Check
+
+When assessing testing adequacy:
+- Be objective about both strengths AND gaps
+- Don't mark testing as "EXCELLENT" unless it truly covers all critical paths
+- Use "GOOD" for solid coverage with some gaps, "ADEQUATE" for basic coverage
+- Identify specific missing test scenarios rather than giving blanket praise
+
+### Testing Evaluation Framework (Use consistent criteria)
+Rate testing based on:
+- **EXCELLENT**: 90%+ critical path coverage, comprehensive integration tests, edge cases covered
+- **GOOD**: 70-89% coverage, solid integration tests, most edge cases covered  
+- **ADEQUATE**: 50-69% coverage, basic integration tests, some edge cases missing
+- **INSUFFICIENT**: <50% coverage, minimal integration tests, significant gaps
+
+Look for:
+✅ **Strengths**: Comprehensive test suites, good integration coverage, edge case testing
+⚠️ **Gaps**: Missing error condition tests, untested integration scenarios, complex logic without tests
+
 ## Solution Assessment Request
 
 Please conduct a thorough technical assessment focusing on Spring AI framework expertise and software engineering best practices:
@@ -112,14 +131,14 @@ Analyze compatibility impact:
 - Migration path for existing users if changes are breaking?
 
 ### 5. TESTING_ADEQUACY (5-7 items)
-Assess test coverage and quality:
-- Are all new functionality paths covered by tests?
-- Quality and comprehensiveness of test scenarios?
-- Integration testing for Spring AI components?
-- Edge case and error condition testing?
-- **Ignored/Disabled Tests**: Identify any @Ignore, @Disabled, or commented-out tests
-- **Test Method Complexity**: Flag test methods that are overly complex (>50 lines)
-- **Test Naming and Documentation**: Are test names descriptive of what's being tested?
+Apply the shared testing framework, then assess coverage and quality:
+- **Overall Coverage Rating**: Use EXCELLENT/GOOD/ADEQUATE/INSUFFICIENT based on framework criteria
+- **Critical Path Coverage**: Are all new functionality paths covered by tests?
+- **Integration Testing**: Comprehensive testing for Spring AI component interactions?
+- **Edge Case Testing**: Error conditions, boundary values, exceptional scenarios covered?
+- **Test Quality Issues**: Identify @Ignore/@Disabled tests, overly complex tests (>50 lines), poor naming
+- **Missing Test Scenarios**: Specific gaps in test coverage, not theoretical concerns
+- **Test Strategy Assessment**: Unit vs integration test balance, test isolation, maintainability
 
 ### 6. DOCUMENTATION_COMPLETENESS (2-3 items)
 Evaluate documentation and usability:

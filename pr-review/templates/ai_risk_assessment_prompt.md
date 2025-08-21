@@ -62,6 +62,26 @@ Java source files are marked as "HIGH" priority and should be analyzed first:
 ### Outstanding Concerns (from Previous Analysis)
 {outstanding_concerns_list}
 
+## Pre-Analysis Context Check
+
+Before identifying risks, first evaluate the overall testing landscape:
+- Count the total number of test files and their scope
+- Assess if test coverage appears comprehensive or sparse  
+- Only flag testing risks if there are genuine gaps relative to the complexity
+
+**Important**: Avoid contradicting positive testing findings. If comprehensive testing exists, focus on specific edge cases or testing methodology concerns rather than general coverage gaps.
+
+### Testing Evaluation Framework (Use consistent criteria)
+Rate testing based on:
+- **EXCELLENT**: 90%+ critical path coverage, comprehensive integration tests, edge cases covered
+- **GOOD**: 70-89% coverage, solid integration tests, most edge cases covered  
+- **ADEQUATE**: 50-69% coverage, basic integration tests, some edge cases missing
+- **INSUFFICIENT**: <50% coverage, minimal integration tests, significant gaps
+
+Look for:
+✅ **Strengths**: Comprehensive test suites, good integration coverage, edge case testing
+⚠️ **Gaps**: Missing error condition tests, untested integration scenarios, complex logic without tests
+
 ## Risk Assessment Guidelines
 
 Please analyze the code changes with Spring AI framework expertise and identify risks in the following categories:
@@ -106,12 +126,12 @@ Assess long-term maintenance challenges:
 - Anti-patterns that make future changes difficult
 
 ### 5. TESTING & QUALITY RISKS
-Evaluate test coverage and quality:
-- Missing test coverage for critical paths
-- Flaky or unreliable tests
-- Integration tests without proper isolation
-- Missing edge case testing
-- Inadequate error condition testing
+Evaluate testing using the shared framework above, then identify specific risks:
+- **Only flag as risk if genuinely inadequate**: Don't create risks for comprehensive testing
+- **Specific gap identification**: Point to actual untested scenarios, not theoretical concerns
+- **Risk severity**: High for missing critical path tests, Medium for missing edge cases, Low for minor gaps
+- **Integration risks**: Untested module interactions, missing configuration testing
+- **Test maintenance risks**: Overly complex tests, disabled tests without explanation
 
 ## Response Format
 
