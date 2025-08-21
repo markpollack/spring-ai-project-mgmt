@@ -133,24 +133,37 @@ class AIPoweredConversationAnalyzer:
             if file_path.exists():
                 try:
                     with open(file_path, 'r', encoding='utf-8') as f:
-                        context_data[key] = json.load(f)
+                        data = json.load(f)
+                        context_data[key] = data if data is not None else []
                 except Exception as e:
                     Logger.warn(f"⚠️  Could not load {filename}: {e}")
-                    context_data[key] = None
+                    context_data[key] = []
             else:
-                context_data[key] = None
+                context_data[key] = []
         
         return context_data
     
     def _create_analysis_prompt(self, context_data: Dict[str, Any], pr_number: str) -> str:
         """Create structured prompt for Claude Code analysis using template"""
         
-        # Extract key information for the prompt
+        # Extract key information for the prompt with proper type handling
         pr_data = context_data.get('pr_data', {})
+        if not isinstance(pr_data, dict):
+            pr_data = {}
+        
         issue_data = context_data.get('issue_data', [])
+        if not isinstance(issue_data, list):
+            issue_data = []
+            
         conversation = context_data.get('conversation', [])
+        if not isinstance(conversation, list):
+            conversation = []
+            
         file_changes = context_data.get('file_changes', [])
-        heuristic = context_data.get('heuristic_analysis', {})
+        if not isinstance(file_changes, list):
+            file_changes = []
+            
+        heuristic = context_data.get('heuristic_analysis', {}) or {}
         
         # Load template
         template_path = self.working_dir / "templates" / "ai_conversation_analysis_prompt.md"
@@ -188,6 +201,9 @@ class AIPoweredConversationAnalyzer:
         if not conversation_excerpts:
             conversation_excerpts = "No significant conversation entries found."
         
+        # Build file changes detail section (especially important for shallow PRs)
+        file_changes_detail = self._build_file_changes_detail(file_changes)
+        
         # Format template with context data
         formatted_prompt = template.format(
             pr_number=pr_number,
@@ -199,6 +215,7 @@ class AIPoweredConversationAnalyzer:
             linked_issues_section=linked_issues_section,
             total_files_changed=len(file_changes),
             file_types_summary=self._summarize_file_types(file_changes),
+            file_changes_detail=file_changes_detail,
             total_conversation_entries=len(conversation),
             total_participants=len(set(entry.get('author', '') for entry in conversation)),
             timeline_summary=heuristic.get('timeline_summary', 'N/A'),
@@ -232,6 +249,31 @@ class AIPoweredConversationAnalyzer:
                 types['Other'] = types.get('Other', 0) + 1
         
         return ', '.join(f"{k}: {v}" for k, v in types.items())
+    
+    def _build_file_changes_detail(self, file_changes: List[Dict[str, Any]]) -> str:
+        """Build detailed file changes section for shallow PRs with minimal conversation"""
+        if not file_changes:
+            return "No file changes found."
+        
+        detail = ""
+        for change in file_changes:
+            filename = change.get('filename', 'Unknown file')
+            status = change.get('status', 'unknown')
+            additions = change.get('additions', 0)
+            deletions = change.get('deletions', 0)
+            patch = change.get('patch', '')
+            
+            detail += f"""
+**File: {filename}**
+- Status: {status}
+- Changes: +{additions} -{deletions}
+- Diff:
+```diff
+{patch[:1000]}
+```
+"""
+        
+        return detail.strip()
     
     def _select_important_conversation_entries(self, conversation: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """Select most important conversation entries for analysis"""

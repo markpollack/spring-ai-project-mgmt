@@ -22,6 +22,9 @@ You are analyzing a Spring AI pull request to provide deep insights into the pro
 - **Total files changed**: {total_files_changed}
 - **File types**: {file_types_summary}
 
+### File Changes Detail
+{file_changes_detail}
+
 ### Conversation Timeline
 - **Total entries**: {total_conversation_entries}
 - **Participants**: {total_participants}
@@ -38,6 +41,8 @@ The pattern-matching analysis identified:
 - **Themes**: {heuristic_themes}
 
 ## Analysis Request
+
+**Special Note for Shallow PRs**: If this PR has minimal conversation or no linked issues, focus primarily on analyzing the file changes to understand the intent and implementation. Use the PR title and code changes to infer the problem being solved.
 
 Please provide a comprehensive analysis with the following structure. Be concise but thorough, focusing on actionable insights:
 

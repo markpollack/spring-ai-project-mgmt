@@ -95,10 +95,16 @@ def run_command(cmd: str, dry_run: bool = False, confirm: bool = True, cwd: Opti
 def check_backport_status(pr_number: str) -> bool:
     """Check if PR is approved for backport by looking at assessment file"""
     try:
-        # Look for backport assessment in context directory
-        context_dirs = list(Path(".").glob("runs/*/context/pr-" + pr_number))
+        # Look for backport assessment in context directory relative to script location
+        script_dir = Path(__file__).resolve().parent
+        context_dirs = list(script_dir.glob("runs/*/context/pr-" + pr_number))
         if not context_dirs:
-            context_dirs = list(Path(".").glob("context/pr-" + pr_number))
+            context_dirs = list(script_dir.glob("context/pr-" + pr_number))
+        
+        # Debug: print search paths if no context dirs found
+        if not context_dirs:
+            print_warning(f"No context directories found in {script_dir}/runs/*/context/pr-{pr_number}")
+            print_warning(f"Also checked {script_dir}/context/pr-{pr_number}")
         
         for context_dir in context_dirs:
             backport_file = context_dir / "backport-assessment.json"
@@ -158,7 +164,9 @@ def merge_workflow(pr_number: str, branch_name: str, auto: bool = False,
     
     # Step 3: Update main branch without switching
     print_step(3, total_steps, "Update main branch without leaving current branch")
-    success, output = run_command("git fetch origin main:main", dry_run, confirm, str(spring_ai_dir))
+    success, output = run_command("git fetch origin", dry_run, confirm, str(spring_ai_dir))
+    if success:
+        success, output = run_command("git branch -f main origin/main", dry_run, confirm, str(spring_ai_dir))
     if not success:
         print_error("Failed to update main branch")
         return False
