@@ -1,0 +1,102 @@
+```json
+[
+  {
+    "issue_number": 700,
+    "predicted_labels": [
+      {
+        "label": "enhancement",
+        "confidence": 0.95
+      },
+      {
+        "label": "help wanted",
+        "confidence": 0.85
+      }
+    ],
+    "explanation": "Clear enhancement request for JPMS (Java Platform Module System) support. The 'help wanted' label is already assigned and the issue requests adding automatic modules with future full module-info support."
+  },
+  {
+    "issue_number": 3659,
+    "predicted_labels": [
+      {
+        "label": "code cleanup",
+        "confidence": 0.95
+      },
+      {
+        "label": "type: backport",
+        "confidence": 0.90
+      },
+      {
+        "label": "openai",
+        "confidence": 0.85
+      }
+    ],
+    "explanation": "This is explicitly a backport of gh-3654 that removes redundant null check in OpenAiApi.Builder#apiKey method. Clear code cleanup and backport type with OpenAI component involvement."
+  },
+  {
+    "issue_number": 3526,
+    "predicted_labels": [
+      {
+        "label": "bug",
+        "confidence": 0.90
+      },
+      {
+        "label": "prompt management",
+        "confidence": 0.85
+      },
+      {
+        "label": "for: backport-to-1.0.x",
+        "confidence": 0.90
+      },
+      {
+        "label": "status: backported",
+        "confidence": 0.85
+      }
+    ],
+    "explanation": "Clear bug where SystemPromptTemplate.builder() returns PromptTemplate instead of SystemPromptTemplate, causing wrong message type creation. Related to prompt management system and has backport labels already assigned."
+  },
+  {
+    "issue_number": 1028,
+    "predicted_labels": [
+      {
+        "label": "bug",
+        "confidence": 0.85
+      },
+      {
+        "label": "vertex",
+        "confidence": 0.80
+      },
+      {
+        "label": "gcp",
+        "confidence": 0.75
+      },
+      {
+        "label": "embedding",
+        "confidence": 0.70
+      },
+      {
+        "label": "breaking",
+        "confidence": 0.65
+      }
+    ],
+    "explanation": "Bug where new Vertex AI embedding code prevents ChatModel instantiation even when embeddings aren't used. Affects Vertex AI/GCP integration and embedding functionality, with breaking change characteristics."
+  },
+  {
+    "issue_number": 3741,
+    "predicted_labels": [
+      {
+        "label": "bug",
+        "confidence": 0.90
+      },
+      {
+        "label": "type: backport",
+        "confidence": 0.90
+      },
+      {
+        "label": "code cleanup",
+        "confidence": 0.70
+      }
+    ],
+    "explanation": "Backport of gh-3729 fixing incorrect use of ClassUtils.isAssignable. Clear bug fix that's being backported, with some code cleanup aspects."
+  }
+]
+```

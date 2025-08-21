@@ -1,0 +1,443 @@
+[ {
+  "issue_number" : 3578,
+  "predicted_labels" : [ {
+    "label" : "bug",
+    "confidence" : 0.95
+  }, {
+    "label" : "type: backport",
+    "confidence" : 0.98
+  } ],
+  "explanation" : "This is explicitly labeled as a backport of a bug fix for infinite recursion in getMimeType method. Both 'bug' and 'type: backport' labels are clearly appropriate."
+}, {
+  "issue_number" : 1776,
+  "predicted_labels" : [ {
+    "label" : "enhancement",
+    "confidence" : 0.92
+  }, {
+    "label" : "RAG",
+    "confidence" : 0.88
+  }, {
+    "label" : "metadata filters",
+    "confidence" : 0.85
+  } ],
+  "explanation" : "Request for adding filter expression support to RetrievalAugmentationAdvisor. Clear enhancement related to RAG functionality with metadata filtering capabilities."
+}, {
+  "issue_number" : 953,
+  "predicted_labels" : [ {
+    "label" : "Observability",
+    "confidence" : 0.95
+  } ],
+  "explanation" : "Comprehensive proposal for observability features in Spring AI, explicitly focused on observability with detailed discussion of telemetry, metrics, and monitoring."
+}, {
+  "issue_number" : 1878,
+  "predicted_labels" : [ {
+    "label" : "tool/function calling",
+    "confidence" : 0.9
+  }, {
+    "label" : "Bedrock",
+    "confidence" : 0.88
+  }, {
+    "label" : "streaming",
+    "confidence" : 0.82
+  } ],
+  "explanation" : "Bug with Bedrock chat model not properly streaming tools when using Suppliers vs Functions. Involves tool calling, Bedrock provider, and streaming functionality."
+}, {
+  "issue_number" : 1707,
+  "predicted_labels" : [ {
+    "label" : "bug",
+    "confidence" : 0.85
+  }, {
+    "label" : "Observability",
+    "confidence" : 0.88
+  }, {
+    "label" : "streaming",
+    "confidence" : 0.8
+  } ],
+  "explanation" : "Bug report about streaming metrics not being captured correctly in observability system. Affects both observability and streaming functionality."
+}, {
+  "issue_number" : 3110,
+  "predicted_labels" : [ {
+    "label" : "bug",
+    "confidence" : 0.88
+  }, {
+    "label" : "MCP",
+    "confidence" : 0.92
+  } ],
+  "explanation" : "Bug with MCP server content path handling causing 404 errors. Clear MCP-related bug with specific technical details."
+}, {
+  "issue_number" : 2334,
+  "predicted_labels" : [ {
+    "label" : "bug",
+    "confidence" : 0.85
+  }, {
+    "label" : "watson",
+    "confidence" : 0.9
+  } ],
+  "explanation" : "Bug report that WatsonxAiChatModel is using wrong APIs (text/generation instead of text/chat). Clear Watson-specific bug."
+}, {
+  "issue_number" : 3219,
+  "predicted_labels" : [ {
+    "label" : "bug",
+    "confidence" : 0.88
+  }, {
+    "label" : "Chat Memory",
+    "confidence" : 0.9
+  }, {
+    "label" : "streaming",
+    "confidence" : 0.75
+  } ],
+  "explanation" : "Bug where VectorStoreChatMemoryAdvisor doesn't persist assistant responses in streaming mode. Affects chat memory and streaming functionality."
+}, {
+  "issue_number" : 1386,
+  "predicted_labels" : [ {
+    "label" : "bug",
+    "confidence" : 0.92
+  }, {
+    "label" : "ETL",
+    "confidence" : 0.85
+  } ],
+  "explanation" : "NullPointerException in TokenTextSplitter when using TextReader with ByteArrayResource. Clear ETL-related bug with specific stack trace."
+}, {
+  "issue_number" : 2105,
+  "predicted_labels" : [ {
+    "label" : "enhancement",
+    "confidence" : 0.88
+  }, {
+    "label" : "vector store",
+    "confidence" : 0.9
+  } ],
+  "explanation" : "Feature request for vector store API to delete documents using filter expressions. Clear enhancement to vector store functionality."
+}, {
+  "issue_number" : 845,
+  "predicted_labels" : [ {
+    "label" : "bug",
+    "confidence" : 0.85
+  }, {
+    "label" : "vector store",
+    "confidence" : 0.88
+  }, {
+    "label" : "redis",
+    "confidence" : 0.9
+  } ],
+  "explanation" : "Bug with Redis Vector Store exact similarity match returning empty results. Redis-specific vector store bug."
+}, {
+  "issue_number" : 883,
+  "predicted_labels" : [ {
+    "label" : "enhancement",
+    "confidence" : 0.85
+  }, {
+    "label" : "model client",
+    "confidence" : 0.78
+  }, {
+    "label" : "configuration",
+    "confidence" : 0.8
+  } ],
+  "explanation" : "Feature request for easy logging of LLM requests/responses similar to Langchain4j. Enhancement to model client configuration."
+}, {
+  "issue_number" : 2335,
+  "predicted_labels" : [ {
+    "label" : "enhancement",
+    "confidence" : 0.88
+  }, {
+    "label" : "chat options",
+    "confidence" : 0.85
+  }, {
+    "label" : "anthropic",
+    "confidence" : 0.9
+  } ],
+  "explanation" : "Feature request for HTTP header support in AnthropicChatOptions. Enhancement to Anthropic chat options functionality."
+}, {
+  "issue_number" : 1331,
+  "predicted_labels" : [ {
+    "label" : "bug",
+    "confidence" : 0.78
+  }, {
+    "label" : "advisors",
+    "confidence" : 0.82
+  } ],
+  "explanation" : "Security vulnerability in StringTemplate when using advisors with curly braces. Bug affecting advisor pattern with security implications."
+}, {
+  "issue_number" : 1591,
+  "predicted_labels" : [ {
+    "label" : "configuration",
+    "confidence" : 0.88
+  } ],
+  "explanation" : "Need to address NestedConfigurationProperties functionality removal. Configuration-related technical debt."
+}, {
+  "issue_number" : 1289,
+  "predicted_labels" : [ {
+    "label" : "documentation",
+    "confidence" : 0.95
+  }, {
+    "label" : "good first issue",
+    "confidence" : 0.9
+  } ],
+  "explanation" : "Simple typo fix for Anthropic 'Claude' spelling on Spring AI projects page. Documentation fix suitable for newcomers."
+}, {
+  "issue_number" : 1583,
+  "predicted_labels" : [ {
+    "label" : "bug",
+    "confidence" : 0.88
+  }, {
+    "label" : "anthropic",
+    "confidence" : 0.9
+  } ],
+  "explanation" : "Bug where Anthropic API error response body is not showing in stacktrace for stream() failures. Anthropic-specific bug."
+}, {
+  "issue_number" : 3115,
+  "predicted_labels" : [ {
+    "label" : "bug",
+    "confidence" : 0.85
+  }, {
+    "label" : "cassandra",
+    "confidence" : 0.92
+  } ],
+  "explanation" : "CassandraVectorStore configuration error with unknown profile 'spring-ai-updates'. Cassandra-specific configuration bug."
+}, {
+  "issue_number" : 1843,
+  "predicted_labels" : [ {
+    "label" : "bug",
+    "confidence" : 0.88
+  }, {
+    "label" : "tool/function calling",
+    "confidence" : 0.85
+  } ],
+  "explanation" : "Epic tracking usage metrics not accumulating correctly during tool calling across multiple chat models. Bug affecting tool calling functionality."
+}, {
+  "issue_number" : 2486,
+  "predicted_labels" : [ {
+    "label" : "bug",
+    "confidence" : 0.88
+  }, {
+    "label" : "MCP",
+    "confidence" : 0.92
+  } ],
+  "explanation" : "Multiple SSE connections and SYNC mode startup failure in McpClientAutoConfiguration. MCP-specific configuration bug."
+}, {
+  "issue_number" : 700,
+  "predicted_labels" : [ {
+    "label" : "enhancement",
+    "confidence" : 0.85
+  }, {
+    "label" : "help wanted",
+    "confidence" : 0.88
+  } ],
+  "explanation" : "Request for JPMS (Java Platform Module System) support. Enhancement that would benefit from community help."
+}, {
+  "issue_number" : 3659,
+  "predicted_labels" : [ {
+    "label" : "code cleanup",
+    "confidence" : 0.95
+  }, {
+    "label" : "type: backport",
+    "confidence" : 0.92
+  } ],
+  "explanation" : "Backport of refactoring to remove redundant null check in OpenAiApi.Builder. Code cleanup backport."
+}, {
+  "issue_number" : 3526,
+  "predicted_labels" : [ {
+    "label" : "bug",
+    "confidence" : 0.9
+  }, {
+    "label" : "prompt management",
+    "confidence" : 0.88
+  } ],
+  "explanation" : "Bug where SystemPromptTemplate builder returns PromptTemplate instead of SystemPromptTemplate, causing wrong message types. Prompt management bug."
+}, {
+  "issue_number" : 1028,
+  "predicted_labels" : [ {
+    "label" : "bug",
+    "confidence" : 0.88
+  }, {
+    "label" : "model client",
+    "confidence" : 0.82
+  } ],
+  "explanation" : "New Vertex AI Embedding functionality breaks existing ChatModel instantiation. Model client regression bug."
+}, {
+  "issue_number" : 3741,
+  "predicted_labels" : [ {
+    "label" : "bug",
+    "confidence" : 0.92
+  }, {
+    "label" : "type: backport",
+    "confidence" : 0.95
+  } ],
+  "explanation" : "Backport of bug fix for incorrect use of ClassUtils.isAssignable. Bug fix backport."
+}, {
+  "issue_number" : 576,
+  "predicted_labels" : [ {
+    "label" : "vector store",
+    "confidence" : 0.85
+  }, {
+    "label" : "design",
+    "confidence" : 0.75
+  } ],
+  "explanation" : "This issue discusses architectural alignment between CassandraVectorStoreAutoConfiguration and existing Spring Boot autoconfiguration patterns, specifically suggesting it should rely on CassandraAutoconfiguration like Neo4j and Elasticsearch implementations. This clearly maps to 'vector store' with high confidence due to the explicit mention of CassandraVectorStore, and 'design' with strong confidence as it addresses architectural consistency patterns."
+}, {
+  "issue_number" : 1882,
+  "predicted_labels" : [ {
+    "label" : "Bedrock",
+    "confidence" : 0.9
+  }, {
+    "label" : "enhancement",
+    "confidence" : 0.8
+  } ],
+  "explanation" : "This issue requests adding support for the new AWS Bedrock Nova models (Nova Micro, Nova Lite, Nova Pro, Nova Premier). This is clearly a 'Bedrock' issue with very high confidence as it specifically requests new Bedrock model support, and 'enhancement' with high confidence as it's requesting new functionality to be added to the existing Bedrock integration."
+}, {
+  "issue_number" : 1101,
+  "predicted_labels" : [ {
+    "label" : "vertex",
+    "confidence" : 0.9
+  }, {
+    "label" : "design",
+    "confidence" : 0.85
+  } ],
+  "explanation" : "This issue proposes consolidating separate Google Vertex AI boot starters (chat and embedding) into a single starter for consistency across the project. This maps to 'vertex' with very high confidence due to explicit mention of Google Vertex starters, and 'design' with high confidence as it addresses architectural consistency and starter consolidation patterns."
+}, {
+  "issue_number" : 2301,
+  "predicted_labels" : [ {
+    "label" : "MCP",
+    "confidence" : 0.95
+  }, {
+    "label" : "bug",
+    "confidence" : 0.9
+  } ],
+  "explanation" : "This issue reports a specific bug in MCP client auto configuration causing 'IllegalStateException: Multiple tools with the same name'. This is clearly an 'MCP' issue with very high confidence due to explicit mention of MCP client and the stack trace showing MCP-related classes, and 'bug' with very high confidence as it reports a specific runtime exception with reproduction steps."
+}, {
+  "issue_number" : 1202,
+  "predicted_labels" : [ {
+    "label" : "tool/function calling",
+    "confidence" : 0.85
+  }, {
+    "label" : "enhancement",
+    "confidence" : 0.8
+  }, {
+    "label" : "chat client",
+    "confidence" : 0.7
+  } ],
+  "explanation" : "This issue requests the ability to connect function calls with user prompts and assistant responses, particularly for chats with memory. This maps to 'tool/function calling' with high confidence as it specifically discusses function calls and their traceability, 'enhancement' with high confidence as it's requesting new functionality, and 'chat client' with moderate confidence as it mentions integration benefits for chat tools and message correlation."
+}, {
+  "issue_number" : 1329,
+  "predicted_labels" : [ {
+    "label" : "documentation",
+    "confidence" : 0.9
+  }, {
+    "label" : "openai",
+    "confidence" : 0.8
+  } ],
+  "explanation" : "This issue describes incorrect JavaDoc comments and missing @param documentation in OpenAiAudioApi and OpenAiApi constructors. Clear documentation issue specific to OpenAI APIs."
+}, {
+  "issue_number" : 2983,
+  "predicted_labels" : [ {
+    "label" : "embedding",
+    "confidence" : 0.85
+  }, {
+    "label" : "Bedrock",
+    "confidence" : 0.9
+  }, {
+    "label" : "enhancement",
+    "confidence" : 0.7
+  } ],
+  "explanation" : "This issue requests adding observability features to Bedrock embedding models. Maps to embedding and Bedrock labels with high confidence, and enhancement as it's a feature request."
+}, {
+  "issue_number" : 1307,
+  "predicted_labels" : [ {
+    "label" : "question",
+    "confidence" : 0.9
+  } ],
+  "explanation" : "This is a straightforward question asking about usage statistics differences between streaming and non-streaming methods. The brief body and questioning tone indicate a user inquiry rather than a bug report."
+}, {
+  "issue_number" : 3205,
+  "predicted_labels" : [ {
+    "label" : "MCP",
+    "confidence" : 0.95
+  }, {
+    "label" : "enhancement",
+    "confidence" : 0.8
+  }, {
+    "label" : "configuration",
+    "confidence" : 0.7
+  } ],
+  "explanation" : "This issue specifically requests adding a configuration option for MCP server request timeout in McpServerAutoConfiguration.java. Very clearly MCP-related with configuration enhancement."
+}, {
+  "issue_number" : 992,
+  "predicted_labels" : [ {
+    "label" : "question",
+    "confidence" : 0.8
+  }, {
+    "label" : "ollama",
+    "confidence" : 0.8
+  }, {
+    "label" : "tool/function calling",
+    "confidence" : 0.7
+  } ],
+  "explanation" : "This is a question about Qwen model support and function calling with Ollama. Maps to question, ollama, and tool/function calling labels based on the specific technologies and inquiry nature."
+}, {
+  "issue_number" : 3542,
+  "predicted_labels" : [ {
+    "label" : "vector store",
+    "confidence" : 0.95
+  }, {
+    "label" : "chromadb",
+    "confidence" : 0.92
+  }, {
+    "label" : "configuration",
+    "confidence" : 0.85
+  }, {
+    "label" : "enhancement",
+    "confidence" : 0.75
+  } ],
+  "explanation" : "This issue is specifically about ChromaDB vector store configuration, requesting the ability to override default tenant and database names through application properties. The issue clearly maps to 'chromadb' and 'vector store' labels with high confidence, plus 'configuration' and 'enhancement' as it's requesting new configuration options."
+}, {
+  "issue_number" : 2095,
+  "predicted_labels" : [ {
+    "label" : "dependencies",
+    "confidence" : 0.88
+  }, {
+    "label" : "enhancement",
+    "confidence" : 0.65
+  } ],
+  "explanation" : "This issue requests removing Spring Boot logging dependency to align with other 'non boot' projects like Spring Kafka. It's clearly about dependency management and represents an enhancement to make the project more modular."
+}, {
+  "issue_number" : 749,
+  "predicted_labels" : [ {
+    "label" : "structured output",
+    "confidence" : 0.9
+  }, {
+    "label" : "enhancement",
+    "confidence" : 0.75
+  }, {
+    "label" : "ETL",
+    "confidence" : 0.7
+  } ],
+  "explanation" : "This issue is about improving JSON parsing to handle both arrays and objects dynamically. It relates to structured output processing and data transformation (ETL), representing an enhancement to existing JSON parsing capabilities."
+}, {
+  "issue_number" : 343,
+  "predicted_labels" : [ {
+    "label" : "Bedrock",
+    "confidence" : 0.95
+  }, {
+    "label" : "help wanted",
+    "confidence" : 0.8
+  }, {
+    "label" : "enhancement",
+    "confidence" : 0.75
+  }, {
+    "label" : "chat client",
+    "confidence" : 0.65
+  } ],
+  "explanation" : "This issue requests implementing Bedrock Jurassic ChatClient support. It's clearly related to Amazon Bedrock integration and represents new functionality for the chat client. The note about not supporting streaming indicates it's a help wanted enhancement."
+}, {
+  "issue_number" : 1345,
+  "predicted_labels" : [ {
+    "label" : "kotlin",
+    "confidence" : 0.85
+  }, {
+    "label" : "bug",
+    "confidence" : 0.75
+  }, {
+    "label" : "chat client",
+    "confidence" : 0.7
+  } ],
+  "explanation" : "This issue describes a problem with Kotlin data class deserialization in ChatClient's entity method, where it works with Java records but fails with Kotlin data classes. This is clearly a Kotlin-specific bug in the chat client functionality."
+} ]

@@ -1,0 +1,176 @@
+[
+  {
+    "issue_number": 3578,
+    "title": "Fix infinite recursion in `getMimeType(Path)` method",
+    "body": "Backport of gh-3576",
+    "author": "spring-builds",
+    "state": "CLOSED",
+    "created_at": "2025-06-17T22:49:33Z",
+    "closed_at": "2025-06-17T22:49:34Z",
+    "days_open": 0,
+    "labels": [
+      "bug",
+      "type: backport"
+    ],
+    "assignees": [
+      "spring-builds"
+    ],
+    "milestone": "1.0.1",
+    "comment_count": 1,
+    "comment_authors": [
+      "spring-builds"
+    ],
+    "has_reactions": false,
+    "metrics": {
+      "comment_count": 1,
+      "label_count": 2,
+      "assignee_count": 1,
+      "body_length": 19,
+      "has_reactions": false
+    },
+    "normalized_labels": [
+      "bug",
+      "type: backport"
+    ]
+  },
+  {
+    "issue_number": 1776,
+    "title": "Prompt-time filter expressions for RetrievalAugmentationAdvisor/VectorStoreDocumentRetriever",
+    "body": "As `RetrievalAugmentationAdvisor` is expected to replace `QuestionAnswerAdvisor`, it should also support `FILTER_EXPRESSION` the way that `QuestionAnswerAdvisor` does.\r\n\r\nThis makes it possible to configure the advisor as a default advisor when creating a `ChatClient` and then plug in a filter expression for searching the vector store when submitting a prompt.\r\n\r\nI suspect, based on how this works with `RetrievalAugmentationAdvisor` that the change required would be made to `VectorStoreDocumentRetriever`, as that's the place and implementation of `DocumentRetriever` that would be able to make use of the expression. ",
+    "author": "habuma",
+    "state": "CLOSED",
+    "created_at": "2024-11-20T05:07:26Z",
+    "closed_at": "2025-03-10T12:20:56Z",
+    "days_open": 110,
+    "labels": [
+      "enhancement",
+      "RAG",
+      "metadata filters"
+    ],
+    "assignees": [
+      "ThomasVitale"
+    ],
+    "milestone": "1.0.0-M7",
+    "comment_count": 3,
+    "comment_authors": [
+      "ThomasVitale",
+      "habuma",
+      "marcushellberg"
+    ],
+    "has_reactions": true,
+    "metrics": {
+      "comment_count": 3,
+      "label_count": 3,
+      "assignee_count": 1,
+      "body_length": 623,
+      "has_reactions": true
+    },
+    "normalized_labels": [
+      "rag",
+      "enhancement",
+      "metadata filters"
+    ]
+  },
+  {
+    "issue_number": 953,
+    "title": "[Observability] Initial Observability for Models",
+    "body": "In the GenAI ecosystem, many solutions have been introduced that are centered around the concepts of observability and evaluation of Large Language Models. Unlike more traditional applications, **observability becomes even more a concern to be addressed already as part of the local development workflow**, because it enables refining prompts and tuning the model integration to fit the case at hand. As such, I think it would be really great to start introducing some basic observability features in Spring AI before cutting the 1.0.0 GA release. \r\n\r\n### Background\r\n\r\nFrom a Spring AI perspective, I believe it's useful to **categorise the available GenAI observability products** as follows:\r\n\r\n* **Products relying on OpenTelemetry** to standardize the instrumentation, collection, and visualisation of telemetry data (traces, metrics, logs, and more). Examples: [OpenLit](https://openlit.io), [OpenLLMetry](https://www.traceloop.com/openllmetry)/[TraceLoop](https://www.traceloop.com), [Arize Phoenix](https://docs.arize.com/phoenix), [LangTrace](https://langtrace.ai).\r\n* **Products relying on proprietary/custom strategies** for instrumentation, collection, and visualisation of telemetry data. Examples: [LangSmith](https://www.langchain.com/langsmith), [LangFuse](https://langfuse.com), [Lunary](https://lunary.ai).\r\n\r\nConsidering the consolidation around OpenTelemetry (the industry standard for observability) and the many integration possibilities with the rest of the ecosystem, I would recommend drawing inspiration from the first group of products to understand better the types of features needed for observability, with a possible goal to integrate them with Spring AI at some point. There is also work in progress to agree on [**semantic conventions for GenAI applications**](https://opentelemetry.io/docs/specs/semconv/gen-ai/llm-spans/) in the OpenTelemetry project. Those conventions are still under active development, but they are being already experimentally adopted in products like OpenLit and OpenLLMetry/TraceLoop. A similar attempt of agreeing on standard naming conventions is also brought forward within the [OpenInference](https://github.com/Arize-ai/openinference/tree/main/python/openinference-semantic-conventions) group.\r\n\r\n### Context\r\n\r\nWhat does it mean observing an LLM-powered applications? There are many use cases, going from more general observability to specific evaluation scenarios. For starters, I want to focus on the fundamentals, as also highlighted in this [blog post](https://opentelemetry.io/blog/2024/llm-observability/) from OpenTelemetry. In particular, what kind of telemetry do we need?\r\n\r\n#### LLM Request\r\n\r\n* Provider (mistral)\r\n* Operation (chat.completion)\r\n* Model (open-mistral-7b)\r\n* Temperature (0.7)\r\n* Top P (0)\r\n* Prompt content (sensitive data, so to be handled optionally and separately)\r\n\r\n#### LLM Response\r\n\r\n* Model (open-mistral-7b-0118999)\r\n* Finish reason (stop)\r\n* Used prompt tokens (420)\r\n* Used completion tokens (42)\r\n* Completion content (sensitive data, so to be handled optionally and separately)\r\n\r\n### Proposal\r\n\r\nMy suggestion for addressing observability in Spring AI is to split the problems into smaller tasks.\r\n\r\n1. Instrumenting the code in Spring AI to allow collecting telemetry data for model integrations, vector stores, and higher-level AI workflows.\r\n2. Configuring the export of telemetry data to comply with specific conventions and allow integrations with different platforms.\r\n\r\nIn particular, I propose to start **focusing on the models** to refine and validate the solution, before extending the scope to vector stores and higher-level AI workflows.\r\n\r\n[**Micrometer**](https://micrometer.io) allows to instrument the code once and export telemetry both via OpenZipkin and OpenTelemetry, and offers good APIs to plug in different semantic conventions to customise the exported telemetry. So it aligns with how the rest of the Spring ecosystem is instrumented, but it will also allow to integrate with all those LLM Observability solutions that follow the OpenTelemetry standard. Furthermore, interested vendors can always implement their custom exporters and hook them into the Micrometer-based instrumentations, even though they rely on proprietary data formats and protocols. There is an opportunity here for enterprise solutions.\r\n\r\nWe can split this task further into two activities:\r\n\r\n* **Spring AI Observations**: APIs and default implementations for modelling observations related to models and vector stores.\r\n* **Spring AI Instrumentation**: using the foundation defined in the previous point, instrument the actual code to generate the observations based on Micrometer.\r\n\r\n### Spring AI Observations\r\n\r\nFirst, I suggest to introduce an API for gathering the observation context for model integrations:\r\n\r\n* The `ModelObservationContext` extends from `AiObservationContext` and will be the foundation of any machine learning model observation context. This is inspired by the `RequestReplySenderContext` used in Spring for observing HTTP interactions.\r\n\r\nI'm focusing on models in this proposal, but observations for vector store would follow a similar path.\r\n\r\nThen, I suggest introducing the following entities, as also shown in the diagram. For each model type:\r\n\r\n* A **`<Type>ModelObservationContext`** extending `ModelObservationContext` to hold all the data related to these model requests and responses that we are interested in possibly use in the telemetry data. The context is defined in terms of a request and a response, which in the case of Spring AI can be the specific implementations for the given model of **`ModelRequest`** and **`ModelResponse`**. Additionally, we need to provide additional contextual data via a **`ModelOptions`** instance. More details about this in the instrumentation section.\r\n* A default implementation of a **`<Type>ModelObservationConvention`** that will determine how to use the contextual data to build low cardinality and high cardinality key-value pairs, that will ultimately end up being exported as metrics and traces.\r\n\r\nBased on the specific needs of a certain model, an additional implementation of an **`ObservationHandler`** can be defined to customise the way metrics and traces are produced.\r\n\r\nThere can also be implementations of **`ObservationFilter`** to optionally include prompt and completion content in the telemetry. This is where we can fulfil the feature request for logging prompts and completions, as I mentioned in https://github.com/spring-projects/spring-ai/issues/512#issuecomment-2185096414.\r\n\r\nThe default `<Type>ModelObservationConvention` implementation can be replaced with a different one to adopt different semantic conventions, for example to adopt the standard OpenTelemetry conventions or to integrate better with solutions like OpenLit or OpenLLMetry. I would keep that part out of scope since it's an area under active development and things will change very often. I imagine having an external library providing those experimental conventions (I'm actually drafting something in that direction).\r\n\r\n![Untitled-2024-06-25-2327-4](https://github.com/spring-projects/spring-ai/assets/8523418/d06b5fc6-0fc8-4c0d-b22a-2570376c4d38)\r\n\r\n### Spring AI Instrumentation\r\n\r\nAfter introducing all the necessary APIs for model-related Observations, we need to instrument each `Model` implementations in Spring AI.\r\n\r\nThere are 3 main alternative for where to apply the instrumentation. I'll use chat models and OpenAI as an example. Personally, I would go with option 2 because option 1 doesn't fulfil the requirements of LLM observability and evaluation scenarios (most contextual data is missing from the telemetry) whereas option 3 has a high cost in terms of implementation, maintenance, and efficiency.\r\n\r\n#### Option 1: `ChatModel` interface\r\n\r\nIf we consider the `call()` method in the `ChatModel` interface, we could think of defining the instrumentation in a (newly-defined) abstract class or via AOP.\r\n\r\nPros:\r\n\r\n* For each model type, the instrumentation is defined in one single place (`AbstractChatModel`) so that all future `ChatModel` implementations will be instrumented automatically and out-of-the-box.\r\n* The observation context can be based on the generic input and output objects as defined in the `call()` method (`Prompt` and `ChatResponse`).\r\n* The chained model interactions happening during function calling are correctly observed once https://github.com/spring-projects/spring-ai/pull/1040 or a similar solution is delivered.\r\n\r\nCons:\r\n\r\n* Most of the contextual data needed for the main LLM observability and evaluation purposes are not included in the telemetry data because not available by only looking at the `ChatModel` interface for the `call()` method. The input object (`Prompt`) contains a `ChatOptions` object used to pass some customizations for the chat request, but those are not the final options used in the request. As part of the each `ChatModel` implementation, the input `ChatOptions` object is merged with the provider-specific default options. This point alone makes this solution not feasible.\r\n\r\n#### Option 2: Provider-specific `ChatModel` implementation\r\n\r\nIf we consider the `call()` method in each `ChatModel` implementation, we could think of defining the instrumentation in each of them.\r\n\r\nPros:\r\n\r\n* The observation context can be based on generic framework objects as processed in the `call()` method (`Prompt`, `ChatOptions`, and `ChatResponse`).\r\n* The observation context includes all the data needed for the main LLM observability and evaluation purposes, including the final options included in the request to the model service (model name, temperature, top p, top k, frequency penalty, and so on).\r\n* The chained model interactions happening during function calling are correctly observed once https://github.com/spring-projects/spring-ai/pull/1040 or a similar solution is delivered.\r\n\r\nCons:\r\n\r\n* The instrumentation cannot be applied via abstract class or AOP, but it needs to be included in each `ChatModel` implementation. Though, it's only a few lines of code, so I don't see this as a strong con.\r\n\r\nThis option is shown in the diagram. We populate a `ChatModelObservationContext` from the input and output of the `call()` method in `OpenAiChatModel` ( `Prompt` and `ChatResponse`), but also the OpenAI chat-specific options extracted from the internal `ChatCompletionRequest` object.\r\n\r\n#### Option 3: Provider-specific `Api` implementation\r\n\r\nWe could go a level lower and instrument based on the provider-specific request and response objects in each `ChatModel` implementation (imagining to have a provider-specific method like `doChatCompletion()` which is currently implemented in the models that support functions).\r\n\r\nPros:\r\n\r\n* The observation context includes all the data needed for the main LLM observability and evaluation purposes, including the final options included in the request to the model service (model name, temperature, top p, top k, frequency penalty, and so on).\r\n* Since the instrumentation is applied very close to the provider API, every single model call is instrumented, including all the intermediate calls necessary in scenarios of function calling.\r\n\r\nCons:\r\n\r\n* The instrumentation cannot be applied via abstract class or AOP, but it needs to be included in each `ChatModel` implementation. Though, it's only a few lines of code, so I don't see this as a strong con.\r\n* The observation context cannot be based on generic framework objects ( such as `Prompt`, `ChatOptions`, and `ChatResponse`). Instead, for each model implementation, we need to work with provider-specific objects. This increases a lot the initial implementation cost, but also the maintenance cost. It kind of defies all the benefits introduced by the nice abstractions in Spring AI.\r\n* Data from the provider-specific requests and responses end up being extracted twice. One time for the observation context and one time to wrap the information in the Spring AI abstractions returned by the `ChatModel` interface. Overall, the result is much more code and less efficient implementation.\r\n\r\n![Untitled-2024-06-25-2327-5](https://github.com/spring-projects/spring-ai/assets/8523418/848f75c4-279d-47b4-892f-c48b0685f36c)\r\n\r\nFinally, we can introduce auto-configuration to pass an optional `ObservationRegistry` to `OpenAiChatModel` that will enable the instrumentation. And we can also define optional beans controlled via configuration properties, for example the `ObservationFilter`s for including prompt and completion content into the telemetry.\r\n\r\n### Discussion\r\n\r\nI'm looking forward to hearing from you with some feedback and thoughts regarding this proposal. In particular, @markpollack and @tzolov, what do you think? Also, the Micrometer team might have some inputs about this and perhaps suggestions on how to get a base foundation to be used across the Java ecosystem as well. @marcingrzejszczak\r\n\r\nI have [opened a WIP pull request](https://github.com/spring-projects/spring-ai/pull/954) to present a possible implementation of some of the ideas I shared above. For now, I focused mostly on traces and metrics for chat, embedding and image models (OpenAI as an example). If you'd like to give it a try, I prepared [a simple app](https://github.com/ThomasVitale/spring-ai-labs/tree/main/spring-ai-observability-simple) to manually verify the observations exported via OpenTelemetry.\r\n\r\nI've been doing more experiments and you can see some of them in [this other project](https://github.com/ThomasVitale/spring-ai-labs/tree/main/spring-ai-observability-experiments), but it's very messy and outdated, so don't spend too much time on it :) There I tried the semantic convention customisation and integration with OpenLit and OpenLLMetry. I also started a discussion within the OpenLit project around some ideas that will make it more straightforward to have Spring AI integrated with that solution, all centered around the OpenTelemetry standardisation (https://github.com/openlit/openlit/issues/300 and https://github.com/openlit/openlit/issues/299).\r\n\r\n#### Example: Micrometer + OpenTelemetry + Grafana (default conventions)\r\n\r\n<img width=\"1440\" alt=\"Screenshot 2024-06-26 at 00 47 19\" src=\"https://github.com/spring-projects/spring-ai/assets/8523418/87ea83ad-62f0-41b5-9163-0c882658a7a7\">\r\n\r\n#### Example: Micrometer + OpenTelemetry + OpenLit (custom conventions)\r\n\r\n<img width=\"1440\" alt=\"Screenshot 2024-06-26 at 01 01 17\" src=\"https://github.com/spring-projects/spring-ai/assets/8523418/13956bf8-4333-4dcf-8651-3348ec5add98\">\r\n\r\n<img width=\"1440\" alt=\"Screenshot 2024-06-26 at 01 01 34\" src=\"https://github.com/spring-projects/spring-ai/assets/8523418/ad183bd0-79ff-4c9e-bae8-71e03956ea0b\">\r\n\r\n",
+    "author": "ThomasVitale",
+    "state": "CLOSED",
+    "created_at": "2024-06-25T23:02:19Z",
+    "closed_at": "2024-08-02T15:54:50Z",
+    "days_open": 37,
+    "labels": [
+      "Observability"
+    ],
+    "assignees": [],
+    "milestone": null,
+    "comment_count": 6,
+    "comment_authors": [
+      "ThomasVitale",
+      "radhakrishna67",
+      "tzolov"
+    ],
+    "has_reactions": true,
+    "metrics": {
+      "comment_count": 6,
+      "label_count": 1,
+      "assignee_count": 0,
+      "body_length": 14783,
+      "has_reactions": true
+    },
+    "normalized_labels": [
+      "observability"
+    ]
+  },
+  {
+    "issue_number": 1878,
+    "title": "Bedrock/Converse Chat Model Does not Properly Stream Tools When Using Suppliers vs Functions",
+    "body": "**Bug description**\r\nWhen attempting to use a `tools` along with streaming, I am using a java.util.function.Supplier as my FunctionCallback (vs a java.util.function.Function); I am using BedrockProxyChatModel as my ChatModel.\r\n\r\nThe initial bedrock LLM response correctly selects my Supplier as the tool choice, however to tool is never called by Spring AI.  This appears to only happen with Suppliers;  java.util.function.Function works as expected.\r\n\r\nWhile debugging, the issue a manifested in the `isToolCall` of the org.springframework.ai.chat.model.AbstractToolCallSupport class when after the following debug message.\r\n```\r\nDEBUG 34272 ---  [tyEventLoop-2-2] o.s.a.b.converse.BedrockProxyChatModel   : Received converse stream output:MessageStopEvent(StopReason=tool_use)\r\n```\r\n\r\nThe `chatResponse` contains no `generations`, therefor the tool is not executed.\r\n```\r\n\tprotected boolean isToolCall(ChatResponse chatResponse, Set<String> toolCallFinishReasons) {\r\n\t\tAssert.isTrue(!CollectionUtils.isEmpty(toolCallFinishReasons), \"Tool call finish reasons cannot be empty!\");\r\n\t\tif (chatResponse == null) {\r\n\t\t\treturn false;\r\n\t\t}\r\n\t\tvar generations = chatResponse.getResults();\r\n\t\tif (CollectionUtils.isEmpty(generations)) {\r\n\t\t\treturn false;\r\n\t\t}\r\n\t\treturn generations.stream().anyMatch(g -> isToolCall(g, toolCallFinishReasons));\r\n\t}\r\n```\r\n\r\n\r\n\r\n**Environment**\r\nThis was encountered using spring-ai M4 along with Java 21.\r\n\r\n**Steps to reproduce**\r\nThe following is an excerpt from a trivial SpringBoot application that can reproduce the problem when Spring AI is configured use the Bedrock/Converse chat models.  It includes a very simple System.out to view the output.\r\n\r\n```\r\n\t@Bean\r\n\tpublic CommandLineRunner commandLineRunner(ChatClient chatClient) {\r\n\t\t\r\n\t\treturn (args) -> {\r\n\t\t\t\r\n            FunctionCallback.Builder builder =\r\n                    FunctionCallback.builder();\r\n            \r\n            FunctionCallback functionCallBack = builder.description(\"Get the weather\")\r\n            .function(\"weather\", new WeatherService())\r\n            .build();\r\n            \r\n\t\t\t\r\n\t\t\tChatClientRequestSpec spec = chatClient.prompt();\r\n\t\t\t\r\n\t\t\tspec.functions(functionCallBack).user(\"What's the weather like\").stream().chatResponse()\r\n\t\t\t.doOnNext(resp -> {\r\n\t\t\t\tif (resp.getResult() != null)\r\n\t\t\t\t\tSystem.out.println(resp.getResult().getOutput().getContent());\r\n\t\t\t\t}).collectList().block();\t\t\t\r\n\r\n\t\t};\r\n\t}\r\n\t\r\n\tpublic static class WeatherService implements Supplier<WeatherService.Response> {\r\n\r\n\t\tpublic record Response(double temp) {}\r\n\t\r\n\t\tpublic Response get() {\r\n\t\t\treturn new Response(30.0);\r\n\t\t}\r\n\t\t\r\n\t}\r\n```\r\n\r\n**Expected behavior**\r\nI expect an output something similar to \"The current weather is 30 degrees\".\r\n\r\n**Minimal Complete Reproducible example**\r\nSee the `steps to reproduce` for a code sample.\r\n",
+    "author": "gm2552",
+    "state": "CLOSED",
+    "created_at": "2024-12-05T20:31:22Z",
+    "closed_at": "2025-06-19T21:13:12Z",
+    "days_open": 196,
+    "labels": [
+      "tool/function calling",
+      "Bedrock",
+      "status: backported"
+    ],
+    "assignees": [
+      "tzolov"
+    ],
+    "milestone": "1.1.x",
+    "comment_count": 4,
+    "comment_authors": [
+      "maschnetwork",
+      "stardif101",
+      "tzolov"
+    ],
+    "has_reactions": true,
+    "metrics": {
+      "comment_count": 4,
+      "label_count": 3,
+      "assignee_count": 1,
+      "body_length": 2825,
+      "has_reactions": true
+    },
+    "normalized_labels": [
+      "tool/function calling",
+      "bedrock"
+    ]
+  },
+  {
+    "issue_number": 1707,
+    "title": "Streaming metrics not being captured",
+    "body": "Tested this with the latest snapshot.\r\n\r\nI noticed that most of the low-cardinality tags for the \"spring.ai.chat.client\" metric are the same regardless of the kind of request. But the one that should vary a little is \"spring.ai.chat.client.stream\", which I'd assume would be true if making a streaming request and false if making a normal chat request.\r\n\r\nBut, I created a Spring AI app with a mix of streaming and non-streaming requests and I only ever see \"false\" for \"spring.ai.chat.client.stream\". It's never true. What's more, I set it up to always send streaming requests and the metric is never populated at all.\r\n\r\nIt seems that this is a bug.",
+    "author": "habuma",
+    "state": "CLOSED",
+    "created_at": "2024-11-09T22:12:36Z",
+    "closed_at": "2024-11-10T21:19:25Z",
+    "days_open": 0,
+    "labels": [
+      "Observability",
+      "streaming"
+    ],
+    "assignees": [],
+    "milestone": null,
+    "comment_count": 2,
+    "comment_authors": [
+      "habuma",
+      "tzolov"
+    ],
+    "has_reactions": false,
+    "metrics": {
+      "comment_count": 2,
+      "label_count": 2,
+      "assignee_count": 0,
+      "body_length": 651,
+      "has_reactions": false
+    },
+    "normalized_labels": [
+      "streaming",
+      "observability"
+    ]
+  }
+]

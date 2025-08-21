@@ -1,0 +1,122 @@
+[ {
+  "issue_number" : 3578,
+  "predicted_labels" : [ {
+    "label" : "bug",
+    "confidence" : 0.95
+  }, {
+    "label" : "type: backport",
+    "confidence" : 0.9
+  } ],
+  "explanation" : "This is clearly a bug fix for infinite recursion in getMimeType method, explicitly labeled as a backport of gh-3576."
+}, {
+  "issue_number" : 1776,
+  "predicted_labels" : [ {
+    "label" : "enhancement",
+    "confidence" : 0.85
+  }, {
+    "label" : "RAG",
+    "confidence" : 0.9
+  }, {
+    "label" : "metadata filters",
+    "confidence" : 0.8
+  } ],
+  "explanation" : "Enhancement request for RetrievalAugmentationAdvisor to support filter expressions, clearly relates to RAG and metadata filtering functionality."
+}, {
+  "issue_number" : 953,
+  "predicted_labels" : [ {
+    "label" : "Observability",
+    "confidence" : 0.95
+  }, {
+    "label" : "enhancement",
+    "confidence" : 0.8
+  } ],
+  "explanation" : "Comprehensive proposal for implementing observability features in Spring AI models, with detailed technical specifications for telemetry and monitoring."
+}, {
+  "issue_number" : 1878,
+  "predicted_labels" : [ {
+    "label" : "tool/function calling",
+    "confidence" : 0.9
+  }, {
+    "label" : "Bedrock",
+    "confidence" : 0.85
+  }, {
+    "label" : "bug",
+    "confidence" : 0.8
+  }, {
+    "label" : "streaming",
+    "confidence" : 0.75
+  } ],
+  "explanation" : "Bug with Bedrock chat model not properly streaming tools when using Suppliers vs Functions, affecting tool/function calling and streaming functionality."
+}, {
+  "issue_number" : 1707,
+  "predicted_labels" : [ {
+    "label" : "Observability",
+    "confidence" : 0.85
+  }, {
+    "label" : "streaming",
+    "confidence" : 0.8
+  }, {
+    "label" : "bug",
+    "confidence" : 0.75
+  } ],
+  "explanation" : "Bug report about streaming metrics not being properly captured in observability system, affecting both streaming and observability functionality."
+}, {
+  "issue_number" : 3110,
+  "predicted_labels" : [ {
+    "label" : "MCP",
+    "confidence" : 0.95
+  }, {
+    "label" : "bug",
+    "confidence" : 0.9
+  }, {
+    "label" : "configuration",
+    "confidence" : 0.75
+  } ],
+  "explanation" : "Issue describes a specific MCP (Model Control Protocol) server configuration problem where the content path works for GET requests but fails with 404 for POST requests to /mcp/message endpoint. Clear bug with detailed reproduction steps."
+}, {
+  "issue_number" : 2334,
+  "predicted_labels" : [ {
+    "label" : "watson",
+    "confidence" : 0.95
+  }, {
+    "label" : "bug",
+    "confidence" : 0.85
+  } ],
+  "explanation" : "Issue clearly describes WatsonxAiChatModel using wrong API endpoints - using text/generation instead of text/chat. This is a Watson-specific bug with clear expected behavior."
+}, {
+  "issue_number" : 3219,
+  "predicted_labels" : [ {
+    "label" : "Chat Memory",
+    "confidence" : 0.95
+  }, {
+    "label" : "advisors",
+    "confidence" : 0.85
+  }, {
+    "label" : "bug",
+    "confidence" : 0.8
+  }, {
+    "label" : "Bedrock",
+    "confidence" : 0.7
+  } ],
+  "explanation" : "Issue describes VectorStoreChatMemoryAdvisor not persisting assistant responses with Bedrock streaming. Clear chat memory and advisor problem with detailed investigation of the after() method not being called."
+}, {
+  "issue_number" : 1386,
+  "predicted_labels" : [ {
+    "label" : "ETL",
+    "confidence" : 0.95
+  }, {
+    "label" : "bug",
+    "confidence" : 0.9
+  } ],
+  "explanation" : "Issue describes NullPointerException in TokenTextSplitter when using TextReader with ByteArrayResource. Clear ETL/text processing bug with stack trace showing the problem in TextSplitter.createDocuments."
+}, {
+  "issue_number" : 2105,
+  "predicted_labels" : [ {
+    "label" : "vector store",
+    "confidence" : 0.95
+  }, {
+    "label" : "missing feature",
+    "confidence" : 0.8
+  } ],
+  "explanation" : "Issue requests a new API for deleting documents by filter expression in vector stores. This is clearly a vector store feature request for missing functionality."
+} ]

@@ -1,0 +1,60 @@
+Please analyze these GitHub issues and classify them:
+
+Issue #700
+Title: JPMS
+Body: please add jpms support, at least automatic modules for now. However, this issue or another issue should be added for full module-info at sometime in the future. Referencing this upstream spring issue (specifically comment) which shows all of the dependencies that could be included via the code generator https://github.com/spring-projects/spring-framework/issues/18079#issuecomment-2087396680
+Current Labels: ["enhancement","help wanted"]
+
+Issue #3659
+Title: [Refactor] Remove redundant null check in OpenAiApi.Builder#apiKey(String)
+Body: Backport of gh-3654
+Current Labels: ["code cleanup","type: backport"]
+
+Issue #3526
+Title: Invalid message type created when using SystemPromptTemplate builder
+Body: **Bug description**
+When using `SystemPromptTemplate` builder, it's expected that an instance of `SystemPromptTemplate` is being built, not `PromptTemplate`. However, currently an instance of `PromptTemplate` is returned. As a result, when `createMessage` is called, it creates `UserMessage` instead of `SystemMessage`:
+
+**Environment**
+Spring AI 1.0.0
+
+**Steps to reproduce**
+Here's how the issue can be reproduced:
+
+```java
+var promptTemplate = SystemPromptTemplate
+        .builder()
+        .template("template")
+        .build();
+
+System.out.println(promptTemplate.getClass());
+System.out.println(promptTemplate.createMessage().getClass());
+```
+
+**Expected behavior**
+It is expected that a builder creates an instance of `SystemPromptTemplate` so that when `createMessage` is called, an instance of `SystemMessage` is created.
+
+Current Labels: ["prompt management","for: backport-to-1.0.x","status: backported"]
+
+Issue #1028
+Title: New Vertex AI Embedding functionality breaks existing code
+Body: New code for Vertex embeddings prevents the ChatModel to be instantiated due to missing configuration for embeddings, even if the code does not leverage embeddings.
+https://docs.spring.io/spring-ai/reference/api/embeddings/vertexai-embeddings-text.html
+
+Sample code: simple repro
+https://github.com/GoogleCloudPlatform/serverless-production-readiness-java-gcp/tree/main/ai-patterns/spring-ai-quotes
+
+Can be bypassed for now by adding the embedding started to the pom.xml and embedding project and location to the application properties. please see the image below
+![image](https://github.com/spring-projects/spring-ai/assets/20207377/47805fa7-bea9-44b6-a89a-159e632667ab)
+
+Thank you
+
+
+Current Labels: ["bug","model client"]
+
+Issue #3741
+Title: Incorrect use of ClassUtils.isAssignable
+Body: Backport of gh-3729
+Current Labels: ["bug","type: backport"]
+
+Please respond with a simple JSON array containing classifications for each issue.

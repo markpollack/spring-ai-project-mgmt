@@ -1,0 +1,667 @@
+[ {
+  "issue_number" : 1536,
+  "text_hash" : "a3c90a5203850392a83695279268d991d602de629ad6ebc1d3a4504fb1964484",
+  "code_block_count" : 0,
+  "char_len" : 349,
+  "token_len" : 87
+}, {
+  "issue_number" : 1028,
+  "text_hash" : "86a3cb32b911a85fe27e99dedd0d66f3fc982df12ce656d34541188c42a0db44",
+  "code_block_count" : 0,
+  "char_len" : 742,
+  "token_len" : 185
+}, {
+  "issue_number" : 1543,
+  "text_hash" : "7be7120edadd39dae751bebcf954477d961898983304089efaa5b3f5c4b7d7f9",
+  "code_block_count" : 0,
+  "char_len" : 382,
+  "token_len" : 95
+}, {
+  "issue_number" : 1289,
+  "text_hash" : "ebea5cff3c63d46dfd8b86ea16120cd462eca7306a74a0838e97f7e7a4729352",
+  "code_block_count" : 0,
+  "char_len" : 439,
+  "token_len" : 109
+}, {
+  "issue_number" : 3593,
+  "text_hash" : "ea031cdee542695fc5396c81b3ca5fc6418f8a7aa830bc6622f0ade4367bcc61",
+  "code_block_count" : 0,
+  "char_len" : 93,
+  "token_len" : 23
+}, {
+  "issue_number" : 1548,
+  "text_hash" : "daca6946a15bb94003b4960d50d3031bec9ccefc8ce1a649b372e92f8295b706",
+  "code_block_count" : 0,
+  "char_len" : 967,
+  "token_len" : 241
+}, {
+  "issue_number" : 526,
+  "text_hash" : "d58726085b0566de6dce8d1225e6b0bb45656b0391a4c76011f9e54f2270ee28",
+  "code_block_count" : 1,
+  "char_len" : 803,
+  "token_len" : 200
+}, {
+  "issue_number" : 3086,
+  "text_hash" : "08365e933bf231e37ca2d004d835399c7937fb3375088878685ecd7d780ad53a",
+  "code_block_count" : 2,
+  "char_len" : 2138,
+  "token_len" : 534
+}, {
+  "issue_number" : 3092,
+  "text_hash" : "844830ab6d287d2eb69e013ac8ef840901881e9a1cd80c2f2b05c345d3f736c1",
+  "code_block_count" : 0,
+  "char_len" : 105,
+  "token_len" : 26
+}, {
+  "issue_number" : 1307,
+  "text_hash" : "7a6075bbf0ac1aaa6c21ac4cf8054b1f0b1143ffc8e302eb867575330da515e5",
+  "code_block_count" : 0,
+  "char_len" : 198,
+  "token_len" : 49
+}, {
+  "issue_number" : 2334,
+  "text_hash" : "9c5eeb9db893d03bbd3ea8b9516de06f46c15079ae9ca0acb48f2e18e62cc74a",
+  "code_block_count" : 1,
+  "char_len" : 1062,
+  "token_len" : 265
+}, {
+  "issue_number" : 2335,
+  "text_hash" : "c02ca13743be8518827d05677382b64261948150a2e392d2825ba47da22bc9c3",
+  "code_block_count" : 1,
+  "char_len" : 524,
+  "token_len" : 131
+}, {
+  "issue_number" : 2337,
+  "text_hash" : "b542f45ef849f9ca42a4d9ff32cb6cbed8ed77a83a046704b851f7c771adfe11",
+  "code_block_count" : 0,
+  "char_len" : 396,
+  "token_len" : 99
+}, {
+  "issue_number" : 549,
+  "text_hash" : "332da38539fe017922e2f3969c2030d8ad57b89c191fd7f655e3e04b43bafcad",
+  "code_block_count" : 0,
+  "char_len" : 647,
+  "token_len" : 161
+}, {
+  "issue_number" : 3110,
+  "text_hash" : "48c2f4b1f721fe95bc7921ba1014eeb597d3dbbd007f27a0a26c6c40ec7c4404",
+  "code_block_count" : 0,
+  "char_len" : 922,
+  "token_len" : 230
+}, {
+  "issue_number" : 3366,
+  "text_hash" : "08ad37704a1c90fc0e5ce64bf17bcc198dc36ddc035d67f8ed163823da93bf5d",
+  "code_block_count" : 0,
+  "char_len" : 4027,
+  "token_len" : 1006
+}, {
+  "issue_number" : 295,
+  "text_hash" : "c5a7e27ed90ed6dd9953170bc75ad2461d3620ce661b1ba6ef96a440fd673af5",
+  "code_block_count" : 1,
+  "char_len" : 508,
+  "token_len" : 127
+}, {
+  "issue_number" : 3625,
+  "text_hash" : "2d9c7cacf3671fb6034e648f2b2ee0d9322950a6b9a01bf5f902a794e2622c59",
+  "code_block_count" : 0,
+  "char_len" : 80,
+  "token_len" : 20
+}, {
+  "issue_number" : 3115,
+  "text_hash" : "50b1cfd147d7b4312b10fb4ac0b2f03af759f639f4d2649bab213c58fbf610a3",
+  "code_block_count" : 1,
+  "char_len" : 8851,
+  "token_len" : 2212
+}, {
+  "issue_number" : 2861,
+  "text_hash" : "a0cb5fc863a064a9929b6573dac9d6bd9094f0dc113eaf7229179ccaf6efaead",
+  "code_block_count" : 0,
+  "char_len" : 2049,
+  "token_len" : 512
+}, {
+  "issue_number" : 814,
+  "text_hash" : "599e99e0c0b97a97aa3564e0bacab5c50186c2afbe120a467d4d1710f5d900f9",
+  "code_block_count" : 2,
+  "char_len" : 712,
+  "token_len" : 178
+}, {
+  "issue_number" : 1583,
+  "text_hash" : "06925fc80a5f2d886ad4874a8589edbadf4d5f456cba34aa48fbc79834438827",
+  "code_block_count" : 2,
+  "char_len" : 2056,
+  "token_len" : 514
+}, {
+  "issue_number" : 2095,
+  "text_hash" : "4a1c9f8315923cf56288ed6bff0ce96aa2eaacf5ada8b82c5f95e0aa6907deda",
+  "code_block_count" : 0,
+  "char_len" : 116,
+  "token_len" : 29
+}, {
+  "issue_number" : 1329,
+  "text_hash" : "134dac9cff8d04fcd1c9982a91d9f64709caed36ff48f1e8b9515a2df94f8b6a",
+  "code_block_count" : 0,
+  "char_len" : 460,
+  "token_len" : 115
+}, {
+  "issue_number" : 1331,
+  "text_hash" : "8274ac09136aeae0282a851b732738d28b9f0bc2807b8b8d36ac65bad123252a",
+  "code_block_count" : 0,
+  "char_len" : 1807,
+  "token_len" : 451
+}, {
+  "issue_number" : 1843,
+  "text_hash" : "705eaa282197d157c792f716fe150179b57e26fc240aca35a93aa1a5661ff25e",
+  "code_block_count" : 0,
+  "char_len" : 897,
+  "token_len" : 224
+}, {
+  "issue_number" : 1589,
+  "text_hash" : "e6fb34928a6610d41df70c220702f4560599435044b8cace2cb7c2c2a7679199",
+  "code_block_count" : 0,
+  "char_len" : 934,
+  "token_len" : 233
+}, {
+  "issue_number" : 1591,
+  "text_hash" : "faf2958eb3215a11df1c33600b570aff2c4561a5e353c420fc4f279a48c02383",
+  "code_block_count" : 0,
+  "char_len" : 255,
+  "token_len" : 63
+}, {
+  "issue_number" : 1592,
+  "text_hash" : "05be617f0f1f1bac3c4ec8a638f899d390b93b15ac18799c377b8f0afcb7aa0c",
+  "code_block_count" : 0,
+  "char_len" : 465,
+  "token_len" : 116
+}, {
+  "issue_number" : 2105,
+  "text_hash" : "e7e236dcb8f992addcc03596b9646e0530722e12df1c1fe2473e9a44f75cb98a",
+  "code_block_count" : 0,
+  "char_len" : 260,
+  "token_len" : 65
+}, {
+  "issue_number" : 3643,
+  "text_hash" : "6677bf68bd4fa10220aabafd533dbbda520e9c3762d51d3b74b7c06bce862e96",
+  "code_block_count" : 0,
+  "char_len" : 93,
+  "token_len" : 23
+}, {
+  "issue_number" : 3131,
+  "text_hash" : "d1db383eb7f061959e6e7843fe561776beb794dadb664e03badea65055076a6f",
+  "code_block_count" : 0,
+  "char_len" : 1480,
+  "token_len" : 370
+}, {
+  "issue_number" : 315,
+  "text_hash" : "d15e70668431ee3f85378974928e91949ccd5b06b0f353ad6fbbb2c6035dd4e7",
+  "code_block_count" : 0,
+  "char_len" : 290,
+  "token_len" : 72
+}, {
+  "issue_number" : 1341,
+  "text_hash" : "e9bd1210edd7057722b1e521af7085dbb2ad260138180f6724fb6b6892b4f7b7",
+  "code_block_count" : 2,
+  "char_len" : 1280,
+  "token_len" : 320
+}, {
+  "issue_number" : 2367,
+  "text_hash" : "7195cb10d3017fc65272fc12d499dc6bbe1defc0a977340e07b9bafb9922e8af",
+  "code_block_count" : 1,
+  "char_len" : 1411,
+  "token_len" : 352
+}, {
+  "issue_number" : 576,
+  "text_hash" : "9cab41ad9e737969e9d6b0d4976b818efb49df2bf33902e90dfbb7f3d3367e48",
+  "code_block_count" : 0,
+  "char_len" : 1121,
+  "token_len" : 280
+}, {
+  "issue_number" : 833,
+  "text_hash" : "b37273190895cad726a15b9f4dfa5c90196219df439bfb77c03797cf51460549",
+  "code_block_count" : 2,
+  "char_len" : 12726,
+  "token_len" : 3181
+}, {
+  "issue_number" : 1345,
+  "text_hash" : "6b3b8fc5bd28bc89f624d1c4c754eef3fe5c54a01f933ac52a2edcf89c87d490",
+  "code_block_count" : 0,
+  "char_len" : 237,
+  "token_len" : 59
+}, {
+  "issue_number" : 3655,
+  "text_hash" : "55f7974538eaa276028818189cdea2ef4df2522b63163cb87d499f139da3c521",
+  "code_block_count" : 0,
+  "char_len" : 77,
+  "token_len" : 19
+}, {
+  "issue_number" : 1609,
+  "text_hash" : "ba1e7a7af84d8e184b43ec5e35cbe64967635d64ea72dc38ced5a796621d823f",
+  "code_block_count" : 0,
+  "char_len" : 1468,
+  "token_len" : 367
+}, {
+  "issue_number" : 1098,
+  "text_hash" : "5cfa235c482fa1c7a6f82d864836bd6bcdcafb49108d546ecfd14602813bb366",
+  "code_block_count" : 1,
+  "char_len" : 488,
+  "token_len" : 122
+}, {
+  "issue_number" : 3659,
+  "text_hash" : "b76094b95711c26e20903b2ea90ce1120fe9884299dce6177d44223b68d57aa5",
+  "code_block_count" : 0,
+  "char_len" : 95,
+  "token_len" : 23
+}, {
+  "issue_number" : 3147,
+  "text_hash" : "52216ccf27d9fd2a938ec8fe48b6bd533134aebd5cf8ed1aa33699733882fd8b",
+  "code_block_count" : 0,
+  "char_len" : 219,
+  "token_len" : 54
+}, {
+  "issue_number" : 845,
+  "text_hash" : "76c0ae40eb8dcdedc119f701eec09d072a1815a9e16dcb56f7b1bbcd792e8828",
+  "code_block_count" : 1,
+  "char_len" : 906,
+  "token_len" : 226
+}, {
+  "issue_number" : 1101,
+  "text_hash" : "1598e7b286dc87f5071dfbbdf061a6dbe6e082624c585f3756e5f7948ac914f9",
+  "code_block_count" : 0,
+  "char_len" : 245,
+  "token_len" : 61
+}, {
+  "issue_number" : 847,
+  "text_hash" : "a889b0d7eba60b63c896a641e9eda07d40e27f3776a3d38fcb28eabb1059d087",
+  "code_block_count" : 1,
+  "char_len" : 1855,
+  "token_len" : 463
+}, {
+  "issue_number" : 1617,
+  "text_hash" : "02cd63f4e72a0ea62fc4c106dd9f58592d37aed2bb512ec9f4c3f217ccc60b0b",
+  "code_block_count" : 0,
+  "char_len" : 1275,
+  "token_len" : 318
+}, {
+  "issue_number" : 1874,
+  "text_hash" : "3a0ffb6dfd404af63b34d50e8f26afc3c68a8ed76766c66085dd65127a62b041",
+  "code_block_count" : 0,
+  "char_len" : 568,
+  "token_len" : 142
+}, {
+  "issue_number" : 853,
+  "text_hash" : "c6c33b0224d063396512e9eed3d1bd744ed8531b263ae6d1bbca3aea40c0e1fc",
+  "code_block_count" : 3,
+  "char_len" : 803,
+  "token_len" : 200
+}, {
+  "issue_number" : 1878,
+  "text_hash" : "72a2f76f8c9b912246a4ad6e5e2bfaa704ba9ca7aa5395e742d9679e1e44cbd9",
+  "code_block_count" : 3,
+  "char_len" : 2844,
+  "token_len" : 711
+}, {
+  "issue_number" : 1622,
+  "text_hash" : "a38e158fd86b9235ad88b023e8b2b23ce68cc55631f0eb9276d49c4c8d5619aa",
+  "code_block_count" : 2,
+  "char_len" : 5118,
+  "token_len" : 1279
+}, {
+  "issue_number" : 3670,
+  "text_hash" : "57456c55df653c3238e967559e3fa51f938edc1b76691ed8ca0673180700e6fa",
+  "code_block_count" : 0,
+  "char_len" : 73,
+  "token_len" : 18
+}, {
+  "issue_number" : 3415,
+  "text_hash" : "ab170b5c2328867f0174cf34c840151ed8b0063f87bdb9f044a8898c2d970f3f",
+  "code_block_count" : 2,
+  "char_len" : 1254,
+  "token_len" : 313
+}, {
+  "issue_number" : 343,
+  "text_hash" : "1505b9cf6a5bbb680260103669983a336bb21f1db7b066378ad12edf28809e87",
+  "code_block_count" : 0,
+  "char_len" : 75,
+  "token_len" : 18
+}, {
+  "issue_number" : 601,
+  "text_hash" : "8e2233f38a58f419c0243c67efecb5f4b908b2737ecbf66936abb2ab4a53ebcf",
+  "code_block_count" : 0,
+  "char_len" : 387,
+  "token_len" : 96
+}, {
+  "issue_number" : 1882,
+  "text_hash" : "4a1658184bf01e394c534648b36a790617ac7b19e29d8444a63b896b23b7fcd2",
+  "code_block_count" : 0,
+  "char_len" : 1051,
+  "token_len" : 262
+}, {
+  "issue_number" : 860,
+  "text_hash" : "a26a0b2a3ae9d8891823e6dbd65f6c9942e1733809dec6484de9d5bd1f9215ad",
+  "code_block_count" : 1,
+  "char_len" : 1308,
+  "token_len" : 327
+}, {
+  "issue_number" : 1373,
+  "text_hash" : "04803b90b02adce9be50b5d8f61687dba878c423ddc97e91487bbbdb8798b89b",
+  "code_block_count" : 4,
+  "char_len" : 11296,
+  "token_len" : 2824
+}, {
+  "issue_number" : 1636,
+  "text_hash" : "596e8060220b8aa2e4767339e96622bb79739a67cbb06065980faac81f228ffb",
+  "code_block_count" : 0,
+  "char_len" : 409,
+  "token_len" : 102
+}, {
+  "issue_number" : 613,
+  "text_hash" : "ee413ff60b3a866bd95748ba8defe1e783f777eb89b9642d1e6edcf3dff894ca",
+  "code_block_count" : 2,
+  "char_len" : 2682,
+  "token_len" : 670
+}, {
+  "issue_number" : 1126,
+  "text_hash" : "48823cb65a0447d780ef9e52ad3e6262ea8fd96926dcaa5d100a15db1d4b679a",
+  "code_block_count" : 0,
+  "char_len" : 701,
+  "token_len" : 175
+}, {
+  "issue_number" : 1386,
+  "text_hash" : "4df3dad44d89f406c8309e1042a9b99fc00f44239fea7c6354487bb03a87f187",
+  "code_block_count" : 2,
+  "char_len" : 9128,
+  "token_len" : 2282
+}, {
+  "issue_number" : 2414,
+  "text_hash" : "8af1d02fb403f52cdcaed895b173b6d5f49122df40b599207afc0908dba7d2d0",
+  "code_block_count" : 0,
+  "char_len" : 517,
+  "token_len" : 129
+}, {
+  "issue_number" : 368,
+  "text_hash" : "0a1ed99bf97328164c41afe1bb756a42db18523ee3f7cc1fca7eed4a9ca526aa",
+  "code_block_count" : 2,
+  "char_len" : 1896,
+  "token_len" : 474
+}, {
+  "issue_number" : 1138,
+  "text_hash" : "4df0a0b03b10170e0f58eac5afdd492d8b39e4758e8444f8fa18065600400683",
+  "code_block_count" : 0,
+  "char_len" : 394,
+  "token_len" : 98
+}, {
+  "issue_number" : 883,
+  "text_hash" : "c01247bd5927c1ae355a6e53ebb88536ba26572f136ea32ddf3f73ad1c35113a",
+  "code_block_count" : 0,
+  "char_len" : 769,
+  "token_len" : 192
+}, {
+  "issue_number" : 1139,
+  "text_hash" : "c485689ea67fa6a4e6be63ae431865b4f1573c264c196b0582d450f2b6d42624",
+  "code_block_count" : 0,
+  "char_len" : 233,
+  "token_len" : 58
+}, {
+  "issue_number" : 1665,
+  "text_hash" : "fee8bb3ff4627b8385dc924f78ce5cbe36487e7aa2e625dabe4a84b4c9870a98",
+  "code_block_count" : 0,
+  "char_len" : 2925,
+  "token_len" : 731
+}, {
+  "issue_number" : 897,
+  "text_hash" : "b062494c6f2667bbb213102be49585a6e5d825050846690ff794b9f5d69a5b17",
+  "code_block_count" : 0,
+  "char_len" : 185,
+  "token_len" : 46
+}, {
+  "issue_number" : 2691,
+  "text_hash" : "e73138b1026abc256c3bf452570312d09efd6009ace9aa9e68d03454bb93ea1f",
+  "code_block_count" : 0,
+  "char_len" : 1669,
+  "token_len" : 417
+}, {
+  "issue_number" : 3205,
+  "text_hash" : "3cacb45d0931dfc7602ca9474655012af81605303a7d4617b5679321615d344f",
+  "code_block_count" : 0,
+  "char_len" : 383,
+  "token_len" : 95
+}, {
+  "issue_number" : 392,
+  "text_hash" : "bcf78e560e629c10d16808b8ed2e5543a78097b95a3224c3e42a02e054f1d9f2",
+  "code_block_count" : 0,
+  "char_len" : 393,
+  "token_len" : 98
+}, {
+  "issue_number" : 1678,
+  "text_hash" : "974f29cd771dba0b18dd5972262d684f0f0979ec60f67ea75870be1721a38085",
+  "code_block_count" : 0,
+  "char_len" : 109,
+  "token_len" : 27
+}, {
+  "issue_number" : 2703,
+  "text_hash" : "979e30aa56449830fe13c73d3da37cd5ad01d728d8b75ddc2485a43413b53485",
+  "code_block_count" : 2,
+  "char_len" : 1084,
+  "token_len" : 271
+}, {
+  "issue_number" : 1936,
+  "text_hash" : "a189875b07b5387cc4d42347ae1c324d6fad83fb36b18e178e1d3aff69e3b832",
+  "code_block_count" : 3,
+  "char_len" : 1890,
+  "token_len" : 472
+}, {
+  "issue_number" : 1681,
+  "text_hash" : "bf69e64e75e23764428eef437551e318af5ddfe316d2fd6b7ff5dc93e5fcde56",
+  "code_block_count" : 0,
+  "char_len" : 449,
+  "token_len" : 112
+}, {
+  "issue_number" : 3219,
+  "text_hash" : "62b27de823a344ec6b37191b5987f7923c0786736b7127ac4afcfd3014b65b98",
+  "code_block_count" : 3,
+  "char_len" : 4127,
+  "token_len" : 1031
+}, {
+  "issue_number" : 3734,
+  "text_hash" : "44b621156c05831517ea858d5fe39fb3ebd92e2fbc76b9c0fce7b409deefed74",
+  "code_block_count" : 0,
+  "char_len" : 56,
+  "token_len" : 14
+}, {
+  "issue_number" : 1431,
+  "text_hash" : "4eda3c32aa78084161134600f18b4344748b8f9cb8deb360d82166b1c0f4d3fb",
+  "code_block_count" : 1,
+  "char_len" : 720,
+  "token_len" : 180
+}, {
+  "issue_number" : 3741,
+  "text_hash" : "d3c053f6b25a75b648d802e6193cfcae92b14c6564fb437ad6075a4151ea2c7d",
+  "code_block_count" : 0,
+  "char_len" : 61,
+  "token_len" : 15
+}, {
+  "issue_number" : 3745,
+  "text_hash" : "822b34f7e587bc0c5dc5f444521acae00fc9edbe939f69174d7229c1d14c42e6",
+  "code_block_count" : 0,
+  "char_len" : 89,
+  "token_len" : 22
+}, {
+  "issue_number" : 421,
+  "text_hash" : "a1bc0f9797c2d963fb9d2b9cc9a43e4f5b08d8b6374167b2f5d3530d74beffad",
+  "code_block_count" : 0,
+  "char_len" : 1590,
+  "token_len" : 397
+}, {
+  "issue_number" : 2983,
+  "text_hash" : "aab1f8f8f0e1ec8ca609f3847024eb6bda095bd53d11f97b81ccf3205145671c",
+  "code_block_count" : 0,
+  "char_len" : 47,
+  "token_len" : 11
+}, {
+  "issue_number" : 1707,
+  "text_hash" : "0e8b9fa026ec6187d053f2f1920f6693ec6ff1590c355e21a57351185aaec5f3",
+  "code_block_count" : 0,
+  "char_len" : 683,
+  "token_len" : 170
+}, {
+  "issue_number" : 1202,
+  "text_hash" : "346dd363bd6f3e7452bb5e2fe279b9ce6d913f5832f353f17b4abbf62f163fb2",
+  "code_block_count" : 0,
+  "char_len" : 1079,
+  "token_len" : 269
+}, {
+  "issue_number" : 3762,
+  "text_hash" : "d70d18491f9339ab00e8fd5473cb233ffb567db830659d66f4fdd149f7005d60",
+  "code_block_count" : 0,
+  "char_len" : 93,
+  "token_len" : 23
+}, {
+  "issue_number" : 1715,
+  "text_hash" : "59e67a3744b10e8f436c50f9967d1d24387185e9080c8c65e922e406c7d75c82",
+  "code_block_count" : 0,
+  "char_len" : 666,
+  "token_len" : 166
+}, {
+  "issue_number" : 1459,
+  "text_hash" : "d1272434c51aee1cac4140528c51445e4cb8ba1f5c1351f9535a9321c3ca47fd",
+  "code_block_count" : 3,
+  "char_len" : 1493,
+  "token_len" : 373
+}, {
+  "issue_number" : 179,
+  "text_hash" : "4ecf4b07d3220b644359de23a4c954c190b5dce4880108280f691c633abb05f5",
+  "code_block_count" : 0,
+  "char_len" : 164,
+  "token_len" : 41
+}, {
+  "issue_number" : 2486,
+  "text_hash" : "e835917a8d680796fdcce4f374180789beca9cd6851ea574fb7600d89e164dea",
+  "code_block_count" : 0,
+  "char_len" : 1583,
+  "token_len" : 395
+}, {
+  "issue_number" : 694,
+  "text_hash" : "f00938f014d74d5c6ac35a55e3958d45ca942e7cc36bdf96929a55885c12b144",
+  "code_block_count" : 0,
+  "char_len" : 268,
+  "token_len" : 67
+}, {
+  "issue_number" : 953,
+  "text_hash" : "6f9da68150d37f7ab80f095c42f65b89d260489b7acbbb6a3a6b22b245e99302",
+  "code_block_count" : 0,
+  "char_len" : 14689,
+  "token_len" : 3672
+}, {
+  "issue_number" : 700,
+  "text_hash" : "8ecbe0b19d6574cbaea0d1a5046c9b334bb44d37ce2105f2ded137e7c334bb91",
+  "code_block_count" : 0,
+  "char_len" : 400,
+  "token_len" : 100
+}, {
+  "issue_number" : 2492,
+  "text_hash" : "15639781b7e67a960a876d2b5b1460ce78dcacb4e63a7b93329a4a05378f4d0f",
+  "code_block_count" : 0,
+  "char_len" : 244,
+  "token_len" : 61
+}, {
+  "issue_number" : 445,
+  "text_hash" : "4ab28b6d513a1560b188fc40660fee59725c3350d621460e6af8e5a8da657a44",
+  "code_block_count" : 0,
+  "char_len" : 94,
+  "token_len" : 23
+}, {
+  "issue_number" : 1731,
+  "text_hash" : "083077984d47c2c7ef2899d91e77fd1dae95fed7b6b8cd9e91b4cf7c48743366",
+  "code_block_count" : 0,
+  "char_len" : 750,
+  "token_len" : 187
+}, {
+  "issue_number" : 3526,
+  "text_hash" : "3eabc4801927ee031ddf984c08cb8f8f3e0d73ebb119c4f6648c2257e257d6cf",
+  "code_block_count" : 1,
+  "char_len" : 901,
+  "token_len" : 225
+}, {
+  "issue_number" : 1487,
+  "text_hash" : "526a0f4b8f228b7d1ccbc910ff92fb52d333008d540b94b6ee92763a557fc48e",
+  "code_block_count" : 1,
+  "char_len" : 459,
+  "token_len" : 114
+}, {
+  "issue_number" : 1234,
+  "text_hash" : "5f467783fb8d876492af0444c15c681ee4dd92f3a96349dcb9bdb9fdd043c793",
+  "code_block_count" : 4,
+  "char_len" : 2279,
+  "token_len" : 569
+}, {
+  "issue_number" : 3542,
+  "text_hash" : "806dea2b4b1a0eaebb6fe002b0eaec5a6305879a41398e7eb514e8fc25bd9ebc",
+  "code_block_count" : 0,
+  "char_len" : 1206,
+  "token_len" : 301
+}, {
+  "issue_number" : 731,
+  "text_hash" : "89ca65939ff1f8674656aca3e921121f46d09f5a6527a32d6fc45477c7bc42d3",
+  "code_block_count" : 0,
+  "char_len" : 106,
+  "token_len" : 26
+}, {
+  "issue_number" : 1248,
+  "text_hash" : "f8e39e3b6d236ec250ba551b1f2b43fe73d681ac5c19df0885dfeeffabf97bb3",
+  "code_block_count" : 0,
+  "char_len" : 753,
+  "token_len" : 188
+}, {
+  "issue_number" : 992,
+  "text_hash" : "e582cba0c7ee96a2adac4fdc864bebabcd00e71380a5f9429251d1d24c9e165e",
+  "code_block_count" : 0,
+  "char_len" : 154,
+  "token_len" : 38
+}, {
+  "issue_number" : 1506,
+  "text_hash" : "e568d1b9cfc4876ce306b4bde38bf61f5311241ab11f8b3e449a6db63189a5cd",
+  "code_block_count" : 0,
+  "char_len" : 684,
+  "token_len" : 171
+}, {
+  "issue_number" : 739,
+  "text_hash" : "e182a8109661017bd56a06edd30b8e9d8b50071edaa05c0e05b0060e02616630",
+  "code_block_count" : 1,
+  "char_len" : 1847,
+  "token_len" : 461
+}, {
+  "issue_number" : 749,
+  "text_hash" : "e46b41b834e7c59e5e744e7c7f34aeb3ace3f44a1a32a08a27ad54172f8e014a",
+  "code_block_count" : 0,
+  "char_len" : 2468,
+  "token_len" : 617
+}, {
+  "issue_number" : 1776,
+  "text_hash" : "0c4b3353e3859d265512584d01777a7e611d8ea4e1a7e827098baf5f64b912e2",
+  "code_block_count" : 0,
+  "char_len" : 712,
+  "token_len" : 178
+}, {
+  "issue_number" : 753,
+  "text_hash" : "dfe6e04bee933198b7cd125c3937f4ab3bcba0d21b3fb3bf9257e5cdbca415d7",
+  "code_block_count" : 0,
+  "char_len" : 2021,
+  "token_len" : 505
+}, {
+  "issue_number" : 3828,
+  "text_hash" : "a5996ace2e6ed2dff57260bbc48f7a2c9f8d4ead4502f907ba3dd20799887c2b",
+  "code_block_count" : 0,
+  "char_len" : 63,
+  "token_len" : 15
+}, {
+  "issue_number" : 3578,
+  "text_hash" : "69d734a03aee481eba042ee1e8da2c586481cfa9bf14188258889f444d3b4dc6",
+  "code_block_count" : 0,
+  "char_len" : 73,
+  "token_len" : 18
+}, {
+  "issue_number" : 2301,
+  "text_hash" : "3e0bf29115dca702e4699dfeff8157accf2b97a8faadd74e43fc2f10f3a4650d",
+  "code_block_count" : 0,
+  "char_len" : 4030,
+  "token_len" : 1007
+} ]

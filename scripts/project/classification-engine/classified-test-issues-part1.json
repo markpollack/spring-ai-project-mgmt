@@ -1,0 +1,72 @@
+[
+  {
+    "issue_number": 1289,
+    "predicted_labels": [
+      {
+        "label": "documentation",
+        "confidence": 0.95
+      },
+      {
+        "label": "good first issue",
+        "confidence": 0.90
+      }
+    ],
+    "explanation": "This issue reports a simple typo ('Claud' instead of 'Claude') on the Spring AI projects page. It's clearly a documentation issue and the existing labels match perfectly."
+  },
+  {
+    "issue_number": 1583,
+    "predicted_labels": [
+      {
+        "label": "bug",
+        "confidence": 0.90
+      },
+      {
+        "label": "anthropic",
+        "confidence": 0.95
+      }
+    ],
+    "explanation": "This issue describes a bug in the Anthropic API where error response bodies aren't displayed properly in stacktraces when ChatModel.stream() fails. The issue provides detailed reproduction steps and expected behavior, clearly indicating it's both a bug and specific to Anthropic integration."
+  },
+  {
+    "issue_number": 3115,
+    "predicted_labels": [
+      {
+        "label": "cassandra",
+        "confidence": 0.95
+      },
+      {
+        "label": "bug",
+        "confidence": 0.80
+      }
+    ],
+    "explanation": "This issue describes an error with CassandraVectorStore configuration where TypesafeDriverConfig gives an 'Unknown profile' error. The error occurs during bean creation and is specific to Cassandra vector store integration, making it both a Cassandra-specific issue and a bug."
+  },
+  {
+    "issue_number": 1843,
+    "predicted_labels": [
+      {
+        "label": "bug",
+        "confidence": 0.85
+      },
+      {
+        "label": "epic",
+        "confidence": 0.90
+      }
+    ],
+    "explanation": "This is clearly marked as an epic that addresses a bug where ChatResponse metadata doesn't accumulate usage metrics properly when tool calling is used. The existing labels match the issue content perfectly, and it includes a comprehensive checklist of affected models."
+  },
+  {
+    "issue_number": 2486,
+    "predicted_labels": [
+      {
+        "label": "MCP",
+        "confidence": 0.95
+      },
+      {
+        "label": "bug",
+        "confidence": 0.85
+      }
+    ],
+    "explanation": "This issue describes multiple problems with McpClientAutoConfiguration including duplicate SSE connections and SYNC mode startup failures. It's clearly related to MCP (Model Control Protocol) functionality and describes specific bugs in the auto-configuration."
+  }
+]

@@ -1,0 +1,92 @@
+Based on my analysis of the codebase and examining the classification patterns, I'll classify these GitHub issues using the established format with confidence scores.
+
+```json
+[
+  {
+    "issue_number": 3578,
+    "predicted_labels": [
+      {
+        "label": "bug",
+        "confidence": 0.95
+      },
+      {
+        "label": "type: backport",
+        "confidence": 0.98
+      }
+    ],
+    "explanation": "Issue explicitly states it's a 'Fix infinite recursion' (clear bug) and 'Backport of gh-3576' (explicitly marked as backport). Both labels have very high confidence based on direct textual evidence."
+  },
+  {
+    "issue_number": 1776,
+    "predicted_labels": [
+      {
+        "label": "RAG",
+        "confidence": 0.92
+      },
+      {
+        "label": "enhancement",
+        "confidence": 0.88
+      },
+      {
+        "label": "metadata filters",
+        "confidence": 0.85
+      }
+    ],
+    "explanation": "Issue requests FILTER_EXPRESSION support for RetrievalAugmentationAdvisor to match QuestionAnswerAdvisor functionality. Clearly maps to RAG, enhancement (new feature), and metadata filters with high confidence."
+  },
+  {
+    "issue_number": 953,
+    "predicted_labels": [
+      {
+        "label": "Observability",
+        "confidence": 0.95
+      },
+      {
+        "label": "enhancement",
+        "confidence": 0.90
+      }
+    ],
+    "explanation": "Issue explicitly requests 'Initial Observability for Models' and discusses introducing observability features before 1.0.0 GA release. Maps directly to Observability label with very high confidence, and enhancement as it's a feature request."
+  },
+  {
+    "issue_number": 1878,
+    "predicted_labels": [
+      {
+        "label": "bug",
+        "confidence": 0.90
+      },
+      {
+        "label": "tool/function calling",
+        "confidence": 0.95
+      },
+      {
+        "label": "Bedrock",
+        "confidence": 0.88
+      },
+      {
+        "label": "streaming",
+        "confidence": 0.82
+      }
+    ],
+    "explanation": "Issue describes a bug where Supplier-based FunctionCallbacks don't work with streaming in Bedrock, while Function-based ones do. Maps to bug, tool/function calling, Bedrock, and streaming labels with high confidence."
+  },
+  {
+    "issue_number": 1707,
+    "predicted_labels": [
+      {
+        "label": "bug",
+        "confidence": 0.88
+      },
+      {
+        "label": "streaming",
+        "confidence": 0.92
+      },
+      {
+        "label": "Observability",
+        "confidence": 0.85
+      }
+    ],
+    "explanation": "Issue reports that streaming metrics are not being captured correctly - the 'spring.ai.chat.client.stream' metric always shows false even for streaming requests. This is clearly a bug in the observability/metrics system."
+  }
+]
+```

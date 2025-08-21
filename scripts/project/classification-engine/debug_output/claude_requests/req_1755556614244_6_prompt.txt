@@ -1,0 +1,8 @@
+Please analyze these GitHub issues and classify them:
+
+Issue #700
+Title: JPMS
+Body: please add jpms support, at least automatic modules for now. However, this issue or another issue should be added for full module-info at sometime in the future. Referencing this upstream spring issue (specifically comment) which shows all of the dependencies that could be included via the code generator https://github.com/spring-projects/spring-framework/issues/18079#issuecomment-2087396680
+Current Labels: [help wanted, enhancement]
+
+Please respond with a simple JSON array containing classifications for each issue.

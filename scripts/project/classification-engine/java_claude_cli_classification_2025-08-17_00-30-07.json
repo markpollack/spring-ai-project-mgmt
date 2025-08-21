@@ -1,0 +1,187 @@
+[ {
+  "issue_number" : 3578,
+  "predicted_labels" : [ {
+    "label" : "bug",
+    "confidence" : 0.95
+  }, {
+    "label" : "type: backport",
+    "confidence" : 0.98
+  } ],
+  "explanation" : "This issue explicitly describes fixing an infinite recursion bug in a getMimeType method and is identified as a backport of another issue. The bug label maps perfectly to runtime errors, and type: backport is explicitly mentioned."
+}, {
+  "issue_number" : 1776,
+  "predicted_labels" : [ {
+    "label" : "enhancement",
+    "confidence" : 0.85
+  }, {
+    "label" : "RAG",
+    "confidence" : 0.9
+  }, {
+    "label" : "metadata filters",
+    "confidence" : 0.88
+  }, {
+    "label" : "advisors",
+    "confidence" : 0.75
+  } ],
+  "explanation" : "This issue requests adding filter expression support to RetrievalAugmentationAdvisor, which is clearly an enhancement for RAG functionality with metadata filtering capabilities. The advisor pattern is also involved as it discusses RetrievalAugmentationAdvisor configuration."
+}, {
+  "issue_number" : 953,
+  "predicted_labels" : [ {
+    "label" : "Observability",
+    "confidence" : 0.98
+  }, {
+    "label" : "enhancement",
+    "confidence" : 0.9
+  }, {
+    "label" : "design",
+    "confidence" : 0.85
+  } ],
+  "explanation" : "This is a comprehensive proposal for implementing observability features in Spring AI, focusing on model instrumentation and telemetry. It's clearly an observability enhancement with significant design considerations for the overall framework architecture."
+}, {
+  "issue_number" : 1878,
+  "predicted_labels" : [ {
+    "label" : "bug",
+    "confidence" : 0.9
+  }, {
+    "label" : "tool/function calling",
+    "confidence" : 0.95
+  }, {
+    "label" : "Bedrock",
+    "confidence" : 0.95
+  }, {
+    "label" : "streaming",
+    "confidence" : 0.85
+  } ],
+  "explanation" : "This issue describes a bug where tools are not being called when using Suppliers in streaming mode with Bedrock models. It specifically involves tool/function calling functionality that fails in streaming scenarios on AWS Bedrock platform."
+}, {
+  "issue_number" : 1707,
+  "predicted_labels" : [ {
+    "label" : "bug",
+    "confidence" : 0.88
+  }, {
+    "label" : "Observability",
+    "confidence" : 0.92
+  }, {
+    "label" : "streaming",
+    "confidence" : 0.9
+  } ],
+  "explanation" : "This issue reports that streaming metrics are not being captured properly, showing 'false' values when they should be 'true' for streaming requests. This is clearly a bug in the observability/metrics system specifically affecting streaming functionality."
+}, {
+  "issue_number" : 1329,
+  "predicted_labels" : [ {
+    "label" : "documentation",
+    "confidence" : 0.95
+  }, {
+    "label" : "openai",
+    "confidence" : 0.9
+  } ],
+  "explanation" : "This issue reports incorrect comments and missing @param documentation in OpenAI API constructors. It's clearly a documentation fix for OpenAI components, with very high confidence for both labels."
+}, {
+  "issue_number" : 2983,
+  "predicted_labels" : [ {
+    "label" : "Bedrock",
+    "confidence" : 0.95
+  }, {
+    "label" : "embedding",
+    "confidence" : 0.95
+  }, {
+    "label" : "Observability",
+    "confidence" : 0.9
+  }, {
+    "label" : "enhancement",
+    "confidence" : 0.85
+  } ],
+  "explanation" : "This issue requests adding observability features to Bedrock embedding models. High confidence for Bedrock and embedding as it's explicitly mentioned in the title. Observability and enhancement are also highly relevant."
+}, {
+  "issue_number" : 1307,
+  "predicted_labels" : [ {
+    "label" : "question",
+    "confidence" : 0.95
+  }, {
+    "label" : "streaming",
+    "confidence" : 0.75
+  } ],
+  "explanation" : "This is a question about why usage values are 0 when using streaming methods but not with call methods. The question format and content about streaming vs non-streaming behavior makes these labels appropriate."
+}, {
+  "issue_number" : 3205,
+  "predicted_labels" : [ {
+    "label" : "MCP",
+    "confidence" : 0.95
+  }, {
+    "label" : "enhancement",
+    "confidence" : 0.85
+  }, {
+    "label" : "configuration",
+    "confidence" : 0.8
+  } ],
+  "explanation" : "This issue requests adding a configuration option for MCP server request timeout. Very high confidence for MCP since it specifically mentions McpServerAutoConfiguration.java. Enhancement and configuration are also relevant as it's about adding a new config option."
+}, {
+  "issue_number" : 992,
+  "predicted_labels" : [ {
+    "label" : "question",
+    "confidence" : 0.95
+  }, {
+    "label" : "ollama",
+    "confidence" : 0.9
+  }, {
+    "label" : "tool/function calling",
+    "confidence" : 0.8
+  } ],
+  "explanation" : "This is a question about Qwen model support with Ollama and function calling capabilities. High confidence for question and ollama labels based on content. Function calling is explicitly mentioned in the body."
+}, {
+  "issue_number" : 3542,
+  "predicted_labels" : [ {
+    "label" : "chromadb",
+    "confidence" : 0.92
+  }, {
+    "label" : "vector store",
+    "confidence" : 0.88
+  }, {
+    "label" : "enhancement",
+    "confidence" : 0.75
+  } ],
+  "explanation" : "This issue specifically requests ChromaDB configuration enhancement to override default tenant and database names through application properties. It clearly relates to ChromaDB vector store functionality and represents a feature enhancement request."
+}, {
+  "issue_number" : 2095,
+  "predicted_labels" : [ {
+    "label" : "dependencies",
+    "confidence" : 0.95
+  } ],
+  "explanation" : "This issue is explicitly about dependency management, requesting removal of Spring Boot logging dependency in favor of commons logging for consistency with other non-Boot Spring projects."
+}, {
+  "issue_number" : 749,
+  "predicted_labels" : [ {
+    "label" : "structured output",
+    "confidence" : 0.9
+  }, {
+    "label" : "enhancement",
+    "confidence" : 0.82
+  } ],
+  "explanation" : "This issue requests JSON type detection for parsing arrays and objects, which directly relates to structured output conversion functionality. It's clearly an enhancement to improve JSON parsing capabilities."
+}, {
+  "issue_number" : 343,
+  "predicted_labels" : [ {
+    "label" : "Bedrock",
+    "confidence" : 0.95
+  }, {
+    "label" : "help wanted",
+    "confidence" : 0.88
+  }, {
+    "label" : "enhancement",
+    "confidence" : 0.8
+  } ],
+  "explanation" : "This issue requests implementation of Bedrock Jurassic ChatClient, clearly relating to Amazon Bedrock integration. It's marked as help wanted and represents a new feature enhancement."
+}, {
+  "issue_number" : 1345,
+  "predicted_labels" : [ {
+    "label" : "kotlin",
+    "confidence" : 0.92
+  }, {
+    "label" : "chat client",
+    "confidence" : 0.85
+  }, {
+    "label" : "bug",
+    "confidence" : 0.78
+  } ],
+  "explanation" : "This issue describes a bug where ChatClient's entity() method doesn't work with Kotlin data classes despite working with Java records. It clearly involves Kotlin language support issues within the ChatClient functionality."
+} ]

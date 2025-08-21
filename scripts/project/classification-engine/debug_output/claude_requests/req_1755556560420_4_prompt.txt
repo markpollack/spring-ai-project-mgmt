@@ -1,0 +1,57 @@
+Please analyze these GitHub issues and classify them:
+
+Issue #3578
+Title: Fix infinite recursion in `getMimeType(Path)` method
+Body: Backport of gh-3576
+Current Labels: [type: backport, bug]
+
+Issue #1776
+Title: Prompt-time filter expressions for RetrievalAugmentationAdvisor/VectorStoreDocumentRetriever
+Body: As `RetrievalAugmentationAdvisor` is expected to replace `QuestionAnswerAdvisor`, it should also support `FILTER_EXPRESSION` the way that `QuestionAnswerAdvisor` does.
+
+This makes it possible to configure the advisor as a default advisor when creating a `ChatClient` and then plug in a filter expression for searching the vector store when submitting a prompt.
+
+I suspect, based on how this works with `RetrievalAugmentationAdvisor` that the change required would be made to `VectorStoreDocumentRetriever`, as that's the place and implementation of `DocumentRetriever` that would be able to make use of the expression.
+Current Labels: [RAG, metadata filters, enhancement]
+
+Issue #953
+Title: [Observability] Initial Observability for Models
+Body: In the GenAI ecosystem, many solutions have been introduced that are centered around the concepts of observability and evaluation of Large Language Models. Unlike more traditional applications, **observability becomes even more a concern to be addressed already as part of the local development workflow**, because it enables refining prompts and tuning the model integration to fit the case at hand. As such, I think it would be really great to start introducing some basic observability features in Spring AI before cutting the 1.0.0 GA release. 
+
+### Background
+
+From a Spring AI perspective, I believe it's useful to **categorise the available GenAI observability products** as follows:
+
+* **Products relying on OpenTelemetry** to standardize the instrumentation, collection, and visualisation of telemetry data (traces, metrics, logs, and more). Examples: [OpenLit](https://openlit.io), [OpenLLMetry](https://www.traceloop.com/openllmetry)/[TraceLoop](https://www.traceloop.com), [Arize Ph...
+Current Labels: [Observability]
+
+Issue #1878
+Title: Bedrock/Converse Chat Model Does not Properly Stream Tools When Using Suppliers vs Functions
+Body: **Bug description**
+When attempting to use a `tools` along with streaming, I am using a java.util.function.Supplier as my FunctionCallback (vs a java.util.function.Function); I am using BedrockProxyChatModel as my ChatModel.
+
+The initial bedrock LLM response correctly selects my Supplier as the tool choice, however to tool is never called by Spring AI.  This appears to only happen with Suppliers;  java.util.function.Function works as expected.
+
+While debugging, the issue a manifested in the `isToolCall` of the org.springframework.ai.chat.model.AbstractToolCallSupport class when after the following debug message.
+```
+DEBUG 34272 ---  [tyEventLoop-2-2] o.s.a.b.converse.BedrockProxyChatModel   : Received converse stream output:MessageStopEvent(StopReason=tool_use)
+```
+
+The `chatResponse` contains no `generations`, therefor the tool is not executed.
+```
+	protected boolean isToolCall(ChatResponse chatResponse, Set<String> toolCallFinishReasons) {
+		Assert.isTrue(!CollectionUtil...
+Current Labels: [tool/function calling, status: backported, Bedrock]
+
+Issue #1707
+Title: Streaming metrics not being captured
+Body: Tested this with the latest snapshot.
+
+I noticed that most of the low-cardinality tags for the "spring.ai.chat.client" metric are the same regardless of the kind of request. But the one that should vary a little is "spring.ai.chat.client.stream", which I'd assume would be true if making a streaming request and false if making a normal chat request.
+
+But, I created a Spring AI app with a mix of streaming and non-streaming requests and I only ever see "false" for "spring.ai.chat.client.stream". It's never true. What's more, I set it up to always send streaming requests and the metric is never populated at all.
+
+It seems that this is a bug.
+Current Labels: [streaming, Observability]
+
+Please respond with a simple JSON array containing classifications for each issue.

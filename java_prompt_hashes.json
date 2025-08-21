@@ -1,0 +1,778 @@
+[ {
+  "issue_number" : 1536,
+  "token_estimate" : 1222,
+  "prompt_length" : 4888,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "0caed25a64bb07380c7b6445d03024ba0638dcd896d48c7e6fd1a076cf871e36"
+}, {
+  "issue_number" : 1028,
+  "token_estimate" : 1323,
+  "prompt_length" : 5294,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "d9f89b8ba4bf78299da1582a31119cb99a024b1a9741e5d2cbe5befb438e3f64"
+}, {
+  "issue_number" : 1543,
+  "token_estimate" : 1232,
+  "prompt_length" : 4928,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "23285fa84f38f8dfdca73e21cc8dee0cc2a147a30fd2025eef0a08730e14f056"
+}, {
+  "issue_number" : 1289,
+  "token_estimate" : 1246,
+  "prompt_length" : 4986,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "a8417ffe21022f07e4ca0930eb786452c354d05eb94e0bf59885b0578b3d56d9"
+}, {
+  "issue_number" : 3593,
+  "token_estimate" : 1158,
+  "prompt_length" : 4632,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "61fb89752ae4481814eb72b7c7cf73ce432dce43413df190d61f3947b17ff60d"
+}, {
+  "issue_number" : 1548,
+  "token_estimate" : 1384,
+  "prompt_length" : 5536,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "b8d86cea403e9245b34fd645ab1292856c683de210fe1b6b2cf161740f3c0f7d"
+}, {
+  "issue_number" : 526,
+  "token_estimate" : 1340,
+  "prompt_length" : 5361,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "aa2de4c0510600fcc50e545f9fbba306b350564987c5e8e981672c0d3d145ff8"
+}, {
+  "issue_number" : 3086,
+  "token_estimate" : 1669,
+  "prompt_length" : 6677,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "53aefc09548718724bab9c03a924ad87c4e36ee95da93fa843c173ed31a5db09"
+}, {
+  "issue_number" : 3092,
+  "token_estimate" : 1161,
+  "prompt_length" : 4644,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "899b7a427a83c1d9236e5d2990b2f5a3d74bd5ede36b7b915846044b28e26c51"
+}, {
+  "issue_number" : 1307,
+  "token_estimate" : 1184,
+  "prompt_length" : 4737,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "f4c9474abe8ba937b13c3017d58af3979bc6f283dcd86b15a9cf7787d2b92280"
+}, {
+  "issue_number" : 2334,
+  "token_estimate" : 1401,
+  "prompt_length" : 5604,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "5e2eabb6de4ebce3a884d8be81afff43e6963b57d90a8bf0a611d63a57ed2fb9"
+}, {
+  "issue_number" : 2335,
+  "token_estimate" : 1265,
+  "prompt_length" : 5063,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "c9dc75893595610c56411d5299462a4231f01f45a97e48368d3d207593db9c47"
+}, {
+  "issue_number" : 2337,
+  "token_estimate" : 1234,
+  "prompt_length" : 4936,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "7574535b5b66a48f9ed002c9a2ca43abb4293bd9c1d362f63e043645ece6c3a1"
+}, {
+  "issue_number" : 549,
+  "token_estimate" : 1297,
+  "prompt_length" : 5189,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "fd573bbe54933624cd76c3f71229f5cb09442e66e1591405027e00f5474cd035"
+}, {
+  "issue_number" : 3110,
+  "token_estimate" : 1366,
+  "prompt_length" : 5465,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "3d7e87ce6da2718ae5d2a70ef94065506a2c8cb7e00161c5ca804a74c64c1a05"
+}, {
+  "issue_number" : 3366,
+  "token_estimate" : 2141,
+  "prompt_length" : 8567,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "a60442a92acea8fea66cd2b1f4c350e3dbb025573a55612b4143571b312ffd1a"
+}, {
+  "issue_number" : 295,
+  "token_estimate" : 1261,
+  "prompt_length" : 5047,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "971b1b793583e6cd73670dc69ef2c0a720afe5b07d545055697bd21595133688"
+}, {
+  "issue_number" : 3625,
+  "token_estimate" : 1154,
+  "prompt_length" : 4619,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "bc7f0f949d347e79eac64568e3d14874d2a5b10a1b028e0ba11cb15bf58cf388"
+}, {
+  "issue_number" : 3115,
+  "token_estimate" : 3347,
+  "prompt_length" : 13390,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "b4c347b46f0f1828dfd4d4b8ab408a7fdc20d2fb3dc66bd026cbd904801fdafd"
+}, {
+  "issue_number" : 2861,
+  "token_estimate" : 1647,
+  "prompt_length" : 6588,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "d59f404374063f1630bc823082c7dc530ad0225449aa8d573f68e695fb38d3fa"
+}, {
+  "issue_number" : 814,
+  "token_estimate" : 1319,
+  "prompt_length" : 5276,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "253ff02b70f309699ea03f8bd22efd541bc4ba52dcba72435b452296604a72e5"
+}, {
+  "issue_number" : 1583,
+  "token_estimate" : 1657,
+  "prompt_length" : 6631,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "201b5d74f45d86212bdc038c6349fbc75ed260637118586184c163b2596aaba1"
+}, {
+  "issue_number" : 2095,
+  "token_estimate" : 1163,
+  "prompt_length" : 4655,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "887ce737a578dd714d2af8c1668a0692a12da887a168975577cb40a857b3dab4"
+}, {
+  "issue_number" : 1329,
+  "token_estimate" : 1254,
+  "prompt_length" : 5018,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "cf3150c5f7e0626637ffa9a1ed2f5ad553a7ee858f71d46a8b19ae5733c9fd7d"
+}, {
+  "issue_number" : 1331,
+  "token_estimate" : 1596,
+  "prompt_length" : 6385,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "0c0b6a9fce69d482268af67c39cdbd22933a921a90fc792d7cec421f8bcd3c97"
+}, {
+  "issue_number" : 1843,
+  "token_estimate" : 1362,
+  "prompt_length" : 5449,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "2298b86531ad81b7a2017663c349f41cb358bb3c5af626e7b5c7c2f994aff24e"
+}, {
+  "issue_number" : 1589,
+  "token_estimate" : 1379,
+  "prompt_length" : 5518,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "d8ed9bb5ab6914b78439a73d7433b55ba8945c0985684aea5376a8aeaddd4abb"
+}, {
+  "issue_number" : 1591,
+  "token_estimate" : 1198,
+  "prompt_length" : 4795,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "2aa9dd81e616d1a7b6132351933676a7252b00c51bf7541c2b89149535bbd957"
+}, {
+  "issue_number" : 1592,
+  "token_estimate" : 1252,
+  "prompt_length" : 5009,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "5adbe202de05ca5fded2029809db7b4dcd6073b0684659401fc59d7662c896f8"
+}, {
+  "issue_number" : 2105,
+  "token_estimate" : 1200,
+  "prompt_length" : 4800,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "bf111807fb2ba86c22ad18617b48cc956d5fa3e72a7d6f66d71d8da969946cd5"
+}, {
+  "issue_number" : 3643,
+  "token_estimate" : 1158,
+  "prompt_length" : 4632,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "1e818df2f1b6d3f1d366fa7d498a41fed0f21887c3a0b86e81759b114021c3da"
+}, {
+  "issue_number" : 3131,
+  "token_estimate" : 1504,
+  "prompt_length" : 6019,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "9c519d3cb5fc77c2e20b4d7b03325c496c4c9706c37ea13afb499d0538185d30"
+}, {
+  "issue_number" : 315,
+  "token_estimate" : 1207,
+  "prompt_length" : 4828,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "3d5988074ef1fd7fea2cb3cf5701082bd39850e8f163e09c333563ac829b9d57"
+}, {
+  "issue_number" : 1341,
+  "token_estimate" : 1460,
+  "prompt_length" : 5842,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "21a8e07e474336bcc4eae46744c6e8fdcf85a14e5e69c7fd415efb66c82caa9a"
+}, {
+  "issue_number" : 2367,
+  "token_estimate" : 1487,
+  "prompt_length" : 5950,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "0357855ac88b764b13d30360dfe89c4b3c9e30f1818a88fe93d42a82ca39b410"
+}, {
+  "issue_number" : 576,
+  "token_estimate" : 1419,
+  "prompt_length" : 5677,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "4e4fda4fae55041db4c36ee0b85cf30f8dd015f76168711d483a83d6034a8de7"
+}, {
+  "issue_number" : 833,
+  "token_estimate" : 4349,
+  "prompt_length" : 17396,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "95fd3ce8d808d522d5ae3ed1198dd3a597352cd97cac1e33bdbbd92bbc1a03b5"
+}, {
+  "issue_number" : 1345,
+  "token_estimate" : 1194,
+  "prompt_length" : 4777,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "6d6edaed22acbf38ae5f1a8e60189ee3dfc4e9129a1c578cb1bb79583ae73b7b"
+}, {
+  "issue_number" : 3655,
+  "token_estimate" : 1154,
+  "prompt_length" : 4616,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "b268d127f6024323d5688ddbed14687e6bf18bc660765a393d2ea286f3714e4e"
+}, {
+  "issue_number" : 1609,
+  "token_estimate" : 1505,
+  "prompt_length" : 6021,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "6d6b10bbb89564f6fdb651bc0881387919cb031a8d54106b9c77548b859cf72e"
+}, {
+  "issue_number" : 1098,
+  "token_estimate" : 1259,
+  "prompt_length" : 5038,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "f187f5ef554c31fbd123ac79fd20a3ec8db15cffeaa4dc337ce527d90762521f"
+}, {
+  "issue_number" : 3659,
+  "token_estimate" : 1158,
+  "prompt_length" : 4634,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "5f33ca08976290e614e082086b094f8e9be30f1bfccff1c4211dc20f6772403f"
+}, {
+  "issue_number" : 3147,
+  "token_estimate" : 1189,
+  "prompt_length" : 4758,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "474a8944dad910ede6a57250879eb110f81cccc99eaae70da7c8336a5d4be26b"
+}, {
+  "issue_number" : 845,
+  "token_estimate" : 1367,
+  "prompt_length" : 5468,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "f0e0650aa7133497e2f9353859e1132a4379f74e72340730fd340180a936db01"
+}, {
+  "issue_number" : 1101,
+  "token_estimate" : 1196,
+  "prompt_length" : 4784,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "d0955bbfb7c8566e648cb23992990f44a4e8f652d180a2c463f9246a50a34cca"
+}, {
+  "issue_number" : 847,
+  "token_estimate" : 1608,
+  "prompt_length" : 6432,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "671bb1e8b8a378463246185a4a1b9b909e9a82ddb1fa629b8ed749e25b6eebcb"
+}, {
+  "issue_number" : 1617,
+  "token_estimate" : 1458,
+  "prompt_length" : 5835,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "d542a06faea83a30c29a094352932f3177807d571b580aacff07684284cc832c"
+}, {
+  "issue_number" : 1874,
+  "token_estimate" : 1279,
+  "prompt_length" : 5116,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "a13ecc724a2e6f2a30da547004740a07070c010b143ad9fb0c6264eaab7fbb58"
+}, {
+  "issue_number" : 853,
+  "token_estimate" : 1346,
+  "prompt_length" : 5385,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "7b82fa1b194694225804634f3adcf70739de6996648201c3c391d7506b1bf2db"
+}, {
+  "issue_number" : 1878,
+  "token_estimate" : 1864,
+  "prompt_length" : 7458,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "2f03952bbb9671a4b3e7589105795e9bdb363ca0ab74e83e8ec8c77ae559a9f8"
+}, {
+  "issue_number" : 1622,
+  "token_estimate" : 2428,
+  "prompt_length" : 9714,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "938172bd7f808ee09a4e07e59f878077c44b0acd31476dd306b2463893ec013e"
+}, {
+  "issue_number" : 3670,
+  "token_estimate" : 1153,
+  "prompt_length" : 4612,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "efdc6c7b8d35c114721362d283c99d8bc37e5cd7b6938f9deef964bc42ff6637"
+}, {
+  "issue_number" : 3415,
+  "token_estimate" : 1449,
+  "prompt_length" : 5796,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "faf0b4d50bd6cb621506b862f0d518598967cc99e840bd2c9d9d5a8e9f5c5e55"
+}, {
+  "issue_number" : 343,
+  "token_estimate" : 1152,
+  "prompt_length" : 4611,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "f4caa5bf4b3a92ba7fccc3b8f526889fd2620baaaecce00e636c8ecc707f0740"
+}, {
+  "issue_number" : 601,
+  "token_estimate" : 1231,
+  "prompt_length" : 4925,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "0bce616c5b9a0c4835bc7b887f0a11170d1bdd10db4063d387283e46f1a85f91"
+}, {
+  "issue_number" : 1882,
+  "token_estimate" : 1401,
+  "prompt_length" : 5605,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "f49b75d3f3611641a558fb8d67069f0419234ba44c0af136415e5a9b40163dc7"
+}, {
+  "issue_number" : 860,
+  "token_estimate" : 1468,
+  "prompt_length" : 5873,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "56b53a914872ade118b55651b156cda91e4c28ad249826271aed12f1aee9d89b"
+}, {
+  "issue_number" : 1373,
+  "token_estimate" : 4012,
+  "prompt_length" : 16050,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "3e81594587c7dddd1957196857926d57afc9dcafed88013b01db7e51848391b4"
+}, {
+  "issue_number" : 1636,
+  "token_estimate" : 1241,
+  "prompt_length" : 4964,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "c5fdde1d2ea4585eadfaf50fcba588b8d166e5331593c62cf4515fb9a25a69d0"
+}, {
+  "issue_number" : 613,
+  "token_estimate" : 1815,
+  "prompt_length" : 7260,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "8456cd4237395e5cd2df0e50b82b2ad6ab7717aae415b71f8fed410b6622cf9f"
+}, {
+  "issue_number" : 1126,
+  "token_estimate" : 1315,
+  "prompt_length" : 5262,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "9aa736607ff1e591961b8b10a24236425399da7efd939b413e362743bb36744a"
+}, {
+  "issue_number" : 1386,
+  "token_estimate" : 3437,
+  "prompt_length" : 13750,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "d829b174a2dffe60dd8d6635d5ece05a174bb36c4d7086c6279ccdf72c987b5d"
+}, {
+  "issue_number" : 2414,
+  "token_estimate" : 1264,
+  "prompt_length" : 5056,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "55c970f6f85e20f93f336850c45df8779200bafb302d4c9080bd078b817f4851"
+}, {
+  "issue_number" : 368,
+  "token_estimate" : 1619,
+  "prompt_length" : 6477,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "adc4bbb933a07a05e1a6bc856635e10793e1c75da46fed71c463bea0e2dc2211"
+}, {
+  "issue_number" : 1138,
+  "token_estimate" : 1233,
+  "prompt_length" : 4934,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "362eea1a5eb1657e783927d29ebb15da0b5839020ff05da6e404e6ba4513e574"
+}, {
+  "issue_number" : 883,
+  "token_estimate" : 1328,
+  "prompt_length" : 5315,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "7409622ead1b66aa79f635fb7469dbf36ceedee3581123ae5c25040ffbe5aa37"
+}, {
+  "issue_number" : 1139,
+  "token_estimate" : 1193,
+  "prompt_length" : 4772,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "b9b4841112bfb235434ac371dd7680d6ec5c55c3cc4f4c57c660bb16ea937931"
+}, {
+  "issue_number" : 1665,
+  "token_estimate" : 1877,
+  "prompt_length" : 7509,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "8658ceb26e0ad2484a5e89163186c2b127e29dca4addfaf0434b1944c1b8bdb6"
+}, {
+  "issue_number" : 897,
+  "token_estimate" : 1182,
+  "prompt_length" : 4731,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "c65d54ea26d6b873a21ba5c4e0ed5346c579df5df8b89b572773204cb39f35a0"
+}, {
+  "issue_number" : 2691,
+  "token_estimate" : 1552,
+  "prompt_length" : 6209,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "857f1368b2858d80e7f03615a861d4181df996ce1e910fc9c110561a7419e322"
+}, {
+  "issue_number" : 3205,
+  "token_estimate" : 1230,
+  "prompt_length" : 4922,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "da42c71a99719069fa0dc05a969040e4745e917a97aa7df35c65e4bbce750f06"
+}, {
+  "issue_number" : 392,
+  "token_estimate" : 1233,
+  "prompt_length" : 4933,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "24679f31ef7094f1fb4e9698b8430c9b1fcc39f976422217bd45da8957ada4ed"
+}, {
+  "issue_number" : 1678,
+  "token_estimate" : 1162,
+  "prompt_length" : 4650,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "e526b8c8d340400cb4913a84243f4cc80edc1605f3f7696c9283bade732573cc"
+}, {
+  "issue_number" : 2703,
+  "token_estimate" : 1405,
+  "prompt_length" : 5623,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "298fa8270882f59891b4fc7136b35a136851c5e0b1b7af9b612c860a886d9463"
+}, {
+  "issue_number" : 1936,
+  "token_estimate" : 1618,
+  "prompt_length" : 6472,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "c21601e0840d76187c4eed987cd5ab111862abe2f30df648b743bcd3633b651c"
+}, {
+  "issue_number" : 1681,
+  "token_estimate" : 1248,
+  "prompt_length" : 4993,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "630091da52549cd74c8cb926f37fdb7ccfa0920b24608f0be572451205b2530c"
+}, {
+  "issue_number" : 3219,
+  "token_estimate" : 2167,
+  "prompt_length" : 8668,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "5ebca1332c69b3ad70e30bd3f5c14677fca8d37cf996c5d0a7a071a82ee93f1a"
+}, {
+  "issue_number" : 3734,
+  "token_estimate" : 1148,
+  "prompt_length" : 4595,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "7dcfa17333ae9df09238a5d2dd7d24825335eadb63008d42b0f6dbf8c230ec3f"
+}, {
+  "issue_number" : 1431,
+  "token_estimate" : 1316,
+  "prompt_length" : 5267,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "138928c22e8366aebd0f24b5db71e578d8275dd1372e581beda121bbe9f390eb"
+}, {
+  "issue_number" : 3741,
+  "token_estimate" : 1150,
+  "prompt_length" : 4600,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "688c09c10fe1bdf1ed73b205053f80c7e226b82e199b52a36b4bd6adf6e5581b"
+}, {
+  "issue_number" : 3745,
+  "token_estimate" : 1157,
+  "prompt_length" : 4628,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "aab709e71e8c7a072d82d9d092f50e5b4648f3a84e1a7257dce74668479c4065"
+}, {
+  "issue_number" : 421,
+  "token_estimate" : 1540,
+  "prompt_length" : 6163,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "d1a1a6f13816a4130aa283bb602278296a29425d3d8b01126aef1d9bf620879a"
+}, {
+  "issue_number" : 2983,
+  "token_estimate" : 1146,
+  "prompt_length" : 4586,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "195e7127de4c350b77f574051b80c2a8d7f2a435d3f669769cccf1efc3f3db7f"
+}, {
+  "issue_number" : 1707,
+  "token_estimate" : 1307,
+  "prompt_length" : 5228,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "1962507af040f357da411ff613b085842f32af0a15e3c4b112c4272f29a4b372"
+}, {
+  "issue_number" : 1202,
+  "token_estimate" : 1407,
+  "prompt_length" : 5630,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "7bf200023665ae167c540a8b3f1772a1cf5281154e8bbf3884a99ca5e8e74b42"
+}, {
+  "issue_number" : 3762,
+  "token_estimate" : 1158,
+  "prompt_length" : 4632,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "4aa10686c930cae1eecb2b52d06aa1f36b316fd9a266a7a9100a95c09cd2c653"
+}, {
+  "issue_number" : 1715,
+  "token_estimate" : 1305,
+  "prompt_length" : 5221,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "6efbf054d657e1008573027e0fb7d0fb0b0c99c76083ef18af7c6ed3a2acee02"
+}, {
+  "issue_number" : 1459,
+  "token_estimate" : 1516,
+  "prompt_length" : 6065,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "c505a2ffd1eb485b90b0ced0a31e1fa197ba70fcd2f0e8220b8d8234fb7440bc"
+}, {
+  "issue_number" : 179,
+  "token_estimate" : 1175,
+  "prompt_length" : 4702,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "48bf5facdba2bd904f83a9a69f83ee7958dda1fe9c11dd4924960ef5c8e7c35a"
+}, {
+  "issue_number" : 2486,
+  "token_estimate" : 1530,
+  "prompt_length" : 6122,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "0c1ce78215d7a1205bbb2c949a49cd1b5f261ebb66d610ae2f8c6f60cb945c2d"
+}, {
+  "issue_number" : 694,
+  "token_estimate" : 1201,
+  "prompt_length" : 4805,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "405ab1008a79b2051af9060c5878c0125331b7488d80f10ec157164fd93b8316"
+}, {
+  "issue_number" : 953,
+  "token_estimate" : 4842,
+  "prompt_length" : 19369,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "45b4e300e05d8bb081b6d1c1b91321da14d952d9cb799b9e91ddb048a7153d2b"
+}, {
+  "issue_number" : 700,
+  "token_estimate" : 1234,
+  "prompt_length" : 4936,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "4e1bbe5f65b5c726c3fc7d455b717d6f906c657a251610d56e7903f2b5a6acf3"
+}, {
+  "issue_number" : 2492,
+  "token_estimate" : 1196,
+  "prompt_length" : 4784,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "63c87fa0aef3e1a67e883a203726403898eb208088638f7db7794bb3cdce17fc"
+}, {
+  "issue_number" : 445,
+  "token_estimate" : 1157,
+  "prompt_length" : 4630,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "2d9ae7696ca8c818383d67c51d5e2e89d09272bfeaf6dcb2d9fef6453fa9c9fe"
+}, {
+  "issue_number" : 1731,
+  "token_estimate" : 1325,
+  "prompt_length" : 5301,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "fd01d9b5199d31c19f7d2432af22474b618576b9bec0e12ec563885575166855"
+}, {
+  "issue_number" : 3526,
+  "token_estimate" : 1360,
+  "prompt_length" : 5441,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "da63dd41ae9c0147437558d7a4b4159c0a36ef17e3ca0f0d0ec4fe288d49049d"
+}, {
+  "issue_number" : 1487,
+  "token_estimate" : 1253,
+  "prompt_length" : 5012,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "c0e471b51ffe0f96884825feab76d19f5f83fef0de3352ecff01cbb1b987d792"
+}, {
+  "issue_number" : 1234,
+  "token_estimate" : 1715,
+  "prompt_length" : 6862,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "b3510d041da3a0c8a7b9e8844955f440d6e511d7076c8eb3f901f5826ea06e53"
+}, {
+  "issue_number" : 3542,
+  "token_estimate" : 1436,
+  "prompt_length" : 5747,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "dc0e4a184920dc7ca84f5133edce59de1417c4778d22e87bba514ccd0347b7ec"
+}, {
+  "issue_number" : 731,
+  "token_estimate" : 1161,
+  "prompt_length" : 4645,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "65004a7c865cd1d2d2b999994f8dc3582728572112594fb277d5ef93809e6a42"
+}, {
+  "issue_number" : 1248,
+  "token_estimate" : 1326,
+  "prompt_length" : 5304,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "0783f17fc2f00223ba8a237f37bcbdae5bf6624ad98b3f59bfe7d3e01775cac9"
+}, {
+  "issue_number" : 992,
+  "token_estimate" : 1173,
+  "prompt_length" : 4695,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "70180dd69a28874468eb31622747dd735521e6f50e211ec11029e67add7daf1d"
+}, {
+  "issue_number" : 1506,
+  "token_estimate" : 1312,
+  "prompt_length" : 5251,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "2f6336fe7325c44ce8843ccb3a0e57779f235697ac9ad41a58fc7034d3b1fca2"
+}, {
+  "issue_number" : 739,
+  "token_estimate" : 1607,
+  "prompt_length" : 6430,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "bda95d308803d4f43cc27c1e3e5cbf4d7f226573eb03b0ee47dbb27cf47f8b60"
+}, {
+  "issue_number" : 749,
+  "token_estimate" : 1760,
+  "prompt_length" : 7040,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "4663d595afb2a207a9ea29fac46f57aafe01d44e8845650f9c6900d2d42a128a"
+}, {
+  "issue_number" : 1776,
+  "token_estimate" : 1314,
+  "prompt_length" : 5256,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "7a569ee9eff4d5c892690a20d406f44b2f51f879b6dd8215f2fce43743c5eb96"
+}, {
+  "issue_number" : 753,
+  "token_estimate" : 1651,
+  "prompt_length" : 6606,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "17dfe49c69572cd62c1104c39eb4609bc15d8c06421241050bd7e5e9b5936f8e"
+}, {
+  "issue_number" : 3828,
+  "token_estimate" : 1150,
+  "prompt_length" : 4602,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "b3b808b785e90226d0f55c7aec44f3ad4627f564aebf877cc63682f760dd57c0"
+}, {
+  "issue_number" : 3578,
+  "token_estimate" : 1153,
+  "prompt_length" : 4612,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "38348e80a201d2ccdb67b5919a5b8f8b356f7d7daee224a904c964fedb19ea58"
+}, {
+  "issue_number" : 2301,
+  "token_estimate" : 2142,
+  "prompt_length" : 8570,
+  "label_count" : 116,
+  "label_order_hash" : "dcdc8d490cfd775584b09a5ca54300a77cddd08a51d854238d7e13359e290886",
+  "prompt_hash" : "63165ab4bddff5b36baa2da64e82753a5af0b3ce2a79cff6f3c29aa3ebaf2895"
+} ]

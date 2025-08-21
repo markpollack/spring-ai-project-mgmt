@@ -1,0 +1,125 @@
+Please analyze these GitHub issues and classify them:
+
+Issue #368
+Title: Function Call Response Is Not Inside ChatResponse Object
+Body: Hi,
+I am using openAI and registered a function for setting SQL parameters. When I ask a related question such as : "draw a chart of top selling products" I can clearly see that, the function is being called. And I can see that expected parameters are also being set. But inside chatresponse object I can't see the values that I return from method.
+
+```java
+import java.util.Arrays;
+import java.util.function.Function;
+
+public class GraphService implements Function<GraphService.Request, String> {
+
+	public record Request(String[] measure, String[] aggregation) {}
+
+	public String apply(Request request) {
+		System.out.println("function call");
+		StringBuffer sb = new StringBuffer();
+		sb.append("graph(");
+		sb.append(Arrays.toString(request.measure));
+		sb.append(Arrays.toString(request.aggregation));
+		sb.append(")");
+		return sb.toString();
+	}
+}
+```
+
+Controller Class:
+
+```java
+        GetMapping("/ai/generate3")
+	public Map generate3(@RequestParam(value = "message...
+Current Labels: [tool/function calling, design, status: to-discuss]
+
+Issue #1936
+Title: ElasticSearch doSimilaritySearch broken after recent changes in Document
+Body: After update to the most recent version the similarity search gives an exception because the Document is no longer compatible to the data return by the search hits
+1. Document (org.springframework.ai.document.Document) is directly serialized from the ES response using standard jackson map to object serialization
+
+```
+doSimilaritySearch(SearchRequest searchRequest)
+...
+			SearchResponse<Document> res = this.elasticsearchClient.search(
+					sr -> sr.index(this.options.getIndexName())
+						.knn(knn -> knn.queryVector(EmbeddingUtils.toList(vectors))
+							.similarity(finalThreshold)
+							.k((long) searchRequest.getTopK())
+							.field("embedding")
+							.numCandidates((long) (1.5 * searchRequest.getTopK()))
+							.filter(fl -> fl.queryString(
+									qs -> qs.query(getElasticsearchQueryString(searchRequest.getFilterExpression()))))),
+			---->		Document.class);
+
+			return res.hits().hits().stream().map(this::toDocument).collect(Collectors.toList());
+```
+2. The pre...
+Current Labels: [elastic search, bug]
+
+Issue #295
+Title: Add Generic Model documentation
+Body: Add to documentation section "Generic Model" that provides a description of the "meta api" that describes
+
+```
+public interface ModelClient<TReq extends ModelRequest<?>, TRes extends ModelResponse<?>> {
+
+	/**
+	 * Executes a method call to the AI model.
+	 * @param request the request object to be sent to the AI model
+	 * @return the response from the AI model
+	 */
+	TRes call(TReq request);
+
+}
+```
+
+and related classes so that contributors can follow the establish patterns.
+Current Labels: [documentation]
+
+Issue #613
+Title: [Azure OpenAI] Function calling - Can't execute multiple function calls
+Body: **Bug description**
+When there should be multiple function calls for a single question, only one call is made because AzureOpenAiChatClient doesn't copy tools value from first request to second request, as a result, the next function call will not happen (loosing context in the function call response). 
+
+**Environment**
+spring-ai-azure-openai-1.0.0-20240420.063719-112.jar
+
+**Steps to reproduce**
+- AzureOpenAiChatClient  makes a call to gpt-4 with question "What's the weather like in San Francisco, Tokyo, and Paris?" and function "weatherFunction"
+- AzureOpenAiChatClient  receives a function call in response for "San Francisco"
+- AzureOpenAiChatClient  calls the function and builds a second request including the result, sends new request 
+- AzureOpenAiChatClient  receives the result for "San Francisco" and stops
+
+**Expected behavior**
+Multiple function calls should happen (for SanFrancisco, Tokyo, Paris).
+
+**Analysis**
+This issue doesn't happen if using OpenAIChatClient....
+Current Labels: [tool/function calling]
+
+Issue #526
+Title: Function to load model on Spring Ollama
+Body: I would like to request a function to load and check if a model is loaded. Write now, when I boot the project and request anything I just get an error:
+[404] Not Found - {"error":"model 'mistral' not found, try pulling it first"}
+It only starts working after I run the below:
+```
+curl http://localhost:11434/api/pull -d '{    
+"name": "mistral"  
+}'
+```
+
+**Expected Behavior**
+
+Just a function to load models and check if they were loaded or exist.
+
+**Current Behavior**
+
+Doesn't exist a way to check inside the spring project if the model were loaded or not, or an option to load it.
+
+**Context**
+
+Now I still need to go to the terminal to load the model outside the project. 
+Here is the repository I'm playing with: https://github.com/Adrianogba/Spring-Ollama
+Current Labels: [ollama, follow up]
+
+Please respond with a simple JSON array containing classifications for each issue.

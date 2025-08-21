@@ -1,0 +1,301 @@
+[ {
+  "zero_prediction" : true,
+  "parsed_labels" : [ ],
+  "response_length" : 0,
+  "issue_number" : 1028,
+  "token_count" : 0,
+  "response_hash" : "ERROR",
+  "label_count" : 0,
+  "raw_response" : "ERROR: Claude Code CLI failed with exit code 1. Error: error: unknown option '--temperature'\n",
+  "prompt_hash" : "ERROR"
+}, {
+  "zero_prediction" : true,
+  "parsed_labels" : [ ],
+  "response_length" : 0,
+  "issue_number" : 3526,
+  "token_count" : 0,
+  "response_hash" : "ERROR",
+  "label_count" : 0,
+  "raw_response" : "ERROR: Claude Code CLI failed with exit code 1. Error: error: unknown option '--temperature'\n",
+  "prompt_hash" : "ERROR"
+}, {
+  "zero_prediction" : true,
+  "parsed_labels" : [ ],
+  "response_length" : 0,
+  "issue_number" : 1289,
+  "token_count" : 0,
+  "response_hash" : "ERROR",
+  "label_count" : 0,
+  "raw_response" : "ERROR: Claude Code CLI failed with exit code 1. Error: error: unknown option '--temperature'\n",
+  "prompt_hash" : "ERROR"
+}, {
+  "zero_prediction" : true,
+  "parsed_labels" : [ ],
+  "response_length" : 0,
+  "issue_number" : 3659,
+  "token_count" : 0,
+  "response_hash" : "ERROR",
+  "label_count" : 0,
+  "raw_response" : "ERROR: Claude Code CLI failed with exit code 1. Error: error: unknown option '--temperature'\n",
+  "prompt_hash" : "ERROR"
+}, {
+  "zero_prediction" : true,
+  "parsed_labels" : [ ],
+  "response_length" : 0,
+  "issue_number" : 845,
+  "token_count" : 0,
+  "response_hash" : "ERROR",
+  "label_count" : 0,
+  "raw_response" : "ERROR: Claude Code CLI failed with exit code 1. Error: error: unknown option '--temperature'\n",
+  "prompt_hash" : "ERROR"
+}, {
+  "zero_prediction" : true,
+  "parsed_labels" : [ ],
+  "response_length" : 0,
+  "issue_number" : 3219,
+  "token_count" : 0,
+  "response_hash" : "ERROR",
+  "label_count" : 0,
+  "raw_response" : "ERROR: Claude Code CLI failed with exit code 1. Error: error: unknown option '--temperature'\n",
+  "prompt_hash" : "ERROR"
+}, {
+  "zero_prediction" : true,
+  "parsed_labels" : [ ],
+  "response_length" : 0,
+  "issue_number" : 3092,
+  "token_count" : 0,
+  "response_hash" : "ERROR",
+  "label_count" : 0,
+  "raw_response" : "ERROR: Claude Code CLI failed with exit code 1. Error: error: unknown option '--temperature'\n",
+  "prompt_hash" : "ERROR"
+}, {
+  "zero_prediction" : true,
+  "parsed_labels" : [ ],
+  "response_length" : 0,
+  "issue_number" : 1878,
+  "token_count" : 0,
+  "response_hash" : "ERROR",
+  "label_count" : 0,
+  "raw_response" : "ERROR: Claude Code CLI failed with exit code 1. Error: error: unknown option '--temperature'\n",
+  "prompt_hash" : "ERROR"
+}, {
+  "zero_prediction" : true,
+  "parsed_labels" : [ ],
+  "response_length" : 0,
+  "issue_number" : 1622,
+  "token_count" : 0,
+  "response_hash" : "ERROR",
+  "label_count" : 0,
+  "raw_response" : "ERROR: Claude Code CLI failed with exit code 1. Error: error: unknown option '--temperature'\n",
+  "prompt_hash" : "ERROR"
+}, {
+  "zero_prediction" : true,
+  "parsed_labels" : [ ],
+  "response_length" : 0,
+  "issue_number" : 3741,
+  "token_count" : 0,
+  "response_hash" : "ERROR",
+  "label_count" : 0,
+  "raw_response" : "ERROR: Claude Code CLI failed with exit code 1. Error: error: unknown option '--temperature'\n",
+  "prompt_hash" : "ERROR"
+}, {
+  "zero_prediction" : true,
+  "parsed_labels" : [ ],
+  "response_length" : 0,
+  "issue_number" : 1373,
+  "token_count" : 0,
+  "response_hash" : "ERROR",
+  "label_count" : 0,
+  "raw_response" : "ERROR: Claude Code CLI failed with exit code 1. Error: error: unknown option '--temperature'\n",
+  "prompt_hash" : "ERROR"
+}, {
+  "zero_prediction" : true,
+  "parsed_labels" : [ ],
+  "response_length" : 0,
+  "issue_number" : 2334,
+  "token_count" : 0,
+  "response_hash" : "ERROR",
+  "label_count" : 0,
+  "raw_response" : "ERROR: Claude Code CLI failed with exit code 1. Error: error: unknown option '--temperature'\n",
+  "prompt_hash" : "ERROR"
+}, {
+  "zero_prediction" : true,
+  "parsed_labels" : [ ],
+  "response_length" : 0,
+  "issue_number" : 2335,
+  "token_count" : 0,
+  "response_hash" : "ERROR",
+  "label_count" : 0,
+  "raw_response" : "ERROR: Claude Code CLI failed with exit code 1. Error: error: unknown option '--temperature'\n",
+  "prompt_hash" : "ERROR"
+}, {
+  "zero_prediction" : true,
+  "parsed_labels" : [ ],
+  "response_length" : 0,
+  "issue_number" : 739,
+  "token_count" : 0,
+  "response_hash" : "ERROR",
+  "label_count" : 0,
+  "raw_response" : "ERROR: Claude Code CLI failed with exit code 1. Error: error: unknown option '--temperature'\n",
+  "prompt_hash" : "ERROR"
+}, {
+  "zero_prediction" : true,
+  "parsed_labels" : [ ],
+  "response_length" : 0,
+  "issue_number" : 3110,
+  "token_count" : 0,
+  "response_hash" : "ERROR",
+  "label_count" : 0,
+  "raw_response" : "ERROR: Claude Code CLI failed with exit code 1. Error: error: unknown option '--temperature'\n",
+  "prompt_hash" : "ERROR"
+}, {
+  "zero_prediction" : true,
+  "parsed_labels" : [ ],
+  "response_length" : 0,
+  "issue_number" : 1386,
+  "token_count" : 0,
+  "response_hash" : "ERROR",
+  "label_count" : 0,
+  "raw_response" : "ERROR: Claude Code CLI failed with exit code 1. Error: error: unknown option '--temperature'\n",
+  "prompt_hash" : "ERROR"
+}, {
+  "zero_prediction" : true,
+  "parsed_labels" : [ ],
+  "response_length" : 0,
+  "issue_number" : 1707,
+  "token_count" : 0,
+  "response_hash" : "ERROR",
+  "label_count" : 0,
+  "raw_response" : "ERROR: Claude Code CLI failed with exit code 1. Error: error: unknown option '--temperature'\n",
+  "prompt_hash" : "ERROR"
+}, {
+  "zero_prediction" : true,
+  "parsed_labels" : [ ],
+  "response_length" : 0,
+  "issue_number" : 3115,
+  "token_count" : 0,
+  "response_hash" : "ERROR",
+  "label_count" : 0,
+  "raw_response" : "ERROR: Claude Code CLI failed with exit code 1. Error: error: unknown option '--temperature'\n",
+  "prompt_hash" : "ERROR"
+}, {
+  "zero_prediction" : true,
+  "parsed_labels" : [ ],
+  "response_length" : 0,
+  "issue_number" : 1583,
+  "token_count" : 0,
+  "response_hash" : "ERROR",
+  "label_count" : 0,
+  "raw_response" : "ERROR: Claude Code CLI failed with exit code 1. Error: error: unknown option '--temperature'\n",
+  "prompt_hash" : "ERROR"
+}, {
+  "zero_prediction" : true,
+  "parsed_labels" : [ ],
+  "response_length" : 0,
+  "issue_number" : 1776,
+  "token_count" : 0,
+  "response_hash" : "ERROR",
+  "label_count" : 0,
+  "raw_response" : "ERROR: Claude Code CLI failed with exit code 1. Error: error: unknown option '--temperature'\n",
+  "prompt_hash" : "ERROR"
+}, {
+  "zero_prediction" : true,
+  "parsed_labels" : [ ],
+  "response_length" : 0,
+  "issue_number" : 883,
+  "token_count" : 0,
+  "response_hash" : "ERROR",
+  "label_count" : 0,
+  "raw_response" : "ERROR: Claude Code CLI failed with exit code 1. Error: error: unknown option '--temperature'\n",
+  "prompt_hash" : "ERROR"
+}, {
+  "zero_prediction" : true,
+  "parsed_labels" : [ ],
+  "response_length" : 0,
+  "issue_number" : 1331,
+  "token_count" : 0,
+  "response_hash" : "ERROR",
+  "label_count" : 0,
+  "raw_response" : "ERROR: Claude Code CLI failed with exit code 1. Error: error: unknown option '--temperature'\n",
+  "prompt_hash" : "ERROR"
+}, {
+  "zero_prediction" : true,
+  "parsed_labels" : [ ],
+  "response_length" : 0,
+  "issue_number" : 1843,
+  "token_count" : 0,
+  "response_hash" : "ERROR",
+  "label_count" : 0,
+  "raw_response" : "ERROR: Claude Code CLI failed with exit code 1. Error: error: unknown option '--temperature'\n",
+  "prompt_hash" : "ERROR"
+}, {
+  "zero_prediction" : true,
+  "parsed_labels" : [ ],
+  "response_length" : 0,
+  "issue_number" : 2486,
+  "token_count" : 0,
+  "response_hash" : "ERROR",
+  "label_count" : 0,
+  "raw_response" : "ERROR: Claude Code CLI failed with exit code 1. Error: error: unknown option '--temperature'\n",
+  "prompt_hash" : "ERROR"
+}, {
+  "zero_prediction" : true,
+  "parsed_labels" : [ ],
+  "response_length" : 0,
+  "issue_number" : 1591,
+  "token_count" : 0,
+  "response_hash" : "ERROR",
+  "label_count" : 0,
+  "raw_response" : "ERROR: Claude Code CLI failed with exit code 1. Error: error: unknown option '--temperature'\n",
+  "prompt_hash" : "ERROR"
+}, {
+  "zero_prediction" : true,
+  "parsed_labels" : [ ],
+  "response_length" : 0,
+  "issue_number" : 953,
+  "token_count" : 0,
+  "response_hash" : "ERROR",
+  "label_count" : 0,
+  "raw_response" : "ERROR: Claude Code CLI failed with exit code 1. Error: error: unknown option '--temperature'\n",
+  "prompt_hash" : "ERROR"
+}, {
+  "zero_prediction" : true,
+  "parsed_labels" : [ ],
+  "response_length" : 0,
+  "issue_number" : 2105,
+  "token_count" : 0,
+  "response_hash" : "ERROR",
+  "label_count" : 0,
+  "raw_response" : "ERROR: Claude Code CLI failed with exit code 1. Error: error: unknown option '--temperature'\n",
+  "prompt_hash" : "ERROR"
+}, {
+  "zero_prediction" : true,
+  "parsed_labels" : [ ],
+  "response_length" : 0,
+  "issue_number" : 3578,
+  "token_count" : 0,
+  "response_hash" : "ERROR",
+  "label_count" : 0,
+  "raw_response" : "ERROR: Claude Code CLI failed with exit code 1. Error: error: unknown option '--temperature'\n",
+  "prompt_hash" : "ERROR"
+}, {
+  "zero_prediction" : true,
+  "parsed_labels" : [ ],
+  "response_length" : 0,
+  "issue_number" : 3643,
+  "token_count" : 0,
+  "response_hash" : "ERROR",
+  "label_count" : 0,
+  "raw_response" : "ERROR: Claude Code CLI failed with exit code 1. Error: error: unknown option '--temperature'\n",
+  "prompt_hash" : "ERROR"
+}, {
+  "zero_prediction" : true,
+  "parsed_labels" : [ ],
+  "response_length" : 0,
+  "issue_number" : 700,
+  "token_count" : 0,
+  "response_hash" : "ERROR",
+  "label_count" : 0,
+  "raw_response" : "ERROR: Claude Code CLI failed with exit code 1. Error: error: unknown option '--temperature'\n",
+  "prompt_hash" : "ERROR"
+} ]

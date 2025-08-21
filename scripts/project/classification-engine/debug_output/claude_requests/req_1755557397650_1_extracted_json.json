@@ -1,0 +1,69 @@
+[ {
+  "issue_number" : 700,
+  "predicted_labels" : [ {
+    "label" : "enhancement",
+    "confidence" : 0.85
+  }, {
+    "label" : "dependencies",
+    "confidence" : 0.75
+  } ],
+  "explanation" : "Request for JPMS (Java Platform Module System) support is clearly an enhancement. The issue specifically mentions dependencies and module-info requirements, aligning with dependency management concerns."
+}, {
+  "issue_number" : 3659,
+  "predicted_labels" : [ {
+    "label" : "code cleanup",
+    "confidence" : 0.95
+  }, {
+    "label" : "type: backport",
+    "confidence" : 0.9
+  }, {
+    "label" : "openai",
+    "confidence" : 0.8
+  } ],
+  "explanation" : "This is explicitly labeled as a refactor to remove redundant null check in OpenAiApi.Builder, clearly indicating code cleanup. It's a backport of gh-3654 and affects OpenAI module."
+}, {
+  "issue_number" : 3526,
+  "predicted_labels" : [ {
+    "label" : "bug",
+    "confidence" : 0.9
+  }, {
+    "label" : "prompt management",
+    "confidence" : 0.85
+  }, {
+    "label" : "for: backport-to-1.0.x",
+    "confidence" : 0.9
+  }, {
+    "label" : "status: backported",
+    "confidence" : 0.9
+  } ],
+  "explanation" : "Clear bug where SystemPromptTemplate builder returns wrong type (PromptTemplate instead of SystemPromptTemplate), causing UserMessage instead of SystemMessage. Affects prompt management and is marked for/as backported."
+}, {
+  "issue_number" : 1028,
+  "predicted_labels" : [ {
+    "label" : "bug",
+    "confidence" : 0.85
+  }, {
+    "label" : "vertex",
+    "confidence" : 0.85
+  }, {
+    "label" : "gcp",
+    "confidence" : 0.8
+  }, {
+    "label" : "breaking",
+    "confidence" : 0.75
+  } ],
+  "explanation" : "New Vertex AI embedding functionality breaks existing code that doesn't use embeddings, requiring configuration even when not needed. This is a breaking change affecting Vertex AI/GCP integration."
+}, {
+  "issue_number" : 3741,
+  "predicted_labels" : [ {
+    "label" : "bug",
+    "confidence" : 0.9
+  }, {
+    "label" : "type: backport",
+    "confidence" : 0.9
+  }, {
+    "label" : "code cleanup",
+    "confidence" : 0.7
+  } ],
+  "explanation" : "Backport of gh-3729 addressing incorrect use of ClassUtils.isAssignable. The title indicates improper API usage which constitutes a bug, and it's explicitly marked as a backport."
+} ]

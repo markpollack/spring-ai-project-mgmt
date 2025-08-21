@@ -1,0 +1,56 @@
+[ {
+  "top_p" : "1.0",
+  "issue_number" : 1776,
+  "claude_version" : "1.0.83 (Claude Code)",
+  "full_invocation_hash" : "2cdcce40276d0822408d2d6146e023a44eaa19825d23fb250216f3fb752a1c89",
+  "max_tokens" : "4096",
+  "command_hash" : "d2f5a9864996b886bfd01fb1fe28b0ba445c25095d2c7e4c9b682c46794934de",
+  "temperature" : "0.0",
+  "model_id" : "claude-3-5-sonnet-20241022",
+  "command_line" : "claude code -p \"We're building a **multi-label classifier** for GitHub issues in the **Spring AI project**.\n\nYou hav...\"",
+  "environment_hash" : "5ddedc3d210c575449968e103aabb783f8c81b25bca84c98ab4a4fd3f71e1e25"
+}, {
+  "top_p" : "1.0",
+  "issue_number" : 1878,
+  "claude_version" : "1.0.83 (Claude Code)",
+  "full_invocation_hash" : "2cdcce40276d0822408d2d6146e023a44eaa19825d23fb250216f3fb752a1c89",
+  "max_tokens" : "4096",
+  "command_hash" : "d2f5a9864996b886bfd01fb1fe28b0ba445c25095d2c7e4c9b682c46794934de",
+  "temperature" : "0.0",
+  "model_id" : "claude-3-5-sonnet-20241022",
+  "command_line" : "claude code -p \"We're building a **multi-label classifier** for GitHub issues in the **Spring AI project**.\n\nYou hav...\"",
+  "environment_hash" : "5ddedc3d210c575449968e103aabb783f8c81b25bca84c98ab4a4fd3f71e1e25"
+}, {
+  "top_p" : "1.0",
+  "issue_number" : 953,
+  "claude_version" : "1.0.83 (Claude Code)",
+  "full_invocation_hash" : "2cdcce40276d0822408d2d6146e023a44eaa19825d23fb250216f3fb752a1c89",
+  "max_tokens" : "4096",
+  "command_hash" : "d2f5a9864996b886bfd01fb1fe28b0ba445c25095d2c7e4c9b682c46794934de",
+  "temperature" : "0.0",
+  "model_id" : "claude-3-5-sonnet-20241022",
+  "command_line" : "claude code -p \"We're building a **multi-label classifier** for GitHub issues in the **Spring AI project**.\n\nYou hav...\"",
+  "environment_hash" : "5ddedc3d210c575449968e103aabb783f8c81b25bca84c98ab4a4fd3f71e1e25"
+}, {
+  "top_p" : "1.0",
+  "issue_number" : 3578,
+  "claude_version" : "1.0.83 (Claude Code)",
+  "full_invocation_hash" : "2cdcce40276d0822408d2d6146e023a44eaa19825d23fb250216f3fb752a1c89",
+  "max_tokens" : "4096",
+  "command_hash" : "d2f5a9864996b886bfd01fb1fe28b0ba445c25095d2c7e4c9b682c46794934de",
+  "temperature" : "0.0",
+  "model_id" : "claude-3-5-sonnet-20241022",
+  "command_line" : "claude code -p \"We're building a **multi-label classifier** for GitHub issues in the **Spring AI project**.\n\nYou hav...\"",
+  "environment_hash" : "5ddedc3d210c575449968e103aabb783f8c81b25bca84c98ab4a4fd3f71e1e25"
+}, {
+  "top_p" : "1.0",
+  "issue_number" : 1707,
+  "claude_version" : "1.0.83 (Claude Code)",
+  "full_invocation_hash" : "2cdcce40276d0822408d2d6146e023a44eaa19825d23fb250216f3fb752a1c89",
+  "max_tokens" : "4096",
+  "command_hash" : "d2f5a9864996b886bfd01fb1fe28b0ba445c25095d2c7e4c9b682c46794934de",
+  "temperature" : "0.0",
+  "model_id" : "claude-3-5-sonnet-20241022",
+  "command_line" : "claude code -p \"We're building a **multi-label classifier** for GitHub issues in the **Spring AI project**.\n\nYou hav...\"",
+  "environment_hash" : "5ddedc3d210c575449968e103aabb783f8c81b25bca84c98ab4a4fd3f71e1e25"
+} ]
