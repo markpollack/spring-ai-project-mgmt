@@ -3,7 +3,7 @@
 Spring AI start.spring.io Update Script
 
 Standalone script for updating start.spring.io (Spring Initializr) with new Spring AI releases.
-This script handles step 14 of the Spring AI point release process.
+This script handles step 14 of the Spring AI patch release process.
 
 Usage:
     python3 update-start-spring-io.py 1.0.1 --dry-run
@@ -353,7 +353,7 @@ class StartSpringIOUpdater:
             # Show commit and PR details
             commit_msg = f"Update Spring AI to {self.version}"
             pr_title = f"Update Spring AI to {self.version}"
-            pr_body = f"""Updates Spring AI BOM version to {self.version} for compatibility with latest point release.
+            pr_body = f"""Updates Spring AI BOM version to {self.version} for compatibility with latest patch release.
 
 - Updated spring-ai version mapping from {old_version} to {self.version}
 - Maintains compatibility range [3.4.0,4.0.0-M1)
@@ -420,7 +420,7 @@ This change makes Spring AI {self.version} available in Spring Initializr for ne
         """Create pull request using GitHub CLI"""
         try:
             pr_title = f"Update Spring AI to {self.version}"
-            pr_body = f"""Updates Spring AI BOM version to {self.version} for compatibility with latest point release.
+            pr_body = f"""Updates Spring AI BOM version to {self.version} for compatibility with latest patch release.
 
 - Updated spring-ai version mapping from {old_version} to {self.version}
 - Maintains compatibility range [3.4.0,4.0.0-M1)

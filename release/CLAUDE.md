@@ -10,10 +10,15 @@ The `/release` directory houses specialized scripts for:
 - Release documentation automation
 - Version-specific workflow automation
 
+**Semantic Versioning**: Following semver.org principles:
+- **PATCH releases** (1.0.1, 1.0.2): Backward compatible bug fixes
+- **MINOR releases** (1.1.0, 1.2.0): Backward compatible new features  
+- **MAJOR releases** (2.0.0): Incompatible API changes
+
 ## Available Scripts
 
 ### spring-ai-point-release.py
-**Purpose**: Automate complete point release workflow for Spring AI 1.0.x branch
+**Purpose**: Automate complete patch release workflow for Spring AI 1.0.x branch (semantic versioning PATCH releases)
 
 **Functionality**:
 - **Two-phase workflow** for safer Maven Central integration
@@ -111,14 +116,14 @@ python3 spring-ai-point-release.py 1.0.2 --branch 1.0.x
 
 These scripts integrate with the main Spring AI project management workflow documented in the parent directory's CLAUDE.md:
 
-- **Point Releases**: Automated 1.0.x branch releases (1.0.1, 1.0.2, etc.)
-- **Milestone Releases**: Support for M1, M2, M3 releases
-- **Release Candidate**: Support for RC releases  
-- **General Availability**: Support for GA releases
+- **Patch Releases**: Automated 1.0.x branch releases (1.0.1, 1.0.2, etc.)
+- **Milestone Releases**: Support for M1, M2, M3 releases (minor version prereleases)
+- **Release Candidate**: Support for RC releases (minor version prereleases)
+- **General Availability**: Support for GA releases (minor version stable)
 - **Contributor Acknowledgment**: Generate contributor lists for release notes
 - **Release Automation**: Automate repetitive release preparation tasks
 
-The `spring-ai-point-release.py` script specifically handles the technical release workflow for point releases, while other scripts support release documentation and contributor recognition.
+The `spring-ai-point-release.py` script specifically handles the technical release workflow for patch releases, while other scripts support release documentation and contributor recognition.
 
 ## Usage Notes
 

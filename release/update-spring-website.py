@@ -3,7 +3,7 @@
 Spring AI spring-website-content Update Script
 
 Standalone script for updating spring-website-content with new Spring AI documentation.
-This script handles step 15 of the Spring AI point release process.
+This script handles step 15 of the Spring AI patch release process.
 
 Usage:
     python3 update-spring-website.py 1.0.1 --dry-run
@@ -171,7 +171,7 @@ class SpringWebsiteUpdater:
             return False
     
     def update_documentation_json(self) -> tuple[bool, str]:
-        """Update documentation.json array for point release"""
+        """Update documentation.json array for patch release"""
         try:
             if not self.doc_file.exists():
                 if self.dry_run:
@@ -230,7 +230,7 @@ class SpringWebsiteUpdater:
             # Update version
             doc_array[ga_index]['version'] = self.version
             
-            # Update API URL (point release specific)
+            # Update API URL (patch release specific)
             if old_api_url:
                 new_api_url = old_api_url.replace(f"/{old_version}/", f"/{self.version}/")
                 doc_array[ga_index]['api'] = new_api_url
@@ -241,7 +241,7 @@ class SpringWebsiteUpdater:
             # Store updated content for diff preview
             updated_json = json.dumps(doc_array, indent=2, ensure_ascii=False)
             
-            # Reference URL stays at major.minor level for point releases
+            # Reference URL stays at major.minor level for patch releases
             # e.g., https://docs.spring.io/spring-ai/reference/1.0/index.html (unchanged)
             
             # Show preview of changes
@@ -259,14 +259,14 @@ class SpringWebsiteUpdater:
             # Show commit and PR details
             commit_msg = f"Update Spring AI documentation to {self.version}"
             pr_title = f"Update Spring AI documentation to {self.version}"
-            pr_body = f"""Updates Spring AI project documentation for point release {self.version}.
+            pr_body = f"""Updates Spring AI project documentation for patch release {self.version}.
 
 **Changes:**
 - Updated GENERAL_AVAILABILITY version from {old_version} to {self.version}
 - Updated API documentation URL to reference {self.version}
 - Reference documentation URL unchanged (stays at major.minor level)
 
-This change ensures the Spring AI project page reflects the latest point release information."""
+This change ensures the Spring AI project page reflects the latest patch release information."""
             
             print(f"\n{Colors.GREEN}🔍 Full Commit Message (with DCO sign-off):{Colors.NC}")
             print(f"{Colors.CYAN}{commit_msg}{Colors.NC}")
@@ -437,14 +437,14 @@ This change ensures the Spring AI project page reflects the latest point release
         """Create pull request using GitHub CLI"""
         try:
             pr_title = f"Update Spring AI documentation to {self.version}"
-            pr_body = f"""Updates Spring AI project documentation for point release {self.version}.
+            pr_body = f"""Updates Spring AI project documentation for patch release {self.version}.
 
 **Changes:**
 - Updated version field from {old_version} to {self.version}
 - Updated API documentation URL to reference {self.version}
 - Reference documentation URL unchanged (stays at major.minor level)
 
-This change ensures the Spring AI project page reflects the latest point release information.
+This change ensures the Spring AI project page reflects the latest patch release information.
 
 ---
 ✅ **DCO Compliance**: All commits in this PR include the required `Signed-off-by` trailer for Developer Certificate of Origin compliance."""

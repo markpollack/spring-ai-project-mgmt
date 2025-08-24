@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """
-Spring AI Point Release Script - 1.0.x Branch Automation
+Spring AI Patch Release Script - 1.0.x Branch Automation
 
-Automates point releases for Spring AI 1.0.x branch with enhanced safety and interactivity.
+Automates patch releases for Spring AI 1.0.x branch with enhanced safety and interactivity.
 Based on proven patterns from pr-review scripts.
+
+Semantic Versioning: PATCH releases (1.0.1, 1.0.2) for backward compatible bug fixes.
 
 Usage:
     python3 spring-ai-point-release.py 1.0.1 --branch 1.0.x --dry-run
@@ -24,7 +26,7 @@ from datetime import datetime
 
 @dataclass
 class ReleaseConfig:
-    """Configuration for the point release workflow"""
+    """Configuration for the patch release workflow"""
     script_dir: Path
     target_version: str
     branch: str = "1.0.x"
@@ -975,7 +977,7 @@ class StartSpringIOUpdater:
             # Show commit and PR details
             commit_msg = f"Update Spring AI to {self.config.target_version}"
             pr_title = f"Update Spring AI to {self.config.target_version}"
-            pr_body = f"""Updates Spring AI BOM version to {self.config.target_version} for compatibility with latest point release.
+            pr_body = f"""Updates Spring AI BOM version to {self.config.target_version} for compatibility with latest patch release.
 
 - Updated spring-ai version mapping from {old_version} to {self.config.target_version}
 - Maintains compatibility range [3.4.0,4.0.0-M1)
@@ -1016,7 +1018,7 @@ This change makes Spring AI {self.config.target_version} available in Spring Ini
         """Create pull request using GitHub CLI"""
         try:
             pr_title = f"Update Spring AI to {self.config.target_version}"
-            pr_body = f"""Updates Spring AI BOM version to {self.config.target_version} for compatibility with latest point release.
+            pr_body = f"""Updates Spring AI BOM version to {self.config.target_version} for compatibility with latest patch release.
 
 - Updated spring-ai version mapping from {old_version} to {self.config.target_version}
 - Maintains compatibility range [3.4.0,4.0.0-M1)
@@ -1075,7 +1077,7 @@ class SpringWebsiteUpdater:
         self.branch_name = f"update-spring-ai-{config.target_version}"
     
     def update_documentation(self) -> bool:
-        """Update documentation.json for Spring AI point release"""
+        """Update documentation.json for Spring AI patch release"""
         Logger.info("🌐 Updating Spring website documentation...")
         
         if not self._clone_repository():
@@ -1143,7 +1145,7 @@ class SpringWebsiteUpdater:
             return False
     
     def _update_documentation_json(self) -> bool:
-        """Update documentation.json for point release"""
+        """Update documentation.json for patch release"""
         try:
             import json
             from packaging import version
@@ -1178,14 +1180,14 @@ class SpringWebsiteUpdater:
             old_version = current_version
             doc_data['version'] = self.config.target_version
             
-            # Update API docs URL (point release specific)
+            # Update API docs URL (patch release specific)
             if 'api' in doc_data and 'url' in doc_data['api']:
                 old_api_url = doc_data['api']['url']
                 new_api_url = old_api_url.replace(f"/{old_version}/", f"/{self.config.target_version}/")
                 doc_data['api']['url'] = new_api_url
                 Logger.info(f"Updated API docs URL: {old_api_url} → {new_api_url}")
             
-            # Note: Reference docs URL stays at major.minor level for point releases
+            # Note: Reference docs URL stays at major.minor level for patch releases
             # e.g., https://docs.spring.io/spring-ai/reference/1.0/index.html (unchanged)
             
             # Show preview of changes
@@ -1249,14 +1251,14 @@ class SpringWebsiteUpdater:
         """Create pull request for documentation update"""
         try:
             pr_title = f"Update Spring AI documentation to {self.config.target_version}"
-            pr_body = f"""Updates Spring AI project documentation for point release {self.config.target_version}.
+            pr_body = f"""Updates Spring AI project documentation for patch release {self.config.target_version}.
 
 **Changes:**
 - Updated version field from previous version to {self.config.target_version}
 - Updated API documentation URL to reference {self.config.target_version}
 - Reference documentation URL unchanged (stays at major.minor level)
 
-This change ensures the Spring AI project page reflects the latest point release information."""
+This change ensures the Spring AI project page reflects the latest patch release information."""
             
             Logger.info("Creating pull request...")
             
@@ -1895,7 +1897,7 @@ class ReleaseWorkflow:
 def main():
     """Main entry point"""
     parser = argparse.ArgumentParser(
-        description="Spring AI Point Release Script for 1.0.x branch",
+        description="Spring AI Patch Release Script for 1.0.x branch (semantic versioning PATCH releases)",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:

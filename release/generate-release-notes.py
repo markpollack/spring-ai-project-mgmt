@@ -397,8 +397,8 @@ class GitHubReleaseConfig:
             self.tag_name = f"v{self.version}" if not self.version.startswith('v') else self.version
     
     @property
-    def is_point_release(self) -> bool:
-        """Check if this is a point release (x.y.z)"""
+    def is_patch_release(self) -> bool:
+        """Check if this is a patch release (x.y.z)"""
         version = self.version.replace('v', '')
         parts = version.split('.')
         return len(parts) >= 3 and parts[2].isdigit()
@@ -917,8 +917,8 @@ class GitHubReleaseAutomator:
             if release_config.prerelease or release_config.is_prerelease_version:
                 cmd.append('--prerelease')
                 
-            if not release_config.latest and release_config.is_point_release:
-                # For point releases, usually don't mark as latest if it's not the main branch
+            if not release_config.latest and release_config.is_patch_release:
+                # For patch releases, usually don't mark as latest if it's not the main branch
                 pass  # GitHub will handle this automatically
             
             if release_config.discussion_category:

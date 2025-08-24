@@ -2,7 +2,7 @@
 """
 Spring AI Blog Post Generator
 
-Generates blog posts for Spring AI point releases following established patterns
+Generates blog posts for Spring AI patch releases following established patterns
 from markpollack's previous posts and Spring ecosystem conventions.
 
 Usage:
@@ -337,7 +337,7 @@ class SpringAIBlogGenerator:
         """Generate key highlights for the release"""
         highlights = []
         
-        # Combine new features and other improvements for point release messaging
+        # Combine new features and other improvements for patch release messaging
         total_improvements = release_data.new_features + release_data.other_improvements
         
         # Add highlights based on commit analysis
@@ -363,7 +363,7 @@ class SpringAIBlogGenerator:
     
     def _get_previous_version(self) -> str:
         """Determine the previous version"""
-        # Simple logic for point releases
+        # Simple logic for patch releases
         version_parts = self.version.split('.')
         if len(version_parts) == 3:
             major, minor, patch = version_parts
@@ -416,14 +416,14 @@ author: markpollack
         return f'''
 On behalf of the Spring AI engineering team and everyone who has contributed, I'm happy to announce that Spring AI `{self.version}` has been released and is now available from Maven Central.
 
-This point release delivers important stability improvements and bug fixes.'''
+This patch release delivers important stability improvements and bug fixes.'''
     
     
     def _generate_release_summary(self, release_data: ReleaseData) -> str:
         """Generate release summary section"""
         total_changes = release_data.bug_fixes + release_data.new_features + release_data.documentation + release_data.dependency_upgrades + release_data.other_improvements
         
-        # Combine new features with other improvements for point release messaging
+        # Combine new features with other improvements for patch release messaging
         total_improvements = release_data.new_features + release_data.other_improvements
         
         summary_bullets = []
@@ -445,7 +445,7 @@ This point release delivers important stability improvements and bug fixes.'''
         return f'''
 ## Release Summary
 
-This release includes [{total_changes} improvements, bug fixes, and documentation updates]({release_data.github_release_url}). The focus of this point release is on:
+This release includes [{total_changes} improvements, bug fixes, and documentation updates]({release_data.github_release_url}). The focus of this patch release is on:
 
 {bullets_text}
 
@@ -576,7 +576,7 @@ Follow our progress on [GitHub](https://github.com/spring-projects/spring-ai) an
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Generate Spring AI blog posts for point releases",
+        description="Generate Spring AI blog posts for patch releases",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=__doc__
     )

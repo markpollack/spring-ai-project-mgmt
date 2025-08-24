@@ -2,7 +2,7 @@
 
 ## Research Overview
 
-This document analyzes blog post patterns from markpollack's previous Spring AI posts and other Spring project point releases to inform the creation of a blog post automation system for Spring AI 1.0.1.
+This document analyzes blog post patterns from markpollack's previous Spring AI posts and other Spring project patch releases to inform the creation of a blog post automation system for Spring AI 1.0.1.
 
 ## Key Findings from Research
 
@@ -88,9 +88,9 @@ Found 5 major Spring AI commits by markpollack:
 ### **Recommended Approach: Hybrid Pattern**
 
 Based on the analysis, Spring AI 1.0.1 should follow a **hybrid approach** combining:
-- **Spring Boot point release brevity** (core structure)
+- **Spring Boot patch release brevity** (core structure)
 - **Spring AI community engagement** (markpollack style)
-- **First point release significance** (slight expansion over typical point releases)
+- **First patch release significance** (slight expansion over typical patch releases)
 
 ### **Proposed Structure for Spring AI 1.0.1:**
 
@@ -177,4 +177,4 @@ author: markpollack
 
 ---
 
-This analysis provides the foundation for creating a blog post generator that can automatically create Spring AI point release announcements following established patterns while maintaining the unique Spring AI community voice.
+This analysis provides the foundation for creating a blog post generator that can automatically create Spring AI patch release announcements following established patterns while maintaining the unique Spring AI community voice.

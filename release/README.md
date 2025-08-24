@@ -1,10 +1,10 @@
-# Spring AI Point Release Automation
+# Spring AI Patch Release Automation
 
-This directory contains automation tools for managing Spring AI point releases on the 1.0.x branch.
+This directory contains automation tools for managing Spring AI patch releases on the 1.0.x branch.
 
 ## Overview
 
-The `spring-ai-point-release.py` script automates the complete workflow for creating point releases (1.0.1, 1.0.2, etc.) for Spring AI. It handles version updates, builds, testing, tagging, and pushing changes to the repository.
+The `spring-ai-point-release.py` script automates the complete workflow for creating patch releases (1.0.1, 1.0.2, etc.) for Spring AI. It handles version updates, builds, testing, tagging, and pushing changes to the repository.
 
 ## Prerequisites
 
@@ -292,7 +292,7 @@ Steps 14-15 are implemented as **standalone scripts** for better control and ite
   git add content/projects/spring-ai/documentation.json && git commit -m "Update Spring AI documentation to 1.0.1"
   gh pr create --title "Update Spring AI documentation to 1.0.1" --body "..."
   ```
-- **Purpose**: Updates Spring AI project page to reflect latest point release information
+- **Purpose**: Updates Spring AI project page to reflect latest patch release information
 - **Interactive**: Shows changes preview and confirmation before creating pull request
 - **Script**: Use standalone script [`update-spring-website.py`](update-spring-website.py)
 - **Usage**:
@@ -460,7 +460,13 @@ release/
 
 ## Version Strategy
 
-### Point Release Versioning
+### Semantic Versioning (semver.org)
+Following semantic versioning principles:
+- **PATCH (1.0.1, 1.0.2)**: Backward compatible bug fixes
+- **MINOR (1.1.0, 1.2.0)**: Backward compatible new features  
+- **MAJOR (2.0.0)**: Incompatible API changes
+
+### Patch Release Versioning
 - **Current**: `1.0.1-SNAPSHOT` (development)
 - **Release**: `1.0.1` (remove snapshot)
 - **Next**: `1.0.2-SNAPSHOT` (next development)
@@ -626,7 +632,7 @@ Update Spring AI to 1.0.1
 
 🎯 PR Title: Update Spring AI to 1.0.1
 📝 PR Body:
-Updates Spring AI BOM version to 1.0.1 for compatibility with latest point release.
+Updates Spring AI BOM version to 1.0.1 for compatibility with latest patch release.
 - Updated spring-ai version mapping from 1.0.0 to 1.0.1
 - Maintains compatibility range [3.4.0,4.0.0-M1)
 
@@ -677,7 +683,7 @@ The script automatically updates spring-website-content to update Spring AI proj
 After Maven Central deployment succeeds, the script automatically:
 1. Clones https://github.com/spring-io/spring-website-content repository
 2. Creates feature branch `update-spring-ai-{version}`
-3. Updates `content/projects/spring-ai/documentation.json` for point releases:
+3. Updates `content/projects/spring-ai/documentation.json` for patch releases:
    - Updates `version` field (e.g., `1.0.0` → `1.0.1`)
    - Updates `api.url` to reference new version
    - Keeps `reference.url` unchanged (stays at major.minor level)
@@ -712,14 +718,14 @@ python3 spring-ai-point-release.py 1.0.1 --post-maven-central --skip-spring-webs
 python3 spring-ai-point-release.py 1.0.1 --cleanup-spring-website
 ```
 
-### Point Release Documentation Updates
+### Patch Release Documentation Updates
 
-For Spring AI point releases, the documentation.json file is updated with:
-- **Version Field**: Updated to new point release version
+For Spring AI patch releases, the documentation.json file is updated with:
+- **Version Field**: Updated to new patch release version
 - **API Documentation URL**: Updated to point to new version-specific javadocs
 - **Reference Documentation URL**: Unchanged (remains at major.minor level)
 
-This ensures the Spring AI project page shows the latest point release while maintaining stable reference documentation links.
+This ensures the Spring AI project page shows the latest patch release while maintaining stable reference documentation links.
 
 ### Error Handling
 
@@ -734,7 +740,7 @@ This ensures the Spring AI project page shows the latest point release while mai
 
 - **Immediate Documentation Updates**: Project page reflects new releases instantly
 - **Consistent PRs**: Standardized commit messages and PR descriptions
-- **Point Release Optimization**: Specialized handling for point vs major releases
+- **Patch Release Optimization**: Specialized handling for point vs major releases
 - **User Control**: Full transparency with changes preview before submission
 - **Error Recovery**: Automatic cleanup and clear error reporting
 
@@ -798,7 +804,7 @@ Commit the changes? (Y/n): y
 
 **Features**:
 - **JSON Processing**: Safely updates documentation.json with version changes
-- **Point Release Optimization**: Updates version and API URLs, preserves reference URLs
+- **Patch Release Optimization**: Updates version and API URLs, preserves reference URLs
 - **Change Validation**: Detects if version is already current, skips gracefully
 - **Git Diff Preview**: Shows exact changes before committing
 - **Safe JSON Handling**: Preserves formatting and structure of documentation.json
@@ -905,8 +911,8 @@ python3 generate-release-notes.py --branch 1.0.x --output RELEASE_1.0.1.md --rep
 
 **Branch Support**:
 The script supports analyzing commits from any branch, which is essential for maintenance releases:
-- **Default**: `1.0.x` (maintenance branch for point releases)
-- **Main Branch**: `--branch main` (for major releases)
+- **Default**: `1.0.x` (maintenance branch for patch releases)
+- **Main Branch**: `--branch main` (for minor/major releases)
 - **Feature Branches**: `--branch feature/new-vector-stores` (for feature analysis)
 - **Release Branches**: `--branch 1.1.x` (for different maintenance lines)
 
@@ -918,10 +924,10 @@ When specifying a branch, the script will:
 
 **Example Branch Usage**:
 ```bash
-# For 1.0.x maintenance branch point releases
+# For 1.0.x maintenance branch patch releases
 python3 generate-release-notes.py --branch 1.0.x --since-version 1.0.0 --target-version 1.0.1
 
-# For main branch major releases  
+# For main branch minor releases  
 python3 generate-release-notes.py --branch main --since-version 1.0.0 --target-version 1.1.0
 
 # For milestone releases on main
@@ -1011,7 +1017,7 @@ Backport analysis provides proper PR attribution:
 **Integration with Release Process**:
 - **Complementary**: Works alongside `spring-ai-point-release.py` for complete release automation
 - **Flexible Timing**: Can be run before, during, or after the release process
-- **Branch Awareness**: Automatically analyzes the correct maintenance branch for point releases
+- **Branch Awareness**: Automatically analyzes the correct maintenance branch for patch releases
 - **AI-Powered**: Provides intelligent categorization that manual processes can't match
 - **Version Detection**: Automatically detects version ranges when not specified
 
@@ -1057,7 +1063,7 @@ Thanks to @author1, @author2, and @author3 for their contributions.
 - **GitHub API Issues**: Continues with available data, warns about missing enrichment
 - **Repository Access**: Clear error messages for path or permission issues
 
-This script is essential for generating professional release notes that accurately reflect the changes in each Spring AI release, with special support for analyzing maintenance branches like 1.0.x that are crucial for point releases.
+This script is essential for generating professional release notes that accurately reflect the changes in each Spring AI release, with special support for analyzing maintenance branches like 1.0.x that are crucial for patch releases.
 
 ## create-github-release.py Integration
 

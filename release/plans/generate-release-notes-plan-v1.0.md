@@ -84,7 +84,7 @@ The `update-spring-website.py` script must update Spring AI project documentatio
     "ref": "https://docs.spring.io/spring-ai/reference/1.1-SNAPSHOT/index.html"
   },
   {
-    "version": "1.0.0",  // <-- Update to new point release (e.g., 1.0.1)
+    "version": "1.0.0",  // <-- Update to new patch release (e.g., 1.0.1)
     "status": "GENERAL_AVAILABILITY",
     "current": true,
     "api": "https://docs.spring.io/spring-ai/docs/1.0.0/api/",  // <-- Update version path
@@ -95,7 +95,7 @@ The `update-spring-website.py` script must update Spring AI project documentatio
 
 **Key Requirements:**
 - ✅ **COMPLETED** - Find GENERAL_AVAILABILITY entry with `"current": true`
-- ✅ **COMPLETED** - Update version field to new point release
+- ✅ **COMPLETED** - Update version field to new patch release
 - ✅ **COMPLETED** - Update API documentation URL to reference new version
 - ✅ **COMPLETED** - Keep reference documentation URL at major.minor level
 - ✅ **COMPLETED** - Add DCO sign-off support for commits  

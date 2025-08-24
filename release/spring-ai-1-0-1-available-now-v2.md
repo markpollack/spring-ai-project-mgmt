@@ -7,11 +7,11 @@ author: markpollack
 
 On behalf of the Spring AI engineering team and everyone who has contributed, I'm happy to announce that Spring AI `1.0.1` has been released and is now available from Maven Central.
 
-This point release delivers important stability improvements and bug fixes.
+This patch release delivers important stability improvements and bug fixes.
 
 ## Release Summary
 
-This release includes [151 improvements, bug fixes, and documentation updates](https://github.com/spring-projects/spring-ai/releases/tag/v1.0.1). The focus of this point release is on:
+This release includes [151 improvements, bug fixes, and documentation updates](https://github.com/spring-projects/spring-ai/releases/tag/v1.0.1). The focus of this patch release is on:
 
 - **Improvements**: 56 enhancements to expand capabilities and functionality
 - **Stability**: 50 bug fixes addressing community-reported issues

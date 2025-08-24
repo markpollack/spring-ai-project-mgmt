@@ -6,8 +6,8 @@
 
 **Blog Post Pattern Research**:
 - ✅ **Analyzed markpollack's Spring AI blog posts**: GA release (536 lines), RC1 release (146 lines)  
-- ✅ **Studied other Spring project patterns**: Spring Boot point release examples (~19 lines)
-- ✅ **Identified hybrid approach**: Spring AI community engagement + point release brevity
+- ✅ **Studied other Spring project patterns**: Spring Boot patch release examples (~19 lines)
+- ✅ **Identified hybrid approach**: Spring AI community engagement + patch release brevity
 - ✅ **Created comprehensive analysis document**: `/release/blog-post-patterns-analysis.md`
 
 **Key Findings**:
@@ -56,7 +56,7 @@ class ReleaseAnalyzer:
 **Template Structure**:
 ```
 templates/
-├── point-release.md.j2           # Standard point releases (1.0.1, 1.0.2)
+├── point-release.md.j2           # Standard patch releases (1.0.1, 1.0.2)
 ├── minor-release.md.j2           # Minor releases (1.1.0)
 ├── milestone.md.j2               # Milestone releases (1.1.0-M1)
 └── sections/
@@ -174,7 +174,7 @@ python3 generate-blog-post.py 1.0.1 --include-contributors --since-version 1.0.0
 The blog post generator is **production-ready** and integrates with existing release infrastructure:
 - **Working CLI**: Version input, dry-run mode, flexible output options
 - **Spring AI voice**: Authentic tone matching markpollack's style
-- **Proper structure**: Hybrid approach combining community engagement with point release focus
+- **Proper structure**: Hybrid approach combining community engagement with patch release focus
 - **✅ EXISTING INTEGRATION**: Reads contributors from RELEASE_NOTES.md (already populated by get-contributors.py)
 - **Technical accuracy**: GitHub integration and community resources
 - **Zero duplication**: Leverages existing release notes infrastructure
