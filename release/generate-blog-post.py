@@ -32,6 +32,8 @@ from pathlib import Path
 from typing import Optional, List, Dict, Any
 from dataclasses import dataclass
 
+# Import documentation-based feature extractor (imported later after Logger is defined)
+
 # Color logging utility
 class Logger:
     @staticmethod
@@ -46,6 +48,16 @@ class Logger:
     def debug(msg): print(f"\033[36m[DEBUG]\033[0m {msg}")
     @staticmethod
     def bold(msg): print(f"\033[1m{msg}\033[0m")
+
+# Import documentation-based feature extractor  
+try:
+    import sys
+    sys.path.append(str(Path(__file__).parent))
+    from doc_based_feature_extractor import DocBasedFeatureExtractor, Feature
+    DocBasedFeatureExtractor_available = True
+except ImportError as e:
+    DocBasedFeatureExtractor = None
+    DocBasedFeatureExtractor_available = False
 
 @dataclass
 class ReleaseData:
@@ -79,7 +91,9 @@ class SpringAIBlogGenerator:
         self.spring_ai_repo = Path("/home/mark/projects/spring-ai")
         self.website_content_repo = self.script_dir / "repos" / "spring-website-content"
         self.output_file = self.config.get('output_file') or f'spring-ai-{version.replace(".", "-")}-available-now.md'
+        self.use_doc_based_features = self.config.get('use_doc_based_features', False)
         self.blog_seed_content = self._load_blog_seed_file()
+        self.synthesis_data = self._load_synthesis_file()
         
     def generate_blog_post(self) -> bool:
         """Generate the complete blog post"""
@@ -132,6 +146,26 @@ class SpringAIBlogGenerator:
             Logger.warn(f"Failed to load blog seed file: {e}")
             return None
     
+    def _load_synthesis_file(self) -> Optional[dict]:
+        """Load AI synthesis data from file"""
+        synthesis_file = self.config.get('synthesis_file')
+        if not synthesis_file:
+            # Try auto-detect based on version
+            auto_file = self.script_dir / f".synthesis-{self.version}.json"
+            if auto_file.exists():
+                synthesis_file = str(auto_file)
+            else:
+                return None
+        
+        try:
+            with open(synthesis_file, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                Logger.info(f"📊 Loaded synthesis data from: {synthesis_file}")
+                return data
+        except Exception as e:
+            Logger.warn(f"Failed to load synthesis file: {e}")
+            return None
+    
     def _extract_seed_highlights(self) -> Optional[str]:
         """Extract highlights section from blog seed file"""
         if not self.blog_seed_content:
@@ -177,6 +211,138 @@ class SpringAIBlogGenerator:
                     return content
         
         return None
+    
+    def _generate_synthesis_highlights(self) -> Optional[str]:
+        """Generate highlights from AI synthesis data"""
+        if not self.synthesis_data:
+            return None
+        
+        themes_data = self.synthesis_data.get('themes', {})
+        if not themes_data:
+            return None
+        
+        highlights_sections = []
+        
+        for theme_name, theme_data in themes_data.items():
+            synthesized_content = theme_data.get('synthesized_content')
+            commit_count = theme_data.get('commit_count', 0)
+            
+            if commit_count == 0:
+                continue
+                
+            if synthesized_content:
+                # Parse the synthesized content to extract highlights
+                highlights = self._extract_highlights_from_synthesis(synthesized_content)
+                if highlights:
+                    highlights_sections.append(f"### {theme_name}")
+                    highlights_sections.extend(highlights[:3])  # Top 3 highlights per theme
+            else:
+                # Fallback to raw commit data
+                raw_commits = theme_data.get('raw_commits', [])
+                if raw_commits:
+                    highlights_sections.append(f"### {theme_name}")
+                    highlights_sections.extend([f"- {commit}" for commit in raw_commits[:3]])
+        
+        if highlights_sections:
+            Logger.info("✨ Using AI synthesis data for Key Highlights")
+            return '\n'.join(highlights_sections)
+        
+        return None
+    
+    def _extract_highlights_from_synthesis(self, synthesis_content: str) -> list:
+        """Extract bullet points from synthesis content"""
+        highlights = []
+        lines = synthesis_content.split('\n')
+        in_highlights = False
+        
+        for line in lines:
+            line_stripped = line.strip()
+            if line_stripped.startswith('HIGHLIGHTS:') or line_stripped.startswith('**HIGHLIGHTS:**'):
+                in_highlights = True
+                continue
+            elif in_highlights and line_stripped.startswith('-'):
+                highlights.append(line_stripped)
+            elif in_highlights and not line_stripped:
+                break  # End of highlights section
+        
+        return highlights
+    
+    def _generate_doc_based_highlights(self) -> Optional[str]:
+        """Generate highlights using documentation-based feature extraction"""
+        if not DocBasedFeatureExtractor_available:
+            Logger.warn("DocBasedFeatureExtractor not available - check if doc-based-feature-extractor.py exists")
+            return None
+            
+        try:
+            # Determine since version for milestone vs patch releases
+            since_version = self._determine_since_version()
+            
+            extractor = DocBasedFeatureExtractor()
+            categorized_features = extractor.extract_features(self.version, since_version)
+            
+            if not categorized_features:
+                Logger.warn("No features found using documentation-based extraction")
+                return None
+            
+            highlights_sections = []
+            
+            # Limit to most important categories and top features to keep blog concise
+            priority_categories = [
+                "Model Support", "Model Context Protocol (MCP)", 
+                "Vector Store Enhancements", "Chat Client Improvements",
+                "API Enhancements"
+            ]
+            
+            for category in priority_categories:
+                features = categorized_features.get(category, [])
+                if not features:
+                    continue
+                
+                highlights_sections.append(f"### {category}")
+                
+                # Show top 3-5 most significant features per category
+                for i, feature in enumerate(features[:5]):
+                    # Clean up feature title and make it more blog-friendly
+                    clean_title = self._clean_feature_title(feature.title)
+                    highlights_sections.append(f"- **{clean_title}**: Enhanced capabilities and improved functionality")
+                    
+                    if i >= 4:  # Limit to 5 per category
+                        break
+            
+            return "\n".join(highlights_sections) if highlights_sections else None
+            
+        except Exception as e:
+            Logger.error(f"Error generating documentation-based highlights: {e}")
+            return None
+    
+    def _clean_feature_title(self, title: str) -> str:
+        """Clean up feature title for blog presentation"""
+        # Remove technical prefixes and clean up title
+        clean_title = re.sub(r'^(feat|fix|add|GH-\d+):\s*', '', title, flags=re.IGNORECASE)
+        clean_title = re.sub(r'\s*\(#\d+\)\s*$', '', clean_title)
+        clean_title = re.sub(r'^\w+\s*:\s*', '', clean_title)  # Remove prefixes like "feat:", "docs:"
+        
+        # Capitalize first letter
+        if clean_title:
+            clean_title = clean_title[0].upper() + clean_title[1:]
+        
+        return clean_title.strip()
+    
+    def _determine_since_version(self) -> str:
+        """Determine since version based on release type"""
+        # For milestone releases like 1.1.0-M1, compare since last major (1.0.0)
+        if re.match(r'^\d+\.\d+\.\d+-M\d+$', self.version):
+            parts = self.version.split('-')[0].split('.')
+            return f"{parts[0]}.0.0"
+        
+        # For patch releases like 1.0.2, compare since previous patch
+        if re.match(r'^\d+\.\d+\.\d+$', self.version):
+            parts = self.version.split('.')
+            prev_patch = max(0, int(parts[2]) - 1)
+            return f"{parts[0]}.{parts[1]}.{prev_patch}"
+            
+        # Default fallback
+        return "1.0.0"
     
     def _gather_release_data(self) -> Optional[ReleaseData]:
         """Gather data about the release from various sources"""
@@ -537,15 +703,45 @@ Thanks to all those who have contributed with issue reports and pull requests.''
     
     def _generate_highlights_section(self, release_data: ReleaseData) -> str:
         """Generate key highlights section"""
+        
+        # Check if user requested documentation-based features
+        if hasattr(self, 'use_doc_based_features') and self.use_doc_based_features:
+            doc_highlights = self._generate_doc_based_highlights()
+            if doc_highlights:
+                Logger.info("✨ Using documentation-based feature extraction for Key Highlights")
+                return f'''
+## Key Highlights
+
+{doc_highlights}
+
+These improvements ensure that Spring AI continues to provide a robust and reliable foundation for building production-ready AI applications.'''
+        
+        # Try to use synthesis data first (commit-based facts)
+        synthesis_highlights = self._generate_synthesis_highlights()
+        if synthesis_highlights:
+            Logger.info("✨ Using AI synthesis data for Key Highlights")
+            return f'''
+## Key Highlights
+
+{synthesis_highlights}
+
+These improvements ensure that Spring AI continues to provide a robust and reliable foundation for building production-ready AI applications.'''
+        
+        # Fallback to seed content
+        seed_highlights = self._extract_seed_highlights()
+        if seed_highlights:
+            return f'''
+## Key Highlights
+
+{seed_highlights}
+
+These improvements ensure that Spring AI continues to provide a robust and reliable foundation for building production-ready AI applications.'''
+        
+        # Final fallback to generic highlights
         if not release_data.key_highlights:
             return ""
         
         highlights_text = "\n".join([f"- {highlight}" for highlight in release_data.key_highlights])
-        
-        # Add seed content to highlights if available
-        seed_highlights = self._extract_seed_highlights()
-        if seed_highlights:
-            highlights_text = seed_highlights
         
         return f'''
 ## Key Highlights
@@ -585,55 +781,13 @@ If you're interested in contributing, check out the ["ideal for contribution" ta
 
 {seed_whats_next}'''
         
-        # Default content
+        # Simple, clean what's next section
         return f'''
-## Looking Ahead: Spring AI 1.1 and Beyond
+## What's Next
 
-While version {self.version} focused on stability and bug fixes, the Spring AI team is working on new capabilities for version 1.1. However, with a rapidly evolving AI landscape and over 150 open pull requests to manage, we're being thoughtful about prioritization and would value community input on what matters most.
+The Spring AI team continues to focus on improving AI application development with Spring Boot. Based on the momentum from {self.version}, upcoming releases will build on these foundations with enhanced capabilities and developer experience improvements.
 
-Our [2025 roadmap diagram](https://claude.ai/public/artifacts/e211dc9e-249d-425d-abd6-9425b8a2bf16) provides key dates and shows our planning focus on Spring AI 2.0 with new Spring Boot 4 foundations. The roadmap is primarily date-driven to help the community understand timing, while indicating the major architectural changes we're preparing for the next generation of Spring AI.
-
-**Current Focus Areas for Spring AI 1.1:**
-
-Our roadmap includes a broad range of potential feature areas. Rather than overpromise, we want to share the full "menu" of what we're considering so the community can help us prioritize:
-
-**Core Infrastructure & Maintenance:**
-- Spring Boot 4 support and compatibility
-- CI/CD improvements (Google Vertex, Amazon testing gaps)
-- Issue triage and community PR integration
-- Kotlin null-safety improvements
-
-**AI Model Provider Enhancements:**
-- Chat vendor SDK updates (Azure OpenAI, Google Vertex migrations)
-- Enhanced chat vendor features (prompt caching, message batching, "thinking" models)
-- Non-chat API breadth (Responses API, Image API, Text-to-Speech, Realtime API)
-- Native JSON mode and structured output improvements
-
-**Advanced Capabilities:**
-- Model Context Protocol (MCP) integration and streaming support
-- Vector store improvements and hybrid search (beyond similarity search)
-- Enterprise guardrails and security features
-- Enhanced observability and monitoring
-- Chat memory enhancements and MemGPT-style implementations
-
-**Developer Experience:**
-- Evaluators and testing frameworks for AI applications
-- Agent frameworks and workflow helpers
-- Multi-client configuration improvements
-- API key rotation and supplier patterns
-
-**Emerging Areas:**
-- Agent-to-agent protocols and communication
-- Commercial MCP proxy solutions
-- GraphRAG and advanced retrieval patterns
-
-**Community Guidance Needed:**
-
-We can't tackle everything simultaneously, so community feedback on prioritization is invaluable. If any of these areas are critical to your use cases, please engage with us on [GitHub Issues](https://github.com/spring-projects/spring-ai/issues) or contribute pull requests.
-
-The team is also investing in AI-powered tooling to help manage our growing backlog more efficiently, but your input remains essential for steering the project's direction.
-
-Follow our progress on [GitHub](https://github.com/spring-projects/spring-ai) and join the conversation in our community channels.'''
+For the latest updates and to contribute to the project, visit our [GitHub repository](https://github.com/spring-projects/spring-ai) or join the discussion in our community channels.'''
     
     def _generate_resources_section(self, release_data: ReleaseData) -> str:
         """Generate resources section"""
@@ -696,6 +850,11 @@ def main():
                        help='Enable verbose logging')
     parser.add_argument('--blog-seed-file',
                        help='Path to blog seed file containing themes and focus areas for the blog post')
+    parser.add_argument('--synthesis-file',
+                       help='Path to AI synthesis file with commit-based theme analysis')
+    parser.add_argument('--use-doc-based-features',
+                       action='store_true',
+                       help='Use documentation-based feature extraction instead of AI synthesis')
     
     args = parser.parse_args()
     
@@ -715,7 +874,9 @@ def main():
         'since_version': args.since_version,
         'dry_run': args.dry_run,
         'verbose': args.verbose,
-        'blog_seed_file': args.blog_seed_file
+        'blog_seed_file': args.blog_seed_file,
+        'synthesis_file': args.synthesis_file,
+        'use_doc_based_features': args.use_doc_based_features
     }
     
     # Generate blog post

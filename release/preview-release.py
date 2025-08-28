@@ -261,7 +261,7 @@ Please respond with a JSON array of themes in this format:
     try:
         # Call Claude Code CLI with prompt via stdin
         cmd = [
-            'claude', '--print', '--dangerously-skip-permissions'
+            '/home/mark/.nvm/versions/node/v22.15.0/bin/claude', '--print', '--dangerously-skip-permissions'
         ]
         
         result = subprocess.run(cmd, input=prompt, capture_output=True, text=True, timeout=60)
@@ -461,7 +461,7 @@ HIGHLIGHTS:
     try:
         # Call Claude Code CLI with more generous timeout and retries
         timeout = 60 if batch_num else 90
-        cmd = ['claude', '--print', '--dangerously-skip-permissions']
+        cmd = ['/home/mark/.nvm/versions/node/v22.15.0/bin/claude', '--print', '--dangerously-skip-permissions']
         
         # Try the AI call with retry logic
         max_retries = 2
@@ -580,6 +580,8 @@ def preview_commit_analysis(version: str, since_version: str, seed_content: str 
     
     Logger.info(f"📊 Found {len(commits)} total commits since v{since_version}")
     
+    synthesis_data = {}  # Store synthesis results for blog generator
+    
     if seed_content:
         # Extract themes first to get descriptions
         themes = extract_themes_with_ai(seed_content)
@@ -606,6 +608,12 @@ def preview_commit_analysis(version: str, since_version: str, seed_content: str 
                     synthesized = synthesize_theme_content_with_ai(theme, matches, theme_description)
                     if synthesized:
                         print(f"\n{synthesized}")
+                        # Store synthesis for blog generator
+                        synthesis_data[theme] = {
+                            'commit_count': len(matches),
+                            'synthesized_content': synthesized,
+                            'description': theme_description
+                        }
                     else:
                         # Fallback to showing raw commits
                         for match in matches[:5]:
@@ -613,8 +621,18 @@ def preview_commit_analysis(version: str, since_version: str, seed_content: str 
                             print(f"   • {match['hash']} {match['subject']} ({match['author']}) [matched: {matched_term}]")
                         if len(matches) > 5:
                             print(f"   ... and {len(matches) - 5} more commits")
+                        # Store fallback data
+                        synthesis_data[theme] = {
+                            'commit_count': len(matches),
+                            'synthesized_content': None,
+                            'raw_commits': [f"{match['hash']} {match['subject']}" for match in matches[:5]]
+                        }
                 else:
                     print(f"\n📌 **{theme}**: No directly related commits found")
+                    synthesis_data[theme] = {
+                        'commit_count': 0,
+                        'synthesized_content': None
+                    }
         else:
             print("\n⚠️  No theme analysis available - check seed file format")
     else:
@@ -622,7 +640,33 @@ def preview_commit_analysis(version: str, since_version: str, seed_content: str 
     
     print("\n" + "=" * 60)
     Logger.success("✅ Commit analysis completed")
+    
+    # Save synthesis data for blog generator
+    if synthesis_data:
+        save_synthesis_for_blog_generator(synthesis_data, version, since_version)
+    
     return True
+
+def save_synthesis_for_blog_generator(synthesis_data: dict, version: str, since_version: str):
+    """Save synthesis data to file for blog generator to use"""
+    try:
+        synthesis_file = Path(__file__).parent / f".synthesis-{version}.json"
+        
+        # Create complete synthesis package
+        synthesis_package = {
+            'version': version,
+            'since_version': since_version,
+            'generated_at': datetime.now().isoformat(),
+            'themes': synthesis_data
+        }
+        
+        with open(synthesis_file, 'w', encoding='utf-8') as f:
+            json.dump(synthesis_package, f, indent=2, ensure_ascii=False)
+        
+        Logger.info(f"💾 Saved synthesis data to {synthesis_file}")
+        
+    except Exception as e:
+        Logger.warn(f"Failed to save synthesis data: {e}")
 
 def preview_release_notes(version: str, since_version: str) -> bool:
     """Preview release notes generation"""
@@ -682,6 +726,11 @@ def preview_blog_post(version: str, blog_seed_file: Optional[str] = None) -> boo
         version,
         '--dry-run'
     ]
+    
+    # Add synthesis file if available
+    synthesis_file = Path(__file__).parent / f".synthesis-{version}.json"
+    if synthesis_file.exists():
+        cmd.extend(['--synthesis-file', str(synthesis_file)])
     
     if blog_seed_file:
         cmd.extend(['--blog-seed-file', blog_seed_file])
