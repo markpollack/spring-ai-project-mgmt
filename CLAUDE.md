@@ -37,7 +37,7 @@ JBang-based and Maven-based tools for collecting GitHub issues with advanced fil
 Automation tools for managing Spring AI releases.
 
 **Components:**
-- `spring-ai-point-release.py` - Patch release automation
+- `spring-ai-release.py` - Unified release automation (PATCH, MINOR, Milestone, RC)
 - `spring-ai-release/` - Working release repository clone
 
 ## Development Commands

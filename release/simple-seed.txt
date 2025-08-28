@@ -1,0 +1,6 @@
+## Key Themes
+
+- **MCP Integration**: Model Context Protocol support and enhancements
+- **Vector Store**: Vector database and similarity search improvements  
+- **API Updates**: Core API changes and improvements
+- **Test Coverage**: Testing and validation improvements

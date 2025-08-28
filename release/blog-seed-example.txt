@@ -1,0 +1,34 @@
+## Key Highlights
+
+- **New Model Context Protocol (MCP) Integration**: Enhanced support for MCP streaming with improved server connections and message handling
+- **Advanced Vector Store Capabilities**: New hybrid search functionality beyond similarity search, with better integration patterns
+- **Enterprise Guardrails**: New security features and policy enforcement mechanisms for production deployments
+- **Enhanced Observability**: Improved monitoring and metrics collection for AI application performance tracking
+
+## What's Next
+
+The Spring AI team is excited to share our expanded vision for 1.1.0-M1, focusing on three core pillars that will shape the future of AI application development:
+
+### Production-Ready Enterprise Features
+
+**Model Context Protocol (MCP) Advancement**: Building on our initial MCP integration, we're expanding streaming capabilities and server management. This milestone introduces enhanced connection pooling, error recovery, and protocol versioning that enterprises need for reliable AI deployments.
+
+**Enterprise Security & Guardrails**: New policy enforcement frameworks allow organizations to implement content filtering, usage monitoring, and compliance controls directly within Spring AI applications.
+
+### Developer Experience Innovation
+
+**Next-Generation Agent Frameworks**: We're introducing new abstractions for multi-agent workflows, with built-in coordination patterns and conversation management that simplify complex AI application architectures.
+
+**Enhanced Testing & Evaluation**: New evaluation frameworks help developers test AI application behavior systematically, with metrics collection and regression testing capabilities.
+
+### Ecosystem Integration
+
+**Vector Store Evolution**: Moving beyond basic similarity search with hybrid search capabilities, graph-based retrieval patterns, and improved integration with external knowledge systems.
+
+**Spring Boot 4 Preparation**: Laying groundwork for the next generation of Spring AI that will leverage Spring Boot 4's enhanced foundations for better performance and developer experience.
+
+### Community Partnership
+
+This milestone represents significant community collaboration, with contributions from enterprise users, individual developers, and AI research organizations. We're particularly excited about the feedback-driven prioritization that shaped these features.
+
+**Get Involved**: The Spring AI roadmap continues to evolve based on community needs. Join us on [GitHub](https://github.com/spring-projects/spring-ai) to share your use cases and help prioritize upcoming features.

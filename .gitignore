@@ -58,6 +58,7 @@ pr-review/state/pr-branch-mapping.json
 release/logs/
 release/state/
 release/spring-ai-release/
+release/.cache/
 
 # Release notes generation output
 release/RELEASE_NOTES.md

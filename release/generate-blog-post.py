@@ -79,6 +79,7 @@ class SpringAIBlogGenerator:
         self.spring_ai_repo = Path("/home/mark/projects/spring-ai")
         self.website_content_repo = self.script_dir / "repos" / "spring-website-content"
         self.output_file = self.config.get('output_file') or f'spring-ai-{version.replace(".", "-")}-available-now.md'
+        self.blog_seed_content = self._load_blog_seed_file()
         
     def generate_blog_post(self) -> bool:
         """Generate the complete blog post"""
@@ -110,6 +111,72 @@ class SpringAIBlogGenerator:
             return True
         else:
             return self._write_blog_post(blog_content)
+    
+    def _load_blog_seed_file(self) -> Optional[str]:
+        """Load content from blog seed file if provided"""
+        seed_file = self.config.get('blog_seed_file')
+        if not seed_file:
+            return None
+            
+        try:
+            seed_path = Path(seed_file)
+            if seed_path.exists():
+                with open(seed_path, 'r', encoding='utf-8') as f:
+                    content = f.read().strip()
+                    Logger.info(f"📝 Loaded blog seed from: {seed_file}")
+                    return content
+            else:
+                Logger.warn(f"Blog seed file not found: {seed_file}")
+                return None
+        except Exception as e:
+            Logger.warn(f"Failed to load blog seed file: {e}")
+            return None
+    
+    def _extract_seed_highlights(self) -> Optional[str]:
+        """Extract highlights section from blog seed file"""
+        if not self.blog_seed_content:
+            return None
+            
+        # Look for highlights section markers
+        patterns = [
+            r'## Key Highlights?\s*\n(.*?)(?=\n##|\Z)',
+            r'# Highlights?\s*\n(.*?)(?=\n#|\Z)',
+            r'HIGHLIGHTS?\s*[:\n](.*?)(?=\n[A-Z]{2,}|\Z)'
+        ]
+        
+        for pattern in patterns:
+            match = re.search(pattern, self.blog_seed_content, re.DOTALL | re.IGNORECASE)
+            if match:
+                content = match.group(1).strip()
+                if content:
+                    Logger.info("📝 Using seed content for highlights section")
+                    return content
+        
+        return None
+    
+    def _extract_seed_whats_next(self) -> Optional[str]:
+        """Extract what's next section from blog seed file"""
+        if not self.blog_seed_content:
+            return None
+            
+        # Look for future/roadmap section markers
+        patterns = [
+            r'## What\'?s Next\s*\n(.*?)(?=\n##|\Z)',
+            r'# Future\s*\n(.*?)(?=\n#|\Z)',
+            r'# Roadmap\s*\n(.*?)(?=\n#|\Z)',
+            r'FUTURE\s*[:\n](.*?)(?=\n[A-Z]{2,}|\Z)',
+            r'ROADMAP\s*[:\n](.*?)(?=\n[A-Z]{2,}|\Z)'
+        ]
+        
+        for pattern in patterns:
+            match = re.search(pattern, self.blog_seed_content, re.DOTALL | re.IGNORECASE)
+            if match:
+                content = match.group(1).strip()
+                if content:
+                    Logger.info("📝 Using seed content for what's next section")
+                    return content
+        
+        return None
     
     def _gather_release_data(self) -> Optional[ReleaseData]:
         """Gather data about the release from various sources"""
@@ -363,13 +430,30 @@ class SpringAIBlogGenerator:
     
     def _get_previous_version(self) -> str:
         """Determine the previous version"""
-        # Simple logic for patch releases
-        version_parts = self.version.split('.')
-        if len(version_parts) == 3:
-            major, minor, patch = version_parts
-            prev_patch = max(0, int(patch) - 1)
-            return f"{major}.{minor}.{prev_patch}"
-        return "1.0.0"  # Default fallback
+        # Handle milestone, RC, and patch releases
+        if '-M' in self.version or '-RC' in self.version:
+            # For milestones/RCs, previous version is typically the base GA
+            base_version = self.version.split('-')[0]
+            version_parts = base_version.split('.')
+            if len(version_parts) == 3:
+                major, minor, patch = version_parts
+                if int(patch) == 0:
+                    # X.Y.0-M1 -> previous is typically (X.Y-1).0 or X.0.0
+                    if int(minor) > 0:
+                        return f"{major}.{int(minor)-1}.0"
+                    else:
+                        return f"{int(major)-1}.0.0" if int(major) > 0 else "1.0.0"
+                else:
+                    return f"{major}.{minor}.{int(patch)-1}"
+            return "1.0.0"
+        else:
+            # Standard patch release logic
+            version_parts = self.version.split('.')
+            if len(version_parts) == 3:
+                major, minor, patch = version_parts
+                prev_patch = max(0, int(patch) - 1)
+                return f"{major}.{minor}.{prev_patch}"
+            return "1.0.0"  # Default fallback
     
     def _generate_blog_content(self, release_data: ReleaseData) -> Optional[str]:
         """Generate the blog post content following Spring AI patterns"""
@@ -458,6 +542,11 @@ Thanks to all those who have contributed with issue reports and pull requests.''
         
         highlights_text = "\n".join([f"- {highlight}" for highlight in release_data.key_highlights])
         
+        # Add seed content to highlights if available
+        seed_highlights = self._extract_seed_highlights()
+        if seed_highlights:
+            highlights_text = seed_highlights
+        
         return f'''
 ## Key Highlights
 
@@ -488,6 +577,15 @@ If you're interested in contributing, check out the ["ideal for contribution" ta
     
     def _generate_whats_next(self, release_data: ReleaseData) -> str:
         """Generate what's next section"""
+        # Check for seed content override
+        seed_whats_next = self._extract_seed_whats_next()
+        if seed_whats_next:
+            return f'''
+## Looking Ahead: Spring AI 1.1 and Beyond
+
+{seed_whats_next}'''
+        
+        # Default content
         return f'''
 ## Looking Ahead: Spring AI 1.1 and Beyond
 
@@ -596,12 +694,14 @@ def main():
     parser.add_argument('--verbose',
                        action='store_true',
                        help='Enable verbose logging')
+    parser.add_argument('--blog-seed-file',
+                       help='Path to blog seed file containing themes and focus areas for the blog post')
     
     args = parser.parse_args()
     
-    # Validate version format
-    if not re.match(r'^\d+\.\d+\.\d+$', args.version):
-        Logger.error(f"Invalid version format: {args.version}. Expected X.Y.Z format.")
+    # Validate version format - support X.Y.Z, X.Y.Z-MN, X.Y.Z-RCN
+    if not re.match(r'^\d+\.\d+\.\d+(-M\d+|-RC\d+)?$', args.version):
+        Logger.error(f"Invalid version format: {args.version}. Expected X.Y.Z, X.Y.Z-MN, or X.Y.Z-RCN format.")
         sys.exit(1)
     
     # Enable debug logging if verbose
@@ -614,7 +714,8 @@ def main():
         'include_contributors': args.include_contributors,
         'since_version': args.since_version,
         'dry_run': args.dry_run,
-        'verbose': args.verbose
+        'verbose': args.verbose,
+        'blog_seed_file': args.blog_seed_file
     }
     
     # Generate blog post

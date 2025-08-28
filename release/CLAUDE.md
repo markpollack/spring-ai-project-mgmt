@@ -17,8 +17,8 @@ The `/release` directory houses specialized scripts for:
 
 ## Available Scripts
 
-### spring-ai-point-release.py
-**Purpose**: Automate complete patch release workflow for Spring AI 1.0.x branch (semantic versioning PATCH releases)
+### spring-ai-release.py
+**Purpose**: Automate complete release workflows for all Spring AI release types following semantic versioning
 
 **Functionality**:
 - **Two-phase workflow** for safer Maven Central integration
@@ -71,14 +71,14 @@ gh workflow run new-maven-central-release.yml --repo spring-projects/spring-ai -
 **Two-Phase Usage**:
 ```bash
 # Phase 1: Main release workflow (stops at Maven Central trigger)
-python3 spring-ai-point-release.py 1.0.1 --dry-run
-python3 spring-ai-point-release.py 1.0.1
+python3 spring-ai-release.py 1.0.1 --dry-run
+python3 spring-ai-release.py 1.0.1
 
 # Phase 2: After Maven Central deployment succeeds
-python3 spring-ai-point-release.py 1.0.1 --post-maven-central
+python3 spring-ai-release.py 1.0.1 --post-maven-central
 
 # Custom branch
-python3 spring-ai-point-release.py 1.0.2 --branch 1.0.x
+python3 spring-ai-release.py 1.0.2 --branch 1.0.x
 ```
 
 **Requirements**:
@@ -123,7 +123,7 @@ These scripts integrate with the main Spring AI project management workflow docu
 - **Contributor Acknowledgment**: Generate contributor lists for release notes
 - **Release Automation**: Automate repetitive release preparation tasks
 
-The `spring-ai-point-release.py` script specifically handles the technical release workflow for patch releases, while other scripts support release documentation and contributor recognition.
+The `spring-ai-release.py` script specifically handles the technical release workflow for patch releases, while other scripts support release documentation and contributor recognition.
 
 ## Usage Notes
 
@@ -145,7 +145,7 @@ This documentation cross-references with the actual code locations to enable eff
 ## Current Capabilities
 
 **Implemented Features**:
-- ✅ **Point Release Automation**: Complete 1.0.x workflow with `spring-ai-point-release.py`
+- ✅ **Point Release Automation**: Complete 1.0.x workflow with `spring-ai-release.py`
 - ✅ **Version Management**: Dual version setting (main + BOM module)
 - ✅ **Version Verification**: Comprehensive POM validation and SNAPSHOT detection
 - ✅ **Build Output Management**: No scrolling output with comprehensive logging

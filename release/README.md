@@ -1,10 +1,16 @@
-# Spring AI Patch Release Automation
+# Spring AI Release Automation
 
-This directory contains automation tools for managing Spring AI patch releases on the 1.0.x branch.
+This directory contains automation tools for managing all Spring AI release types following semantic versioning.
 
 ## Overview
 
-The `spring-ai-point-release.py` script automates the complete workflow for creating patch releases (1.0.1, 1.0.2, etc.) for Spring AI. It handles version updates, builds, testing, tagging, and pushing changes to the repository.
+The `spring-ai-release.py` script automates the complete workflow for all Spring AI releases:
+- **PATCH releases** (1.0.1, 1.0.2) - Bug fixes from maintenance branches
+- **MINOR releases** (1.1.0) - New features from main branch
+- **Milestone releases** (1.1.0-M1, M2, M3) - Minor version prereleases  
+- **Release Candidate releases** (1.1.0-RC1) - Minor version prereleases
+
+It handles version updates, builds, testing, tagging, and pushing changes with automatic branch detection.
 
 ## Prerequisites
 
@@ -16,41 +22,46 @@ The `spring-ai-point-release.py` script automates the complete workflow for crea
 ## Quick Start
 
 ```bash
-# Test the main release workflow without making changes
-python3 spring-ai-point-release.py 1.0.1 --dry-run
+# Patch releases (auto-detects 1.0.x branch)
+python3 spring-ai-release.py 1.0.2 --dry-run
 
-# Execute the main release workflow (stops at Maven Central trigger)
-python3 spring-ai-point-release.py 1.0.1
+# Milestone releases (auto-detects main branch) - for 1.1.0-M1!
+python3 spring-ai-release.py 1.1.0-M1 --dry-run
 
-# After Maven Central deployment succeeds, complete the development version setup
-python3 spring-ai-point-release.py 1.0.1 --post-maven-central
+# Release candidate releases (auto-detects main branch)
+python3 spring-ai-release.py 1.1.0-RC1 --dry-run
 
-# Use a different branch (if needed)
-python3 spring-ai-point-release.py 1.0.1 --branch 1.0.x
+# Minor releases (auto-detects main branch)
+python3 spring-ai-release.py 1.1.0 --dry-run
+
+# After Maven Central deployment succeeds (not needed for milestones)
+python3 spring-ai-release.py 1.0.2 --post-maven-central
 ```
 
 ## Command Line Options
 
 ```
-python3 spring-ai-point-release.py [OPTIONS] VERSION
+python3 spring-ai-release.py [OPTIONS] VERSION
 
 Arguments:
-  VERSION               Target release version (e.g., 1.0.1, 1.0.2)
+  VERSION               Target release version (1.0.1, 1.1.0-M1, 1.1.0-RC1, 1.1.0)
 
 Options:
-  --branch BRANCH              Branch to release from (default: 1.0.x)
+  --branch BRANCH              Branch to release from (auto-detected by default)
   --dry-run                   Preview commands without executing them
   --workspace PATH             Override workspace directory (default: ./spring-ai-release)
   --post-maven-central         Complete development version setup after Maven Central success
   --check-maven-status         Check Maven Central infrastructure status and exit
   --skip-maven-status-check    Skip Maven Central status check before deployment
-  --skip-to STEP              Skip to specific workflow step (setup, set-version, build, start-spring-io, spring-website, etc.)
+  --skip-to STEP              Skip to specific workflow step (setup, set-version, build, etc.)
   --cleanup                   Clean up state files and workspace directory before starting
-  --skip-start-spring-io      Skip start.spring.io update in post-Maven Central workflow
-  --cleanup-start-spring-io   Clean up start.spring.io repository and exit
-  --skip-spring-website       Skip spring-website-content update in post-Maven Central workflow
-  --cleanup-spring-website    Clean up spring-website-content repository and exit
   --help                      Show help message and exit
+
+Release Types:
+  PATCH (1.0.1, 1.0.2)    - Bug fixes from maintenance branch (auto: 1.0.x)
+  MINOR (1.1.0)           - New features from main branch  
+  Milestones (1.1.0-M1)   - Prereleases from main branch (skip post-Maven steps)
+  RC (1.1.0-RC1)          - Release candidates from main branch
 ```
 
 ## Two-Phase Release Process
