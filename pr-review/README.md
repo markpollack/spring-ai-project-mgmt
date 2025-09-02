@@ -4,7 +4,34 @@ Comprehensive AI-powered automation for reviewing Spring AI project pull request
 
 ## 🚀 Quick Start - High Level Commands
 
-### Human-Assisted Compilation Fixing (Most Common)
+### Single PR Review with HTML Report (Most Common)
+```bash
+# Generate comprehensive analysis with both Markdown and HTML reports
+python3 pr_workflow.py 3914
+
+# The workflow automatically generates:
+# - 📄 Markdown report: reports/review-pr-3914.md
+# - 🌐 HTML report: reports/review-pr-3914.html
+# - 🔗 Browser URL: file:///path/to/reports/review-pr-3914.html
+
+# Report-only mode (faster, assumes PR already prepared)
+python3 pr_workflow.py --report-only 3914
+
+# Control HTML generation
+python3 pr_workflow.py --no-html 3914          # Markdown only
+python3 pr_workflow.py --html-only 3914        # HTML only
+python3 pr_workflow.py --open-browser 3914     # Auto-open HTML in browser
+```
+
+**📊 HTML Report Features:**
+- Interactive, modern web interface with expandable sections
+- Risk assessment visualization with color-coded indicators
+- File changes explorer grouped by type (Java, tests, config, docs)
+- Conversation analysis and solution assessment details
+- Backport recommendations and commit message preview
+- Mobile-responsive design for viewing on any device
+
+### Human-Assisted Compilation Fixing
 ```bash
 # Human-assisted workflow: Let AI try once, then hand off to human
 python3 pr_workflow.py 3914
