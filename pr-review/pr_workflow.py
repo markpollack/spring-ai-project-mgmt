@@ -25,6 +25,7 @@ from github_utils import GitHubUtils
 from claude_code_wrapper import ClaudeCodeWrapper
 from commit_message_generator import CommitMessageGenerator
 from test_discovery import TestDiscovery
+from workflow_execution_tracker import WorkflowExecutionTracker
 
 
 @dataclass
@@ -452,6 +453,7 @@ class PRWorkflow:
         self.pr_analyzer = PRAnalyzer(config)
         self.compilation_resolver = CompilationErrorResolver(config.spring_ai_dir, config.mcp_sdk_dir)
         self.github_utils = GitHubUtils(config.script_dir, config.spring_ai_repo)
+        self.execution_tracker = None  # Will be initialized per PR
         
         # Ensure directories exist
         config.plans_dir.mkdir(exist_ok=True)
@@ -1184,6 +1186,8 @@ class PRWorkflow:
         """Run compilation check with caching"""
         if skip_compile:
             Logger.info("Skipping compilation check as requested")
+            if self.execution_tracker:
+                self.execution_tracker.skip_step("compilation", reason="Skipped as requested")
             return True
         
         # Check if build is needed
@@ -1193,8 +1197,13 @@ class PRWorkflow:
         
         Logger.info("🔨 Running compilation check...")
         
+        if self.execution_tracker:
+            self.execution_tracker.start_step("compilation")
+        
         if dry_run:
             Logger.info("[DRY RUN] Would run compilation check")
+            if self.execution_tracker:
+                self.execution_tracker.skip_step("compilation", reason="Dry run mode")
             return True
         
         # Apply Java formatter first to fix any formatting violations
@@ -1236,6 +1245,10 @@ class PRWorkflow:
                 Logger.success(f"✅ Build with {cmd[0]} completed successfully")
                 Logger.info(f"Build output logged to: {build_log_file}")
                 self.build_cache.save_build_success(pr_number)
+                if self.execution_tracker:
+                    self.execution_tracker.record_build_attempt(' '.join(cmd), True, str(build_log_file))
+                    self.execution_tracker.end_step("compilation", success=True,
+                                                   details={"command": ' '.join(cmd), "log_file": str(build_log_file)})
                 return True
             else:
                 Logger.error(f"❌ Build with {cmd[0]} failed!")
@@ -1256,6 +1269,9 @@ class PRWorkflow:
                 Logger.warn(f"Trying next build option...")
         
         Logger.error("All build options failed")
+        if self.execution_tracker:
+            self.execution_tracker.end_step("compilation", success=False,
+                                           error_message="All build options failed")
         return False
     
     def run_antora_docs_build(self, pr_number: str, skip_docs: bool = False, dry_run: bool = False) -> bool:
@@ -1351,13 +1367,28 @@ class PRWorkflow:
             )
             
             Logger.success("✅ Intelligent squash completed successfully")
+            # Track squash operation
+            if self.execution_tracker:
+                # Try to get commit counts
+                try:
+                    final_commits = self.git.get_commits_ahead(f"{self.config.upstream_remote}/{self.config.main_branch}")
+                    self.execution_tracker.end_step("squash_commits", success=True,
+                                                   details={"final_commits": final_commits})
+                except:
+                    self.execution_tracker.end_step("squash_commits", success=True)
             return True
             
         except subprocess.CalledProcessError as e:
             Logger.error(f"❌ Intelligent squash failed with exit code {e.returncode}")
+            if self.execution_tracker:
+                self.execution_tracker.end_step("squash_commits", success=False,
+                                               error_message=f"Failed with exit code {e.returncode}")
             return False
         except Exception as e:
             Logger.error(f"❌ Error running intelligent squash: {e}")
+            if self.execution_tracker:
+                self.execution_tracker.end_step("squash_commits", success=False,
+                                               error_message=str(e))
             return False
     
     def generate_commit_message(self, pr_number: str, skip_commit_message: bool = False, 
@@ -1519,6 +1550,9 @@ class PRWorkflow:
         """Rebase against upstream main"""
         Logger.info(f"Rebasing against {self.config.upstream_remote}/{self.config.main_branch}...")
         
+        if self.execution_tracker:
+            self.execution_tracker.start_step("rebase")
+        
         if dry_run:
             Logger.info(f"[DRY RUN] Would rebase against {self.config.upstream_remote}/{self.config.main_branch}")
             return True
@@ -1541,6 +1575,9 @@ class PRWorkflow:
         try:
             self.git.run_git(["rebase", f"{self.config.upstream_remote}/{self.config.main_branch}"])
             Logger.success("Rebase completed successfully with no conflicts")
+            if self.execution_tracker:
+                self.execution_tracker.end_step("rebase", success=True,
+                                               details={"conflicts": False})
             return True
         except subprocess.CalledProcessError:
             Logger.warn(f"Rebase conflicts detected for PR #{pr_number}")
@@ -1550,6 +1587,9 @@ class PRWorkflow:
             
             if analysis.total_conflicts == 0:
                 Logger.success("Rebase completed successfully with no conflicts")
+                if self.execution_tracker:
+                    self.execution_tracker.end_step("rebase", success=True,
+                                                   details={"conflicts": False})
                 return True
             
             Logger.warn(f"Found {analysis.total_conflicts} conflicted files:")
@@ -1573,6 +1613,10 @@ class PRWorkflow:
                         Logger.info("Continuing rebase...")
                         self.git.run_git(["rebase", "--continue"])
                         Logger.success("Rebase completed successfully after auto-resolution")
+                        if self.execution_tracker:
+                            self.execution_tracker.record_rebase_operation(conflicts=True, resolved=True)
+                            self.execution_tracker.end_step("rebase", success=True,
+                                                           details={"conflicts": True, "auto_resolved": True})
                         return True
                     except subprocess.CalledProcessError as e:
                         # Check if rebase is actually complete
@@ -1595,6 +1639,10 @@ class PRWorkflow:
                                 )
                                 if "HEAD" not in rebase_status.stdout:
                                     Logger.success("Rebase completed successfully (all conflicts resolved)")
+                                    if self.execution_tracker:
+                                        self.execution_tracker.record_rebase_operation(conflicts=True, resolved=True)
+                                        self.execution_tracker.end_step("rebase", success=True,
+                                                                       details={"conflicts": True, "auto_resolved": True})
                                     return True
                             
                             Logger.warn("Auto-resolution helped but rebase still has issues")
@@ -1610,6 +1658,10 @@ class PRWorkflow:
             Logger.info(f"  2. Review plan file: {plan_file}")
             Logger.info("  3. Use Claude Code for AI assistance")
             
+            if self.execution_tracker:
+                self.execution_tracker.record_rebase_operation(conflicts=True, resolved=False)
+                self.execution_tracker.end_step("rebase", success=False,
+                                               error_message="Unresolved conflicts")
             return False
     
     def attempt_auto_resolution(self, pr_number: str) -> bool:
@@ -1838,6 +1890,10 @@ File content with conflicts:"""
         """Run the complete PR workflow"""
         Logger.info(f"🚀 Starting complete PR review workflow for PR #{pr_number}")
         
+        # Initialize execution tracker for this PR
+        self.execution_tracker = WorkflowExecutionTracker(pr_number, self.config.context_dir)
+        self.execution_tracker.start_workflow()
+        
         if dry_run:
             Logger.warn("DRY RUN MODE - No actual changes will be made")
         
@@ -1846,24 +1902,38 @@ File content with conflicts:"""
         
         # Check authentication before proceeding (unless skipped or in dry-run)
         if not skip_auth_check and not dry_run:
+            self.execution_tracker.start_step("authentication")
             from check_auth import AuthChecker
             checker = AuthChecker()
             Logger.info("🔐 Checking authentication and permissions...")
             if not checker.run_all_checks(self.config.spring_ai_dir if self.config.spring_ai_dir.exists() else None):
+                self.execution_tracker.end_step("authentication", success=False, 
+                                               error_message="Authentication check failed")
                 if batch_mode:
                     Logger.warn("⚠️  Authentication check failed (batch mode - continuing anyway)")
                 else:
                     Logger.error("❌ Authentication check failed - please run 'gh auth login' or check git credentials")
+                    self.execution_tracker.end_workflow(success=False)
                     return False
+            else:
+                self.execution_tracker.end_step("authentication", success=True)
+        else:
+            self.execution_tracker.skip_step("authentication", reason="Skipped or dry-run mode")
         
         # Phase 1: Setup repository (skip when resuming after manual fixes)
         if not resume_after_compile:
+            self.execution_tracker.start_step("repository_setup")
             if not self.setup_repository(dry_run):
+                self.execution_tracker.end_step("repository_setup", success=False,
+                                               error_message="Repository setup failed")
                 if batch_mode:
                     Logger.warn("⚠️  Repository setup failed (batch mode - continuing)")
                 else:
                     Logger.error("❌ Repository setup failed")
+                    self.execution_tracker.end_workflow(success=False)
                     return False
+            else:
+                self.execution_tracker.end_step("repository_setup", success=True)
             
             # Phase 1b: Setup MCP SDK repository
             if not self.setup_mcp_sdk_repository(dry_run):
@@ -1874,12 +1944,18 @@ File content with conflicts:"""
                     return False
             
             # Phase 2: Checkout PR
+            self.execution_tracker.start_step("pr_checkout")
             if not self.checkout_pr(pr_number, force, dry_run):
+                self.execution_tracker.end_step("pr_checkout", success=False,
+                                               error_message="PR checkout failed")
                 if batch_mode:
                     Logger.warn("⚠️  PR checkout failed (batch mode - continuing)")
                 else:
                     Logger.error("❌ PR checkout failed")
+                    self.execution_tracker.end_workflow(success=False)
                     return False
+            else:
+                self.execution_tracker.end_step("pr_checkout", success=True)
         else:
             Logger.info("🔄 Resuming after manual compilation fixes - preserving current git state")
             Logger.info(f"💡 Working in current branch with manual fixes intact")
@@ -1953,6 +2029,8 @@ File content with conflicts:"""
             else:
                 Logger.error("❌ Rebase failed with conflicts")
                 Logger.info("Resolve conflicts and run the workflow again")
+                if self.execution_tracker:
+                    self.execution_tracker.end_workflow(success=False)
                 return False
         
         # Phase 5.5: Build documentation if PR contains .adoc files
@@ -1978,6 +2056,10 @@ File content with conflicts:"""
         
         # Success
         Logger.success(f"🎉 Complete PR workflow finished for PR #{pr_number}!")
+        
+        # End workflow tracking
+        if self.execution_tracker:
+            self.execution_tracker.end_workflow(success=True)
         
         if not dry_run:
             Logger.info("📁 PR is ready for review")
@@ -2007,6 +2089,10 @@ File content with conflicts:"""
                 html_path = str(report_file).replace('.md', '.html') if str(report_file).endswith('.md') else str(report_file)
                 if Path(html_path).exists():
                     Logger.info(f"💻 Open in browser: file://{Path(html_path).absolute()}")
+        
+        # Ensure tracker is saved before returning
+        if self.execution_tracker:
+            self.execution_tracker.save()
         
         return True
     
@@ -2272,9 +2358,14 @@ File content with conflicts:"""
         """Run tests for files that changed in the PR"""
         Logger.info("🧪 Running tests for changed test files...")
         
+        if self.execution_tracker:
+            self.execution_tracker.start_step("test_execution")
+        
         test_files = self.get_changed_test_files(pr_number)
         if not test_files:
             Logger.info("✅ No test files changed in this PR")
+            if self.execution_tracker:
+                self.execution_tracker.skip_step("test_execution", reason="No test files changed")
             return True
         
         Logger.info(f"Found {len(test_files)} changed test files:")
@@ -2465,6 +2556,20 @@ File content with conflicts:"""
         
         # Create test summary report
         self._create_test_summary_report(pr_number, test_results, test_logs_dir)
+        
+        # Track test results
+        if self.execution_tracker and test_results:
+            passed = len([r for r in test_results if r[1] == "PASSED"])
+            failed = len([r for r in test_results if r[1] in ["FAILED", "TIMEOUT", "ERROR"]])
+            failed_tests = [r[0] for r in test_results if r[1] in ["FAILED", "TIMEOUT", "ERROR"]]
+            self.execution_tracker.record_test_results(len(test_results), passed, failed, failed_tests)
+            self.execution_tracker.end_step("test_execution", success=success,
+                                           details={"total_tests": len(test_results),
+                                                   "passed": passed,
+                                                   "failed": failed})
+        elif self.execution_tracker:
+            self.execution_tracker.end_step("test_execution", success=True,
+                                           details={"message": "No tests to run"})
         
         if success:
             Logger.success("🎉 All changed tests passed!")

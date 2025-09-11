@@ -98,6 +98,12 @@ class PRSummary:
     
     # Test discovery data
     test_discovery: Optional[Dict[str, Any]] = None
+    
+    # Workflow execution data
+    workflow_execution: Optional[Dict[str, Any]] = None
+    
+    # Test results markdown
+    test_results_markdown: Optional[str] = None
 
 
 class LowHangingFruitReportGenerator:

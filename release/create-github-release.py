@@ -83,7 +83,13 @@ class GitHubReleaseCreator:
     
     def __init__(self, config: ReleaseConfig, repo_path: Path = None):
         self.config = config
-        self.repo_path = repo_path or Path("/home/mark/projects/spring-ai")
+        # Use ./spring-ai-release workspace if it exists, otherwise current directory
+        if repo_path:
+            self.repo_path = repo_path
+        elif Path("./spring-ai-release").exists():
+            self.repo_path = Path("./spring-ai-release")
+        else:
+            self.repo_path = Path.cwd()
     
     def create_release(self) -> bool:
         """Create the GitHub release"""
@@ -105,6 +111,7 @@ class GitHubReleaseCreator:
     def _validate_prerequisites(self) -> bool:
         """Validate all prerequisites for release creation"""
         Logger.info("🔍 Validating prerequisites...")
+        Logger.info(f"📁 Using repository path: {self.repo_path.absolute()}")
         
         # Check GitHub token
         if not self.config.github_token:

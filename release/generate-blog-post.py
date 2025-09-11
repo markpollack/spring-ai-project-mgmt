@@ -2,13 +2,20 @@
 """
 Spring AI Blog Post Generator
 
-Generates blog posts for Spring AI patch releases following established patterns
+Generates blog posts for Spring AI releases following established patterns
 from markpollack's previous posts and Spring ecosystem conventions.
+
+Features:
+- Smart version baseline logic (1.1.0-M1 baselines from latest 1.0.x patch)
+- Multi-repository ecosystem analysis (spring-ai-examples, awesome-spring-ai)
+- Community metrics (contributors, examples, blog posts, tutorials)
+- MCP annotation examples and AI-powered test tracking
+- Repository caching for faster repeated runs
 
 Usage:
     python3 generate-blog-post.py 1.0.1 --dry-run
     python3 generate-blog-post.py 1.0.2 --output-file my-blog-post.md
-    python3 generate-blog-post.py 1.0.1 --include-contributors
+    python3 generate-blog-post.py 1.1.0-M1 --analyze-ecosystem
 
 Examples:
     # Generate blog post for 1.0.1 with dry run
@@ -17,8 +24,11 @@ Examples:
     # Generate with contributor analysis
     python3 generate-blog-post.py 1.0.1 --include-contributors --since-version 1.0.0
     
-    # Custom output location
-    python3 generate-blog-post.py 1.0.1 --output-file /path/to/blog-post.md
+    # Generate milestone release with ecosystem analysis
+    python3 generate-blog-post.py 1.1.0-M1 --analyze-ecosystem --include-contributors
+    
+    # Custom output location with ecosystem cache refresh
+    python3 generate-blog-post.py 1.0.1 --output-file /path/to/blog-post.md --analyze-ecosystem --refresh-ecosystem-cache
 """
 
 import os
@@ -31,6 +41,14 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional, List, Dict, Any
 from dataclasses import dataclass
+
+# Import the dedicated Claude Code wrapper
+try:
+    sys.path.append(str(Path(__file__).parent.parent / "pr-review"))
+    from claude_code_wrapper import ClaudeCodeWrapper
+    CLAUDE_WRAPPER_AVAILABLE = True
+except ImportError as e:
+    CLAUDE_WRAPPER_AVAILABLE = False
 
 # Import documentation-based feature extractor (imported later after Logger is defined)
 
@@ -59,6 +77,22 @@ except ImportError as e:
     DocBasedFeatureExtractor = None
     DocBasedFeatureExtractor_available = False
 
+# Import ecosystem analyzer
+try:
+    from ecosystem_analyzer import EcosystemAnalyzer, EcosystemMetrics
+    EcosystemAnalyzer_available = True
+except ImportError as e:
+    EcosystemAnalyzer = None
+    EcosystemAnalyzer_available = False
+
+# Import git analysis for blog
+try:
+    from git_analysis_for_blog import BlogGitAnalyzer, BlogCommitAnalysis
+    BlogGitAnalyzer_available = True
+except ImportError as e:
+    BlogGitAnalyzer = None
+    BlogGitAnalyzer_available = False
+
 @dataclass
 class ReleaseData:
     """Data structure for Spring AI release information"""
@@ -74,6 +108,15 @@ class ReleaseData:
     key_highlights: List[str] = None
     github_release_url: str = ""
     previous_version: str = ""
+    
+    # Ecosystem metrics
+    ecosystem_metrics: Optional[Any] = None  # EcosystemMetrics object
+    ecosystem_contributors: int = 0
+    ecosystem_examples: int = 0
+    ecosystem_blog_posts: int = 0
+    ecosystem_tutorials: int = 0
+    mcp_features: int = 0
+    ai_tests: int = 0
     
     def __post_init__(self):
         if self.contributors is None:
@@ -329,11 +372,25 @@ class SpringAIBlogGenerator:
         return clean_title.strip()
     
     def _determine_since_version(self) -> str:
-        """Determine since version based on release type"""
-        # For milestone releases like 1.1.0-M1, compare since last major (1.0.0)
+        """Determine since version based on release type with tag-date awareness"""
+        # For milestone releases like 1.1.0-M1, baseline from latest patch in previous minor series
         if re.match(r'^\d+\.\d+\.\d+-M\d+$', self.version):
             parts = self.version.split('-')[0].split('.')
-            return f"{parts[0]}.0.0"
+            major, minor = int(parts[0]), int(parts[1])
+            
+            # Find latest patch release in previous minor series (e.g., for 1.1.0-M1, find latest 1.0.x)
+            prev_minor_base = f"{major}.{minor-1}" if minor > 0 else f"{major-1}.0" if major > 1 else "1.0"
+            
+            # Get latest patch release with tag-date awareness
+            latest_patch = self._get_latest_patch_release(prev_minor_base)
+            if latest_patch:
+                Logger.info(f"Using baseline version: {latest_patch} (latest patch in {prev_minor_base}.x series)")
+                return latest_patch
+            else:
+                # Fallback to .0 if no patches exist
+                fallback = f"{prev_minor_base}.0"
+                Logger.warn(f"No patches found in {prev_minor_base}.x series, using fallback: {fallback}")
+                return fallback
         
         # For patch releases like 1.0.2, compare since previous patch
         if re.match(r'^\d+\.\d+\.\d+$', self.version):
@@ -343,6 +400,72 @@ class SpringAIBlogGenerator:
             
         # Default fallback
         return "1.0.0"
+    
+    def _get_latest_patch_release(self, minor_series: str) -> Optional[str]:
+        """Get the latest patch release in a minor series with tag-date awareness"""
+        try:
+            # Get current version's tag date for comparison (if it exists)
+            current_tag_date = self._get_tag_date(self.version)
+            
+            # Get all tags matching the pattern (e.g., 1.0.*)
+            result = subprocess.run([
+                'git', 'tag', '-l', f'v{minor_series}.*'
+            ], cwd=self.spring_ai_repo, capture_output=True, text=True, timeout=10)
+            
+            if result.returncode != 0:
+                Logger.debug(f"Git tag command failed: {result.stderr}")
+                return None
+            
+            tags = result.stdout.strip().split('\n') if result.stdout.strip() else []
+            
+            # Filter to only GA releases (no -M, -RC suffixes)
+            ga_tags = []
+            for tag in tags:
+                clean_tag = tag.replace('v', '')
+                if re.match(r'^\d+\.\d+\.\d+$', clean_tag):  # Only X.Y.Z format
+                    ga_tags.append(clean_tag)
+            
+            if not ga_tags:
+                return None
+            
+            # Sort by semantic version and get candidates
+            ga_tags.sort(key=lambda t: [int(x) for x in t.split('.')])
+            
+            # If we have current tag date, filter by date
+            if current_tag_date:
+                valid_tags = []
+                for tag in ga_tags:
+                    tag_date = self._get_tag_date(tag)
+                    if tag_date and tag_date <= current_tag_date:
+                        valid_tags.append(tag)
+                ga_tags = valid_tags
+            
+            # Return the latest valid tag
+            return ga_tags[-1] if ga_tags else None
+            
+        except Exception as e:
+            Logger.debug(f"Error getting latest patch release for {minor_series}: {e}")
+            return None
+    
+    def _get_tag_date(self, version: str) -> Optional[str]:
+        """Get the date of a git tag"""
+        try:
+            tag_name = version if version.startswith('v') else f'v{version}'
+            
+            result = subprocess.run([
+                'git', 'log', '-1', '--format=%aI', tag_name
+            ], cwd=self.spring_ai_repo, capture_output=True, text=True, timeout=5)
+            
+            if result.returncode == 0 and result.stdout.strip():
+                # Convert ISO format to simple date for comparison
+                from datetime import datetime
+                date = datetime.fromisoformat(result.stdout.strip().replace('Z', '+00:00'))
+                return date.strftime('%Y-%m-%d')
+            
+        except Exception as e:
+            Logger.debug(f"Could not get tag date for {version}: {e}")
+        
+        return None
     
     def _gather_release_data(self) -> Optional[ReleaseData]:
         """Gather data about the release from various sources"""
@@ -378,11 +501,59 @@ class SpringAIBlogGenerator:
             # Determine previous version
             release_data.previous_version = self._get_previous_version()
             
+            # Analyze ecosystem repositories if enabled
+            if self.config.get('analyze_ecosystem', False):
+                ecosystem_metrics = self._analyze_ecosystem_repositories(release_data.previous_version)
+                if ecosystem_metrics:
+                    release_data.ecosystem_metrics = ecosystem_metrics
+                    release_data.ecosystem_contributors = ecosystem_metrics.total_contributors
+                    release_data.ecosystem_examples = ecosystem_metrics.new_examples
+                    release_data.ecosystem_blog_posts = ecosystem_metrics.blog_posts
+                    release_data.ecosystem_tutorials = ecosystem_metrics.tutorials
+                    release_data.mcp_features = ecosystem_metrics.mcp_features
+                    release_data.ai_tests = ecosystem_metrics.ai_tests
+            
             Logger.success(f"✅ Release data gathered: {commit_count} commits, {len(release_data.contributors)} contributors")
+            if release_data.ecosystem_metrics:
+                Logger.success(f"   🌟 Ecosystem: {release_data.ecosystem_contributors} contributors, {release_data.ecosystem_examples} examples")
             return release_data
             
         except Exception as e:
             Logger.error(f"Error gathering release data: {e}")
+            return None
+    
+    def _analyze_ecosystem_repositories(self, since_version: str) -> Optional[Any]:
+        """Analyze ecosystem repositories for community metrics"""
+        if not EcosystemAnalyzer_available:
+            Logger.warn("EcosystemAnalyzer not available - skipping ecosystem analysis")
+            return None
+        
+        try:
+            Logger.info("🌟 Analyzing Spring AI ecosystem repositories...")
+            
+            # Get the baseline date from the previous version tag
+            baseline_date = self._get_tag_date(since_version)
+            if not baseline_date:
+                Logger.warn(f"Could not determine date for version {since_version}, skipping ecosystem analysis")
+                return None
+            
+            Logger.info(f"Using baseline date: {baseline_date} (from {since_version} tag)")
+            
+            # Initialize analyzer with caching
+            cache_dir = Path(self.config.get('ecosystem_cache_dir')) if self.config.get('ecosystem_cache_dir') else (self.script_dir / ".ecosystem_cache")
+            analyzer = EcosystemAnalyzer(
+                cache_dir=cache_dir,
+                refresh_cache=self.config.get('refresh_ecosystem_cache', False)
+            )
+            
+            # Analyze ecosystem since baseline date
+            metrics = analyzer.analyze_since_date(baseline_date)
+            
+            Logger.success(f"✅ Ecosystem analysis complete")
+            return metrics
+            
+        except Exception as e:
+            Logger.error(f"Error analyzing ecosystem repositories: {e}")
             return None
     
     def _get_github_release_info(self) -> tuple[str, int]:
@@ -412,158 +583,154 @@ class SpringAIBlogGenerator:
             return f"https://github.com/spring-projects/spring-ai/releases/tag/v{self.version}", 0
     
     def _estimate_commit_count(self) -> int:
-        """Get total commit count from RELEASE_NOTES.md"""
+        """Get total commit count using fresh git analysis"""
+        if not BlogGitAnalyzer_available:
+            Logger.warn("BlogGitAnalyzer not available, using default estimate")
+            return 25
+        
         try:
-            release_notes_path = Path("RELEASE_NOTES.md")
-            if not release_notes_path.exists():
-                return 25  # Default estimate
+            since_version = self._determine_since_version()
+            target_version = self.version if not self.version.endswith('-M1') else None  # Use HEAD for milestones
             
-            with open(release_notes_path, 'r', encoding='utf-8') as f:
-                content = f.read()
+            analyzer = BlogGitAnalyzer(
+                repo_path=str(self.spring_ai_repo),
+                since_version=since_version,
+                target_version=target_version
+            )
             
-            # Extract total from highlights line
-            for line in content.split('\n'):
-                if 'new features' in line and 'bug fixes' in line:
-                    import re
-                    numbers = re.findall(r'(\d+)', line)
-                    if numbers:
-                        # Sum all the numbers: new features + bug fixes + doc improvements + other improvements
-                        total = sum(int(n) for n in numbers)
-                        Logger.info(f"Extracted total changes from RELEASE_NOTES.md: {total}")
-                        return total
+            commits = analyzer.collect_commits()
+            total_count = len(commits)
             
-            return 25  # Fallback
+            Logger.info(f"Fresh git analysis found {total_count} total commits")
+            return total_count
+            
         except Exception as e:
-            Logger.warn(f"Could not extract commit count: {e}")
+            Logger.warn(f"Could not get fresh commit count: {e}, using default")
             return 25
     
     def _analyze_commits(self) -> Dict[str, int]:
-        """Analyze commit types from RELEASE_NOTES.md"""
-        try:
-            release_notes_path = Path("RELEASE_NOTES.md")
-            if not release_notes_path.exists():
-                Logger.warn("RELEASE_NOTES.md not found, using defaults")
-                return {
-                    'new_features': 8,
-                    'bug_fixes': 15,
-                    'documentation': 5,
-                    'dependency_upgrades': 2
-                }
-            
-            with open(release_notes_path, 'r', encoding='utf-8') as f:
-                content = f.read()
-            
-            # Extract numbers from the highlights section
-            bug_fixes = 0
-            new_features = 0
-            documentation = 0
-            other_improvements = 0
-            dependency_upgrades = 0
-            
-            # Look for the highlights line with numbers
-            for line in content.split('\n'):
-                if 'new features' in line and 'bug fixes' in line:
-                    # Parse: "This release includes 24 new features, 50 bug fixes, 45 documentation improvements, 32 other improvements."
-                    import re
-                    numbers = re.findall(r'(\d+)\s+(\w+(?:\s+\w+)*)', line)
-                    for count, desc in numbers:
-                        count = int(count)
-                        if 'new features' in desc:
-                            new_features = count
-                        elif 'bug fixes' in desc:
-                            bug_fixes = count
-                        elif 'documentation improvements' in desc:
-                            documentation = count
-                        elif 'other improvements' in desc:
-                            other_improvements = count
-                    break
-            
-            # Scan for dependency upgrades in the content
-            dependency_section_found = False
-            for line in content.split('\n'):
-                if '## 🔄 Dependency Upgrades' in line or '## Dependency Upgrades' in line:
-                    dependency_section_found = True
-                elif dependency_section_found and line.startswith('##'):
-                    break
-                elif dependency_section_found and line.startswith('-'):
-                    dependency_upgrades += 1
-            
-            Logger.info(f"Extracted: {new_features} new features, {bug_fixes} bug fixes, {documentation} documentation, {dependency_upgrades} dependency upgrades")
-            
-            return {
-                'new_features': new_features,
-                'bug_fixes': bug_fixes,
-                'documentation': documentation,
-                'dependency_upgrades': dependency_upgrades,
-                'other_improvements': other_improvements
-            }
-            
-        except Exception as e:
-            Logger.warn(f"Could not parse RELEASE_NOTES.md: {e}, using defaults")
+        """Analyze commit types using direct git analysis"""
+        if not BlogGitAnalyzer_available:
+            Logger.warn("BlogGitAnalyzer not available, using defaults")
             return {
                 'new_features': 8,
                 'bug_fixes': 15,
                 'documentation': 5,
-                'dependency_upgrades': 2
+                'dependency_upgrades': 2,
+                'other_improvements': 10
+            }
+        
+        try:
+            Logger.info("🔍 Performing fresh git analysis for commit categorization")
+            
+            # Determine version range
+            since_version = self._determine_since_version()
+            target_version = self.version if not self.version.endswith('-M1') else None  # Use HEAD for milestones
+            
+            # Initialize analyzer
+            analyzer = BlogGitAnalyzer(
+                repo_path=str(self.spring_ai_repo),
+                since_version=since_version,
+                target_version=target_version
+            )
+            
+            # Collect and analyze commits
+            commits = analyzer.collect_commits()
+            analysis = analyzer.analyze_commits(commits)
+            
+            Logger.info(f"✅ Fresh git analysis complete: {analysis.total_commits} commits analyzed")
+            
+            return {
+                'new_features': analysis.new_features,
+                'bug_fixes': analysis.bug_fixes,
+                'documentation': analysis.documentation,
+                'dependency_upgrades': analysis.dependency_upgrades,
+                'other_improvements': analysis.other_improvements
+            }
+            
+        except Exception as e:
+            Logger.error(f"Fresh git analysis failed: {e}, using defaults")
+            return {
+                'new_features': 8,
+                'bug_fixes': 15,
+                'documentation': 5,
+                'dependency_upgrades': 2,
+                'other_improvements': 10
             }
     
     def _get_contributors(self) -> List[str]:
-        """Get list of contributors from RELEASE_NOTES.md"""
+        """Get list of contributors using the proper contributor script"""
         try:
-            release_notes_path = Path("RELEASE_NOTES.md")
-            if not release_notes_path.exists():
-                Logger.warn("RELEASE_NOTES.md not found, skipping contributor extraction")
-                return []
+            Logger.info("🔍 Extracting contributors using get-contributors.py logic")
             
-            with open(release_notes_path, 'r', encoding='utf-8') as f:
-                content = f.read()
+            # Use the existing get-contributors.py approach
+            since_version = self._determine_since_version()
             
-            # Extract contributors from the Contributors section
-            contributors = []
-            lines = content.split('\n')
-            in_contributors_section = False
+            # Run the contributor script to get proper GitHub username resolution
+            result = subprocess.run([
+                'python3', 'get-contributors.py', 
+                '--since-version', since_version,
+                '--dry-run'
+            ], capture_output=True, text=True, cwd=self.script_dir)
             
-            for line in lines:
-                if "🙏 Contributors" in line and line.startswith('##'):
-                    in_contributors_section = True
-                    if self.config.get('verbose'): Logger.debug(f"Found contributors section: {line}")
-                    continue
-                elif in_contributors_section and (line.startswith('##') or line.startswith('#')):
-                    # End of contributors section
-                    if self.config.get('verbose'): Logger.debug(f"End of contributors section at: {line}")
-                    break
-                elif in_contributors_section and line.strip():
-                    # Extract contributor name from various formats
-                    if line.startswith('- ['):
-                        # Format: - [Name (@username)](https://github.com/username)
-                        # Extract name between [ and (@
-                        try:
-                            start_idx = line.find('[') + 1
-                            end_idx = line.find(' (@')
-                            if end_idx == -1:  # Fallback if no @ symbol
-                                end_idx = line.find(']')
-                            contributor = line[start_idx:end_idx].strip()
-                            if contributor:
-                                contributors.append(contributor)
-                                if self.config.get('verbose'): Logger.debug(f"Added contributor: {contributor}")
-                        except Exception as e:
-                            if self.config.get('verbose'): Logger.debug(f"Error parsing contributor line: {line} - {e}")
-                    elif line.startswith('- '):
-                        # Format: - Name (username)
-                        contributor = line[2:].split('(')[0].strip()
-                        if contributor and '[' not in contributor:  # Skip markdown links
-                            contributors.append(contributor)
-                    elif line.startswith('*'):
-                        # Format: * Name
-                        contributor = line[1:].split('(')[0].strip()
-                        if contributor:
-                            contributors.append(contributor)
+            if result.returncode == 0:
+                # Extract contributor count from output
+                lines = result.stdout.split('\n')
+                for line in lines:
+                    if 'Collected' in line and 'unique contributors' in line:
+                        import re
+                        matches = re.findall(r'(\d+) unique contributors', line)
+                        if matches:
+                            contributor_count = int(matches[0])
+                            Logger.info(f"✅ Found {contributor_count} contributors using proper GitHub resolution")
+                            
+                            # Extract ALL contributors with full GitHub username format for full section
+                            contributors = []
+                            for line in lines:
+                                if line.strip().startswith('- [') and '(' in line and ')' in line:
+                                    # Extract format: Name (username) from - [Name (username)](url)
+                                    start = line.find('[') + 1
+                                    end = line.find(']')
+                                    if end > start:
+                                        contributor_with_username = line[start:end].strip()
+                                        contributors.append(contributor_with_username)
+                            
+                            # Return ALL contributors for full section - no limiting for blog post
+                            return contributors
+                
+                Logger.warn("Could not parse contributor count from get-contributors.py output")
+            else:
+                Logger.warn(f"get-contributors.py failed: {result.stderr}")
             
-            Logger.info(f"Extracted {len(contributors)} contributors from RELEASE_NOTES.md")
-            return contributors
+            # Fallback to simple git analysis
+            return self._get_contributors_fallback()
             
         except Exception as e:
-            Logger.warn(f"Could not extract contributors from RELEASE_NOTES.md: {e}")
+            Logger.warn(f"Could not use get-contributors.py: {e}")
+            return self._get_contributors_fallback()
+    
+    def _get_contributors_fallback(self) -> List[str]:
+        """Fallback contributor extraction using simple git analysis"""
+        if not BlogGitAnalyzer_available:
+            return []
+        
+        try:
+            since_version = self._determine_since_version()
+            target_version = self.version if not self.version.endswith('-M1') else None  # Use HEAD for milestones
+            
+            analyzer = BlogGitAnalyzer(
+                repo_path=str(self.spring_ai_repo),
+                since_version=since_version,
+                target_version=target_version
+            )
+            
+            commits = analyzer.collect_commits()
+            analysis = analyzer.analyze_commits(commits)
+            
+            return analysis.contributors[:10] if len(analysis.contributors) > 10 else analysis.contributors
+            
+        except Exception as e:
+            Logger.debug(f"Fallback contributor extraction failed: {e}")
             return []
     
     def _generate_key_highlights(self, release_data: ReleaseData) -> List[str]:
@@ -631,20 +798,28 @@ class SpringAIBlogGenerator:
             opening = self._generate_opening(release_data)
             release_summary = self._generate_release_summary(release_data)
             key_highlights = self._generate_highlights_section(release_data)
+            functional_themes = self._generate_functional_themes_section(release_data)
             community = self._generate_community_section(release_data)
             whats_next = self._generate_whats_next(release_data)
             resources = self._generate_resources_section(release_data)
             
-            # Combine all sections
-            blog_content = "\n".join([
+            # Add full contributors section if we have contributors
+            full_contributors = self._generate_full_contributors_section(release_data)
+            
+            # Combine all sections (filter out empty ones)
+            sections = [s for s in [
                 frontmatter,
                 opening,
                 release_summary,
                 key_highlights,
+                functional_themes,
                 community,
                 whats_next,
-                resources
-            ])
+                resources,
+                full_contributors
+            ] if s.strip()]
+            
+            blog_content = "\n".join(sections)
             
             return blog_content
             
@@ -771,6 +946,369 @@ Thanks to all those who have contributed with issue reports and pull requests.
 
 If you're interested in contributing, check out the ["ideal for contribution" tag](https://github.com/spring-projects/spring-ai/labels/ideal-for-contribution) in our issue repository. For general questions, please ask on [Stack Overflow](https://stackoverflow.com) using the [`spring-ai` tag](https://stackoverflow.com/tags/spring-ai).'''
     
+    def _generate_functional_themes_section(self, release_data: ReleaseData) -> str:
+        """Generate functional themes section from AI-analyzed release notes"""
+        functional_themes = self._extract_functional_themes_from_release_notes()
+        
+        if not functional_themes:
+            return ""
+        
+        sections = []
+        sections.append("## Key Functional Areas Enhanced")
+        sections.append("")
+        sections.append("This release brings significant improvements across major functional areas of Spring AI:")
+        sections.append("")
+        
+        for theme in functional_themes:
+            sections.append(f"- {theme}")
+        
+        sections.append("")
+        sections.append("These enhancements strengthen Spring AI's capabilities across the entire AI application development lifecycle.")
+        
+        return "\n".join(sections)
+    
+    def _extract_functional_themes_from_release_notes(self) -> List[str]:
+        """Extract compelling functional themes using AI analysis of RELEASE_NOTES.md"""
+        try:
+            # Read the AI-generated release notes
+            release_notes_path = self.script_dir / "RELEASE_NOTES.md"
+            if not release_notes_path.exists():
+                Logger.warn("RELEASE_NOTES.md not found - using basic themes")
+                return self._get_fallback_themes()
+            
+            Logger.debug("🤖 Using AI-powered theme extraction from RELEASE_NOTES.md")
+            
+            # Use Claude Code CLI to extract compelling themes
+            themes = self._extract_themes_with_ai_analysis(release_notes_path)
+            
+            if themes:
+                return themes[:6]  # Limit to top 6 themes
+            else:
+                Logger.warn("AI theme extraction failed - using fallback")
+                return self._get_fallback_themes()
+            
+        except Exception as e:
+            Logger.debug(f"Error extracting themes from release notes: {e}")
+            return self._get_fallback_themes()
+    
+    def _extract_themes_with_ai_analysis(self, release_notes_path: Path) -> List[str]:
+        """Use Claude Code CLI via ClaudeCodeWrapper to extract compelling themes from release notes"""
+        if not CLAUDE_WRAPPER_AVAILABLE:
+            Logger.warn("ClaudeCodeWrapper not available - using fallback themes")
+            return []
+        
+        try:
+            # Create Claude Code wrapper with logs in current directory
+            logs_dir = self.script_dir / "logs"
+            claude = ClaudeCodeWrapper(logs_dir=logs_dir)
+            
+            # Read the release notes content to include in the prompt
+            with open(release_notes_path, 'r', encoding='utf-8') as f:
+                release_notes_content = f.read()
+            
+            # Create analysis prompt with the actual release notes content
+            analysis_prompt = f"""Analyze the following Spring AI release notes and extract 5-6 compelling, specific functional themes for a blog post.
+
+Requirements:
+1. Each theme should be **bold** with a descriptive title
+2. Follow with a dash and specific details about what changed
+3. Focus on major functional areas, not generic improvements
+4. Use compelling language that highlights significance
+5. Be specific about technologies, models, and capabilities mentioned
+6. Avoid generic phrases like "enhanced" or "improved" - be specific
+
+Example format:
+- **Model Context Protocol Revolution** - complete MCP integration with annotation-based configuration, enabling seamless tool execution across HTTP, stdio, and SSE protocols
+- **Next-Generation AI Model Arsenal** - native support for GPT-5, Claude Opus-4, Google GenAI SDK, and ElevenLabs text-to-speech bringing cutting-edge capabilities directly to Spring Boot
+
+Focus on functional areas like:
+- Specific AI model integrations (name the models)
+- Vector store and RAG capabilities (specific improvements)
+- Tool calling and MCP protocol support (what's new)
+- Multimodal capabilities (audio, image, PDF processing)
+- Developer experience improvements (specific tooling)
+- Chat and memory management (what's enhanced)
+
+Return only the bullet points, no other text.
+
+RELEASE NOTES TO ANALYZE:
+{release_notes_content}"""
+
+            Logger.debug("🤖 Running AI theme analysis using ClaudeCodeWrapper")
+            
+            # Create temporary prompt file
+            import tempfile
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False) as prompt_file:
+                prompt_file.write(analysis_prompt)
+                prompt_file_path = prompt_file.name
+            
+            try:
+                # Run analysis using the proper ClaudeCodeWrapper method
+                result = claude.analyze_from_file(
+                    prompt_file_path=prompt_file_path,
+                    timeout=120,  # 2 minute timeout
+                    model="sonnet"  # Cost-effective model
+                )
+            finally:
+                # Clean up temporary file
+                try:
+                    os.unlink(prompt_file_path)
+                except:
+                    pass
+            
+            # Parse the ClaudeCodeWrapper response structure
+            if result.get('success', False):
+                # Extract the actual content from the complex response structure
+                ai_response = None
+                
+                # Based on logs, the structure has a 'response' key with the actual content
+                if 'response' in result and result['response']:
+                    ai_response = result['response']
+                
+                # Fallback: try to get the content from the result key
+                if not ai_response and 'result' in result and result['result']:
+                    if isinstance(result['result'], str):
+                        ai_response = result['result']
+                    elif isinstance(result['result'], dict) and 'content' in result['result']:
+                        ai_response = result['result']['content']
+                
+                # Fallback: check if there's an 'analysis' key (older format)  
+                if not ai_response and 'analysis' in result:
+                    ai_response = result['analysis']
+                
+                # Fallback: check if the entire result is the response
+                if not ai_response and isinstance(result, str):
+                    ai_response = result
+                
+                if ai_response:
+                    ai_response = ai_response.strip()
+                    Logger.debug(f"AI analysis response length: {len(ai_response)} chars")
+                    
+                    # Extract bullet points from AI response
+                    themes = []
+                    for line in ai_response.split('\n'):
+                        line = line.strip()
+                        if line.startswith('-') or line.startswith('•'):
+                            # Clean up the bullet point
+                            theme = line[1:].strip()  # Remove bullet
+                            if theme and '**' in theme:  # Must have bold formatting
+                                themes.append(theme)
+                    
+                    if themes:
+                        Logger.success(f"AI extracted {len(themes)} compelling functional themes")
+                        return themes
+                    else:
+                        Logger.warn("AI response didn't contain properly formatted themes")
+                        Logger.debug(f"AI response sample: {ai_response[:200]}...")
+                        return []
+                else:
+                    Logger.warn("Could not extract content from AI response")
+                    Logger.debug(f"Response structure: {list(result.keys())}")
+                    return []
+            else:
+                error_msg = result.get('error', 'Unknown error')
+                Logger.warn(f"AI analysis failed: {error_msg}")
+                return []
+                
+        except Exception as e:
+            Logger.debug(f"Error in AI theme extraction: {e}")
+            return []
+    
+    def _load_spring_ai_labels_mapping(self) -> Optional[List[Dict]]:
+        """Load the Spring AI functional areas metadata for blog generation"""
+        try:
+            labels_file = self.script_dir / "spring-ai-functional-areas.json"
+            if not labels_file.exists():
+                Logger.debug("Spring AI functional areas file not found")
+                return None
+            
+            with open(labels_file, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except Exception as e:
+            Logger.debug(f"Error loading functional areas: {e}")
+            return None
+    
+    def _analyze_content_with_label_metadata(self, content: str, labels_mapping: List[Dict]) -> List[str]:
+        """Analyze release notes content using rich Spring AI label metadata"""
+        content_lower = content.lower()
+        theme_matches = {}
+        
+        # Group labels into major functional categories based on their metadata
+        functional_categories = {
+            'model_providers': {
+                'theme_name': '**AI Model Provider Ecosystem**',
+                'labels': ['anthropic', 'azure', 'bedrock', 'claude', 'deepseek', 'gemini', 'huggingface', 
+                          'minimax', 'mistral', 'moonshot', 'ollama', 'openai', 'vertex', 'zhipu', 'gcp'],
+                'description': 'enhanced integrations and new model support',
+                'matches': []
+            },
+            'multimodal_ai': {
+                'theme_name': '**Multimodal AI Capabilities**',
+                'labels': ['audio', 'image models', 'multimodality', 'speech', 'transcription models'],
+                'description': 'expanded audio, image, and cross-modal processing',
+                'matches': []
+            },
+            'vector_rag': {
+                'theme_name': '**Vector Stores & RAG Pipeline**',
+                'labels': ['vector store', 'rag', 'embedding', 'cassandra', 'chromadb', 'milvus', 'neo4j', 
+                          'pgvector', 'pinecone', 'qdrant', 'redis', 'weaviate', 'elastic search', 'opensearch'],
+                'description': 'improved retrieval, storage, and metadata handling',
+                'matches': []
+            },
+            'conversation_memory': {
+                'theme_name': '**Conversational AI & Memory**',
+                'labels': ['chat client', 'chat memory', 'chat options', 'advisors', 'messages'],
+                'description': 'enhanced chat capabilities and memory management',
+                'matches': []
+            },
+            'tool_integration': {
+                'theme_name': '**Tool Integration & Function Calling**',
+                'labels': ['tool/function calling', 'mcp', 'structured output'],
+                'description': 'improved annotations, execution, and protocol support',
+                'matches': []
+            },
+            'developer_experience': {
+                'theme_name': '**Developer Experience & Configuration**',
+                'labels': ['configuration', 'observability', 'testing', 'integration testing', 'documentation', 
+                          'getting started experience', 'usability', 'AOT/Native'],
+                'description': 'enhanced tooling, testing, and development workflow',
+                'matches': []
+            }
+        }
+        
+        # Analyze content for each functional category
+        for category, category_info in functional_categories.items():
+            for label_name in category_info['labels']:
+                # Find the label definition
+                label_def = next((l for l in labels_mapping if l['label'].lower() == label_name.lower()), None)
+                if not label_def:
+                    continue
+                
+                # Check for matches using rich metadata
+                matches = []
+                
+                # Check key classes mentioned in content
+                for key_class in label_def.get('key_classes', []):
+                    if key_class.lower() in content_lower:
+                        matches.append(f"class:{key_class}")
+                
+                # Check relevant modules mentioned
+                for module in label_def.get('relevant_modules', []):
+                    if any(mod_part in content_lower for mod_part in module.lower().split('-')):
+                        matches.append(f"module:{module}")
+                
+                # Check config keys mentioned
+                for config_key in label_def.get('config_keys', []):
+                    if config_key.lower() in content_lower:
+                        matches.append(f"config:{config_key}")
+                
+                # Check developer touchpoints
+                for touchpoint in label_def.get('developer_touchpoints', []):
+                    if touchpoint.lower() in content_lower:
+                        matches.append(f"touchpoint:{touchpoint}")
+                
+                # Simple label name check as fallback
+                if label_name.lower().replace(' ', '') in content_lower.replace(' ', ''):
+                    matches.append(f"label:{label_name}")
+                
+                if matches:
+                    category_info['matches'].extend(matches)
+        
+        # Generate themes based on matches
+        themes = []
+        for category, category_info in functional_categories.items():
+            if category_info['matches']:
+                themes.append(f"{category_info['theme_name']} - {category_info['description']}")
+        
+        # If we don't have enough themes, add some based on generic analysis
+        if len(themes) < 3:
+            themes.extend(self._extract_themes_simple_approach(content))
+        
+        return list(set(themes))  # Remove duplicates
+    
+    def _extract_themes_simple_approach(self, content: str) -> List[str]:
+        """Fallback to simple content analysis if labels mapping isn't available"""
+        themes = []
+        content_lower = content.lower()
+        
+        # Model Context Protocol
+        if 'model context protocol' in content_lower or 'mcp' in content_lower:
+            themes.append("**Model Context Protocol (MCP) Integration** - annotation-based configuration and tool execution")
+        
+        # Model providers
+        providers = []
+        if 'google genai' in content_lower: providers.append("Google GenAI")
+        if 'gpt-5' in content_lower: providers.append("GPT-5")
+        if 'claude opus-4' in content_lower or 'sonnet-4' in content_lower: providers.append("Claude models")
+        if 'elevenlabs' in content_lower: providers.append("ElevenLabs")
+        
+        if providers:
+            themes.append(f"**AI Model Provider Expansions** - new support for {', '.join(providers[:3])}")
+        
+        # Vector stores
+        if 'vectorstore' in content_lower or 'vector store' in content_lower:
+            themes.append("**Vector Store & Retrieval Enhancements** - improved metadata and interfaces")
+        
+        # Chat capabilities
+        if 'chatclient' in content_lower or 'chat memory' in content_lower:
+            themes.append("**Conversational AI Capabilities** - enhanced chat and memory management")
+        
+        # Tool calling
+        if '@tool' in content_lower or 'tool call' in content_lower:
+            themes.append("**Tool Integration & Function Calling** - improved annotations and execution")
+        
+        # Multimodal
+        multimodal = []
+        if 'audio transcription' in content_lower: multimodal.append("audio transcription")
+        if 'text-to-speech' in content_lower: multimodal.append("text-to-speech")
+        if 'pdf files' in content_lower: multimodal.append("PDF processing")
+        
+        if multimodal:
+            themes.append(f"**Multimodal AI Capabilities** - expanded {', '.join(multimodal)}")
+        
+        return themes
+    
+    def _get_fallback_themes(self) -> List[str]:
+        """Fallback themes when analysis fails"""
+        return [
+            "**AI Model Provider Integration** - enhanced support for multiple AI platforms",
+            "**Developer Experience Improvements** - better APIs and configuration options", 
+            "**Core Platform Stability** - bug fixes and performance optimizations"
+        ]
+    
+    def _generate_full_contributors_section(self, release_data: ReleaseData) -> str:
+        """Generate full contributors appreciation section with all contributors listed"""
+        if not release_data.contributors:
+            return ""
+            
+        # Format contributors with proper markdown links
+        contributors_formatted = []
+        for contributor in release_data.contributors:
+            # Extract username from "Name (username)" format
+            if '(' in contributor and ')' in contributor:
+                # Format: Name (username) -> [Name (username)](https://github.com/username)
+                start_paren = contributor.rfind('(')
+                end_paren = contributor.rfind(')')
+                if start_paren > 0 and end_paren > start_paren:
+                    username = contributor[start_paren+1:end_paren]
+                    github_link = f"[{contributor}](https://github.com/{username})"
+                    contributors_formatted.append(github_link)
+                else:
+                    # Fallback for malformed entries
+                    contributors_formatted.append(contributor)
+            else:
+                # Fallback for entries without username format
+                contributors_formatted.append(contributor)
+        
+        contributors_text = "\n".join(contributors_formatted)
+        
+        return f'''
+🙏 Contributors
+Thanks to all contributors who made this release possible:
+
+{contributors_text}
+'''.strip()
+    
     def _generate_whats_next(self, release_data: ReleaseData) -> str:
         """Generate what's next section"""
         # Check for seed content override
@@ -855,6 +1393,14 @@ def main():
     parser.add_argument('--use-doc-based-features',
                        action='store_true',
                        help='Use documentation-based feature extraction instead of AI synthesis')
+    parser.add_argument('--analyze-ecosystem',
+                       action='store_true',
+                       help='Enable ecosystem repository analysis (spring-ai-examples, awesome-spring-ai)')
+    parser.add_argument('--refresh-ecosystem-cache',
+                       action='store_true',
+                       help='Force refresh of cached ecosystem repositories')
+    parser.add_argument('--ecosystem-cache-dir',
+                       help='Custom directory for ecosystem repository cache')
     
     args = parser.parse_args()
     
@@ -876,7 +1422,10 @@ def main():
         'verbose': args.verbose,
         'blog_seed_file': args.blog_seed_file,
         'synthesis_file': args.synthesis_file,
-        'use_doc_based_features': args.use_doc_based_features
+        'use_doc_based_features': args.use_doc_based_features,
+        'analyze_ecosystem': args.analyze_ecosystem,
+        'refresh_ecosystem_cache': args.refresh_ecosystem_cache,
+        'ecosystem_cache_dir': args.ecosystem_cache_dir
     }
     
     # Generate blog post

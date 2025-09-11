@@ -73,11 +73,20 @@ class SpringWebsiteUpdater:
         self.doc_file = self.repo_dir / "project" / "spring-ai" / "documentation.json"
     
     def validate_version(self) -> bool:
-        """Validate version format"""
-        if not re.match(r'^\d+\.\d+\.\d+$', self.version):
-            Logger.error(f"Invalid version format: {self.version}. Expected X.Y.Z format.")
+        """Validate version format - supports both patch (X.Y.Z) and milestone (X.Y.Z-M1) versions"""
+        # Accept patch versions (1.0.1) and milestone versions (1.1.0-M1, 1.1.0-RC1)
+        patch_pattern = r'^\d+\.\d+\.\d+$'
+        milestone_pattern = r'^\d+\.\d+\.\d+-(M\d+|RC\d+|SNAPSHOT)$'
+        
+        if re.match(patch_pattern, self.version) or re.match(milestone_pattern, self.version):
+            return True
+        else:
+            Logger.error(f"Invalid version format: {self.version}. Expected X.Y.Z or X.Y.Z-M1/RC1 format.")
             return False
-        return True
+    
+    def is_milestone_release(self) -> bool:
+        """Check if this is a milestone/prerelease version"""
+        return re.match(r'^\d+\.\d+\.\d+-(M\d+|RC\d+|SNAPSHOT)$', self.version) is not None
     
     def check_github_cli(self) -> bool:
         """Check if GitHub CLI is available and authenticated"""
@@ -171,7 +180,7 @@ class SpringWebsiteUpdater:
             return False
     
     def update_documentation_json(self) -> tuple[bool, str]:
-        """Update documentation.json array for patch release"""
+        """Update documentation.json array for patch or milestone release"""
         try:
             if not self.doc_file.exists():
                 if self.dry_run:
@@ -185,9 +194,23 @@ class SpringWebsiteUpdater:
             
             if self.dry_run:
                 Logger.warn("DRY RUN: Would read and update documentation.json array")
-                old_version = "1.0.0"  # Mock version
-                Logger.info(f"DRY RUN: Current GA version: {old_version}")
-                Logger.info(f"DRY RUN: Target version: {self.version}")
+                old_version = "1.0.1"  # Mock current GA version
+                if self.is_milestone_release():
+                    Logger.info(f"DRY RUN: Current GA version: {old_version} (unchanged)")
+                    Logger.info(f"DRY RUN: Adding milestone version: {self.version}")
+                    Logger.info("DRY RUN: Would add new PRERELEASE entry without changing GA entry")
+                    print(f"{Colors.CYAN}DRY RUN: New entry would be added:{Colors.NC}")
+                    print(f'{Colors.GREEN}+  {{{Colors.NC}')
+                    print(f'{Colors.GREEN}+    "version": "{self.version}",{Colors.NC}')
+                    print(f'{Colors.GREEN}+    "antora": false,{Colors.NC}')
+                    print(f'{Colors.GREEN}+    "api": "https://docs.spring.io/spring-ai/docs/{self.version}/api/",{Colors.NC}')
+                    print(f'{Colors.GREEN}+    "ref": "https://docs.spring.io/spring-ai/reference/{self.version}/index.html",{Colors.NC}')
+                    print(f'{Colors.GREEN}+    "status": "PRERELEASE",{Colors.NC}')
+                    print(f'{Colors.GREEN}+    "current": false{Colors.NC}')
+                    print(f'{Colors.GREEN}+  }},{Colors.NC}')
+                else:
+                    Logger.info(f"DRY RUN: Current GA version: {old_version}")
+                    Logger.info(f"DRY RUN: Target version: {self.version}")
                 return True, old_version
             
             # Read current content - should be an array of version objects
@@ -198,6 +221,106 @@ class SpringWebsiteUpdater:
                 Logger.error("Documentation.json should contain an array of version objects")
                 return False, ""
             
+            if self.is_milestone_release():
+                # For milestone releases: add new PRERELEASE entry
+                return self._handle_milestone_release(doc_array)
+            else:
+                # For patch releases: update existing GA entry
+                return self._handle_patch_release(doc_array)
+                
+        except json.JSONDecodeError as e:
+            Logger.error(f"Invalid JSON in documentation.json: {e}")
+            return False, ""
+        except Exception as e:
+            Logger.error(f"Error updating documentation.json: {e}")
+            return False, ""
+    
+    def _handle_milestone_release(self, doc_array: list) -> tuple[bool, str]:
+        """Handle milestone release by adding new PRERELEASE entry"""
+        try:
+            # Check if milestone version already exists
+            for entry in doc_array:
+                if entry.get('version') == self.version:
+                    Logger.warn(f"Version {self.version} already exists in documentation.json")
+                    return False, ""
+            
+            # Get current GA entry for reference
+            ga_entry = None
+            for entry in doc_array:
+                if entry.get('status') == 'GENERAL_AVAILABILITY' and entry.get('current', False):
+                    ga_entry = entry
+                    break
+            
+            if not ga_entry:
+                Logger.error("Could not find GENERAL_AVAILABILITY entry to use as reference")
+                return False, ""
+            
+            old_version = ga_entry.get('version', '')
+            Logger.info(f"Current GA version: {old_version}")
+            Logger.info(f"Adding milestone version: {self.version}")
+            
+            # Create new PRERELEASE entry based on Spring Boot pattern
+            # Extract major.minor for reference URL (1.1.0-M1 -> 1.1)
+            version_parts = self.version.split('.')
+            major_minor = f"{version_parts[0]}.{version_parts[1]}"
+            
+            milestone_entry = {
+                "version": self.version,
+                "antora": True,  # Spring AI uses Antora documentation
+                "api": f"https://docs.spring.io/spring-ai/{self.version}/api/java/index.html",
+                "ref": f"https://docs.spring.io/spring-ai/reference/{major_minor}/index.html",
+                "status": "PRERELEASE", 
+                "current": False
+            }
+            
+            # Insert milestone entry after GA entry (following Spring Boot pattern)
+            ga_index = -1
+            for i, entry in enumerate(doc_array):
+                if entry.get('status') == 'GENERAL_AVAILABILITY' and entry.get('current', False):
+                    ga_index = i
+                    break
+            
+            if ga_index == -1:
+                Logger.error("Could not find GA entry index for insertion")
+                return False, ""
+            
+            # Insert after GA entry
+            doc_array.insert(ga_index + 1, milestone_entry)
+            
+            # Show preview
+            Logger.bold("\n" + "="*60)
+            Logger.bold("📋 SPRING WEBSITE CHANGES PREVIEW")
+            Logger.bold("="*60)
+            Logger.info(f"File: {self.doc_file.relative_to(self.repo_dir)}")
+            Logger.info(f"Adding new PRERELEASE entry:")
+            Logger.info(f"  version: {self.version}")
+            Logger.info(f"  antora: true (Spring AI uses Antora documentation)")
+            Logger.info(f"  status: PRERELEASE")
+            Logger.info(f"  api: {milestone_entry['api']}")
+            Logger.info(f"  ref: {milestone_entry['ref']} (using major.minor: {major_minor})")
+            Logger.info(f"  current: false")
+            Logger.info(f"  position: after GA entry (index {ga_index + 1})")
+            Logger.bold("="*60)
+            
+            if not self.confirm_action("Proceed with adding PRERELEASE entry?"):
+                Logger.info("Milestone release update cancelled by user")
+                return False, old_version
+            
+            # Write updated content
+            with open(self.doc_file, 'w') as f:
+                json.dump(doc_array, f, indent=2, ensure_ascii=False)
+                f.write('\n')  # Add trailing newline
+            
+            Logger.success(f"PRERELEASE entry for {self.version} added successfully")
+            return True, old_version
+            
+        except Exception as e:
+            Logger.error(f"Error handling milestone release: {e}")
+            return False, ""
+    
+    def _handle_patch_release(self, doc_array: list) -> tuple[bool, str]:
+        """Handle patch release by updating existing GA entry"""
+        try:
             # Find the GENERAL_AVAILABILITY entry (current stable release)
             ga_entry = None
             ga_index = -1
@@ -212,7 +335,7 @@ class SpringWebsiteUpdater:
                 return False, ""
             
             old_version = ga_entry.get('version', '')
-            Logger.info(f"Current GA version in documentation.json: {old_version}")
+            Logger.info(f"Current GA version: {old_version}")
             Logger.info(f"Target version: {self.version}")
             
             # Check if already updated
@@ -224,9 +347,6 @@ class SpringWebsiteUpdater:
             old_api_url = ga_entry.get('api', '')
             old_ref_url = ga_entry.get('ref', '')
             
-            # Store original content for diff preview
-            original_json = json.dumps(doc_array, indent=2, ensure_ascii=False)
-            
             # Update version
             doc_array[ga_index]['version'] = self.version
             
@@ -235,16 +355,8 @@ class SpringWebsiteUpdater:
                 new_api_url = old_api_url.replace(f"/{old_version}/", f"/{self.version}/")
                 doc_array[ga_index]['api'] = new_api_url
                 Logger.info(f"API URL updated: {old_api_url} → {new_api_url}")
-            else:
-                Logger.warn("No API URL found to update")
             
-            # Store updated content for diff preview
-            updated_json = json.dumps(doc_array, indent=2, ensure_ascii=False)
-            
-            # Reference URL stays at major.minor level for patch releases
-            # e.g., https://docs.spring.io/spring-ai/reference/1.0/index.html (unchanged)
-            
-            # Show preview of changes
+            # Show preview
             Logger.bold("\n" + "="*60)
             Logger.bold("📋 SPRING WEBSITE CHANGES PREVIEW")
             Logger.bold("="*60)
@@ -254,55 +366,23 @@ class SpringWebsiteUpdater:
             if old_api_url:
                 Logger.info(f"  api: {old_api_url} → {doc_array[ga_index]['api']}")
             if old_ref_url:
-                Logger.info(f"  ref: {old_ref_url} (unchanged)")
-            
-            # Show commit and PR details
-            commit_msg = f"Update Spring AI documentation to {self.version}"
-            pr_title = f"Update Spring AI documentation to {self.version}"
-            pr_body = f"""Updates Spring AI project documentation for patch release {self.version}.
-
-**Changes:**
-- Updated GENERAL_AVAILABILITY version from {old_version} to {self.version}
-- Updated API documentation URL to reference {self.version}
-- Reference documentation URL unchanged (stays at major.minor level)
-
-This change ensures the Spring AI project page reflects the latest patch release information."""
-            
-            print(f"\n{Colors.GREEN}🔍 Full Commit Message (with DCO sign-off):{Colors.NC}")
-            print(f"{Colors.CYAN}{commit_msg}{Colors.NC}")
-            print(f"{Colors.YELLOW}Signed-off-by: Mark Pollack <mark.pollack@broadcom.com>{Colors.NC}")
-            
-            print(f"\n{Colors.GREEN}🎯 PR Title:{Colors.NC}")
-            print(f"{Colors.CYAN}{pr_title}{Colors.NC}")
-            
-            print(f"\n{Colors.GREEN}📝 PR Body:{Colors.NC}")
-            print(f"{Colors.CYAN}{pr_body}{Colors.NC}")
-            
+                Logger.info(f"  ref: {old_ref_url} (unchanged - stays at major.minor level)")
             Logger.bold("="*60)
             
-            if not self.confirm_action("Proceed with documentation.json update?"):
-                Logger.info("Documentation update cancelled by user")
+            if not self.confirm_action("Proceed with GENERAL_AVAILABILITY update?"):
+                Logger.info("Patch release update cancelled by user")
                 return False, old_version
             
-            # Write updated content with proper formatting
+            # Write updated content
             with open(self.doc_file, 'w') as f:
                 json.dump(doc_array, f, indent=2, ensure_ascii=False)
                 f.write('\n')  # Add trailing newline
             
-            # Show the actual file changes immediately after writing
-            Logger.bold("\n" + "="*60)
-            Logger.bold("📋 ACTUAL FILE CHANGES")
-            Logger.bold("="*60)
-            self._show_json_diff(original_json, updated_json)
-            
-            Logger.success("documentation.json updated successfully")
+            Logger.success("GENERAL_AVAILABILITY entry updated successfully")
             return True, old_version
             
-        except json.JSONDecodeError as e:
-            Logger.error(f"Invalid JSON in documentation.json: {e}")
-            return False, ""
         except Exception as e:
-            Logger.error(f"Error updating documentation.json: {e}")
+            Logger.error(f"Error handling patch release: {e}")
             return False, ""
     
     def _show_json_diff(self, original_content: str, updated_content: str) -> None:
@@ -357,26 +437,48 @@ This change ensures the Spring AI project page reflects the latest patch release
             if self.dry_run:
                 Logger.warn("DRY RUN: Would show git diff with 10 lines context")
                 print(f"{Colors.CYAN}File: project/spring-ai/documentation.json{Colors.NC}")
-                print(f"{Colors.CYAN}@@ -8,10 +8,10 @@{Colors.NC}")
-                print(f"   {{")
-                print(f"     \"version\": \"1.1.0-SNAPSHOT\",")
-                print(f"     \"antora\": false,")
-                print(f"     \"api\": \"https://docs.spring.io/spring-ai/docs/1.1.0-SNAPSHOT/api/\",")
-                print(f"     \"ref\": \"https://docs.spring.io/spring-ai/reference/1.1-SNAPSHOT/index.html\",")
-                print(f"     \"status\": \"SNAPSHOT\",")
-                print(f"     \"current\": false")
-                print(f"   }},")
-                print(f"   {{")
-                print(f"{Colors.RED}-    \"version\": \"1.0.0\",{Colors.NC}")
-                print(f"{Colors.GREEN}+    \"version\": \"{self.version}\",{Colors.NC}")
-                print(f"     \"antora\": false,")
-                print(f"{Colors.RED}-    \"api\": \"https://docs.spring.io/spring-ai/docs/1.0.0/api/\",{Colors.NC}")
-                print(f"{Colors.GREEN}+    \"api\": \"https://docs.spring.io/spring-ai/docs/{self.version}/api/\",{Colors.NC}")
-                print(f"     \"ref\": \"https://docs.spring.io/spring-ai/reference/1.0/index.html\",")
-                print(f"     \"status\" : \"GENERAL_AVAILABILITY\",")
-                print(f"     \"current\" : true")
-                print(f"   }}")
-                print(f" ]")
+                
+                if self.is_milestone_release():
+                    # Show correct milestone behavior: ADD new PRERELEASE entry
+                    # Extract major.minor for reference URL (1.1.0-M1 -> 1.1)
+                    version_parts = self.version.split('.')
+                    major_minor = f"{version_parts[0]}.{version_parts[1]}"
+                    
+                    print(f"{Colors.CYAN}@@ -17,4 +17,11 @@{Colors.NC}")
+                    print(f"     \"status\": \"GENERAL_AVAILABILITY\",")
+                    print(f"     \"current\": true")
+                    print(f"   }},")
+                    print(f"{Colors.GREEN}+  {{{Colors.NC}")
+                    print(f"{Colors.GREEN}+    \"version\": \"{self.version}\",{Colors.NC}")
+                    print(f"{Colors.GREEN}+    \"antora\": true,{Colors.NC}")
+                    print(f"{Colors.GREEN}+    \"api\": \"https://docs.spring.io/spring-ai/{self.version}/api/java/index.html\",{Colors.NC}")
+                    print(f"{Colors.GREEN}+    \"ref\": \"https://docs.spring.io/spring-ai/reference/{major_minor}/index.html\",{Colors.NC}")
+                    print(f"{Colors.GREEN}+    \"status\": \"PRERELEASE\",{Colors.NC}")
+                    print(f"{Colors.GREEN}+    \"current\": false{Colors.NC}")
+                    print(f"{Colors.GREEN}+  }}{Colors.NC}")
+                    print(f" ]")
+                else:
+                    # Show patch release behavior: UPDATE existing GA entry
+                    print(f"{Colors.CYAN}@@ -8,10 +8,10 @@{Colors.NC}")
+                    print(f"   {{")
+                    print(f"     \"version\": \"1.1.0-SNAPSHOT\",")
+                    print(f"     \"antora\": false,")
+                    print(f"     \"api\": \"https://docs.spring.io/spring-ai/docs/1.1.0-SNAPSHOT/api/\",")
+                    print(f"     \"ref\": \"https://docs.spring.io/spring-ai/reference/1.1-SNAPSHOT/index.html\",")
+                    print(f"     \"status\": \"SNAPSHOT\",")
+                    print(f"     \"current\": false")
+                    print(f"   }},")
+                    print(f"   {{")
+                    print(f"{Colors.RED}-    \"version\": \"1.0.1\",{Colors.NC}")
+                    print(f"{Colors.GREEN}+    \"version\": \"{self.version}\",{Colors.NC}")
+                    print(f"     \"antora\": false,")
+                    print(f"{Colors.RED}-    \"api\": \"https://docs.spring.io/spring-ai/docs/1.0.1/api/\",{Colors.NC}")
+                    print(f"{Colors.GREEN}+    \"api\": \"https://docs.spring.io/spring-ai/docs/{self.version}/api/\",{Colors.NC}")
+                    print(f"     \"ref\": \"https://docs.spring.io/spring-ai/reference/1.0/index.html\",")
+                    print(f"     \"status\" : \"GENERAL_AVAILABILITY\",")
+                    print(f"     \"current\" : true")
+                    print(f"   }}")
+                    print(f" ]")
                 return True
             
             # Show git diff with 10 lines of context

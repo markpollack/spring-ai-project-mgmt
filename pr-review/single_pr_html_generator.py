@@ -132,6 +132,28 @@ class SinglePRHTMLGenerator:
                 except Exception as e:
                     print(f"⚠️  Could not load conversation analysis: {e}")
             
+            # Load workflow execution data if available
+            execution_file = pr_dir / "workflow-execution.json"
+            execution_data = {}
+            if execution_file.exists():
+                try:
+                    with open(execution_file) as f:
+                        execution_data = json.load(f)
+                    print(f"📋 Loaded workflow execution data")
+                except Exception as e:
+                    print(f"⚠️  Could not load workflow execution data: {e}")
+            
+            # Load test results if available
+            test_summary_file = self.reports_dir / f"test-logs-pr-{pr_number}" / "test-summary.md"
+            test_results = None
+            if test_summary_file.exists():
+                try:
+                    with open(test_summary_file) as f:
+                        test_results = f.read()
+                    print(f"🧪 Loaded test results")
+                except Exception as e:
+                    print(f"⚠️  Could not load test results: {e}")
+            
             # Process backport data
             backport_decision = backport_data.get("decision", "UNKNOWN")
             backport_reasoning = backport_data.get("reasoning", "Not available")
@@ -184,7 +206,10 @@ class SinglePRHTMLGenerator:
                 testing_adequacy=conversation_data.get("testing_adequacy", []),
                 documentation_completeness=[],  # Not available in single PR context
                 solution_fitness="",  # Not available in single PR context
-                solution_risk_factors=[]  # Not available in single PR context
+                solution_risk_factors=[],  # Not available in single PR context
+                # Add execution and test data
+                workflow_execution=execution_data,
+                test_results_markdown=test_results
             )
             
         except Exception as e:
@@ -294,10 +319,12 @@ class SinglePRHTMLGenerator:
 <body>
     <div class="container">
         {self._generate_pr_header(pr)}
+        {self._generate_workflow_execution_section(pr)}
         {self._generate_executive_summary(pr)}
         {self._generate_analysis_sections(pr)}
         {self._generate_code_changes_section(pr)}
-        {self._generate_test_results_section(pr)}
+        {self._generate_enhanced_test_results_section(pr)}
+        {self._generate_commit_message_section(pr)}
     </div>
     {self._generate_modal_html()}
     {self._generate_javascript()}
@@ -359,6 +386,107 @@ class SinglePRHTMLGenerator:
                 </div>
             </div>
         </header>"""
+    
+    def _generate_workflow_execution_section(self, pr: PRSummary) -> str:
+        """Generate workflow execution dashboard"""
+        if not pr.workflow_execution or 'steps' not in pr.workflow_execution:
+            return ""  # No execution data available
+        
+        steps_html = []
+        for step in pr.workflow_execution.get('steps', []):
+            status_icon = {
+                'success': '✅',
+                'failure': '❌',
+                'skipped': '⏭️',
+                'warning': '⚠️',
+                'running': '🔄'
+            }.get(step.get('status', 'pending'), '⏳')
+            
+            status_class = step.get('status', 'pending')
+            step_name = step.get('name', 'Unknown')
+            duration = step.get('duration_seconds')
+            duration_str = f"({duration:.1f}s)" if duration else ""
+            
+            # Format step name for display
+            display_name = step_name.replace('_', ' ').title()
+            
+            # Build details if available
+            details_html = ""
+            if step.get('details'):
+                details = step['details']
+                details_items = []
+                
+                # Handle test results specially
+                if step_name == 'test_execution' and 'total_tests' in details:
+                    details_items.append(f"Pass Rate: {details.get('success_rate', 'N/A')}")
+                    details_items.append(f"Passed: {details.get('passed', 0)}/{details.get('total_tests', 0)}")
+                    if details.get('failed_tests'):
+                        details_items.append(f"Failed: {', '.join(details['failed_tests'])}")
+                
+                # Handle compilation details
+                elif step_name == 'compilation' and 'command' in details:
+                    details_items.append(f"Command: {details['command']}")
+                
+                # Handle squash details
+                elif step_name == 'squash_commits' and 'original_commits' in details:
+                    details_items.append(f"Squashed {details.get('original_commits', 0)} → {details.get('final_commits', 1)} commit(s)")
+                
+                # Handle rebase details
+                elif step_name == 'rebase' and 'conflicts' in details:
+                    if details.get('conflicts'):
+                        details_items.append("Had conflicts: " + ("Resolved" if details.get('auto_resolved') else "Manual resolution needed"))
+                    else:
+                        details_items.append("No conflicts")
+                
+                if details_items:
+                    details_html = f"<ul class='step-details'>{''.join(['<li>' + html.escape(item) + '</li>' for item in details_items])}</ul>"
+            
+            # Add error message if failed
+            if step.get('error_message'):
+                details_html += f"<div class='error-message'>🚨 {html.escape(step['error_message'])}</div>"
+            
+            steps_html.append(f"""
+                <div class="workflow-step {status_class}">
+                    <div class="step-header" onclick="toggleWorkflowStep('{step_name}')">
+                        <span class="step-icon">{status_icon}</span>
+                        <span class="step-name">{display_name}</span>
+                        <span class="step-duration">{duration_str}</span>
+                        <span class="toggle-icon">▶</span>
+                    </div>
+                    <div id="workflow-{step_name}" class="step-details-container collapsed">
+                        {details_html}
+                    </div>
+                </div>
+            """)
+        
+        # Get summary stats
+        summary = pr.workflow_execution.get('summary', {})
+        success_rate = summary.get('success_rate', '0%')
+        total_duration = summary.get('total_duration_seconds')
+        duration_str = f"{total_duration:.1f}s" if total_duration else "N/A"
+        
+        return f"""
+        <section class="workflow-execution">
+            <h2>📋 Workflow Execution Summary</h2>
+            <div class="workflow-summary">
+                <div class="summary-stat">
+                    <span class="stat-label">Success Rate:</span>
+                    <span class="stat-value">{success_rate}</span>
+                </div>
+                <div class="summary-stat">
+                    <span class="stat-label">Total Duration:</span>
+                    <span class="stat-value">{duration_str}</span>
+                </div>
+                <div class="summary-stat">
+                    <span class="stat-label">Steps Executed:</span>
+                    <span class="stat-value">{summary.get('total_steps', 0)}</span>
+                </div>
+            </div>
+            <div class="workflow-steps">
+                {''.join(steps_html)}
+            </div>
+        </section>
+        """
     
     def _generate_executive_summary(self, pr: PRSummary) -> str:
         """Generate executive summary section"""
@@ -517,6 +645,210 @@ class SinglePRHTMLGenerator:
                 {''.join(file_items)}
             </div>
         </div>"""
+    
+    def _generate_enhanced_test_results_section(self, pr: PRSummary) -> str:
+        """Generate enhanced test results section with actual test data"""
+        test_html = ""
+        
+        # Parse test results from markdown if available
+        if pr.test_results_markdown:
+            lines = pr.test_results_markdown.split('\n')
+            passed_tests = []
+            failed_tests = []
+            total_tests = 0
+            passed_count = 0
+            failed_count = 0
+            success_rate = "0%"
+            pr_number = pr.number
+            
+            in_passed_section = False
+            in_failed_section = False
+            
+            for line in lines:
+                # Check for section headers
+                if "✅ Passed Tests" in line or "## ✅ Passed Tests" in line:
+                    in_passed_section = True
+                    in_failed_section = False
+                    continue
+                elif "❌ Failed Tests" in line or "## ❌ Failed Tests" in line:
+                    in_passed_section = False
+                    in_failed_section = True
+                    continue
+                elif line.startswith("##") and not ("✅" in line or "❌" in line):
+                    # New section that's not passed/failed tests
+                    in_passed_section = False
+                    in_failed_section = False
+                
+                # Parse summary stats
+                if "**Total Tests**:" in line:
+                    total_tests = int(line.split(':')[1].strip())
+                elif "**Passed**:" in line:
+                    passed_count = int(line.split(':')[1].strip())
+                elif "**Failed**:" in line:
+                    failed_count = int(line.split(':')[1].strip())
+                elif "**Success Rate**:" in line:
+                    success_rate = line.split(':')[1].strip()
+                # Parse test entries
+                elif line.startswith("- `"):
+                    test_name = line.split('`')[1]
+                    # Extract log file link if present
+                    log_file = None
+                    if "[Log]" in line:
+                        log_file = line.split('[Log](')[1].split(')')[0] if '[Log](' in line else None
+                    
+                    # Determine status based on section or keywords
+                    if in_passed_section or ("PASSED" in line and not in_failed_section):
+                        passed_tests.append((test_name, log_file))
+                    elif in_failed_section or "FAILED" in line or "TIMEOUT" in line or "ERROR" in line:
+                        status = "FAILED"
+                        if "TIMEOUT" in line:
+                            status = "TIMEOUT"
+                        elif "ERROR" in line:
+                            status = "ERROR"
+                        failed_tests.append((test_name, status, log_file))
+            
+            # Build test results HTML
+            if total_tests > 0:
+                status_color = '#28a745' if failed_count == 0 else '#dc3545' if passed_count == 0 else '#ffc107'
+                
+                test_html = f"""
+                <div class="test-summary" style="border-left: 4px solid {status_color};">
+                    <div class="test-metrics">
+                        <div class="metric">
+                            <span class="metric-label">Total Tests:</span>
+                            <span class="metric-value">{total_tests}</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Passed:</span>
+                            <span class="metric-value" style="color: #28a745;">✅ {passed_count}</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Failed:</span>
+                            <span class="metric-value" style="color: #dc3545;">❌ {failed_count}</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Success Rate:</span>
+                            <span class="metric-value">{success_rate}</span>
+                        </div>
+                    </div>
+                """
+                
+                if failed_tests:
+                    test_html += """
+                    <div class="failed-tests">
+                        <h4>❌ Failed Tests:</h4>
+                        <ul>
+                    """
+                    for test_data in failed_tests:
+                        if len(test_data) == 3:
+                            test_name, status, log_file = test_data
+                        else:
+                            test_name, status = test_data
+                            log_file = None
+                        
+                        status_badge = {
+                            'FAILED': '<span class="badge badge-danger">FAILED</span>',
+                            'TIMEOUT': '<span class="badge badge-warning">TIMEOUT</span>',
+                            'ERROR': '<span class="badge badge-dark">ERROR</span>'
+                        }.get(status, status)
+                        
+                        # Generate log file path
+                        if not log_file:
+                            # Generate expected log file name from test class name
+                            log_file_name = test_name.replace('.', '_') + '.log'
+                            log_file = f"test-logs-pr-{pr_number}/{log_file_name}"
+                        
+                        # Check if log file exists
+                        log_path = self.reports_dir / f"test-logs-pr-{pr_number}" / (test_name.replace('.', '_') + '.log')
+                        if log_path.exists():
+                            # Create relative path from HTML location (same directory)
+                            log_link = f'<a href="test-logs-pr-{pr_number}/{test_name.replace(".", "_")}.log" target="_blank" class="log-link">📄 View Log</a>'
+                        else:
+                            # Log file doesn't exist, show message
+                            log_link = f'<span class="log-missing" title="{log_path}">📄 Log not available</span>'
+                        
+                        test_html += f"""
+                        <li class="test-item">
+                            <code>{html.escape(test_name)}</code>
+                            {status_badge}
+                            {log_link}
+                        </li>
+                        """
+                    test_html += "</ul></div>"
+                
+                if passed_tests:
+                    test_html += f"""
+                    <details class="passed-tests-details">
+                        <summary>✅ Passed Tests ({len(passed_tests)})</summary>
+                        <ul>
+                    """
+                    for test_data in passed_tests:
+                        if isinstance(test_data, tuple) and len(test_data) == 2:
+                            test_name, log_file = test_data
+                        else:
+                            test_name = test_data if isinstance(test_data, str) else test_data[0]
+                            log_file = None
+                        
+                        # Generate log file path if not provided
+                        log_file_name = test_name.replace('.', '_') + '.log'
+                        log_path = self.reports_dir / f"test-logs-pr-{pr_number}" / log_file_name
+                        
+                        # Check if log file exists
+                        if log_path.exists():
+                            # Create relative path from HTML location (same directory)
+                            log_link = f'<a href="test-logs-pr-{pr_number}/{log_file_name}" target="_blank" class="log-link">📄 Log</a>'
+                        else:
+                            log_link = ''  # Don't show link for passed tests without logs
+                        
+                        test_html += f"""
+                        <li class="test-item">
+                            <code>{html.escape(test_name)}</code>
+                            {log_link}
+                        </li>
+                        """
+                    test_html += """
+                        </ul>
+                    </details>
+                    """
+                
+                test_html += "</div>"
+        
+        return f"""
+        <section class="test-results">
+            <h2>🧪 Test Results</h2>
+            {test_html if test_html else '<p><em>No test execution data available</em></p>'}
+        </section>
+        """
+    
+    def _generate_commit_message_section(self, pr: PRSummary) -> str:
+        """Generate commit message section for review"""
+        # Try to get the actual squashed commit message
+        commit_message = pr.commit_message or "No commit message available"
+        
+        return f"""
+        <section class="commit-message-section">
+            <h2>📝 Squashed Commit Message</h2>
+            <div class="commit-message-container">
+                <div class="commit-message-note">
+                    <p>💡 <strong>Review and Customize:</strong> Please review this commit message and customize it before merging.</p>
+                </div>
+                <div class="commit-message">
+                    <pre id="commit-message-text">{html.escape(commit_message)}</pre>
+                    <button class="copy-button" onclick="copyCommitMessage()">📋 Copy to Clipboard</button>
+                </div>
+                <div class="pr-context">
+                    <details>
+                        <summary>Original PR Information</summary>
+                        <div class="pr-info">
+                            <p><strong>PR Title:</strong> {html.escape(pr.title)}</p>
+                            <p><strong>PR Number:</strong> #{pr.number}</p>
+                            <p><strong>Author:</strong> {html.escape(pr.author)}</p>
+                        </div>
+                    </details>
+                </div>
+            </div>
+        </section>
+        """
     
     def _generate_test_results_section(self, pr: PRSummary) -> str:
         """Generate test results section"""
@@ -803,6 +1135,326 @@ class SinglePRHTMLGenerator:
             border-bottom: none;
         }
         
+        /* === WORKFLOW EXECUTION === */
+        .workflow-execution {
+            background: white;
+            margin-bottom: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .workflow-summary {
+            display: flex;
+            gap: 30px;
+            padding: 20px 30px;
+            background: #f8f9fa;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .summary-stat {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .stat-label {
+            color: var(--text-muted);
+            font-size: 0.9em;
+        }
+        
+        .stat-value {
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        
+        .workflow-steps {
+            padding: 20px 30px;
+        }
+        
+        .workflow-step {
+            margin-bottom: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .workflow-step.success {
+            border-left: 4px solid #28a745;
+        }
+        
+        .workflow-step.failure {
+            border-left: 4px solid #dc3545;
+        }
+        
+        .workflow-step.skipped {
+            border-left: 4px solid #6c757d;
+        }
+        
+        .workflow-step.warning {
+            border-left: 4px solid #ffc107;
+        }
+        
+        .step-header {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            cursor: pointer;
+            background: white;
+            transition: background-color 0.3s;
+        }
+        
+        .step-header:hover {
+            background: #f8f9fa;
+        }
+        
+        .step-icon {
+            font-size: 1.2em;
+            margin-right: 10px;
+        }
+        
+        .step-name {
+            flex: 1;
+            font-weight: 500;
+        }
+        
+        .step-duration {
+            color: var(--text-muted);
+            font-size: 0.9em;
+            margin-right: 10px;
+        }
+        
+        .step-details-container {
+            padding: 15px;
+            background: #f8f9fa;
+            border-top: 1px solid var(--border-color);
+        }
+        
+        .step-details-container.collapsed {
+            display: none;
+        }
+        
+        .step-details {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .step-details li {
+            padding: 5px 0;
+            color: #495057;
+        }
+        
+        .error-message {
+            color: #dc3545;
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 4px;
+            padding: 10px;
+            margin-top: 10px;
+        }
+        
+        /* === TEST RESULTS === */
+        .test-summary {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .test-metrics {
+            display: flex;
+            gap: 30px;
+            margin-bottom: 20px;
+        }
+        
+        .test-metrics .metric {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .failed-tests {
+            margin-top: 20px;
+        }
+        
+        .failed-tests h4 {
+            color: #dc3545;
+            margin-bottom: 10px;
+        }
+        
+        .failed-tests ul {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .failed-tests li {
+            padding: 8px;
+            margin-bottom: 5px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .test-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px;
+            margin-bottom: 5px;
+            background: #f8f9fa;
+            border-radius: 4px;
+        }
+        
+        .test-item code {
+            flex: 1;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.9em;
+        }
+        
+        .log-link {
+            color: var(--primary-color);
+            text-decoration: none;
+            padding: 4px 8px;
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-size: 0.85em;
+            transition: all 0.3s;
+        }
+        
+        .log-link:hover {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+        
+        .log-missing {
+            color: var(--text-muted);
+            font-size: 0.85em;
+            font-style: italic;
+        }
+        
+        .passed-tests-details {
+            margin-top: 20px;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+        }
+        
+        .passed-tests-details summary {
+            cursor: pointer;
+            font-weight: 600;
+            color: #28a745;
+        }
+        
+        .passed-tests-details ul {
+            margin-top: 10px;
+            list-style: none;
+            padding: 0;
+        }
+        
+        .badge {
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.85em;
+            font-weight: bold;
+        }
+        
+        .badge-danger {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .badge-warning {
+            background: #ffc107;
+            color: #212529;
+        }
+        
+        .badge-dark {
+            background: #343a40;
+            color: white;
+        }
+        
+        /* === COMMIT MESSAGE === */
+        .commit-message-section {
+            background: white;
+            margin-bottom: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .commit-message-container {
+            padding: 30px;
+        }
+        
+        .commit-message-note {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .commit-message-note p {
+            margin: 0;
+            color: #0c5460;
+        }
+        
+        .commit-message pre {
+            background: #f8f9fa;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 20px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.9em;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            margin-bottom: 15px;
+        }
+        
+        .copy-button {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background-color 0.3s;
+        }
+        
+        .copy-button:hover {
+            background: var(--secondary-color);
+        }
+        
+        .pr-context {
+            margin-top: 20px;
+        }
+        
+        .pr-context details {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+        }
+        
+        .pr-context summary {
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+        
+        .pr-info {
+            margin-top: 10px;
+        }
+        
+        .pr-info p {
+            margin: 5px 0;
+        }
+        
         /* === FILE EXPLORER === */
         .file-explorer {
             background: #f8f9fa;
@@ -1025,6 +1677,37 @@ class SinglePRHTMLGenerator:
                 content.classList.add('collapsed');
                 icon.textContent = '▶';
             }
+        }
+        
+        // Workflow step toggle functionality
+        function toggleWorkflowStep(stepName) {
+            const content = document.getElementById('workflow-' + stepName);
+            const header = content.previousElementSibling;
+            const icon = header.querySelector('.toggle-icon');
+            
+            if (content.classList.contains('collapsed')) {
+                content.classList.remove('collapsed');
+                icon.textContent = '▼';
+            } else {
+                content.classList.add('collapsed');
+                icon.textContent = '▶';
+            }
+        }
+        
+        // Copy commit message to clipboard
+        function copyCommitMessage() {
+            const messageText = document.getElementById('commit-message-text').textContent;
+            navigator.clipboard.writeText(messageText).then(function() {
+                const button = event.target;
+                const originalText = button.textContent;
+                button.textContent = '✅ Copied!';
+                setTimeout(function() {
+                    button.textContent = originalText;
+                }, 2000);
+            }).catch(function(err) {
+                console.error('Failed to copy: ', err);
+                alert('Failed to copy commit message');
+            });
         }
         
         // Modal functionality

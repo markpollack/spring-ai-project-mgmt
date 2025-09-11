@@ -1050,15 +1050,9 @@ class GitCommitCollector:
             finally:
                 os.chdir(original_dir)
         
-        # Default: use the latest version tag
-        Logger.info("No target version specified, finding latest version tag")
-        latest_tag = self._get_latest_version_tag()
-        if latest_tag:
-            Logger.info(f"Using latest version tag as target: {latest_tag}")
-            return latest_tag
-        else:
-            Logger.warn("No version tags found, using HEAD")
-            return "HEAD"
+        # Default: use HEAD for unreleased changes (common case for milestones)
+        Logger.info("No target version specified, defaulting to HEAD")
+        return "HEAD"
 
     
     def _get_latest_version_tag(self) -> Optional[str]:
@@ -1147,10 +1141,18 @@ class GitCommitCollector:
         try:
             os.chdir(self.config.repo_path)
             
-            # Fetch latest tags
-            Logger.info("Fetching latest tags from origin")
+            # Fetch latest tags and update main branch
+            Logger.info("Fetching latest tags and updating main branch from origin")
             fetch_cmd = ['git', 'fetch', '--tags', 'origin']
             subprocess.run(fetch_cmd, capture_output=True, text=True, check=True)
+            
+            # Update main branch to latest (ensure we're analyzing current code)
+            pull_cmd = ['git', 'pull', 'origin', 'main']
+            result = subprocess.run(pull_cmd, capture_output=True, text=True)
+            if result.returncode != 0:
+                Logger.warn(f"Could not update main branch: {result.stderr.strip()}")
+            else:
+                Logger.info("Updated main branch to latest")
             
             # Build the commit range
             if target_tag and target_tag != "HEAD":
