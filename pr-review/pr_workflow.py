@@ -792,10 +792,10 @@ class PRWorkflow:
                     if status_result.stdout.strip():
                         Logger.info("💾 Committing compilation fixes...")
                         self.git.run_git(["add", "."])
-                        self.git.run_git(["commit", "-m", f"Auto-fix compilation errors\n\n🤖 Automatically resolved {total_resolved} compilation errors using Claude Code"])
+                        self.git.run_git(["commit", "-m", f"Auto-fix compilation errors\n\nResolved {total_resolved} compilation errors"])
                         Logger.success("✅ Compilation fixes committed")
                     else:
-                        Logger.debug("No uncommitted changes to commit")
+                        Logger.info("No uncommitted changes to commit")
                 except Exception as e:
                     Logger.warn(f"Error committing compilation fixes: {e}")
         
@@ -898,7 +898,7 @@ class PRWorkflow:
             # Check if branch exists
             branches_result = self.git.run_git(["branch", "--list", branch_name], capture_output=True)
             if not branches_result.stdout.strip():
-                Logger.debug(f"Branch {branch_name} doesn't exist, nothing to delete")
+                Logger.info(f"Branch {branch_name} doesn't exist, nothing to delete")
                 return True
             
             # Check for and remove any worktrees using this branch
@@ -920,7 +920,7 @@ class PRWorkflow:
                                         Logger.info(f"✅ Removed worktree at {worktree_path}")
                                         break
             except Exception as worktree_error:
-                Logger.debug(f"Could not check/remove worktrees: {worktree_error}")
+                Logger.warn(f"Could not check/remove worktrees: {worktree_error}")
             
             Logger.info(f"🗑️  Deleting PR branch: {branch_name}")
             self.git.run_git(["branch", "-D", branch_name])
@@ -937,7 +937,7 @@ class PRWorkflow:
                             self.git.run_git(["branch", "-D", expected_branch])
                             Logger.info(f"✅ Deleted expected PR branch: {expected_branch}")
                     except Exception as e:
-                        Logger.debug(f"Could not delete expected branch {expected_branch}: {e}")
+                        Logger.warn(f"Could not delete expected branch {expected_branch}: {e}")
             
             return True
             
@@ -1216,23 +1216,13 @@ class PRWorkflow:
             Logger.error("❌ Compilation errors could not be resolved")
             return False
         
-        # Run full Maven build (this also serves as final compilation verification)
-        # Use mvnd for fastest builds (with fb as backup)
+        # Run Maven build using same approach as Spring AI CI
+        # Match continuous-integration.yml exactly (but skip tests for compilation check)
         build_commands = [
-            (["fb"], "Run compilation check with fb alias"),
-            (["mvnd", "clean", "install", "-Dmaven.javadoc.skip=true", "-DskipTests"], "Run Maven build with mvnd")
+            (["./mvnw", "-Pci-fast-integration-tests", "-Ddisable.checks=true", "--batch-mode", "--update-snapshots", "compile"], "Run Maven compile (Spring AI CI style)")
         ]
         
         for cmd, description in build_commands:
-            if cmd[0] == "fb":
-                # Check if fb alias exists
-                if not shutil.which("fb"):
-                    continue
-            elif cmd[0] == "mvnd":
-                # Check if mvnd exists
-                if not shutil.which("mvnd"):
-                    Logger.error("mvnd not found - please install Maven Daemon for fastest builds")
-                    continue
             
             Logger.info(f"Using {cmd[0]} for build...")
             
@@ -1266,6 +1256,24 @@ class PRWorkflow:
                     except Exception as e:
                         Logger.error(f"Could not read build log: {e}")
                 
+                # Check if the build failed due to checkstyle violations and attempt AI fix
+                if self._is_checkstyle_failure(build_log_file):
+                    Logger.info("🎯 Detected checkstyle violations - attempting AI fix...")
+                    if self._attempt_checkstyle_ai_fix(build_log_file, pr_number):
+                        Logger.success("✅ Checkstyle violations fixed with AI - retrying build...")
+                        # Retry the same build command after AI fix
+                        if self.run_command(cmd, f"{description} (after checkstyle fix)", 
+                                          cwd=self.config.spring_ai_dir, 
+                                          suppress_output=True, log_file=build_log_file):
+                            Logger.success(f"✅ Build with {cmd[0]} completed successfully after checkstyle fix")
+                            Logger.info(f"Build output logged to: {build_log_file}")
+                            self.build_cache.save_build_success(pr_number)
+                            if self.execution_tracker:
+                                self.execution_tracker.record_build_attempt(' '.join(cmd), True, str(build_log_file))
+                                self.execution_tracker.end_step("compilation", success=True,
+                                                               details={"command": ' '.join(cmd), "log_file": str(build_log_file), "checkstyle_fix": True})
+                            return True
+                
                 Logger.warn(f"Trying next build option...")
         
         Logger.error("All build options failed")
@@ -1273,6 +1281,297 @@ class PRWorkflow:
             self.execution_tracker.end_step("compilation", success=False,
                                            error_message="All build options failed")
         return False
+    
+    def _is_checkstyle_failure(self, build_log_file: Path) -> bool:
+        """Check if build failure is due to checkstyle violations"""
+        if not build_log_file.exists():
+            return False
+        
+        try:
+            with open(build_log_file, 'r') as f:
+                content = f.read()
+                
+            # Look for checkstyle-specific error patterns
+            checkstyle_patterns = [
+                "Failed to execute goal org.apache.maven.plugins:maven-checkstyle-plugin:",
+                "checkstyle:check",
+                "Checkstyle violations found",
+                "checkstyle:violation",
+                "There are checkstyle errors"
+            ]
+            
+            for pattern in checkstyle_patterns:
+                if pattern in content:
+                    Logger.info(f"Detected checkstyle failure pattern: {pattern}")
+                    return True
+                    
+        except Exception as e:
+            Logger.warn(f"Could not read build log to check for checkstyle failures: {e}")
+            
+        return False
+    
+    def _attempt_checkstyle_ai_fix(self, build_log_file: Path, pr_number: str = None) -> bool:
+        """Use Claude Code to fix checkstyle violations"""
+        try:
+            from claude_code_wrapper import ClaudeCodeWrapper
+            
+            # Run detailed checkstyle check to get specific violations
+            Logger.info("🔍 Running detailed checkstyle analysis...")
+            violations = self._get_detailed_checkstyle_violations()
+            if not violations:
+                Logger.warn("No specific checkstyle violations found to fix")
+                return False
+                
+            Logger.info(f"Found {len(violations)} checkstyle violation(s) to fix")
+            
+            # Create AI prompt for checkstyle fixing
+            prompt = self._create_checkstyle_fix_prompt(violations)
+            
+            # Save prompt for debugging
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            prompt_file = self.config.logs_dir / f"checkstyle-fix-prompt-{pr_number}-{timestamp}.txt"
+            prompt_file.parent.mkdir(exist_ok=True)
+            
+            with open(prompt_file, 'w') as f:
+                f.write(prompt)
+                
+            Logger.info(f"Saved checkstyle fix prompt to: {prompt_file}")
+            
+            # Use Claude Code to fix checkstyle violations
+            claude = ClaudeCodeWrapper()
+            if not claude.is_available():
+                Logger.error("Claude Code not available for checkstyle fixing")
+                return False
+                
+            output_file = self.config.logs_dir / f"checkstyle-fix-response-{pr_number}-{timestamp}.txt"
+            
+            Logger.info("🤖 Using AI to fix checkstyle violations...")
+            result = claude.analyze_from_file(prompt_file, output_file, use_json_output=False, show_progress=True)
+            
+            if result['success']:
+                Logger.success("✅ AI checkstyle fixing completed")
+                
+                # Commit checkstyle fixes immediately to prevent losing them
+                try:
+                    status_result = self.git.run_git(["status", "--porcelain"], capture_output=True)
+                    if status_result.stdout.strip():
+                        Logger.info("💾 Committing checkstyle fixes...")
+                        self.git.run_git(["add", "."])
+                        self.git.run_git(["commit", "-m", f"Auto-fix checkstyle violations\n\nResolved {len(violations)} checkstyle violations"])
+                        Logger.success("✅ Checkstyle fixes committed")
+                        return True
+                    else:
+                        Logger.info("No uncommitted changes to commit after checkstyle fix")
+                        return False
+                except Exception as e:
+                    Logger.warn(f"Error committing checkstyle fixes: {e}")
+                    return False
+            else:
+                Logger.error(f"❌ AI checkstyle fixing failed: {result.get('error', 'Unknown error')}")
+                return False
+                
+        except Exception as e:
+            Logger.error(f"Error during AI checkstyle fixing: {e}")
+            return False
+            
+    def _extract_checkstyle_violations(self, build_log_file: Path) -> list:
+        """Extract specific checkstyle violations from build log"""
+        violations = []
+        
+        try:
+            with open(build_log_file, 'r') as f:
+                lines = f.readlines()
+                
+            for i, line in enumerate(lines):
+                # Look for checkstyle violation patterns
+                if "checkstyle:check" in line.lower() or "checkstyle violation" in line.lower():
+                    # Capture surrounding context
+                    start = max(0, i - 2)
+                    end = min(len(lines), i + 10)
+                    context = ''.join(lines[start:end]).strip()
+                    violations.append(context)
+                    
+        except Exception as e:
+            Logger.warn(f"Could not extract checkstyle violations: {e}")
+            
+        return violations
+        
+    def _get_detailed_checkstyle_violations(self) -> list:
+        """Generate structured checkstyle report and extract violations"""
+        violations = []
+        
+        try:
+            # Generate structured XML checkstyle report
+            # Use a custom filename to avoid conflicts with Maven's target directory management
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            checkstyle_report_file = self.config.spring_ai_dir / f"checkstyle-violations-{timestamp}.xml"
+            
+            # Run Maven checkstyle to generate clean XML report (includes test sources, won't fail the build)
+            cmd = [
+                "mvnd", "checkstyle:checkstyle",
+                "-Dcheckstyle.output.format=xml",
+                f"-Dcheckstyle.output.file={checkstyle_report_file}",
+                "-Dcheckstyle.includeTestSourceDirectory=true",  # Include test sources in checkstyle
+                "-Dmaven.test.skip=true",  # Skip test execution but compile test sources
+                "-B",  # Batch mode to reduce console output interference
+                "--no-transfer-progress"  # Disable progress output
+            ]
+            
+            Logger.info("Generating structured checkstyle XML report...")
+            
+            # Run the command to generate the report
+            import subprocess
+            
+            try:
+                result = subprocess.run(
+                    cmd,
+                    cwd=self.config.spring_ai_dir,
+                    capture_output=True,
+                    text=True,
+                    timeout=120  # 2 minute timeout for report generation
+                )
+                
+                Logger.info(f"Checkstyle report generation complete (exit code: {result.returncode})")
+                
+            except subprocess.TimeoutExpired:
+                Logger.warn("Checkstyle report generation timed out")
+                return violations
+            except Exception as e:
+                Logger.warn(f"Error generating checkstyle report: {e}")
+                return violations
+            
+            # Parse the structured XML report for violations
+            if checkstyle_report_file.exists():
+                violations = self._parse_checkstyle_xml_report(checkstyle_report_file)
+                if violations:
+                    Logger.info(f"Extracted {len(violations)} specific violations from XML report")
+                else:
+                    Logger.warn("No violations found in XML report - might indicate a parsing issue")
+                    # Clean up the potentially corrupted file
+                    try:
+                        checkstyle_report_file.unlink()
+                    except:
+                        pass
+            else:
+                Logger.warn(f"Checkstyle XML report not found at: {checkstyle_report_file}")
+                
+        except Exception as e:
+            Logger.warn(f"Error getting detailed checkstyle violations: {e}")
+            
+        return violations
+        
+    def _parse_checkstyle_xml_report(self, xml_file: Path) -> list:
+        """Parse checkstyle XML report to extract specific violations"""
+        violations = []
+        
+        try:
+            import xml.etree.ElementTree as ET
+            
+            # First, validate the XML file by reading its content
+            with open(xml_file, 'r', encoding='utf-8') as f:
+                xml_content = f.read()
+            
+            # Check if the XML is well-formed by trying to parse it
+            try:
+                tree = ET.fromstring(xml_content)
+            except ET.ParseError as parse_error:
+                Logger.warn(f"XML parsing error: {parse_error}")
+                # Try to salvage what we can by extracting violations from the raw text
+                return self._extract_violations_from_corrupted_xml(xml_content)
+            
+            # Parse checkstyle XML structure: <checkstyle><file><error/></file></checkstyle>
+            for file_elem in tree.findall('file'):
+                file_name = file_elem.get('name', 'unknown')
+                
+                for error_elem in file_elem.findall('error'):
+                    violation = {
+                        'file': file_name,
+                        'line': error_elem.get('line', '0'),
+                        'column': error_elem.get('column', '0'),
+                        'severity': error_elem.get('severity', 'error'),
+                        'message': error_elem.get('message', ''),
+                        'source': error_elem.get('source', '')  # Rule name
+                    }
+                    
+                    # Format violation as a readable string for AI
+                    violation_text = f"""File: {violation['file']}
+Line: {violation['line']}, Column: {violation['column']}
+Severity: {violation['severity']}
+Rule: {violation['source']}
+Message: {violation['message']}"""
+                    
+                    violations.append(violation_text)
+                    
+        except Exception as e:
+            Logger.warn(f"Error parsing checkstyle XML report: {e}")
+            
+        return violations
+        
+    def _extract_violations_from_corrupted_xml(self, xml_content: str) -> list:
+        """Extract violations from corrupted XML using regex patterns"""
+        violations = []
+        
+        try:
+            import re
+            
+            # Pattern to match error elements even if XML is corrupted
+            error_pattern = r'<error\s+line="([^"]*)"(?:\s+column="([^"]*)")?\s+severity="([^"]*)"\s+message="([^"]*)"\s+source="([^"]*)"\s*/?>'
+            
+            matches = re.findall(error_pattern, xml_content)
+            
+            # Also try to extract file names
+            file_pattern = r'<file\s+name="([^"]*)"'
+            file_matches = re.findall(file_pattern, xml_content)
+            current_file = file_matches[0] if file_matches else "unknown"
+            
+            for match in matches:
+                line, column, severity, message, source = match
+                
+                violation_text = f"""File: {current_file}
+Line: {line}, Column: {column or '0'}
+Severity: {severity}
+Rule: {source}
+Message: {message}"""
+                
+                violations.append(violation_text)
+                
+            Logger.info(f"Recovered {len(violations)} violations from corrupted XML using regex")
+            
+        except Exception as e:
+            Logger.warn(f"Error extracting violations from corrupted XML: {e}")
+            
+        return violations
+        
+    def _create_checkstyle_fix_prompt(self, violations: list) -> str:
+        """Create AI prompt for fixing checkstyle violations"""
+        return f"""Please fix the following checkstyle violations in the Spring AI codebase.
+
+CHECKSTYLE VIOLATIONS:
+{chr(10).join(f"Violation {i+1}:{chr(10)}{violation}{chr(10)}" for i, violation in enumerate(violations))}
+
+IMPORTANT CONFIGURATION:
+- The Spring AI project checkstyle configuration is located in the ./src/checkstyle subdirectory
+- You MUST reference the specific checkstyle rules defined in ./src/checkstyle/checkstyle.xml
+- Apply ONLY the Spring AI project's checkstyle standards, not generic ones
+- The working directory is the checked out Spring AI project root
+
+INSTRUCTIONS:
+1. First read the checkstyle configuration files in ./src/checkstyle/ to understand the exact rules
+2. Read the affected Java files mentioned in the violations
+3. Fix each checkstyle violation according to the Spring AI project's specific checkstyle configuration
+4. Common Spring AI checkstyle issues include:
+   - Missing JavaDoc for public methods/classes (per Spring AI standards)
+   - Incorrect indentation or whitespace (per Spring AI formatting)
+   - Import order/unused imports (per Spring AI import rules)
+   - Line length violations (per Spring AI line length limits)
+   - Missing final modifiers (per Spring AI modifier requirements)
+   - Incorrect brace placement (per Spring AI brace style)
+5. Preserve all existing functionality - only fix style violations
+6. Do not modify any business logic or test assertions
+7. Follow the EXACT coding conventions defined in ./src/checkstyle/checkstyle.xml
+
+Please fix all violations using the Spring AI project's specific checkstyle configuration and ensure the code passes validation.
+"""
     
     def run_antora_docs_build(self, pr_number: str, skip_docs: bool = False, dry_run: bool = False) -> bool:
         """Run Antora documentation build for PRs containing .adoc files"""
@@ -1563,7 +1862,7 @@ class PRWorkflow:
             if status_result.stdout.strip():
                 Logger.info("🔧 Found uncommitted changes from auto-fixes - committing them...")
                 self.git.run_git(["add", "."])
-                self.git.run_git(["commit", "-m", f"Auto-fix compilation errors in PR #{pr_number}\n\n🤖 Automatically resolved compilation errors using Claude Code"])
+                self.git.run_git(["commit", "-m", f"Auto-fix compilation errors in PR #{pr_number}"])
                 Logger.success("✅ Committed auto-fix changes")
         except Exception as e:
             Logger.warn(f"Error checking/committing auto-fixes: {e}")
@@ -1972,6 +2271,12 @@ File content with conflicts:"""
                 Logger.warn("⚠️  Build check failed (batch mode - continuing)")
             else:
                 Logger.error("❌ Build check failed")
+                # Start and immediately fail the test execution step since build failed
+                if self.execution_tracker:
+                    self.execution_tracker.start_step("test_execution")
+                    self.execution_tracker.end_step("test_execution", success=False,
+                                                   error_message="Build check failed - tests cannot run",
+                                                   details={"reason": "compilation_failure"})
                 return False
         
         # Phase 4: Squash commits (mandatory for multi-commit PRs)
@@ -2044,11 +2349,40 @@ File content with conflicts:"""
         
         # Phase 6: Generate PR Analysis Report (if requested)
         report_file = None
-        if generate_report:
-            Logger.info("📊 Generating PR analysis report...")
+        html_report_file = None
+        if generate_report and not dry_run:
+            Logger.info("📊 Generating PR analysis reports...")
+            
+            # Generate markdown report
             report_file = self.pr_analyzer.generate_report(pr_number, dry_run)
-            if report_file is None and not dry_run:
-                Logger.warn("⚠️  Report generation failed, but PR preparation was successful")
+            if report_file:
+                Logger.success(f"📋 Markdown report generated: {report_file}")
+            else:
+                Logger.warn("⚠️  Markdown report generation failed, but PR preparation was successful")
+            
+            # Generate HTML report
+            try:
+                from single_pr_html_generator import SinglePRHTMLGenerator
+                
+                html_generator = SinglePRHTMLGenerator(
+                    working_dir=self.config.script_dir,
+                    context_dir=self.config.context_dir,
+                    reports_dir=self.config.reports_dir,
+                    logs_dir=self.config.logs_dir
+                )
+                
+                html_report_file = html_generator.generate_html_report(pr_number)
+                
+                if html_report_file:
+                    Logger.success(f"🎨 HTML report generated: {html_report_file}")
+                    Logger.info(f"🔗 Open HTML: file://{html_report_file.absolute()}")
+                else:
+                    Logger.warn("⚠️  HTML report generation failed")
+                    
+            except Exception as e:
+                Logger.warn(f"⚠️  HTML report generation failed: {e}")
+        elif generate_report and dry_run:
+            Logger.info("📊 Report generation skipped in dry-run mode")
         
         # Phase 7: Run tests for changed test files
         if not skip_compile and not skip_tests and not dry_run:
@@ -2068,27 +2402,17 @@ File content with conflicts:"""
             commits_ahead = self.git.get_commits_ahead(f"{self.config.upstream_remote}/{self.config.main_branch}")
             Logger.info(f"Commits ahead of {self.config.upstream_remote}/{self.config.main_branch}: {commits_ahead}")
             
-            if report_file:
+            # Show generated reports
+            if report_file and html_report_file:
+                Logger.info(f"📊 Reports generated:")
+                Logger.info(f"   📄 Markdown: {report_file}")
+                Logger.info(f"   🌐 HTML: {html_report_file}")
+                Logger.info(f"   💻 Open HTML: file://{html_report_file.absolute()}")
+            elif report_file:
                 Logger.info(f"📋 Review report: {report_file}")
-                
-                # Show both HTML and Markdown report locations
-                if str(report_file).endswith('.md'):
-                    # Markdown report exists, check for HTML version
-                    html_report = str(report_file).replace('.md', '.html')
-                    if Path(html_report).exists():
-                        Logger.info(f"🌐 HTML report: {html_report}")
-                        Logger.info(f"📄 Markdown report: {report_file}")
-                elif str(report_file).endswith('.html'):
-                    # HTML report exists, check for Markdown version  
-                    md_report = str(report_file).replace('.html', '.md')
-                    if Path(md_report).exists():
-                        Logger.info(f"🌐 HTML report: {report_file}")
-                        Logger.info(f"📄 Markdown report: {md_report}")
-                
-                # Show how to open HTML report
-                html_path = str(report_file).replace('.md', '.html') if str(report_file).endswith('.md') else str(report_file)
-                if Path(html_path).exists():
-                    Logger.info(f"💻 Open in browser: file://{Path(html_path).absolute()}")
+            elif html_report_file:
+                Logger.info(f"🌐 HTML report: {html_report_file}")
+                Logger.info(f"💻 Open HTML: file://{html_report_file.absolute()}")
         
         # Ensure tracker is saved before returning
         if self.execution_tracker:
@@ -2397,6 +2721,10 @@ File content with conflicts:"""
         Logger.info("🎨 Applying Java formatter before running tests...")
         if not self.apply_java_formatter():
             Logger.error("❌ Java formatter failed before tests - code will not pass CI")
+            if self.execution_tracker:
+                self.execution_tracker.end_step("test_execution", success=False,
+                                               error_message="Java formatter failed - tests cannot run",
+                                               details={"step": "java_formatting"})
             return False
         
         # First do a complete build to ensure all dependencies are available
@@ -2407,15 +2735,17 @@ File content with conflicts:"""
         build_log_file = self.config.logs_dir / f"full-build-{timestamp}.log"
         build_log_file.parent.mkdir(exist_ok=True)
         
+        # Use exact same command as Spring AI CI for test preparation
+        # Match continuous-integration.yml exactly, but disable checkstyle to focus on functionality
         full_build_cmd = [
-            "mvnd", "install", 
-            "-B",  # Batch mode - disable fancy output
-            "-U",  # Force update snapshots - ignore cached dependency failures
-            "--no-transfer-progress",  # Disable transfer progress
-            "-Dmaven.javadoc.skip=true",
-            "-DskipTests",  # Skip tests in dependency build - we'll run them separately
-            "-Djansi.force=false",  # Disable ANSI escape sequences
-            "-Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn"  # Suppress download progress
+            "./mvnw", 
+            "-Pci-fast-integration-tests", 
+            "-Pjavadoc",
+            "-Dfailsafe.rerunFailingTestsCount=3",
+            "-Ddisable.checks=true",  # Disable checkstyle - focus on functional testing like real PR validation
+            "--batch-mode", 
+            "--update-snapshots", 
+            "verify"
         ]
         
         try:
@@ -2463,16 +2793,74 @@ File content with conflicts:"""
                 except Exception as e:
                     Logger.error(f"Could not read full build log: {e}")
                 
-                return False
+                # Check if the full build failed due to checkstyle violations and attempt AI fix
+                if self._is_checkstyle_failure(build_log_file):
+                    Logger.info("🎯 Full build failed due to checkstyle violations - attempting AI fix...")
+                    if self._attempt_checkstyle_ai_fix(build_log_file, pr_number):
+                        Logger.success("✅ Checkstyle violations fixed with AI - retrying full build...")
+                        
+                        # Retry the full build after AI fix
+                        retry_build_log = self.config.logs_dir / f"full-build-retry-{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
+                        
+                        try:
+                            with open(retry_build_log, 'w') as log_f:
+                                retry_result = subprocess.run(
+                                    full_build_cmd,
+                                    cwd=self.config.spring_ai_dir,
+                                    stdout=log_f,
+                                    stderr=subprocess.STDOUT,
+                                    stdin=subprocess.DEVNULL,
+                                    start_new_session=True,
+                                    env=env,
+                                    timeout=600
+                                )
+                                log_f.write(f"\nReturn Code: {retry_result.returncode}\n")
+                            
+                            if retry_result.returncode == 0:
+                                Logger.success("✅ Full build succeeded after checkstyle fixes - proceeding with tests")
+                                # Continue to test execution below (don't return early)
+                                build_result = retry_result  # Update build_result for the rest of the function
+                            else:
+                                Logger.error("❌ Full build still failed after checkstyle fixes")
+                                # End the test execution step with failure
+                                if self.execution_tracker:
+                                    self.execution_tracker.end_step("test_execution", success=False,
+                                                                   error_message="Build failed after checkstyle fixes - tests cannot run",
+                                                                   details={"build_log": str(build_log_file), "retry_log": str(retry_build_log)})
+                                return False
+                                
+                        except Exception as retry_e:
+                            Logger.error(f"❌ Full build retry failed with exception: {retry_e}")
+                            # End the test execution step with failure
+                            if self.execution_tracker:
+                                self.execution_tracker.end_step("test_execution", success=False,
+                                                               error_message="Build retry failed with exception - tests cannot run",
+                                                               details={"exception": str(retry_e)})
+                            return False
+                else:
+                    # Not a checkstyle failure, end with generic build failure
+                    if self.execution_tracker:
+                        self.execution_tracker.end_step("test_execution", success=False,
+                                                       error_message="Build failed - tests cannot run",
+                                                       details={"build_log": str(build_log_file)})
+                    return False
             else:
                 Logger.success("✅ Full build completed successfully")
                 Logger.info(f"Build output logged to: {build_log_file}")
                 
         except subprocess.TimeoutExpired:
             Logger.error("❌ Full build timed out")
+            if self.execution_tracker:
+                self.execution_tracker.end_step("test_execution", success=False,
+                                               error_message="Build timed out - tests cannot run",
+                                               details={"timeout_seconds": 600})
             return False
         except Exception as e:
             Logger.error(f"❌ Full build failed with exception: {e}")
+            if self.execution_tracker:
+                self.execution_tracker.end_step("test_execution", success=False,
+                                               error_message=f"Build exception - tests cannot run: {str(e)}",
+                                               details={"exception": str(e)})
             return False
 
         # Run tests by module
