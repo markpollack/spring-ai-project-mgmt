@@ -20,7 +20,7 @@ public record CollectionRequest(
     String issueState,
     List<String> labelFilters,
     String labelMode,
-    
+
     // Phase 1: Essential dashboard parameters
     Integer maxIssues,        // null = unlimited (backward compatible)
     String sortBy,            // "updated" | "created" | "comments" | "reactions"
@@ -29,7 +29,10 @@ public record CollectionRequest(
     // Phase 2: PR collection parameters
     String collectionType,    // "issues" | "prs"
     Integer prNumber,         // specific PR number (when type=prs), null = all
-    String prState            // "open" | "closed" | "merged" | "all" (when type=prs)
+    String prState,           // "open" | "closed" | "merged" | "all" (when type=prs)
+
+    // Phase 3: Logging parameters
+    boolean verbose           // enable verbose logging
 ) {
     
     /**
@@ -54,7 +57,8 @@ public record CollectionRequest(
              "desc",      // sortOrder: most recent first
              "issues",    // collectionType: default to issues (backward compatible)
              null,        // prNumber: null = all PRs
-             "open"       // prState: default PR state
+             "open",      // prState: default PR state
+             false        // verbose: default to false (backward compatible)
         );
     }
     
@@ -83,7 +87,8 @@ public record CollectionRequest(
             "desc",                   // most recent first
             "issues",                 // collectionType: dashboard typically for issues
             null,                     // prNumber: null = all
-            "open"                    // prState: default
+            "open",                   // prState: default
+            false                     // verbose: default to false
         );
     }
     
@@ -122,7 +127,8 @@ public record CollectionRequest(
             repository, batchSize, dryRun, incremental, zip, clean, resume,
             issueState, labelFilters, labelMode,
             validatedMaxIssues, validatedSortBy, validatedSortOrder,
-            validatedCollectionType, prNumber, validatedPrState
+            validatedCollectionType, prNumber, validatedPrState,
+            verbose  // preserve verbose setting
         );
     }
 }

@@ -82,6 +82,11 @@ public abstract class BaseCollectionService {
     protected abstract List<JsonNode> fetchBatch(String searchQuery, int batchSize, String cursor);
 
     /**
+     * Fetch batch of items from API and return the complete response (for pagination)
+     */
+    protected abstract JsonNode fetchBatchWithResponse(String searchQuery, int batchSize, String cursor);
+
+    /**
      * Extract cursor for pagination
      */
     protected abstract Optional<String> extractCursor(JsonNode response);
@@ -90,6 +95,134 @@ public abstract class BaseCollectionService {
      * Extract items from response
      */
     protected abstract List<JsonNode> extractItems(JsonNode response);
+
+    /**
+     * Process items in current batch (e.g., enhance with additional data)
+     */
+    protected abstract List<JsonNode> processItemBatch(List<JsonNode> batch, String owner, String repo, CollectionRequest request);
+
+    /**
+     * Get item type name for logging (e.g., "issues", "PRs")
+     */
+    protected abstract String getItemTypeName();
+
+    /**
+     * Template method for collecting items in batches with shared pagination logic.
+     * This eliminates duplication between IssueCollectionService and PRCollectionService.
+     */
+    protected CollectionResult collectItemsInBatches(String owner, String repo, CollectionRequest request,
+                                                   Path outputDir, String searchQuery, int totalAvailableItems) throws Exception {
+        List<String> batchFiles = new ArrayList<>();
+        String cursor = null;
+        int batchNum = 1;
+        boolean hasMoreFromAPI = true;
+        AtomicInteger processedCount = new AtomicInteger(0);
+
+        // Use dashboard-optimized fetching if maxIssues is specified
+        int targetBatchSize = request.batchSize();
+        boolean isDashboardMode = request.maxIssues() != null;
+        int effectiveTotal = isDashboardMode ?
+            Math.min(totalAvailableItems, request.maxIssues()) : totalAvailableItems;
+        int fetchSize = isDashboardMode ?
+            Math.min(request.maxIssues(), 100) : // Dashboard: limit to maxIssues but respect API limits
+            Math.max(targetBatchSize, 100);     // Full mode: use larger fetch for efficiency
+
+        List<JsonNode> pendingItems = new ArrayList<>();
+
+        while (hasMoreFromAPI || !pendingItems.isEmpty()) {
+            // Check if we've reached the maxIssues limit in dashboard mode
+            if (isDashboardMode && processedCount.get() >= effectiveTotal) {
+                logger.info("Dashboard mode: reached target of {} {}, stopping collection", effectiveTotal, getItemTypeName());
+                break;
+            }
+
+            // Fetch more items if needed
+            if (pendingItems.size() < targetBatchSize && hasMoreFromAPI) {
+                // Calculate remaining items to fetch in dashboard mode
+                int remainingToFetch = isDashboardMode ?
+                    effectiveTotal - processedCount.get() : fetchSize;
+                int actualFetchSize = Math.min(fetchSize, remainingToFetch);
+
+                if (actualFetchSize <= 0) break;
+
+                logger.info("Fetching {} from API (cursor: {}, fetch size: {}, dashboard mode: {})",
+                    getItemTypeName(), cursor != null ? "present" : "null", actualFetchSize, isDashboardMode);
+
+                // Fetch batch from API using abstract method
+                JsonNode searchResponse = fetchBatchWithResponse(searchQuery, actualFetchSize, cursor);
+                List<JsonNode> batch = extractItems(searchResponse);
+
+                // Update pagination using abstract method
+                Optional<String> nextCursor = extractCursor(searchResponse);
+                hasMoreFromAPI = determineHasMore(batch, actualFetchSize, nextCursor);
+                cursor = nextCursor.orElse(null);
+
+                // Add to pending items
+                pendingItems.addAll(batch);
+
+                logger.info("Fetched {} {}, {} pending, dashboard limit: {}",
+                    batch.size(), getItemTypeName(), pendingItems.size(), isDashboardMode ? effectiveTotal : "unlimited");
+            }
+
+            // Create adaptive batch, respecting dashboard limits
+            int maxBatchSize = isDashboardMode ?
+                Math.min(targetBatchSize, effectiveTotal - processedCount.get()) : targetBatchSize;
+            List<JsonNode> currentBatch = createAdaptiveBatch(pendingItems, maxBatchSize);
+
+            if (currentBatch.isEmpty()) {
+                break; // No more items to process
+            }
+
+            // Process items (e.g., enhance PRs with soft approval detection)
+            List<JsonNode> processedItems = processItemBatch(currentBatch, owner, repo, request);
+
+            // Save batch to file
+            String filename = saveBatchToFile(outputDir, batchNum, processedItems, request);
+            batchFiles.add(filename);
+
+            // Update counters
+            processedCount.addAndGet(processedItems.size());
+            batchNum++;
+
+            logger.info("Batch {}: Processed {} {}, total: {}/{}",
+                       batchNum - 1, processedItems.size(), getItemTypeName(), processedCount.get(),
+                       isDashboardMode ? effectiveTotal : totalAvailableItems);
+        }
+
+        // Create ZIP if requested
+        createZipFile(outputDir, batchFiles, request);
+
+        String itemTypeName = getItemTypeName();
+        String capitalizedTypeName = itemTypeName.substring(0, 1).toUpperCase() + itemTypeName.substring(1);
+        logger.info("{} collection completed: {}/{} {} processed",
+                   capitalizedTypeName, processedCount.get(), totalAvailableItems, itemTypeName);
+
+        return new CollectionResult(totalAvailableItems, processedCount.get(),
+                                  outputDir.toString(), batchFiles);
+    }
+
+    /**
+     * Determine if there are more items available from the API.
+     * Different APIs use different pagination mechanisms.
+     */
+    protected abstract boolean determineHasMore(List<JsonNode> batch, int requestedSize, Optional<String> nextCursor);
+
+    /**
+     * Create adaptive batch from pending items
+     */
+    private List<JsonNode> createAdaptiveBatch(List<JsonNode> pendingItems, int maxBatchSize) {
+        if (pendingItems.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        int batchSize = Math.min(maxBatchSize, pendingItems.size());
+        List<JsonNode> batch = new ArrayList<>(pendingItems.subList(0, batchSize));
+
+        // Remove processed items from pending list
+        pendingItems.subList(0, batchSize).clear();
+
+        return batch;
+    }
 
     /**
      * Common validation logic for collection requests
@@ -126,7 +259,8 @@ public abstract class BaseCollectionService {
             request.zip(), request.clean(), request.resume(),
             state, request.labelFilters(), labelMode,
             request.maxIssues(), request.sortBy(), request.sortOrder(),
-            request.collectionType(), request.prNumber(), request.prState()
+            request.collectionType(), request.prNumber(), request.prState(),
+            request.verbose()
         );
     }
 

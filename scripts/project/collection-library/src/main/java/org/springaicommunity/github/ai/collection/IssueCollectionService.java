@@ -133,10 +133,10 @@ public class IssueCollectionService extends BaseCollectionService {
             saveResumeState(outputPath, null, 1, 0, List.of());
             throw e;
         }
-        
+
         // Create metadata file
         createMetadataFile(outputPath, validatedRequest, totalAvailableItems, stats.processedIssues());
-        
+
         return new CollectionResult(totalAvailableItems, stats.processedIssues(), outputDir, stats.batchFiles());
     }
     
@@ -887,5 +887,25 @@ public class IssueCollectionService extends BaseCollectionService {
     protected List<JsonNode> extractItems(JsonNode response) {
         // Extract issues from GraphQL search response
         return new ArrayList<>(jsonUtils.getArray(response, "data", "search", "nodes"));
+    }
+
+    @Override
+    protected JsonNode fetchBatchWithResponse(String searchQuery, int batchSize, String cursor) {
+        return graphQLService.searchIssuesWithSorting(searchQuery, "updated", "desc", batchSize, cursor);
+    }
+
+    @Override
+    protected List<JsonNode> processItemBatch(List<JsonNode> batch, String owner, String repo, CollectionRequest request) {
+        return batch; // Issues don't need additional processing
+    }
+
+    @Override
+    protected String getItemTypeName() {
+        return "issues";
+    }
+
+    @Override
+    protected boolean determineHasMore(List<JsonNode> batch, int requestedSize, Optional<String> nextCursor) {
+        return nextCursor.isPresent() && !batch.isEmpty(); // GraphQL pagination
     }
 }
