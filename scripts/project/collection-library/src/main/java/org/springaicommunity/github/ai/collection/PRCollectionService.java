@@ -106,7 +106,7 @@ public class PRCollectionService extends BaseCollectionService {
     }
 
     /**
-     * Collect multiple PRs using search
+     * Collect multiple PRs using search - using proven issue collection pattern
      */
     private CollectionResult collectMultiplePRs(String owner, String repo, CollectionRequest request) {
         logger.info("Collecting {} PRs from {}/{}", request.prState(), owner, repo);
@@ -127,72 +127,135 @@ public class PRCollectionService extends BaseCollectionService {
         Path outputDir = createOutputDirectory(request);
         cleanOutputDirectory(outputDir, request.clean());
 
-        // Collection state
-        List<String> batchFiles = new ArrayList<>();
-        AtomicInteger totalProcessed = new AtomicInteger(0);
-        AtomicInteger batchIndex = new AtomicInteger(1);
-        String cursor = null;
-        int adaptiveBatchSize = request.batchSize();
-
         try {
-            // Collection loop
-            while (totalProcessed.get() < totalAvailableItems) {
-                // Check if we should limit collection
-                int itemsToCollect = totalAvailableItems;
-                if (request.maxIssues() != null && request.maxIssues() > 0) {
-                    itemsToCollect = Math.min(totalAvailableItems, request.maxIssues());
-                    if (totalProcessed.get() >= itemsToCollect) {
-                        logger.info("Reached maximum PR limit: {}", itemsToCollect);
-                        break;
-                    }
-                }
-
-                // Fetch batch
-                List<JsonNode> batch = fetchBatch(searchQuery, adaptiveBatchSize, cursor);
-
-                if (batch.isEmpty()) {
-                    logger.info("No more PRs to fetch, ending collection");
-                    break;
-                }
-
-                // Enhance PRs with soft approval detection
-                List<JsonNode> enhancedPRs = enhancePRsWithSoftApproval(batch, owner, repo);
-
-                // Save batch
-                String filename = saveBatchToFile(outputDir, batchIndex.get(), enhancedPRs, request);
-                batchFiles.add(filename);
-
-                // Update progress
-                totalProcessed.addAndGet(enhancedPRs.size());
-                logProgress(batchIndex.get(), totalProcessed.get(), itemsToCollect, searchQuery);
-
-                // Calculate adaptive batch size for next iteration
-                adaptiveBatchSize = calculateAdaptiveBatchSize(enhancedPRs, request.batchSize());
-
-                batchIndex.incrementAndGet();
-
-                // Extract cursor for next page (simplified - actual implementation would need PR-specific pagination)
-                Optional<String> nextCursor = extractCursor(batch.get(batch.size() - 1));
-                if (nextCursor.isEmpty()) {
-                    logger.info("No more pages available, ending collection");
-                    break;
-                }
-                cursor = nextCursor.get();
-            }
-
-            // Create ZIP if requested
-            createZipFile(outputDir, batchFiles, request);
-
-            logger.info("PR collection completed: {}/{} PRs processed",
-                       totalProcessed.get(), totalAvailableItems);
-
-            return new CollectionResult(totalAvailableItems, totalProcessed.get(),
-                                      outputDir.toString(), batchFiles);
-
+            return collectPRsInBatches(owner, repo, request, outputDir, searchQuery, totalAvailableItems);
         } catch (Exception e) {
             logger.error("Multiple PR collection failed: {}", e.getMessage());
             throw new RuntimeException("Multiple PR collection failed", e);
         }
+    }
+
+    /**
+     * Collect PRs in batches using the proven issue collection pattern
+     */
+    private CollectionResult collectPRsInBatches(String owner, String repo, CollectionRequest request,
+                                                Path outputDir, String searchQuery, int totalAvailableItems) throws Exception {
+        List<String> batchFiles = new ArrayList<>();
+        String cursor = null;
+        int batchNum = 1;
+        boolean hasMoreFromAPI = true;
+        AtomicInteger processedCount = new AtomicInteger(0);
+
+        // Use dashboard-optimized fetching if maxIssues is specified
+        int targetBatchSize = request.batchSize();
+        boolean isDashboardMode = request.maxIssues() != null;
+        int effectiveTotal = isDashboardMode ?
+            Math.min(totalAvailableItems, request.maxIssues()) : totalAvailableItems;
+        int fetchSize = isDashboardMode ?
+            Math.min(request.maxIssues(), 100) : // Dashboard: limit to maxIssues but respect API limits
+            Math.max(targetBatchSize, 100);     // Full mode: use larger fetch for efficiency
+
+        List<JsonNode> pendingPRs = new ArrayList<>();
+
+        while (hasMoreFromAPI || !pendingPRs.isEmpty()) {
+            // Check if we've reached the maxIssues limit in dashboard mode
+            if (isDashboardMode && processedCount.get() >= effectiveTotal) {
+                logger.info("Dashboard mode: reached target of {} PRs, stopping collection", effectiveTotal);
+                break;
+            }
+
+            // Fetch more PRs if needed (using proven issue collection pattern)
+            if (pendingPRs.size() < targetBatchSize && hasMoreFromAPI) {
+                // Calculate remaining PRs to fetch in dashboard mode
+                int remainingToFetch = isDashboardMode ?
+                    effectiveTotal - processedCount.get() : fetchSize;
+                int actualFetchSize = Math.min(fetchSize, remainingToFetch);
+
+                if (actualFetchSize <= 0) break;
+
+                logger.info("Fetching PRs from API (cursor: {}, fetch size: {}, dashboard mode: {})",
+                    cursor != null ? "present" : "null", actualFetchSize, isDashboardMode);
+
+                // Fetch batch from API
+                JsonNode searchResponse = restService.searchPRs(searchQuery, actualFetchSize, cursor);
+                List<JsonNode> batch = extractItems(searchResponse);
+
+                // Update pagination (like issue collection does)
+                hasMoreFromAPI = batch.size() == actualFetchSize;
+
+                // Update cursor for next page (increment page number for REST API)
+                if (!batch.isEmpty()) {
+                    if (cursor == null || cursor.isEmpty()) {
+                        cursor = "2"; // Next page
+                    } else {
+                        try {
+                            int currentPage = Integer.parseInt(cursor);
+                            cursor = String.valueOf(currentPage + 1);
+                        } catch (NumberFormatException e) {
+                            cursor = "2";
+                        }
+                    }
+                } else {
+                    hasMoreFromAPI = false;
+                }
+
+                // Add to pending PRs
+                pendingPRs.addAll(batch);
+
+                logger.info("Fetched {} PRs, {} pending, dashboard limit: {}",
+                    batch.size(), pendingPRs.size(), isDashboardMode ? effectiveTotal : "unlimited");
+            }
+
+            // Create adaptive batch, respecting dashboard limits
+            int maxBatchSize = isDashboardMode ?
+                Math.min(targetBatchSize, effectiveTotal - processedCount.get()) : targetBatchSize;
+            List<JsonNode> currentBatch = createAdaptivePRBatch(pendingPRs, maxBatchSize);
+
+            if (currentBatch.isEmpty()) {
+                break; // No more PRs to process
+            }
+
+            // Enhance PRs with soft approval detection
+            List<JsonNode> enhancedPRs = enhancePRsWithSoftApproval(currentBatch, owner, repo, request.verbose());
+
+            // Save batch to file
+            String filename = saveBatchToFile(outputDir, batchNum, enhancedPRs, request);
+            batchFiles.add(filename);
+
+            // Update counters
+            processedCount.addAndGet(enhancedPRs.size());
+            batchNum++;
+
+            logger.info("Batch {}: Processed {} PRs, total: {}/{}",
+                       batchNum - 1, enhancedPRs.size(), processedCount.get(),
+                       isDashboardMode ? effectiveTotal : totalAvailableItems);
+        }
+
+        // Create ZIP if requested
+        createZipFile(outputDir, batchFiles, request);
+
+        logger.info("PR collection completed: {}/{} PRs processed",
+                   processedCount.get(), totalAvailableItems);
+
+        return new CollectionResult(totalAvailableItems, processedCount.get(),
+                                  outputDir.toString(), batchFiles);
+    }
+
+    /**
+     * Create adaptive batch from pending PRs (like createAdaptiveBatch for issues)
+     */
+    private List<JsonNode> createAdaptivePRBatch(List<JsonNode> pendingPRs, int maxBatchSize) {
+        if (pendingPRs.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        int batchSize = Math.min(maxBatchSize, pendingPRs.size());
+        List<JsonNode> batch = new ArrayList<>(pendingPRs.subList(0, batchSize));
+
+        // Remove processed PRs from pending list
+        pendingPRs.subList(0, batchSize).clear();
+
+        return batch;
     }
 
     @Override
@@ -219,17 +282,25 @@ public class PRCollectionService extends BaseCollectionService {
 
     @Override
     protected Optional<String> extractCursor(JsonNode response) {
-        // For REST API pagination, use page numbers instead of cursors
-        // Calculate next page from current response
+        // For REST API pagination, check if we have more pages
         try {
             JsonNode items = response.path("items");
             if (!items.isArray() || items.size() == 0) {
                 return Optional.empty(); // No more pages
             }
 
-            // Simple increment for page-based pagination
-            // This is a simplified approach - in production, you'd want to check if there are more pages
-            return Optional.of("2"); // This will be overridden by the collection loop logic
+            // GitHub search API returns information about pagination
+            // If items.size() is less than per_page, we're on the last page
+            // Since we don't know the exact per_page used, check if we got fewer than expected
+
+            // Conservative approach: if we got fewer than 30 items (GitHub's default per_page),
+            // assume we're on the last page
+            if (items.size() < 30) {
+                return Optional.empty();
+            }
+
+            // More items available, continue pagination
+            return Optional.of("next");
         } catch (Exception e) {
             logger.warn("Failed to extract cursor from PR response: {}", e.getMessage());
             return Optional.empty();
@@ -263,17 +334,34 @@ public class PRCollectionService extends BaseCollectionService {
     /**
      * Enhance multiple PRs with soft approval detection
      */
-    private List<JsonNode> enhancePRsWithSoftApproval(List<JsonNode> prs, String owner, String repo) {
+    private List<JsonNode> enhancePRsWithSoftApproval(List<JsonNode> prs, String owner, String repo, boolean verbose) {
         List<JsonNode> enhancedPRs = new ArrayList<>();
+        int total = prs.size();
 
-        for (JsonNode pr : prs) {
+        if (verbose) {
+            logger.info("🔍 Analyzing {} PRs for soft approval detection...", total);
+        }
+
+        for (int i = 0; i < prs.size(); i++) {
+            JsonNode pr = prs.get(i);
             try {
                 int prNumber = jsonUtils.getInt(pr, "number").orElse(-1);
                 if (prNumber > 0) {
+                    if (verbose) {
+                        String prTitle = jsonUtils.getString(pr, "title").orElse("Unknown");
+                        logger.info("  📋 Processing PR #{} ({}/{}) - {}", prNumber, i + 1, total,
+                                   prTitle.length() > 60 ? prTitle.substring(0, 60) + "..." : prTitle);
+                    }
+
                     // Get reviews for this PR
                     JsonNode reviewsData = restService.getPullRequestReviews(owner, repo, prNumber);
                     JsonNode enhancedPR = enhancePRWithSoftApproval(pr, reviewsData);
                     enhancedPRs.add(enhancedPR);
+
+                    // Check if soft approval was detected
+                    if (verbose && enhancedPR.path("soft_approval_detected").asBoolean()) {
+                        logger.info("  ✨ Soft approval detected for PR #{}", prNumber);
+                    }
                 } else {
                     // Add PR without enhancement if number is missing
                     enhancedPRs.add(pr);
@@ -282,6 +370,14 @@ public class PRCollectionService extends BaseCollectionService {
                 logger.warn("Failed to enhance PR with soft approval detection: {}", e.getMessage());
                 enhancedPRs.add(pr); // Add original PR without enhancement
             }
+        }
+
+        if (verbose) {
+            long softApprovalCount = enhancedPRs.stream()
+                .mapToLong(pr -> pr.path("soft_approval_detected").asBoolean() ? 1 : 0)
+                .sum();
+            logger.info("✅ Completed soft approval analysis: {}/{} PRs have soft approvals",
+                       softApprovalCount, total);
         }
 
         return enhancedPRs;
