@@ -21,46 +21,42 @@ import java.util.zip.ZipOutputStream;
 
 
 /**
- * Main collection service for GitHub issues.  
+ * Collection service for GitHub issues.
  * Pure Java service with minimal Spring dependencies for better testability.
- * Contains core business logic for issue collection, batching, and file operations.
+ * Contains issue-specific collection logic extending BaseCollectionService.
  */
 @Service
-public class IssueCollectionService {
+public class IssueCollectionService extends BaseCollectionService {
     
     private static final Logger logger = LoggerFactory.getLogger(IssueCollectionService.class);
-    
-    private final GitHubGraphQLService graphQLService;
-    private final GitHubRestService restService;
-    private final JsonNodeUtils jsonUtils;
-    private final ObjectMapper objectMapper;
-    private final CollectionProperties properties;
-    
-    // Configuration constants (will be initialized from properties)
-    private final int MAX_BATCH_SIZE_BYTES;
-    private final int LARGE_ISSUE_THRESHOLD;
-    private final int SIZE_THRESHOLD;
-    private final String RESUME_FILE;
-    
+
     public IssueCollectionService(GitHubGraphQLService graphQLService,
                                  GitHubRestService restService,
                                  JsonNodeUtils jsonUtils,
                                  ObjectMapper objectMapper,
                                  CollectionProperties properties) {
-        this.graphQLService = graphQLService;
-        this.restService = restService;
-        this.jsonUtils = jsonUtils;
-        this.objectMapper = objectMapper;
-        this.properties = properties;
-        
-        // Initialize configuration constants from properties
-        this.MAX_BATCH_SIZE_BYTES = properties.getMaxBatchSizeBytes();
-        this.LARGE_ISSUE_THRESHOLD = properties.getLargeIssueThreshold();
-        this.SIZE_THRESHOLD = properties.getSizeThreshold();
-        this.RESUME_FILE = properties.getResumeFile();
+        super(graphQLService, restService, jsonUtils, objectMapper, properties);
     }
     
+    @Override
+    protected String getCollectionType() {
+        return "issues";
+    }
+
+    @Override
+    public CollectionResult collectItems(CollectionRequest request) {
+        try {
+            return collectIssuesInternal(request);
+        } catch (Exception e) {
+            throw new RuntimeException("Issue collection failed", e);
+        }
+    }
+
     public CollectionResult collectIssues(CollectionRequest request) throws Exception {
+        return collectIssuesInternal(request);
+    }
+
+    private CollectionResult collectIssuesInternal(CollectionRequest request) throws Exception {
         // Validate and apply defaults to the request
         CollectionRequest validatedRequest = request.validated();
         
@@ -68,30 +64,48 @@ public class IssueCollectionService {
         String owner = repoParts[0];
         String repoName = repoParts[1];
         
-        // Build search query with enhanced parameters for dashboard support
-        String searchQuery = buildSearchQuery(owner, repoName, 
-            validatedRequest.issueState(), validatedRequest.labelFilters(), validatedRequest.labelMode());
-        
-        // Get total issue count, but respect maxIssues limit for dashboard use cases
-        int totalAvailableIssues = graphQLService.getSearchIssueCount(searchQuery);
-        int effectiveTotal = validatedRequest.maxIssues() != null ? 
-            Math.min(totalAvailableIssues, validatedRequest.maxIssues()) : totalAvailableIssues;
-        
-        logger.info("Total issues available: {}, effective collection target: {}", totalAvailableIssues, effectiveTotal);
+        // Build search query - handle both issues and PRs
+        String searchQuery;
+        int totalAvailableItems;
+        String collectionType = validatedRequest.collectionType();
+        String itemType = "prs".equals(collectionType) ? "PRs" : "issues";
+
+        if ("prs".equals(collectionType)) {
+            // Use PR search query
+            searchQuery = restService.buildPRSearchQuery(validatedRequest.repository(),
+                validatedRequest.prState(), validatedRequest.labelFilters(), validatedRequest.labelMode());
+            totalAvailableItems = restService.getTotalPRCount(searchQuery);
+        } else {
+            // Use issue search query (default)
+            searchQuery = buildSearchQuery(owner, repoName,
+                validatedRequest.issueState(), validatedRequest.labelFilters(), validatedRequest.labelMode());
+            totalAvailableItems = graphQLService.getSearchIssueCount(searchQuery);
+        }
+
+        // Apply maxIssues limit for dashboard use cases
+        int effectiveTotal = validatedRequest.maxIssues() != null ?
+            Math.min(totalAvailableItems, validatedRequest.maxIssues()) : totalAvailableItems;
+
+        logger.info("Total {} available: {}, effective collection target: {}", itemType, totalAvailableItems, effectiveTotal);
         logger.info("Search query: {}", searchQuery);
         if (validatedRequest.maxIssues() != null) {
-            logger.info("Dashboard mode: limiting to {} issues, sorted by {} {}", 
-                validatedRequest.maxIssues(), validatedRequest.sortBy(), validatedRequest.sortOrder());
+            logger.info("Dashboard mode: limiting to {} {}, sorted by {} {}",
+                validatedRequest.maxIssues(), itemType, validatedRequest.sortBy(), validatedRequest.sortOrder());
         }
-        
+
         if (validatedRequest.dryRun()) {
-            logger.info("DRY RUN: Would collect {} issues in batches of {}", effectiveTotal, validatedRequest.batchSize());
-            return new CollectionResult(totalAvailableIssues, 0, "dry-run", List.of());
+            logger.info("DRY RUN: Would collect {} {} in batches of {}", effectiveTotal, itemType, validatedRequest.batchSize());
+            return new CollectionResult(totalAvailableItems, 0, "dry-run", List.of());
         }
-        
-        // Setup output directory
+
+        // Setup output directory - handle both issues and PRs
         String timestamp = ZonedDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss"));
-        String outputDir = "issues/raw/closed/batch_" + timestamp;
+        String outputDir;
+        if ("prs".equals(collectionType)) {
+            outputDir = "prs/raw/" + validatedRequest.prState() + "/batch_" + timestamp;
+        } else {
+            outputDir = "issues/raw/" + validatedRequest.issueState() + "/batch_" + timestamp;
+        }
         Path outputPath = Paths.get(outputDir);
         Files.createDirectories(outputPath);
         
@@ -121,9 +135,9 @@ public class IssueCollectionService {
         }
         
         // Create metadata file
-        createMetadataFile(outputPath, validatedRequest, totalAvailableIssues, stats.processedIssues());
+        createMetadataFile(outputPath, validatedRequest, totalAvailableItems, stats.processedIssues());
         
-        return new CollectionResult(totalAvailableIssues, stats.processedIssues(), outputDir, stats.batchFiles());
+        return new CollectionResult(totalAvailableItems, stats.processedIssues(), outputDir, stats.batchFiles());
     }
     
     private CollectionStats collectInBatches(String owner, String repoName, CollectionRequest request, Path outputPath, String timestamp, String searchQuery, int effectiveTotal) throws Exception {
@@ -842,5 +856,36 @@ public class IssueCollectionService {
         }
         
         return query.toString();
+    }
+
+    // Abstract method implementations from BaseCollectionService
+
+    @Override
+    protected int getTotalItemCount(String searchQuery) {
+        return graphQLService.getSearchIssueCount(searchQuery);
+    }
+
+    @Override
+    protected String buildSearchQuery(String owner, String repo, CollectionRequest request) {
+        return buildSearchQuery(owner, repo, request.issueState(), request.labelFilters(), request.labelMode());
+    }
+
+    @Override
+    protected List<JsonNode> fetchBatch(String searchQuery, int batchSize, String cursor) {
+        // Use GraphQL for issue fetching
+        JsonNode response = graphQLService.searchIssuesWithSorting(searchQuery, "updated", "desc", batchSize, cursor);
+        return extractItems(response);
+    }
+
+    @Override
+    protected Optional<String> extractCursor(JsonNode response) {
+        // Extract cursor from GraphQL response for pagination
+        return jsonUtils.getString(response, "data", "search", "pageInfo", "endCursor");
+    }
+
+    @Override
+    protected List<JsonNode> extractItems(JsonNode response) {
+        // Extract issues from GraphQL search response
+        return new ArrayList<>(jsonUtils.getArray(response, "data", "search", "nodes"));
     }
 }

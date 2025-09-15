@@ -40,7 +40,8 @@ public class CollectGithubIssuesApp implements CommandLineRunner {
     
     private final GitHubGraphQLService graphQLService;
     private final GitHubRestService restService;
-    private final IssueCollectionService collectionService;
+    private final IssueCollectionService issueCollectionService;
+    private final PRCollectionService prCollectionService;
     private final ArgumentParser argumentParser;
     
     // Collection configuration - will be set from parsed arguments
@@ -69,11 +70,13 @@ public class CollectGithubIssuesApp implements CommandLineRunner {
     public CollectGithubIssuesApp(
             GitHubGraphQLService graphQLService,
             GitHubRestService restService,
-            IssueCollectionService collectionService,
+            IssueCollectionService issueCollectionService,
+            PRCollectionService prCollectionService,
             ArgumentParser argumentParser) {
         this.graphQLService = graphQLService;
         this.restService = restService;
-        this.collectionService = collectionService;
+        this.issueCollectionService = issueCollectionService;
+        this.prCollectionService = prCollectionService;
         this.argumentParser = argumentParser;
     }
     
@@ -130,9 +133,9 @@ public class CollectGithubIssuesApp implements CommandLineRunner {
             // Execute collection based on type
             CollectionResult result;
             if ("prs".equals(collectionType)) {
-                result = collectPullRequests(request);
+                result = prCollectionService.collectItems(request);
             } else {
-                result = collectionService.collectIssues(request);
+                result = issueCollectionService.collectIssues(request);
             }
             
             // Log results
@@ -178,71 +181,4 @@ public class CollectGithubIssuesApp implements CommandLineRunner {
         this.prState = config.prState;
     }
 
-    /**
-     * Collect pull requests (simplified implementation for PR #4347)
-     */
-    private CollectionResult collectPullRequests(CollectionRequest request) {
-        try {
-            String[] repoParts = request.repository().split("/");
-            String owner = repoParts[0];
-            String repo = repoParts[1];
-
-            if (request.prNumber() != null) {
-                // Collect specific PR
-                logger.info("Collecting PR #{} from {}/{}", request.prNumber(), owner, repo);
-
-                if (request.dryRun()) {
-                    logger.info("DRY RUN: Would collect PR #{}", request.prNumber());
-                    return new CollectionResult(1, 1, "dry-run", List.of("pr_" + request.prNumber() + ".json"));
-                }
-
-                // Get PR data
-                var prData = restService.getPullRequest(owner, repo, request.prNumber());
-                logger.info("PR #{} found: {}", request.prNumber(), prData.path("title").asText("Unknown"));
-
-                // Get PR reviews
-                var reviewsData = restService.getPullRequestReviews(owner, repo, request.prNumber());
-                logger.info("Found {} reviews for PR #{}", reviewsData.size(), request.prNumber());
-
-                // Check for soft approvals
-                boolean hasSoftApproval = detectSoftApproval(reviewsData);
-                logger.info("Soft approval detected: {}", hasSoftApproval);
-
-                // Return simple result
-                return new CollectionResult(1, 1, "prs/pr_" + request.prNumber(), List.of("pr_" + request.prNumber() + ".json"));
-            } else {
-                // Collect multiple PRs - not implemented yet
-                throw new UnsupportedOperationException("Multiple PR collection not yet implemented. Use --number to specify a PR.");
-            }
-
-        } catch (Exception e) {
-            logger.error("Failed to collect pull requests: {}", e.getMessage());
-            if (verbose) {
-                logger.error("Stack trace:", e);
-            }
-            throw e;
-        }
-    }
-
-    /**
-     * Detect soft approval in PR reviews
-     * Soft approval = approval from non-member (CONTRIBUTOR, FIRST_TIME_CONTRIBUTOR)
-     */
-    private boolean detectSoftApproval(com.fasterxml.jackson.databind.JsonNode reviewsData) {
-        for (var review : reviewsData) {
-            String state = review.path("state").asText("");
-            String authorAssociation = review.path("author_association").asText("");
-            String authorLogin = review.path("user").path("login").asText("");
-
-            if ("APPROVED".equals(state)) {
-                logger.info("Found approval from {} (association: {})", authorLogin, authorAssociation);
-
-                if ("CONTRIBUTOR".equals(authorAssociation) || "FIRST_TIME_CONTRIBUTOR".equals(authorAssociation)) {
-                    logger.info("Soft approval detected from contributor: {}", authorLogin);
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
 }

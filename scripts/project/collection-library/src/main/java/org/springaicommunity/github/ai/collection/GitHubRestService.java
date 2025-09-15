@@ -269,4 +269,36 @@ public class GitHubRestService {
 
         return query.toString();
     }
+
+    /**
+     * Search for pull requests using GitHub Search API
+     * @param searchQuery The formatted search query string
+     * @param batchSize Number of PRs to return per batch
+     * @param cursor Pagination cursor (for this REST API implementation, we'll use page numbers)
+     * @return JSON response containing PR search results
+     */
+    public JsonNode searchPRs(String searchQuery, int batchSize, String cursor) {
+        try {
+            // For REST API, we'll use simple pagination instead of cursor
+            int page = 1;
+            if (cursor != null && !cursor.isEmpty()) {
+                try {
+                    page = Integer.parseInt(cursor);
+                } catch (NumberFormatException e) {
+                    logger.warn("Invalid cursor format, using page 1: {}", cursor);
+                }
+            }
+
+            String response = restClient.get()
+                .uri("https://api.github.com/search/issues?q={query}&per_page={per_page}&page={page}",
+                     searchQuery, batchSize, page)
+                .retrieve()
+                .body(String.class);
+
+            return objectMapper.readTree(response);
+        } catch (Exception e) {
+            logger.error("Failed to search PRs: {}", e.getMessage());
+            return objectMapper.createObjectNode();
+        }
+    }
 }
