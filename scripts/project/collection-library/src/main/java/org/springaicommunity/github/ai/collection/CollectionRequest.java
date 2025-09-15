@@ -24,7 +24,12 @@ public record CollectionRequest(
     // Phase 1: Essential dashboard parameters
     Integer maxIssues,        // null = unlimited (backward compatible)
     String sortBy,            // "updated" | "created" | "comments" | "reactions"
-    String sortOrder          // "desc" | "asc"
+    String sortOrder,         // "desc" | "asc"
+
+    // Phase 2: PR collection parameters
+    String collectionType,    // "issues" | "prs"
+    Integer prNumber,         // specific PR number (when type=prs), null = all
+    String prState            // "open" | "closed" | "merged" | "all" (when type=prs)
 ) {
     
     /**
@@ -46,7 +51,10 @@ public record CollectionRequest(
              issueState, labelFilters, labelMode,
              null,        // maxIssues: unlimited (backward compatible)
              "updated",   // sortBy: default to updated (GitHub default)
-             "desc"       // sortOrder: most recent first
+             "desc",      // sortOrder: most recent first
+             "issues",    // collectionType: default to issues (backward compatible)
+             null,        // prNumber: null = all PRs
+             "open"       // prState: default PR state
         );
     }
     
@@ -72,7 +80,10 @@ public record CollectionRequest(
             "any",                    // labelMode
             maxIssues,
             sortBy,
-            "desc"                    // most recent first
+            "desc",                   // most recent first
+            "issues",                 // collectionType: dashboard typically for issues
+            null,                     // prNumber: null = all
+            "open"                    // prState: default
         );
     }
     
@@ -95,10 +106,23 @@ public record CollectionRequest(
         // Validate maxIssues
         Integer validatedMaxIssues = maxIssues != null && maxIssues > 0 ? maxIssues : null;
         
+        // Validate collection type
+        String validatedCollectionType = switch (collectionType == null ? "issues" : collectionType.toLowerCase()) {
+            case "issues", "prs" -> collectionType.toLowerCase();
+            default -> "issues";
+        };
+
+        // Validate PR state
+        String validatedPrState = switch (prState == null ? "open" : prState.toLowerCase()) {
+            case "open", "closed", "merged", "all" -> prState.toLowerCase();
+            default -> "open";
+        };
+
         return new CollectionRequest(
             repository, batchSize, dryRun, incremental, zip, clean, resume,
             issueState, labelFilters, labelMode,
-            validatedMaxIssues, validatedSortBy, validatedSortOrder
+            validatedMaxIssues, validatedSortBy, validatedSortOrder,
+            validatedCollectionType, prNumber, validatedPrState
         );
     }
 }

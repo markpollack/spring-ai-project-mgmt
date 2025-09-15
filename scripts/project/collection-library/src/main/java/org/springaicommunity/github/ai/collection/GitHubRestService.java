@@ -157,12 +157,116 @@ public class GitHubRestService {
                 .uri("https://api.github.com/search/issues?q={query}", searchQuery)
                 .retrieve()
                 .body(String.class);
-            
+
             JsonNode searchResult = objectMapper.readTree(response);
             return searchResult.path("total_count").asInt(0);
         } catch (Exception e) {
             logger.error("Failed to get total issue count: {}", e.getMessage());
             return 0;
         }
+    }
+
+    /**
+     * Get specific pull request by number
+     * @param owner Repository owner
+     * @param repo Repository name
+     * @param prNumber PR number
+     * @return PR data as JsonNode
+     */
+    public JsonNode getPullRequest(String owner, String repo, int prNumber) {
+        try {
+            String response = restClient.get()
+                .uri("https://api.github.com/repos/{owner}/{repo}/pulls/{pr_number}", owner, repo, prNumber)
+                .retrieve()
+                .body(String.class);
+
+            return objectMapper.readTree(response);
+        } catch (Exception e) {
+            logger.error("Failed to get PR {}: {}", prNumber, e.getMessage());
+            return objectMapper.createObjectNode();
+        }
+    }
+
+    /**
+     * Get reviews for a specific pull request
+     * @param owner Repository owner
+     * @param repo Repository name
+     * @param prNumber PR number
+     * @return Reviews data as JsonNode
+     */
+    public JsonNode getPullRequestReviews(String owner, String repo, int prNumber) {
+        try {
+            String response = restClient.get()
+                .uri("https://api.github.com/repos/{owner}/{repo}/pulls/{pr_number}/reviews", owner, repo, prNumber)
+                .retrieve()
+                .body(String.class);
+
+            return objectMapper.readTree(response);
+        } catch (Exception e) {
+            logger.error("Failed to get reviews for PR {}: {}", prNumber, e.getMessage());
+            return objectMapper.createArrayNode();
+        }
+    }
+
+    /**
+     * Get total PR count with search parameters
+     * @param searchQuery The formatted search query string
+     * @return Total number of PRs matching the query
+     */
+    public int getTotalPRCount(String searchQuery) {
+        try {
+            String response = restClient.get()
+                .uri("https://api.github.com/search/issues?q={query}", searchQuery)
+                .retrieve()
+                .body(String.class);
+
+            JsonNode searchResult = objectMapper.readTree(response);
+            return searchResult.path("total_count").asInt(0);
+        } catch (Exception e) {
+            logger.error("Failed to get total PR count: {}", e.getMessage());
+            return 0;
+        }
+    }
+
+    /**
+     * Build GitHub search query for pull requests
+     * @param repository Repository in format "owner/repo"
+     * @param prState PR state (open, closed, merged, all)
+     * @param labelFilters Optional label filters
+     * @param labelMode Label matching mode (any, all)
+     * @return Formatted search query
+     */
+    public String buildPRSearchQuery(String repository, String prState, List<String> labelFilters, String labelMode) {
+        StringBuilder query = new StringBuilder();
+        query.append("repo:").append(repository);
+        query.append(" is:pr");
+
+        // Add state filter
+        if (!"all".equals(prState)) {
+            if ("merged".equals(prState)) {
+                query.append(" is:merged");
+            } else {
+                query.append(" is:").append(prState);
+            }
+        }
+
+        // Add label filters
+        if (labelFilters != null && !labelFilters.isEmpty()) {
+            if ("any".equals(labelMode)) {
+                // GitHub API limitation: can only search for one label at a time with OR logic
+                // Use first label only and warn user
+                if (labelFilters.size() > 1) {
+                    logger.warn("Label mode 'any' with multiple labels - using first label only due to GitHub API limitations");
+                }
+                query.append(" label:\"").append(labelFilters.get(0)).append("\"");
+            } else {
+                // "all" mode - add each label (AND logic)
+                for (String label : labelFilters) {
+                    query.append(" label:\"").append(label).append("\"");
+                }
+            }
+        }
+
+        return query.toString();
     }
 }

@@ -31,6 +31,11 @@ public class ParsedConfiguration {
     public Integer maxIssues; // null = unlimited
     public String sortBy; // updated/created/comments/reactions
     public String sortOrder; // desc/asc
+
+    // Collection type (Phase 2: PR Collection)
+    public String collectionType = "issues"; // issues or prs
+    public Integer prNumber; // specific PR number to collect
+    public String prState; // open/closed/all for PR filtering
     
     public ParsedConfiguration(CollectionProperties defaultProperties) {
         // Initialize with defaults
@@ -44,6 +49,11 @@ public class ParsedConfiguration {
         this.maxIssues = null; // unlimited by default (backward compatible)
         this.sortBy = "updated"; // default GitHub sort
         this.sortOrder = "desc"; // most recent first
+
+        // PR collection parameters - set defaults
+        this.collectionType = "issues"; // default to issue collection
+        this.prNumber = null; // null = collect all PRs (when type=prs)
+        this.prState = "open"; // default PR state
     }
     
     @Override
@@ -64,6 +74,9 @@ public class ParsedConfiguration {
                 ", maxIssues=" + maxIssues +
                 ", sortBy='" + sortBy + '\'' +
                 ", sortOrder='" + sortOrder + '\'' +
+                ", collectionType='" + collectionType + '\'' +
+                ", prNumber=" + prNumber +
+                ", prState='" + prState + '\'' +
                 '}';
     }
 }

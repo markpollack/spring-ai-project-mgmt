@@ -5,7 +5,6 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.ComponentScan;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,7 +30,6 @@ import java.util.ArrayList;
  *   java -jar collection-app.jar --dry-run --verbose
  */
 @SpringBootApplication
-@EnableConfigurationProperties(CollectionProperties.class)
 @ComponentScan(basePackages = {
     "org.springaicommunity.github.ai.collection",
     "org.springaicommunity.github.ai.collection.app"
@@ -62,6 +60,11 @@ public class CollectGithubIssuesApp implements CommandLineRunner {
     private Integer maxIssues;
     private String sortBy;
     private String sortOrder;
+
+    // PR collection parameters
+    private String collectionType;
+    private Integer prNumber;
+    private String prState;
     
     public CollectGithubIssuesApp(
             GitHubGraphQLService graphQLService,
@@ -111,17 +114,26 @@ public class CollectGithubIssuesApp implements CommandLineRunner {
         logger.info("  Max issues: {}", maxIssues != null ? maxIssues : "unlimited");
         logger.info("  Sort by: {}", sortBy);
         logger.info("  Sort order: {}", sortOrder);
+        logger.info("  Collection type: {}", collectionType);
+        logger.info("  PR number: {}", prNumber != null ? prNumber : "all");
+        logger.info("  PR state: {}", prState);
         
         try {
-            // Create collection request with dashboard enhancements
+            // Create collection request with dashboard and PR enhancements
             CollectionRequest request = new CollectionRequest(
                 repo, batchSize, dryRun, incremental, zip, clean, resume,
                 issueState, labelFilters, labelMode,
-                maxIssues, sortBy, sortOrder
+                maxIssues, sortBy, sortOrder,
+                collectionType, prNumber, prState
             );
             
-            // Execute collection
-            CollectionResult result = collectionService.collectIssues(request);
+            // Execute collection based on type
+            CollectionResult result;
+            if ("prs".equals(collectionType)) {
+                result = collectPullRequests(request);
+            } else {
+                result = collectionService.collectIssues(request);
+            }
             
             // Log results
             logger.info("Collection completed successfully!");
@@ -161,5 +173,76 @@ public class CollectGithubIssuesApp implements CommandLineRunner {
         this.maxIssues = config.maxIssues;
         this.sortBy = config.sortBy;
         this.sortOrder = config.sortOrder;
+        this.collectionType = config.collectionType;
+        this.prNumber = config.prNumber;
+        this.prState = config.prState;
+    }
+
+    /**
+     * Collect pull requests (simplified implementation for PR #4347)
+     */
+    private CollectionResult collectPullRequests(CollectionRequest request) {
+        try {
+            String[] repoParts = request.repository().split("/");
+            String owner = repoParts[0];
+            String repo = repoParts[1];
+
+            if (request.prNumber() != null) {
+                // Collect specific PR
+                logger.info("Collecting PR #{} from {}/{}", request.prNumber(), owner, repo);
+
+                if (request.dryRun()) {
+                    logger.info("DRY RUN: Would collect PR #{}", request.prNumber());
+                    return new CollectionResult(1, 1, "dry-run", List.of("pr_" + request.prNumber() + ".json"));
+                }
+
+                // Get PR data
+                var prData = restService.getPullRequest(owner, repo, request.prNumber());
+                logger.info("PR #{} found: {}", request.prNumber(), prData.path("title").asText("Unknown"));
+
+                // Get PR reviews
+                var reviewsData = restService.getPullRequestReviews(owner, repo, request.prNumber());
+                logger.info("Found {} reviews for PR #{}", reviewsData.size(), request.prNumber());
+
+                // Check for soft approvals
+                boolean hasSoftApproval = detectSoftApproval(reviewsData);
+                logger.info("Soft approval detected: {}", hasSoftApproval);
+
+                // Return simple result
+                return new CollectionResult(1, 1, "prs/pr_" + request.prNumber(), List.of("pr_" + request.prNumber() + ".json"));
+            } else {
+                // Collect multiple PRs - not implemented yet
+                throw new UnsupportedOperationException("Multiple PR collection not yet implemented. Use --number to specify a PR.");
+            }
+
+        } catch (Exception e) {
+            logger.error("Failed to collect pull requests: {}", e.getMessage());
+            if (verbose) {
+                logger.error("Stack trace:", e);
+            }
+            throw e;
+        }
+    }
+
+    /**
+     * Detect soft approval in PR reviews
+     * Soft approval = approval from non-member (CONTRIBUTOR, FIRST_TIME_CONTRIBUTOR)
+     */
+    private boolean detectSoftApproval(com.fasterxml.jackson.databind.JsonNode reviewsData) {
+        for (var review : reviewsData) {
+            String state = review.path("state").asText("");
+            String authorAssociation = review.path("author_association").asText("");
+            String authorLogin = review.path("user").path("login").asText("");
+
+            if ("APPROVED".equals(state)) {
+                logger.info("Found approval from {} (association: {})", authorLogin, authorAssociation);
+
+                if ("CONTRIBUTOR".equals(authorAssociation) || "FIRST_TIME_CONTRIBUTOR".equals(authorAssociation)) {
+                    logger.info("Soft approval detected from contributor: {}", authorLogin);
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 }

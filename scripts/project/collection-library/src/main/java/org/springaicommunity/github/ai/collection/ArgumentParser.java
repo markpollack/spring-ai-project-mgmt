@@ -1,5 +1,7 @@
 package org.springaicommunity.github.ai.collection;
 
+import org.springframework.stereotype.Component;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -8,6 +10,7 @@ import java.util.List;
  * Command-line argument parser for GitHub Issues Collection application.
  * Pure Java implementation with no Spring dependencies for maximum testability.
  */
+@Component
 public class ArgumentParser {
     
     private final CollectionProperties defaultProperties;
@@ -132,7 +135,38 @@ public class ArgumentParser {
                     config.sortOrder = sortOrder;
                     i++; // Skip next argument since we consumed it
                     break;
-                    
+
+                case "-t", "--type":
+                    String collectionType = getRequiredValue(args, i, "type").toLowerCase();
+                    if (!List.of("issues", "prs").contains(collectionType)) {
+                        throw new IllegalArgumentException("Invalid collection type '" + collectionType + "': must be 'issues' or 'prs'");
+                    }
+                    config.collectionType = collectionType;
+                    i++; // Skip next argument since we consumed it
+                    break;
+
+                case "-n", "--number":
+                    String numberStr = getRequiredValue(args, i, "number");
+                    try {
+                        config.prNumber = Integer.parseInt(numberStr);
+                        if (config.prNumber <= 0) {
+                            throw new IllegalArgumentException("PR number must be positive: " + config.prNumber);
+                        }
+                    } catch (NumberFormatException e) {
+                        throw new IllegalArgumentException("Invalid PR number '" + numberStr + "': must be a positive integer");
+                    }
+                    i++; // Skip next argument since we consumed it
+                    break;
+
+                case "--pr-state":
+                    String prState = getRequiredValue(args, i, "pr-state").toLowerCase();
+                    if (!List.of("open", "closed", "all", "merged").contains(prState)) {
+                        throw new IllegalArgumentException("Invalid PR state '" + prState + "': must be 'open', 'closed', 'merged', or 'all'");
+                    }
+                    config.prState = prState;
+                    i++; // Skip next argument since we consumed it
+                    break;
+
                 case "-h", "--help":
                     config.helpRequested = true;
                     break;
@@ -193,6 +227,11 @@ public class ArgumentParser {
         help.append("    --label-mode <mode>     Label matching mode: any, all (default: ").append(defaultProperties.getDefaultLabelMode()).append(")\n");
         help.append("                           Note: 'any' mode uses first label only due to API limitations\n");
         help.append("\n");
+        help.append("COLLECTION TYPE OPTIONS (Phase 2: PR Collection):\n");
+        help.append("    -t, --type <type>       Collection type: issues, prs (default: issues)\n");
+        help.append("    -n, --number <number>   Specific PR number to collect (when type=prs)\n");
+        help.append("    --pr-state <state>      PR state: open, closed, merged, all (default: open)\n");
+        help.append("\n");
         help.append("DASHBOARD OPTIONS (Phase 1 Enhancement):\n");
         help.append("    --max-issues <count>    Limit total issues collected (default: unlimited)\n");
         help.append("    --sort-by <field>       Sort field: updated, created, comments, reactions (default: updated)\n");
@@ -228,6 +267,11 @@ public class ArgumentParser {
         help.append("    ./collect_github_issues.java --max-issues 20 --sort-by updated --sort-order desc\n");
         help.append("    ./collect_github_issues.java --max-issues 50 --sort-by created --state open\n");
         help.append("    ./collect_github_issues.java --max-issues 10 --sort-by comments --sort-order desc --labels bug\n");
+        help.append("\n");
+        help.append("    # PR collection (Phase 2 Enhancement)\n");
+        help.append("    ./collect_github_issues.java --type prs --repo spring-projects/spring-ai\n");
+        help.append("    ./collect_github_issues.java --type prs --number 4347 --dry-run  # Specific PR\n");
+        help.append("    ./collect_github_issues.java --type prs --pr-state merged --max-issues 10\n");
         help.append("\n");
         
         return help.toString();
@@ -278,7 +322,23 @@ public class ArgumentParser {
         if (!List.of("any", "all").contains(config.labelMode.toLowerCase())) {
             errors.add("Invalid label mode: " + config.labelMode + " (must be 'any' or 'all')");
         }
-        
+
+        // Validate collection type
+        if (!List.of("issues", "prs").contains(config.collectionType.toLowerCase())) {
+            errors.add("Invalid collection type: " + config.collectionType + " (must be 'issues' or 'prs')");
+        }
+
+        // Validate PR-specific parameters
+        if ("prs".equals(config.collectionType)) {
+            if (!List.of("open", "closed", "merged", "all").contains(config.prState.toLowerCase())) {
+                errors.add("Invalid PR state: " + config.prState + " (must be 'open', 'closed', 'merged', or 'all')");
+            }
+
+            if (config.prNumber != null && config.prNumber <= 0) {
+                errors.add("PR number must be positive (got: " + config.prNumber + ")");
+            }
+        }
+
         // Report validation errors
         if (!errors.isEmpty()) {
             StringBuilder errorMsg = new StringBuilder("Configuration validation failed:");
