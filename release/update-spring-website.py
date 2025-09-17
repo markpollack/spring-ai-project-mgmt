@@ -179,13 +179,26 @@ class SpringWebsiteUpdater:
             Logger.error(f"Failed to create feature branch: {e}")
             return False
     
+    def _dry_run_clone_for_version(self) -> bool:
+        """Temporary clone in dry-run mode just to read current version"""
+        try:
+            # Quick clone just to read the file
+            subprocess.run([
+                "git", "clone", "--depth", "1", self.repo_url, str(self.repo_dir)
+            ], check=True, capture_output=True, text=True)
+            return True
+        except subprocess.CalledProcessError:
+            return False
+
     def update_documentation_json(self) -> tuple[bool, str]:
         """Update documentation.json array for patch or milestone release"""
         try:
             if not self.doc_file.exists():
                 if self.dry_run:
-                    Logger.warn("DRY RUN: documentation.json file would be checked")
-                    return True, "1.0.0"  # Mock old version for dry run
+                    Logger.warn("DRY RUN: Cloning repository temporarily to read current version")
+                    if not self._dry_run_clone_for_version():
+                        Logger.warn("DRY RUN: Failed to clone, using mock version 1.0.0")
+                        return True, "1.0.0"  # Mock old version for dry run
                 else:
                     Logger.error(f"Documentation file not found: {self.doc_file}")
                     return False, ""
@@ -193,8 +206,22 @@ class SpringWebsiteUpdater:
             Logger.step("Reading documentation.json array...")
             
             if self.dry_run:
-                Logger.warn("DRY RUN: Would read and update documentation.json array")
-                old_version = "1.0.1"  # Mock current GA version
+                Logger.warn("DRY RUN: Reading actual current version from documentation.json")
+                # Even in dry run, read the actual current version for accuracy
+                if not self.doc_file.exists():
+                    Logger.warn("DRY RUN: documentation.json not found, using mock version 1.0.1")
+                    old_version = "1.0.1"  # Mock current GA version if file doesn't exist
+                else:
+                    # Read actual version from file
+                    with open(self.doc_file, 'r') as f:
+                        data = json.load(f)
+                    
+                    # Find current GA version
+                    old_version = "1.0.1"  # Fallback
+                    for entry in data:
+                        if entry.get("status") == "GENERAL_AVAILABILITY" and entry.get("current") == True:
+                            old_version = entry["version"]
+                            break
                 if self.is_milestone_release():
                     Logger.info(f"DRY RUN: Current GA version: {old_version} (unchanged)")
                     Logger.info(f"DRY RUN: Adding milestone version: {self.version}")

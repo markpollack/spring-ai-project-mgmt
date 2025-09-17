@@ -659,11 +659,17 @@ class SpringAIBlogGenerator:
             }
     
     def _get_contributors(self) -> List[str]:
-        """Get list of contributors using the proper contributor script"""
+        """Get list of contributors, preferring existing RELEASE_NOTES.md if available"""
         try:
-            Logger.info("🔍 Extracting contributors using get-contributors.py logic")
+            # First try to extract from existing RELEASE_NOTES.md to avoid regeneration
+            release_notes_path = self.script_dir / "RELEASE_NOTES.md"
+            if release_notes_path.exists():
+                Logger.info("🔍 Extracting contributors from existing RELEASE_NOTES.md")
+                return self._extract_contributors_from_release_notes(release_notes_path)
             
-            # Use the existing get-contributors.py approach
+            Logger.info("🔍 RELEASE_NOTES.md not found, extracting contributors using get-contributors.py logic")
+            
+            # Fallback: Use the existing get-contributors.py approach
             since_version = self._determine_since_version()
             
             # Run the contributor script to get proper GitHub username resolution
@@ -709,6 +715,30 @@ class SpringAIBlogGenerator:
             Logger.warn(f"Could not use get-contributors.py: {e}")
             return self._get_contributors_fallback()
     
+    def _extract_contributors_from_release_notes(self, release_notes_path: Path) -> List[str]:
+        """Extract contributors from existing RELEASE_NOTES.md file"""
+        try:
+            content = release_notes_path.read_text()
+            contributors = []
+            in_contributors_section = False
+            
+            for line in content.split('\n'):
+                if '## 🙏 Contributors' in line:
+                    in_contributors_section = True
+                    continue
+                elif in_contributors_section and line.startswith('##'):
+                    break
+                elif in_contributors_section and line.strip() and line.startswith('- ['):
+                    # Clean up the contributor line format
+                    contributors.append(line.strip())
+            
+            Logger.info(f"✅ Extracted {len(contributors)} contributors from RELEASE_NOTES.md")
+            return contributors
+            
+        except Exception as e:
+            Logger.warn(f"Failed to extract contributors from RELEASE_NOTES.md: {e}")
+            return []
+
     def _get_contributors_fallback(self) -> List[str]:
         """Fallback contributor extraction using simple git analysis"""
         if not BlogGitAnalyzer_available:

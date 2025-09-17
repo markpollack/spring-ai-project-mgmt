@@ -88,29 +88,31 @@ python3 spring-ai-release.py 1.0.2 --branch 1.0.x
 - GitHub CLI (`gh`) authenticated for post-release automation
 - Target version as required parameter (e.g., 1.0.1, 1.0.2)
 
-### get-authors-2.sh
+### get-contributors.py
 **Purpose**: Generate contributor acknowledgments for releases
 
 **Functionality**:
-- Extracts commit authors since a specified date (currently April 31, 2025)
-- Fetches GitHub profile information for each contributor
+- Automatically detects previous release date or accepts manual date input
+- Fetches GitHub profile information for each contributor using GitHub API
 - Creates deduplicated contributor lists with GitHub profile links
-- Generates multiple output formats (raw, temp, final)
+- Supports multiple output formats (markdown, JSON)
+- Flexible output directory configuration
 
-**Output Files** (created in `/home/mark/scripts/output-rc1`):
-- `contributors_raw.md` - Raw commit data with full details
-- `contributors_temp.md` - Intermediate processing file
-- `contributors.md` - Final deduplicated contributor list
+**Output Files** (created in `./contributors-output/`):
+- `contributors_latest.md` - Final deduplicated contributor list
+- `contributors_{timestamp}.md` - Timestamped versions for archival
 
 **Usage**:
 ```bash
-./get-authors-2.sh
+python3 get-contributors.py                      # Auto-detect since last release
+python3 get-contributors.py --since-version 1.0.0  # Since specific version
+python3 get-contributors.py --since 2024-04-01     # Since specific date
 ```
 
 **Requirements**:
+- Python 3.7+
 - GitHub CLI (`gh`) authenticated
-- Access to Spring AI repository at `/home/mark/projects/spring-ai`
-- Output directory `/home/mark/scripts/output-rc1` must be accessible
+- Access to Spring AI repository (configurable)
 
 ## Release Workflow Integration
 
@@ -157,7 +159,7 @@ This documentation cross-references with the actual code locations to enable eff
 - ✅ **Command Transparency**: Full disclosure of exact commands before execution
 - ✅ **Error Handling**: Build log previews and debugging support
 - ✅ **Risk Reduction**: Development version changes only after Maven Central success
-- ✅ **Contributor Acknowledgment**: Author extraction with `get-authors-2.sh`
+- ✅ **Contributor Acknowledgment**: Author extraction with `get-contributors.py`
 
 ## Future Enhancements
 

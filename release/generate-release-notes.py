@@ -325,7 +325,7 @@ class ReleaseNotesConfig:
     # Repository settings
     repo_owner: str = "spring-projects"
     repo_name: str = "spring-ai"
-    repo_path: Path = Path("/home/mark/projects/spring-ai")
+    repo_path: Path = Path("./spring-ai-release")
     branch: str = "1.0.x"
     
     # Version settings (tag-based only)
@@ -502,12 +502,9 @@ class GitHubAPIHelper:
             if not tag.startswith('v'):
                 tag = f'v{tag}'
             
-            original_dir = os.getcwd()
-            os.chdir(repo_path)
-            
             # Get the commit date for the tag
             cmd = ['git', 'log', '-1', '--format=%aI', tag]
-            result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+            result = subprocess.run(cmd, capture_output=True, text=True, check=True, cwd=repo_path)
             
             if result.stdout.strip():
                 # Convert ISO format to simple date
@@ -516,8 +513,6 @@ class GitHubAPIHelper:
             
         except subprocess.CalledProcessError as e:
             Logger.error(f"Failed to get tag date for {tag}: {e}")
-        finally:
-            os.chdir(original_dir)
         
         return None
     
@@ -957,26 +952,19 @@ class GitCommitCollector:
             ]
             
             # Change to repository directory to check tags
-            original_dir = os.getcwd()
-            try:
-                os.chdir(self.config.repo_path)
-                
-                for tag in possible_tags:
-                    try:
-                        # Check if tag exists
-                        cmd = ['git', 'rev-parse', '--verify', f'refs/tags/{tag}']
-                        subprocess.run(cmd, capture_output=True, text=True, check=True)
-                        Logger.info(f"Found since tag: {tag}")
-                        return tag
-                    except subprocess.CalledProcessError:
-                        Logger.debug(f"Tag {tag} not found")
-                        continue
-                
-                Logger.error(f"Could not find any tag for version {self.config.since_version}")
-                return None
-                
-            finally:
-                os.chdir(original_dir)
+            for tag in possible_tags:
+                try:
+                    # Check if tag exists
+                    cmd = ['git', 'rev-parse', '--verify', f'refs/tags/{tag}']
+                    subprocess.run(cmd, capture_output=True, text=True, check=True, cwd=self.config.repo_path)
+                    Logger.info(f"Found since tag: {tag}")
+                    return tag
+                except subprocess.CalledProcessError:
+                    Logger.debug(f"Tag {tag} not found")
+                    continue
+            
+            Logger.error(f"Could not find any tag for version {self.config.since_version}")
+            return None
         
         # Default: try to get the latest version tag from git directly
         Logger.info("No version specified, finding latest version tag from git")
@@ -991,12 +979,9 @@ class GitCommitCollector:
     def _get_latest_version_tag(self) -> Optional[str]:
         """Get the latest version tag from git - reused from get-contributors.py pattern"""
         try:
-            original_dir = os.getcwd()
-            os.chdir(self.config.repo_path)
-            
             # Get all version tags sorted by version
             cmd = ['git', 'tag', '-l', 'v*.*.*']
-            result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+            result = subprocess.run(cmd, capture_output=True, text=True, check=True, cwd=self.config.repo_path)
             
             if not result.stdout.strip():
                 return None
@@ -1015,8 +1000,6 @@ class GitCommitCollector:
         except subprocess.CalledProcessError as e:
             Logger.debug(f"Failed to get version tags: {e}")
             return None
-        finally:
-            os.chdir(original_dir)
 
     def determine_target_tag(self) -> Optional[str]:
         """Determine the target tag for tag-to-tag collection"""
@@ -1028,27 +1011,19 @@ class GitCommitCollector:
                 f"release-{self.config.target_version}",  # e.g., "release-1.0.1"
             ]
             
-            # Change to repository directory to check tags
-            original_dir = os.getcwd()
-            try:
-                os.chdir(self.config.repo_path)
-                
-                for tag in possible_tags:
-                    try:
-                        # Check if tag exists
-                        cmd = ['git', 'rev-parse', '--verify', f'refs/tags/{tag}']
-                        subprocess.run(cmd, capture_output=True, text=True, check=True)
-                        Logger.info(f"Found target tag: {tag}")
-                        return tag
-                    except subprocess.CalledProcessError:
-                        Logger.debug(f"Tag {tag} not found")
-                        continue
-                
-                Logger.error(f"Could not find any tag for target version {self.config.target_version}")
-                return None
-                
-            finally:
-                os.chdir(original_dir)
+            for tag in possible_tags:
+                try:
+                    # Check if tag exists
+                    cmd = ['git', 'rev-parse', '--verify', f'refs/tags/{tag}']
+                    subprocess.run(cmd, capture_output=True, text=True, check=True, cwd=self.config.repo_path)
+                    Logger.info(f"Found target tag: {tag}")
+                    return tag
+                except subprocess.CalledProcessError:
+                    Logger.debug(f"Tag {tag} not found")
+                    continue
+            
+            Logger.error(f"Could not find any tag for target version {self.config.target_version}")
+            return None
         
         # Default: use HEAD for unreleased changes (common case for milestones)
         Logger.info("No target version specified, defaulting to HEAD")
@@ -1058,12 +1033,9 @@ class GitCommitCollector:
     def _get_latest_version_tag(self) -> Optional[str]:
         """Get the latest version tag from git with proper semantic version parsing"""
         try:
-            original_dir = os.getcwd()
-            os.chdir(self.config.repo_path)
-            
             # Get all version tags sorted by version
             cmd = ['git', 'tag', '-l', 'v*.*.*']
-            result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+            result = subprocess.run(cmd, capture_output=True, text=True, check=True, cwd=self.config.repo_path)
             
             if result.stdout.strip():
                 tags = result.stdout.strip().split('\n')
@@ -1073,8 +1045,6 @@ class GitCommitCollector:
             
         except subprocess.CalledProcessError as e:
             Logger.debug(f"Failed to get latest tag: {e}")
-        finally:
-            os.chdir(original_dir)
         
         return None
     
@@ -1127,32 +1097,60 @@ class GitCommitCollector:
             # Return a very low priority tuple for unparseable tags
             return (0, 0, 0, -1, tag)
     
+    def setup_repository(self) -> None:
+        """Setup repository with fresh clone and proper branch checkout"""
+        import shutil
+        
+        # Remove existing directory if it exists
+        if self.config.repo_path.exists():
+            Logger.info(f"Removing existing directory: {self.config.repo_path}")
+            shutil.rmtree(self.config.repo_path)
+        
+        # Clone repository
+        Logger.info(f"Cloning spring-projects/spring-ai repository to {self.config.repo_path}")
+        clone_cmd = [
+            'git', 'clone', 
+            f'https://github.com/{self.config.repo_owner}/{self.config.repo_name}.git',
+            str(self.config.repo_path)
+        ]
+        subprocess.run(clone_cmd, capture_output=True, text=True, check=True)
+        
+        # DON'T change working directory - run all git commands with cwd parameter
+        
+        # Fetch latest updates
+        Logger.info("Fetching latest tags and branches from origin")
+        fetch_cmd = ['git', 'fetch', '--tags', 'origin']
+        subprocess.run(fetch_cmd, capture_output=True, text=True, check=True, cwd=self.config.repo_path)
+        
+        # Fetch all branches
+        fetch_branches_cmd = ['git', 'fetch', 'origin', '+refs/heads/*:refs/remotes/origin/*']
+        subprocess.run(fetch_branches_cmd, capture_output=True, text=True, check=True, cwd=self.config.repo_path)
+        
+        # Checkout the correct branch
+        Logger.info(f"Checking out branch: {self.config.branch}")
+        checkout_cmd = ['git', 'checkout', f'origin/{self.config.branch}']
+        result = subprocess.run(checkout_cmd, capture_output=True, text=True, cwd=self.config.repo_path)
+        if result.returncode != 0:
+            Logger.warn(f"Could not checkout {self.config.branch}: {result.stderr.strip()}")
+            Logger.info("Falling back to main branch")
+            subprocess.run(['git', 'checkout', 'origin/main'], capture_output=True, text=True, check=True, cwd=self.config.repo_path)
+        else:
+            Logger.info(f"Successfully checked out {self.config.branch}")
+
     def collect_commits_with_metadata(self) -> List[CommitData]:
         """Collect commits with basic metadata using tag-to-tag collection"""
-        # Use tag-to-tag collection - the only reliable method
-        since_tag = self.determine_since_tag()
-        target_tag = self.determine_target_tag()
-        
-        if not since_tag:
-            raise ReleaseNotesError("No since version specified and could not determine from tags. Please specify --since-version.")
-        
-        # Change to repository directory
-        original_dir = os.getcwd()
+        # Setup repository with fresh clone and correct branch FIRST
         try:
-            os.chdir(self.config.repo_path)
+            self.setup_repository()
             
-            # Fetch latest tags and update main branch
-            Logger.info("Fetching latest tags and updating main branch from origin")
-            fetch_cmd = ['git', 'fetch', '--tags', 'origin']
-            subprocess.run(fetch_cmd, capture_output=True, text=True, check=True)
+            # Now determine tags after repository is available
+            since_tag = self.determine_since_tag()
+            target_tag = self.determine_target_tag()
             
-            # Update main branch to latest (ensure we're analyzing current code)
-            pull_cmd = ['git', 'pull', 'origin', 'main']
-            result = subprocess.run(pull_cmd, capture_output=True, text=True)
-            if result.returncode != 0:
-                Logger.warn(f"Could not update main branch: {result.stderr.strip()}")
-            else:
-                Logger.info("Updated main branch to latest")
+            if not since_tag:
+                raise ReleaseNotesError("No since version specified and could not determine from tags. Please specify --since-version.")
+            
+            # Repository is already on correct branch from setup_repository()
             
             # Build the commit range
             if target_tag and target_tag != "HEAD":
@@ -1164,13 +1162,13 @@ class GitCommitCollector:
             
             # Get expected count for verification
             count_cmd = ['git', 'rev-list', '--count', commit_range]
-            count_result = subprocess.run(count_cmd, capture_output=True, text=True, check=True)
+            count_result = subprocess.run(count_cmd, capture_output=True, text=True, check=True, cwd=self.config.repo_path)
             expected_count = int(count_result.stdout.strip())
             Logger.info(f"Expected commit count: {expected_count}")
             
             # Get commits with detailed format
             cmd = ['git', 'log', commit_range, '--format=%H|%s|%aN|%aE|%aI']
-            result = subprocess.run(cmd, capture_output=True, text=True, check=True)
+            result = subprocess.run(cmd, capture_output=True, text=True, check=True, cwd=self.config.repo_path)
             
             commit_lines = result.stdout.strip().split('\n')
             if not commit_lines or commit_lines == ['']:
@@ -1208,8 +1206,6 @@ class GitCommitCollector:
             
         except subprocess.CalledProcessError as e:
             raise ReleaseNotesError(f"Git command failed: {e}")
-        finally:
-            os.chdir(original_dir)
 
 class GitHubDataEnricher:
     """Enrich commits with GitHub PR and issue information using GraphQL"""
@@ -2326,8 +2322,8 @@ Examples:
     parser.add_argument('--target-version', 
                        help='Target version for this release (e.g., 1.0.1)')
     parser.add_argument('--repo-path', 
-                       default='/home/mark/projects/spring-ai',
-                       help='Path to Spring AI repository')
+                       default='./spring-ai-release',
+                       help='Path to Spring AI repository (will be created with fresh clone)')
     parser.add_argument('--branch',
                        default='1.0.x',
                        help='Branch to analyze (default: 1.0.x)')
@@ -2461,9 +2457,8 @@ Examples:
             Logger.info(f"AI Analysis: {'Enabled' if config.use_ai else 'Disabled'}")
             Logger.info(f"Dry Run: {config.dry_run}")
         
-        # Check repository exists
-        if not config.repo_path.exists():
-            raise ReleaseNotesError(f"Repository path does not exist: {config.repo_path}")
+        # Repository will be created by setup_repository() method if needed
+        Logger.info(f"Repository will be cloned to: {config.repo_path}")
         
         # Check if we should skip generation and go straight to GitHub release
         if args.skip_generation and args.create_github_release:

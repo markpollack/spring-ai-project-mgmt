@@ -32,7 +32,7 @@ graph TD
 | **`create-github-release.py`** | Creates GitHub releases with release notes | After successful Maven Central |
 | **`update-start-spring-io.py`** | Updates Spring Initializr with new version | **PATCH RELEASES ONLY** - Not used for milestones/RCs |
 | **`update-spring-website.py`** | Updates spring.io project documentation | Update official website |
-| **`get-authors-2.sh`** | Contributor acknowledgment lists | For release notes (optional) |
+| **`get-contributors.py`** | Contributor acknowledgment lists | For release notes (optional) |
 
 ## 🎯 Release Types & Phase 2 Requirements
 
@@ -125,7 +125,9 @@ Key Options:
   --branch BRANCH              Branch to release from (auto-detected by default)
   --dry-run                   Preview commands without executing them
   --post-maven-central         Complete development version setup after Maven Central success
+  --workspace PATH             Override default workspace directory (./spring-ai-release)
   --check-maven-status         Check Maven Central infrastructure status and exit
+  --skip-maven-status-check    Skip Maven Central status check entirely
   --skip-to STEP              Skip to specific workflow step
   --cleanup                   Clean up state files and workspace directory
   --help                      Show help message and exit
@@ -299,7 +301,7 @@ release/
 ├── create-github-release.py      # GitHub release creation ✅ FIXED
 ├── generate-release-notes.py     # AI-powered release notes
 ├── generate-blog-post.py         # Release blog content
-├── get-authors-2.sh             # Contributor lists
+├── get-contributors.py          # Contributor lists
 ├── logs/                        # Build logs (gitignored)
 ├── spring-ai-release/           # Fresh checkout workspace (gitignored)
 ├── state/                       # Release state persistence (gitignored)

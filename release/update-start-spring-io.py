@@ -208,18 +208,60 @@ class StartSpringIOUpdater:
                 "git", "-C", str(self.repo_dir), "fetch", "upstream"
             ], check=True, capture_output=True, text=True)
             
-            # Checkout main and merge upstream changes
+            # Get the fork's default branch name and checkout
+            result = subprocess.run([
+                "git", "-C", str(self.repo_dir), "symbolic-ref", "refs/remotes/origin/HEAD"
+            ], capture_output=True, text=True)
+            
+            if result.returncode == 0:
+                # Extract branch name from refs/remotes/origin/HEAD -> refs/remotes/origin/main
+                fork_default_branch = result.stdout.strip().split('/')[-1]
+            else:
+                # Fallback: try common branch names
+                for branch in ["main", "master"]:
+                    check_result = subprocess.run([
+                        "git", "-C", str(self.repo_dir), "show-ref", "--verify", f"refs/remotes/origin/{branch}"
+                    ], capture_output=True, text=True)
+                    if check_result.returncode == 0:
+                        fork_default_branch = branch
+                        break
+                else:
+                    fork_default_branch = "main"  # Final fallback
+            
+            Logger.info(f"Fork default branch: {fork_default_branch}")
             subprocess.run([
-                "git", "-C", str(self.repo_dir), "checkout", "main"
+                "git", "-C", str(self.repo_dir), "checkout", fork_default_branch
             ], check=True, capture_output=True, text=True)
             
+            # Get upstream default branch (after fetch)
+            upstream_default_result = subprocess.run([
+                "git", "-C", str(self.repo_dir), "symbolic-ref", "refs/remotes/upstream/HEAD"
+            ], capture_output=True, text=True)
+            
+            if upstream_default_result.returncode == 0:
+                upstream_default_branch = upstream_default_result.stdout.strip().split('/')[-1]
+            else:
+                # Fallback: check what branches exist on upstream
+                for branch in ["main", "master"]:
+                    check_result = subprocess.run([
+                        "git", "-C", str(self.repo_dir), "show-ref", "--verify", f"refs/remotes/upstream/{branch}"
+                    ], capture_output=True, text=True)
+                    if check_result.returncode == 0:
+                        upstream_default_branch = branch
+                        break
+                else:
+                    upstream_default_branch = "main"  # Final fallback
+            
+            Logger.info(f"Upstream default branch: {upstream_default_branch}")
+            
+            # Merge upstream changes
             subprocess.run([
-                "git", "-C", str(self.repo_dir), "merge", "upstream/main"
+                "git", "-C", str(self.repo_dir), "merge", f"upstream/{upstream_default_branch}"
             ], check=True, capture_output=True, text=True)
             
-            # Push updated main to your fork
+            # Push updated fork branch to your fork
             subprocess.run([
-                "git", "-C", str(self.repo_dir), "push", "origin", "main"
+                "git", "-C", str(self.repo_dir), "push", "origin", fork_default_branch
             ], check=True, capture_output=True, text=True)
             
             Logger.success("Fork synced with upstream successfully")
@@ -228,6 +270,18 @@ class StartSpringIOUpdater:
             Logger.error(f"Failed to sync fork with upstream: {e}")
             return False
     
+    def _dry_run_clone_for_version(self) -> bool:
+        """Temporary clone in dry-run mode just to read current version"""
+        try:
+            # Quick clone just to read the file
+            subprocess.run([
+                "git", "clone", "--depth", "1", f"https://github.com/{self.upstream_repo}.git", 
+                str(self.repo_dir)
+            ], check=True, capture_output=True, text=True)
+            return True
+        except subprocess.CalledProcessError:
+            return False
+
     def create_feature_branch(self) -> bool:
         """Create feature branch for the update"""
         try:
@@ -255,8 +309,13 @@ class StartSpringIOUpdater:
         """Find current Spring AI version in BOM mappings section of application.yml"""
         try:
             if self.dry_run:
-                Logger.warn("DRY RUN: Would read current version from application.yml")
-                return "1.0.0"  # Mock version for dry run
+                Logger.warn("DRY RUN: Reading actual current version from application.yml")
+                # In dry run, we need to temporarily clone to read the current version
+                if not self.application_yml.exists():
+                    Logger.warn("DRY RUN: Cloning repository temporarily to read current version")
+                    if not self._dry_run_clone_for_version():
+                        Logger.warn("DRY RUN: Failed to clone, using mock version 1.0.0")
+                        return "1.0.0"
             
             with open(self.application_yml, 'r') as f:
                 content = f.read()
@@ -338,8 +397,14 @@ class StartSpringIOUpdater:
             if self.dry_run:
                 Logger.warn("DRY RUN: Would show git diff")
                 print(f"{Colors.CYAN}File: application.yml{Colors.NC}")
-                print(f"{Colors.GREEN}+            version: {self.version}{Colors.NC}")
-                print(f"{Colors.RED}-            version: {old_version}{Colors.NC}")
+                print("@@ spring-ai mappings section @@")
+                print("   spring-ai:")
+                print("     groupId: org.springframework.ai")
+                print("     artifactId: spring-ai-bom")
+                print("     mappings:")
+                print("     - compatibilityRange: '[3.4.0,4.0.0-M1)'")
+                print(f"{Colors.RED}-       version: {old_version}{Colors.NC}")
+                print(f"{Colors.GREEN}+       version: {self.version}{Colors.NC}")
             else:
                 # Show git diff
                 result = subprocess.run([
