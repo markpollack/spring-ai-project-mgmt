@@ -503,10 +503,16 @@ class PRWorkflow:
                 # Create logs directory if it doesn't exist
                 if log_file:
                     log_file.parent.mkdir(parents=True, exist_ok=True)
+                    
+                    # Add timestamp logging
+                    start_time = datetime.now()
+                    Logger.info(f"⏰ Command started at: {start_time.strftime('%Y-%m-%d %H:%M:%S')}")
+                    Logger.info(f"📋 Command: {' '.join(enhanced_cmd)}")
+                    
                     with open(log_file, 'w') as f:
-                        f.write(f"Command: {' '.join(enhanced_cmd)}\n")
-                        f.write(f"Working directory: {cwd or 'current'}\n")
-                        f.write(f"Description: {description}\n")
+                        f.write(f"[{start_time.strftime('%Y-%m-%d %H:%M:%S')}] Command: {' '.join(enhanced_cmd)}\n")
+                        f.write(f"[{start_time.strftime('%Y-%m-%d %H:%M:%S')}] Working directory: {cwd or 'current'}\n")
+                        f.write(f"[{start_time.strftime('%Y-%m-%d %H:%M:%S')}] Description: {description}\n")
                         f.write("-" * 50 + "\n")
                         f.flush()
                         
@@ -521,6 +527,15 @@ class PRWorkflow:
                             env=env,
                             text=True
                         )
+                        
+                        end_time = datetime.now()
+                        duration = (end_time - start_time).total_seconds()
+                        Logger.info(f"⏰ Command completed at: {end_time.strftime('%Y-%m-%d %H:%M:%S')}")
+                        Logger.info(f"⏱️  Duration: {duration:.1f} seconds")
+                        
+                        f.write(f"\n[{end_time.strftime('%Y-%m-%d %H:%M:%S')}] Command completed\n")
+                        f.write(f"[{end_time.strftime('%Y-%m-%d %H:%M:%S')}] Duration: {duration:.1f} seconds\n")
+                        f.write(f"[{end_time.strftime('%Y-%m-%d %H:%M:%S')}] Return Code: {result.returncode}\n")
                 else:
                     # Suppress output completely
                     result = subprocess.run(
@@ -2757,28 +2772,95 @@ File content with conflicts:"""
                 'MAVEN_OPTS': '-Djansi.force=false -Dorg.slf4j.simpleLogger.showDateTime=true'
             })
             
-            # Comprehensive mvnd output suppression
+            # Real-time timestamped build logging with progress tracking
+            Logger.info(f"⏰ Build started at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+            Logger.info(f"📋 Command: {' '.join(full_build_cmd)}")
+            Logger.info(f"📁 Working Directory: {self.config.spring_ai_dir}")
+            Logger.info(f"📄 Build log: {build_log_file}")
+            
             with open(build_log_file, 'w') as log_f:
-                log_f.write(f"Build Command: {' '.join(full_build_cmd)}\n")
-                log_f.write(f"Working Directory: {self.config.spring_ai_dir}\n")
+                log_f.write(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Build Command: {' '.join(full_build_cmd)}\n")
+                log_f.write(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Working Directory: {self.config.spring_ai_dir}\n")
                 log_f.write("=" * 80 + "\n")
                 log_f.flush()
                 
-                build_result = subprocess.run(
+                # Start the build process with real-time monitoring
+                Logger.info("🚀 Starting Maven build process...")
+                start_time = datetime.now()
+                
+                process = subprocess.Popen(
                     full_build_cmd,
                     cwd=self.config.spring_ai_dir,
-                    stdout=log_f,              # Redirect stdout to log file
-                    stderr=log_f,              # Redirect stderr to log file  
-                    stdin=subprocess.DEVNULL,   # Close stdin
-                    start_new_session=True,     # Detach from terminal session
-                    env=env,                   # Use modified environment
-                    timeout=600  # 10 minutes for full build
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,  # Merge stderr into stdout
+                    stdin=subprocess.DEVNULL,
+                    start_new_session=True,
+                    env=env,
+                    text=True,
+                    bufsize=1  # Line buffered
                 )
                 
-                log_f.write(f"\n{'=' * 80}\n")
-                log_f.write(f"Return Code: {build_result.returncode}\n")
+                # Monitor build progress with timestamps
+                last_activity_time = start_time
+                activity_timeout = 300  # 5 minutes without output = hanging
+                
+                try:
+                    for line in process.stdout:
+                        current_time = datetime.now()
+                        elapsed = (current_time - start_time).total_seconds()
+                        
+                        # Write timestamped line to log file
+                        timestamped_line = f"[{current_time.strftime('%Y-%m-%d %H:%M:%S')} +{elapsed:.1f}s] {line.rstrip()}\n"
+                        log_f.write(timestamped_line)
+                        log_f.flush()
+                        
+                        # Update last activity time
+                        last_activity_time = current_time
+                        
+                        # Show key Maven lifecycle phases to user
+                        if any(keyword in line.lower() for keyword in [
+                            'building spring ai', 'building project', '[info] --- ',
+                            'tests run:', 'test failures:', 'test errors:',
+                            'compile', 'test-compile', 'test', 'package', 'verify',
+                            'failed', 'error', 'exception'
+                        ]):
+                            Logger.info(f"🔧 [{elapsed:.0f}s] {line.rstrip()}")
+                        
+                        # Check for hanging (no output for extended period)
+                        if (current_time - last_activity_time).total_seconds() > activity_timeout:
+                            Logger.warn(f"⚠️  No build output for {activity_timeout}s - possible hang detected!")
+                            Logger.warn(f"⚠️  Last activity: {last_activity_time.strftime('%Y-%m-%d %H:%M:%S')}")
+                            log_f.write(f"[{current_time.strftime('%Y-%m-%d %H:%M:%S')}] WARNING: Activity timeout - possible hang\n")
+                            log_f.flush()
+                    
+                    # Wait for process completion with overall timeout
+                    try:
+                        build_result = process.wait(timeout=900)  # 15 minutes total timeout
+                        end_time = datetime.now()
+                        total_duration = (end_time - start_time).total_seconds()
+                        
+                        Logger.info(f"⏰ Build completed at: {end_time.strftime('%Y-%m-%d %H:%M:%S')}")
+                        Logger.info(f"⏱️  Total duration: {total_duration:.1f} seconds")
+                        
+                        log_f.write(f"\n{'=' * 80}\n")
+                        log_f.write(f"[{end_time.strftime('%Y-%m-%d %H:%M:%S')}] Return Code: {build_result}\n")
+                        log_f.write(f"[{end_time.strftime('%Y-%m-%d %H:%M:%S')}] Total Duration: {total_duration:.1f} seconds\n")
+                        
+                    except subprocess.TimeoutExpired:
+                        Logger.error("❌ Build timeout exceeded (15 minutes) - terminating process")
+                        process.kill()
+                        process.wait()
+                        build_result = -1
+                        log_f.write(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] ERROR: Build timeout - process terminated\n")
+                
+                except Exception as e:
+                    Logger.error(f"❌ Error monitoring build process: {e}")
+                    process.kill()
+                    process.wait()
+                    build_result = -1
+                    log_f.write(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] ERROR: {e}\n")
             
-            if build_result.returncode != 0:
+            if build_result != 0:
                 Logger.error("❌ Full build failed - cannot run tests")
                 Logger.error(f"Build output saved to: {build_log_file}")
                 
