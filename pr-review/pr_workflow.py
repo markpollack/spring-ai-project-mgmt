@@ -2400,18 +2400,50 @@ File content with conflicts:"""
             Logger.info("📊 Report generation skipped in dry-run mode")
         
         # Phase 7: Run tests for changed test files
+        test_success = True
         if not skip_compile and not skip_tests and not dry_run:
-            self.run_changed_tests(pr_number)
+            test_success = self.run_changed_tests(pr_number)
+            
+            # Create test results summary for visibility
+            if not test_success:
+                test_summary_file = self.config.logs_dir / f"test-failures-pr-{pr_number}.txt"
+                try:
+                    with open(test_summary_file, 'w') as f:
+                        f.write(f"PR #{pr_number} - TEST EXECUTION FAILED\n")
+                        f.write("=" * 50 + "\n")
+                        f.write(f"Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+                        f.write("Status: BUILD OR TEST FAILURES DETECTED\n")
+                        f.write("\nThis PR has build/test failures and should NOT be merged.\n")
+                        f.write("Check the full build logs for detailed error information.\n")
+                        f.write(f"\nBuild log location: {self.config.logs_dir}/\n")
+                        f.write("Look for files matching: full-build-*.log\n")
+                    
+                    Logger.error(f"🚨 Test failure summary saved to: {test_summary_file}")
+                except Exception as e:
+                    Logger.warn(f"Could not create test summary file: {e}")
         
-        # Success
-        Logger.success(f"🎉 Complete PR workflow finished for PR #{pr_number}!")
+        # Check overall workflow success
+        workflow_success = test_success  # Could add other success criteria here
         
-        # End workflow tracking
+        if workflow_success:
+            # Success
+            Logger.success(f"🎉 Complete PR workflow finished for PR #{pr_number}!")
+        else:
+            # Failure
+            Logger.error(f"❌ PR workflow FAILED for PR #{pr_number}!")
+            Logger.error("🚨 Build or test failures detected - this PR needs attention before merge")
+        
+        # End workflow tracking with accurate success status
         if self.execution_tracker:
-            self.execution_tracker.end_workflow(success=True)
+            self.execution_tracker.end_workflow(success=workflow_success)
         
         if not dry_run:
-            Logger.info("📁 PR is ready for review")
+            if workflow_success:
+                Logger.info("📁 PR is ready for review")
+            else:
+                Logger.error("🚨 PR has BUILD/TEST FAILURES and is NOT ready for review")
+                Logger.error("🛠️  Please fix the issues before proceeding with review/merge")
+            
             Logger.info(f"Repository: {self.config.spring_ai_dir}")
             Logger.info(f"Current branch: {self.git.get_current_branch()}")
             commits_ahead = self.git.get_commits_ahead(f"{self.config.upstream_remote}/{self.config.main_branch}")
@@ -2433,7 +2465,7 @@ File content with conflicts:"""
         if self.execution_tracker:
             self.execution_tracker.save()
         
-        return True
+        return workflow_success
     
     def run_report_only(self, pr_number: str, dry_run: bool = False, skip_backport: bool = False, force_fresh: bool = False, 
                        no_html: bool = False, html_only: bool = False, open_browser: bool = False) -> bool:
