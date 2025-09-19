@@ -1022,7 +1022,7 @@ class GitCommitCollector:
                     Logger.debug(f"Tag {tag} not found")
                     continue
             
-            Logger.error(f"Could not find any tag for target version {self.config.target_version}")
+            Logger.info(f"No existing tag found for target version {self.config.target_version} (expected for unreleased versions)")
             return None
         
         # Default: use HEAD for unreleased changes (common case for milestones)
@@ -2325,8 +2325,8 @@ Examples:
                        default='./spring-ai-release',
                        help='Path to Spring AI repository (will be created with fresh clone)')
     parser.add_argument('--branch',
-                       default='1.0.x',
-                       help='Branch to analyze (default: 1.0.x)')
+                       default='auto',
+                       help='Branch to analyze (default: auto-detect based on version)')
     parser.add_argument('--output', '-o',
                        default='RELEASE_NOTES.md',
                        help='Output file for release notes')
@@ -2414,11 +2414,37 @@ Examples:
     if args.debug_github:
         os.environ['DEBUG_GITHUB'] = '1'
     
+    # Auto-determine branch based on version if not explicitly set
+    def determine_branch(since_version: str, target_version: str, explicit_branch: str) -> str:
+        """Determine the correct branch based on version patterns"""
+        # If user explicitly set branch (not auto), use it
+        if explicit_branch != 'auto':
+            return explicit_branch
+            
+        # For milestone releases (M1, M2, RC, etc.), use main branch
+        if (target_version and ('M' in target_version or 'RC' in target_version)) or \
+           (since_version and ('M' in since_version or 'RC' in since_version)):
+            return 'main'
+            
+        # For patch releases within 1.0.x series, use 1.0.x branch
+        if target_version and target_version.startswith('1.0.'):
+            return '1.0.x'
+            
+        # For patch releases within 1.1.x series, use 1.1.x branch (future)
+        if target_version and target_version.startswith('1.1.'):
+            return '1.1.x'
+            
+        # Default fallback
+        return explicit_branch
+    
+    # Determine the correct branch
+    determined_branch = determine_branch(args.since_version, args.target_version, args.branch)
+    
     # Create configuration
     script_dir = Path(__file__).parent.resolve()
     config = ReleaseNotesConfig(
         repo_path=Path(args.repo_path),
-        branch=args.branch,
+        branch=determined_branch,
         since_version=args.since_version,
         target_version=args.target_version,
         output_file=Path(args.output),
@@ -2449,6 +2475,12 @@ Examples:
         
         Logger.bold("🚀 SPRING AI RELEASE NOTES GENERATOR")
         Logger.bold("="*50)
+        
+        # Show branch selection logic
+        if determined_branch != args.branch:
+            Logger.info(f"🔀 Auto-selected branch: {determined_branch} (was default: {args.branch})")
+        else:
+            Logger.info(f"🌿 Using branch: {determined_branch}")
         
         if config.verbose:
             Logger.info(f"Repository: {config.repo_owner}/{config.repo_name}")
@@ -2511,21 +2543,23 @@ Examples:
         if config.skip_github:
             Logger.warn("🧪 TESTING: Skipping GitHub API enrichment as requested")
         
-        # Phase 2: Enrich with GitHub data (or skip for testing)
-        if config.skip_github:
-            Logger.info("Phase 2: Skipping GitHub enrichment for testing...")
+        # Phase 2: Enrich with GitHub data (or skip for testing/dry-run)
+        enricher = GitHubDataEnricher(config)  # Create enricher for both paths
+        
+        if config.skip_github or config.dry_run:
+            reason = "dry-run mode" if config.dry_run else "testing"
+            Logger.info(f"Phase 2: Skipping GitHub enrichment for {reason}...")
             # Create minimal enriched commits without API calls
             enriched_commits = [
                 EnrichedCommit(
                     commit=commit,
                     prs=[],
-                    primary_link=f"https://github.com/{config.repo_owner}/{config.repo_name}/commit/{commit.sha}",
+                    issues=[],
                     category_hints=[]
                 ) for commit in commits
             ]
         else:
             Logger.info("Phase 2: Enriching commits with GitHub PR/issue data...")
-            enricher = GitHubDataEnricher(config)
             enriched_commits = enricher.enrich_commits_with_prs_and_issues(commits)
         
         Logger.success(f"Enriched {len(enriched_commits)} commits with GitHub data")
@@ -2545,14 +2579,15 @@ Examples:
                 pr_info = f"{len(commit.prs)} PRs" if commit.prs else "no PRs"
                 Logger.info(f"  {commit.commit.short_sha}: {commit.commit.message[:50]}... ({pr_info})")
         
-        # Phase 3: AI analysis (if enabled)
-        if config.use_ai:
+        # Phase 3: AI analysis (if enabled and not dry-run)
+        if config.use_ai and not config.dry_run:
             Logger.info("Phase 3: AI-powered categorization and analysis...")
             analyzer = ReleaseNotesAIAnalyzer(config)
             analysis_result = analyzer.analyze_changes(enriched_commits, cost_tracker)
             Logger.success("AI analysis completed")
         else:
-            Logger.info("Phase 3: Rule-based categorization (AI disabled)...")
+            reason = "dry-run mode" if config.dry_run else "AI disabled"
+            Logger.info(f"Phase 3: Rule-based categorization ({reason})...")
             # Fallback to rule-based categorization
             categories = enricher.categorize_by_labels(enriched_commits)
             analysis_result = AnalysisResult(
@@ -2578,13 +2613,15 @@ Examples:
         markdown_content = generator.generate_markdown(analysis_result, contributors, enriched_commits)
         
         if config.dry_run:
-            Logger.info("DRY RUN: Generated release notes preview:")
+            Logger.success("🧪 DRY RUN COMPLETED - No files written, no costs incurred")
+            Logger.info("Generated release notes preview (first 1000 chars):")
             Logger.bold("="*60)
             # Show first 1000 characters of generated markdown
             preview = markdown_content[:1000] + "..." if len(markdown_content) > 1000 else markdown_content
             print(preview)
             Logger.bold("="*60)
             Logger.info(f"Full markdown length: {len(markdown_content)} characters")
+            Logger.info(f"Would write to: {config.output_file}")
         else:
             # Write to output file
             generator.write_markdown_file(markdown_content)
