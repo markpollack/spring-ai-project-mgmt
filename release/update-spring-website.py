@@ -294,7 +294,7 @@ class SpringWebsiteUpdater:
             milestone_entry = {
                 "version": self.version,
                 "antora": True,  # Spring AI uses Antora documentation
-                "api": f"https://docs.spring.io/spring-ai/{self.version}/api/java/index.html",
+                "api": f"https://docs.spring.io/spring-ai/docs/{self.version}/api/",
                 "ref": f"https://docs.spring.io/spring-ai/reference/{major_minor}/index.html",
                 "status": "PRERELEASE", 
                 "current": False
@@ -478,7 +478,7 @@ class SpringWebsiteUpdater:
                     print(f"{Colors.GREEN}+  {{{Colors.NC}")
                     print(f"{Colors.GREEN}+    \"version\": \"{self.version}\",{Colors.NC}")
                     print(f"{Colors.GREEN}+    \"antora\": true,{Colors.NC}")
-                    print(f"{Colors.GREEN}+    \"api\": \"https://docs.spring.io/spring-ai/{self.version}/api/java/index.html\",{Colors.NC}")
+                    print(f"{Colors.GREEN}+    \"api\": \"https://docs.spring.io/spring-ai/docs/{self.version}/api/\",{Colors.NC}")
                     print(f"{Colors.GREEN}+    \"ref\": \"https://docs.spring.io/spring-ai/reference/{major_minor}/index.html\",{Colors.NC}")
                     print(f"{Colors.GREEN}+    \"status\": \"PRERELEASE\",{Colors.NC}")
                     print(f"{Colors.GREEN}+    \"current\": false{Colors.NC}")

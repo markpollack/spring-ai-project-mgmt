@@ -11,22 +11,26 @@ This milestone release focuses primarily on **enhanced Model Context Protocol (M
 
 ## Release Summary
 
-This release includes [44 improvements, bug fixes, and documentation updates](https://github.com/spring-projects/spring-ai/releases/tag/v1.1.0-M2). The primary focus areas include:
+This release includes [53 improvements, bug fixes, and documentation updates](https://github.com/spring-projects/spring-ai/releases/tag/v1.1.0-M2). The primary focus areas include:
 
-- **Model Context Protocol Enhancements**: Updated to MCP Java SDK v0.13.0 with protocol version 2025-06-18 support
-- **MCP Integration Fixes**: Resolved critical stateless server registration issues
-- **Developer Experience**: 19 improvements across the framework
-- **Stability & Security**: 3 bug fixes and 3 dependency upgrades
+- **Model Context Protocol Enhancements**: Updated to MCP Java SDK v0.13.1 with mcp-annotations v0.4.1 and protocol version 2025-06-18 support
+- **MCP Integration Fixes**: Resolved critical stateless server registration issues with AOT compilation support
+- **New Features**: 14 new capabilities and functionality additions
+- **Stability**: 11 bug fixes addressing community-reported issues
+- **Documentation**: 6 improvements including comprehensive MCP getting started guide
+- **Other Improvements**: 22 enhancements including performance optimizations and dependency upgrades
 
 ## 🔧 Model Context Protocol Improvements
 
 This release brings **production-ready MCP integration** to Spring AI, motivated by significant improvements in the MCP Java SDK v0.13.0:
 
 ### **Core MCP Enhancements**
-- **Updated MCP Java SDK**: Upgraded from v0.12.1 to v0.13.0, incorporating protocol version 2025-06-18 support
+- **Updated MCP Java SDK**: Upgraded from v0.12.1 to v0.13.1, incorporating protocol version 2025-06-18 support
+- **Enhanced MCP Annotations**: Updated to mcp-annotations v0.4.1 with AOT (Ahead-of-Time) compilation support for native image compatibility
 - **Stateless Server Registration**: Fixed critical issues with MCP server connection handling for reliable production deployments
 - **Enhanced Tool Management**: Improved tool name prefix generation with automatic duplicate handling
 - **Configuration Polish**: Streamlined MCP configuration properties for better Spring Boot integration
+- **Comprehensive Documentation**: Added improved MCP documentation and getting started guide for developers
 
 ### **Enterprise Integration**
 - **Docker Compose Support**: Native service connection support for MCP Gateway in containerized environments
@@ -46,7 +50,7 @@ For developers using MCP in Spring AI applications, this release provides a more
 **Broadcom**: [Christian Tzolov (@tzolov)](https://github.com/tzolov), [Daniel Garnier-Moiroux (@Kehrlann)](https://github.com/Kehrlann)  
 **Oracle**: [Graeme Rocher (@graemerocher)](https://github.com/graemerocher), [Sergio del Amo (@sdelamo)](https://github.com/sdelamo)  
 **Google**: [Yanming Zhou (@quaff)](https://github.com/quaff)  
-**Open Source Community**: [@He-Pin](https://github.com/He-Pin) - key developer in the Java and Scala open-source communities, serving as a Project Management Committee (PMC) member for the prominent Apache Pekko project and actively contributing to the ReactivePlatform organization
+**Open Source Community**: [@He-Pin](https://github.com/He-Pin) - Apache Pekko PMC member and active Project Reactor contributor
 
 ## Additional Functional Areas Enhanced
 
@@ -106,4 +110,4 @@ For the latest updates and to contribute to the project, visit our [GitHub repos
 
 ## Resources
 
-[Project Page](https://spring.io/projects/spring-ai/) | [GitHub](https://github.com/spring-projects/spring-ai) | [Issues](https://github.com/spring-projects/spring-ai/issues) | [Documentation](https://docs.spring.io/spring-ai/docs/1.1.0-M2/reference/html) | [MCP Java SDK](https://github.com/modelcontextprotocol/java-sdk) | [Stack Overflow](https://stackoverflow.com/questions/tagged/spring-ai)
+[Project Page](https://spring.io/projects/spring-ai/) | [GitHub](https://github.com/spring-projects/spring-ai) | [Issues](https://github.com/spring-projects/spring-ai/issues) | [Documentation](https://docs.spring.io/spring-ai/docs/1.1.0-M2/reference/html) | [MCP Java SDK](https://github.com/modelcontextprotocol/java-sdk) | [Blog Tutorial: Connect Your AI to Everything](https://spring.io/blog/2025/09/16/spring-ai-mcp-intro-blog) | [Stack Overflow](https://stackoverflow.com/questions/tagged/spring-ai)

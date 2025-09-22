@@ -11,12 +11,12 @@ This patch release delivers important stability improvements and bug fixes.
 
 ## Release Summary
 
-This release includes [44 improvements, bug fixes, and documentation updates](https://github.com/spring-projects/spring-ai/releases/tag/v1.1.0-M2). The focus of this patch release is on:
+This release includes [53 improvements, bug fixes, and documentation updates](https://github.com/spring-projects/spring-ai/releases/tag/v1.1.0-M2). The focus of this patch release is on:
 
-- **Improvements**: 19 enhancements to expand capabilities and functionality
-- **Stability**: 3 bug fixes addressing community-reported issues
-- **Documentation**: 19 improvements to help developers
-- **Security**: 3 dependency upgrades for enhanced security
+- **New Features**: 14 new capabilities and functionality additions
+- **Stability**: 11 bug fixes addressing community-reported issues
+- **Documentation**: 6 improvements to help developers
+- **Other Improvements**: 22 enhancements including performance optimizations and dependency upgrades
 
 Thanks to all those who have contributed with issue reports and pull requests.
 
@@ -30,7 +30,7 @@ These improvements ensure that Spring AI continues to provide a robust and relia
 
 This release brings significant improvements across major functional areas of Spring AI:
 
-- **Advanced Model Context Protocol Infrastructure** - stateless MCP server registration fixes, enhanced tool name prefix generation with automatic duplicate handling, Docker Compose and Testcontainers service connections for mcp-gateway enabling seamless containerized tool execution
+- **Advanced Model Context Protocol Infrastructure** - stateless MCP server registration fixes, enhanced tool name prefix generation with automatic duplicate handling, Docker Compose and Testcontainers service connections for mcp-gateway enabling seamless containerized tool execution. This release includes the latest MCP Java SDK version 0.13.1 and mcp-annotations 0.4.1 with improved AOT (Ahead-of-Time) compilation support for native image compatibility
 - **Structured Output Revolution with VertexAI Gemini** - response schema validation support for guaranteed JSON/XML structured generation, eliminating parsing errors and ensuring reliable data extraction workflows
 - **Next-Generation Chinese AI Model Arsenal** - native ZhipuAI integration with GLM-4.5, GLM-Z1, and GLM-4.1v-thinking-flash models, featuring advanced thinking parameters and response formatting capabilities
 - **Multimodal Document Intelligence Breakthrough** - Mistral AI OCR API integration for extracting text from documents and images, transforming visual content into actionable data streams
