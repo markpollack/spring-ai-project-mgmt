@@ -10,6 +10,14 @@ logs/
 spring-ai-release/
 start-spring-io/
 spring-website-content/
+repos/
 
 # Temporary test directories
 /tmp/
+
+# Temporary working directories
+blog-iteration/
+synthesis-logs/
+.ecosystem_cache/
+spring-ai-release-previous/
+archive/

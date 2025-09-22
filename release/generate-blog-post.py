@@ -583,7 +583,40 @@ class SpringAIBlogGenerator:
             return f"https://github.com/spring-projects/spring-ai/releases/tag/v{self.version}", 0
     
     def _estimate_commit_count(self) -> int:
-        """Get total commit count using fresh git analysis"""
+        """Get total commit count from RELEASE_NOTES.md or fallback to git analysis"""
+        # Try to extract from existing RELEASE_NOTES.md first
+        try:
+            release_notes_path = Path("RELEASE_NOTES.md")
+            if release_notes_path.exists():
+                content = release_notes_path.read_text()
+                # Look for patterns like "89 commits" or "commits analyzed"
+                import re
+                # Try multiple patterns to find total commit count
+                patterns = [
+                    r'(\d+)\s+commits?\s+analyzed',
+                    r'(\d+)\s+commits?\s+with\s+metadata',
+                    r'Collected\s+(\d+)\s+commits?',
+                    r'Found\s+(\d+)\s+commits?',
+                    # Pattern for highlights format: "13 new features, 9 bug fixes, 3 documentation improvements, 19 other improvements"
+                    r'(\d+)\s+new\s+features?,\s*(\d+)\s+bug\s+fixes?,\s*(\d+)\s+documentation.*?,\s*(\d+)\s+other\s+improvements?'
+                ]
+                for pattern in patterns:
+                    match = re.search(pattern, content, re.IGNORECASE)
+                    if match:
+                        if len(match.groups()) == 1:
+                            # Single number pattern
+                            count = int(match.group(1))
+                        elif len(match.groups()) == 4:
+                            # Multi-category pattern: sum all categories
+                            count = sum(int(group) for group in match.groups())
+                        else:
+                            continue
+                        Logger.info(f"📄 Using commit count from RELEASE_NOTES.md: {count}")
+                        return count
+        except Exception as e:
+            Logger.debug(f"Could not extract commit count from RELEASE_NOTES.md: {e}")
+        
+        # Fallback to git analysis if RELEASE_NOTES.md not available or parsing failed
         if not BlogGitAnalyzer_available:
             Logger.warn("BlogGitAnalyzer not available, using default estimate")
             return 25
@@ -609,7 +642,56 @@ class SpringAIBlogGenerator:
             return 25
     
     def _analyze_commits(self) -> Dict[str, int]:
-        """Analyze commit types using direct git analysis"""
+        """Analyze commit types from RELEASE_NOTES.md or fallback to git analysis"""
+        # Try to extract from existing RELEASE_NOTES.md first
+        try:
+            release_notes_path = Path("RELEASE_NOTES.md")
+            if release_notes_path.exists():
+                content = release_notes_path.read_text()
+                import re
+                
+                # Parse categorized sections from release notes
+                categories = {
+                    'new_features': 0,
+                    'bug_fixes': 0, 
+                    'documentation': 0,
+                    'dependency_upgrades': 0,
+                    'other_improvements': 0
+                }
+                
+                # Look for commit counts in different sections
+                # Patterns like "## New Features (15)" or "- **Bug Fixes**: 84 fixes"
+                patterns = {
+                    'new_features': [r'(?:new\s+features?|features?)[^\d]*(\d+)', r'(?:enhancements?)[^\d]*(\d+)'],
+                    'bug_fixes': [r'(?:bug\s+fixes?|fixes?)[^\d]*(\d+)', r'(?:stability)[^\d]*(\d+)'],
+                    'documentation': [r'(?:documentation|docs?)[^\d]*(\d+)'],
+                    'dependency_upgrades': [r'(?:dependency|dependencies|upgrades?|security)[^\d]*(\d+)'],
+                }
+                
+                for category, category_patterns in patterns.items():
+                    for pattern in category_patterns:
+                        matches = re.findall(pattern, content, re.IGNORECASE)
+                        if matches:
+                            # Take the first reasonable number found
+                            for match in matches:
+                                num = int(match)
+                                if 0 < num < 1000:  # Sanity check
+                                    categories[category] = max(categories[category], num)
+                                    break
+                
+                # Calculate other_improvements as total minus specific categories
+                total_commits = self._estimate_commit_count()
+                specific_total = sum(categories.values())
+                categories['other_improvements'] = max(0, total_commits - specific_total)
+                
+                if sum(categories.values()) > 0:
+                    Logger.info(f"📄 Using commit analysis from RELEASE_NOTES.md")
+                    return categories
+                    
+        except Exception as e:
+            Logger.debug(f"Could not extract commit analysis from RELEASE_NOTES.md: {e}")
+        
+        # Fallback to git analysis if RELEASE_NOTES.md not available or parsing failed  
         if not BlogGitAnalyzer_available:
             Logger.warn("BlogGitAnalyzer not available, using defaults")
             return {

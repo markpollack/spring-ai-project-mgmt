@@ -1,0 +1,1692 @@
+[
+  {
+    "label": "advisors",
+    "description": "Issues with advisor pattern implementations that transform data sent to and from Language Models. Common problems include advisor chain configuration, memory management integration, and runtime execution order. Users often report 'advisor not being called', 'memory not persisting', or 'custom advisor not working with ChatClient'.",
+    "relevant_modules": [
+      "spring-ai-client-chat",
+      "advisors/spring-ai-advisors-vector-store"
+    ],
+    "key_classes": [
+      "Advisor",
+      "CallAdvisor",
+      "StreamAdvisor",
+      "MessageChatMemoryAdvisor",
+      "PromptChatMemoryAdvisor",
+      "SafeGuardAdvisor",
+      "SimpleLoggerAdvisor"
+    ],
+    "developer_touchpoints": [
+      "ChatClient fluent API",
+      "advisor chain configuration",
+      "memory management"
+    ]
+  },
+  {
+    "label": "agents",
+    "description": "Not found in project codebase",
+    "relevant_modules": [],
+    "key_classes": [],
+    "developer_touchpoints": []
+  },
+  {
+    "label": "anthropic",
+    "description": "Issues with Anthropic Claude model integrations including API key configuration, connection timeouts, and model parameter handling. Common problems include 'API key not found', 'connection refused', 'invalid model parameters', and streaming response issues with Claude models.",
+    "relevant_modules": [
+      "spring-ai-anthropic",
+      "spring-ai-autoconfigure-model-anthropic"
+    ],
+    "key_classes": [
+      "AnthropicChatModel",
+      "AnthropicChatOptions",
+      "AnthropicApi"
+    ],
+    "developer_touchpoints": [
+      "API key configuration",
+      "chat model integration",
+      "streaming responses"
+    ]
+  },
+  {
+    "label": "AOT/Native",
+    "description": "Issues with ahead-of-time compilation and GraalVM native image generation. Common problems include 'reflection configuration missing', 'native image build fails', 'runtime hints not applied', and 'missing resource configuration for native compilation'.",
+    "relevant_modules": [
+      "spring-ai-model"
+    ],
+    "key_classes": [
+      "AiRuntimeHints",
+      "ToolBeanRegistrationAotProcessor",
+      "SpringAiCoreRuntimeHints"
+    ],
+    "developer_touchpoints": [
+      "GraalVM native image",
+      "AOT processing",
+      "reflection hints"
+    ]
+  },
+  {
+    "label": "audio",
+    "description": "Issues with audio processing including transcription file format problems, text-to-speech API errors, and audio streaming failures. Common problems include 'transcription API file extension issue', 'audio file not supported', 'TTS model not responding', and 'streaming audio connection errors'.",
+    "relevant_modules": [
+      "spring-ai-model"
+    ],
+    "key_classes": [
+      "TranscriptionModel",
+      "TextToSpeechModel",
+      "StreamingTextToSpeechModel",
+      "AudioTranscriptionPrompt"
+    ],
+    "developer_touchpoints": [
+      "audio file processing",
+      "streaming audio",
+      "transcription integration"
+    ]
+  },
+  {
+    "label": "azure",
+    "description": "Issues with Azure OpenAI and Azure AI Search integrations including authentication problems, service configuration errors, and API version compatibility. Common problems include 'Azure OpenAI API key invalid', 'service endpoint not found', 'streaming usage metadata missing', and 'Azure AD authentication failures'.",
+    "relevant_modules": [
+      "spring-ai-azure-openai",
+      "spring-ai-azure-store",
+      "spring-ai-azure-cosmos-db-store"
+    ],
+    "key_classes": [
+      "AzureOpenAiChatModel",
+      "AzureOpenAiEmbeddingModel",
+      "AzureVectorStore",
+      "CosmosDBVectorStore"
+    ],
+    "developer_touchpoints": [
+      "Azure service configuration",
+      "OpenAI integration",
+      "vector search"
+    ]
+  },
+  {
+    "label": "Bedrock",
+    "description": "Issues with Amazon Bedrock foundation model integrations including AWS credential configuration, region setup problems, and model access errors. Common problems include 'AWS credentials not found', 'bedrock region not supported', 'model access denied', and 'embedding generation failures'.",
+    "relevant_modules": [
+      "spring-ai-bedrock",
+      "spring-ai-bedrock-converse",
+      "spring-ai-autoconfigure-model-bedrock-ai"
+    ],
+    "key_classes": [
+      "BedrockCohereEmbeddingModel",
+      "BedrockTitanEmbeddingModel",
+      "BedrockApi"
+    ],
+    "developer_touchpoints": [
+      "AWS credentials",
+      "Bedrock model configuration",
+      "embedding generation"
+    ]
+  },
+  {
+    "label": "breaking",
+    "description": "Issues related to breaking changes in Spring AI framework including API deprecations, configuration changes, and migration requirements. Common problems include 'method signature changed', 'configuration property removed', 'class moved to different package', and 'breaking API changes between versions'.",
+    "relevant_modules": [],
+    "key_classes": [],
+    "developer_touchpoints": [
+      "version upgrades",
+      "API changes",
+      "configuration updates"
+    ]
+  },
+  {
+    "label": "bug",
+    "description": "Software defects and unexpected behavior in Spring AI components including null pointer exceptions, configuration failures, and runtime errors. Common problems include 'NPE when document contains only media', 'function calling not working', 'vector store connection failures', and 'model response parsing errors'.",
+    "relevant_modules": [],
+    "key_classes": [],
+    "developer_touchpoints": [
+      "error reproduction",
+      "debugging",
+      "issue reporting"
+    ]
+  },
+  {
+    "label": "cassandra",
+    "description": "Issues with Apache Cassandra vector store and chat memory repository including connection problems, keyspace configuration errors, and vector indexing failures. Common problems include 'cassandra cluster connection failed', 'keyspace not found', 'vector index creation error', and 'chat memory persistence issues'.",
+    "relevant_modules": [
+      "spring-ai-cassandra-store",
+      "spring-ai-model-chat-memory-repository-cassandra"
+    ],
+    "key_classes": [
+      "CassandraVectorStore",
+      "CassandraChatMemoryRepository"
+    ],
+    "developer_touchpoints": [
+      "Cassandra cluster setup",
+      "keyspace configuration",
+      "vector indexing"
+    ]
+  },
+  {
+    "label": "chat client",
+    "description": "Issues with the fluent ChatClient API including configuration problems, advisor integration failures, and response handling errors. Common problems include 'ChatClient not configured', 'advisor not being called', 'streaming response issues', and 'fluent API method chaining problems'.",
+    "relevant_modules": [
+      "spring-ai-client-chat",
+      "spring-ai-autoconfigure-model-chat-client"
+    ],
+    "key_classes": [
+      "ChatClient",
+      "DefaultChatClient",
+      "ChatClientRequest",
+      "ChatClientResponse"
+    ],
+    "developer_touchpoints": [
+      "fluent API usage",
+      "advisor configuration",
+      "streaming responses"
+    ]
+  },
+  {
+    "label": "Chat Memory",
+    "description": "Issues with conversation memory management including persistence failures, window size problems, and repository configuration errors. Common problems include 'chat memory not persisting', 'conversation context lost', 'memory window size exceeded', and 'repository connection failures'.",
+    "relevant_modules": [
+      "spring-ai-model",
+      "spring-ai-model-chat-memory-repository-jdbc",
+      "spring-ai-model-chat-memory-repository-cassandra",
+      "spring-ai-model-chat-memory-repository-neo4j"
+    ],
+    "key_classes": [
+      "ChatMemory",
+      "MessageWindowChatMemory",
+      "ChatMemoryRepository",
+      "InMemoryChatMemoryRepository"
+    ],
+    "developer_touchpoints": [
+      "memory repository setup",
+      "conversation context",
+      "persistence configuration"
+    ]
+  },
+  {
+    "label": "chat options",
+    "description": "Issues with chat model configuration options including parameter validation, model-specific settings, and option inheritance problems. Common problems include 'chat options not applied', 'invalid model parameters', 'streaming options missing', and 'model-specific configuration errors'.",
+    "relevant_modules": [
+      "spring-ai-model"
+    ],
+    "key_classes": [
+      "ChatOptions",
+      "DefaultChatOptions",
+      "ChatPromptTemplate"
+    ],
+    "developer_touchpoints": [
+      "model parameters",
+      "prompt configuration",
+      "response formatting"
+    ]
+  },
+  {
+    "label": "chromadb",
+    "description": "Issues with ChromaDB vector database integration including server connection problems, collection configuration errors, and vector search failures. Common problems include 'ChromaDB server not reachable', 'collection not found', 'vector search timeout', and 'embedding dimension mismatch'.",
+    "relevant_modules": [
+      "spring-ai-chroma-store",
+      "spring-ai-autoconfigure-vector-store-chroma"
+    ],
+    "key_classes": [
+      "ChromaVectorStore",
+      "ChromaApi"
+    ],
+    "developer_touchpoints": [
+      "ChromaDB server setup",
+      "collection configuration",
+      "vector search"
+    ]
+  },
+  {
+    "label": "CI/CD",
+    "description": "Issues with continuous integration and deployment pipelines including build failures, artifact publication problems, and test execution issues. Common problems include 'Maven build fails', 'artifact publication errors', 'test failures in CI', and 'deployment pipeline issues'.",
+    "relevant_modules": [],
+    "key_classes": [],
+    "developer_touchpoints": [
+      "build pipeline",
+      "test automation",
+      "deployment"
+    ]
+  },
+  {
+    "label": "claude",
+    "description": "Issues specifically with Anthropic's Claude models including API integration problems, model parameter configuration, and response handling failures. Common problems include 'Claude API authentication failed', 'model parameter validation error', 'Claude streaming not working', and 'response format issues'.",
+    "relevant_modules": [
+      "spring-ai-anthropic"
+    ],
+    "key_classes": [
+      "AnthropicChatModel"
+    ],
+    "developer_touchpoints": [
+      "Claude model integration",
+      "API configuration",
+      "chat completion"
+    ]
+  },
+  {
+    "label": "client timeouts",
+    "description": "Issues with HTTP client timeout configurations including connection timeouts, read timeouts, and retry configuration problems. Common problems include 'connection timeout exceeded', 'read timeout on model call', 'retry configuration not working', and 'client timeout settings ignored'.",
+    "relevant_modules": [],
+    "key_classes": [],
+    "developer_touchpoints": [
+      "HTTP client configuration",
+      "timeout handling",
+      "retry logic"
+    ]
+  },
+  {
+    "label": "code cleanup",
+    "description": "Issues related to code quality improvements, refactoring efforts, and technical debt reduction including deprecated method removal, code style improvements, and architectural cleanups. Common problems include 'deprecated method usage', 'code style inconsistencies', 'unused imports', and 'refactoring needed'.",
+    "relevant_modules": [],
+    "key_classes": [],
+    "developer_touchpoints": [
+      "code review",
+      "refactoring",
+      "cleanup"
+    ]
+  },
+  {
+    "label": "coherence",
+    "description": "Issues with Oracle Coherence vector store integration including cluster connectivity problems, distributed search configuration errors, and cache setup failures. Common problems include 'Coherence cluster not found', 'distributed cache configuration error', 'vector indexing failure', and 'cache access denied'.",
+    "relevant_modules": [
+      "spring-ai-coherence-store"
+    ],
+    "key_classes": [
+      "CoherenceVectorStore"
+    ],
+    "developer_touchpoints": [
+      "Coherence cluster setup",
+      "vector indexing",
+      "distributed search"
+    ]
+  },
+  {
+    "label": "configuration",
+    "description": "Issues with Spring Boot auto-configuration and application properties setup including property binding failures, missing configuration classes, and auto-configuration conflicts. Common problems include 'RestClient.Builder bean not found', 'property binding failed', 'auto-configuration not applied', and 'configuration class conflicts'.",
+    "relevant_modules": [
+      "auto-configurations/*"
+    ],
+    "key_classes": [
+      "*AutoConfiguration",
+      "*Properties"
+    ],
+    "developer_touchpoints": [
+      "application.yml setup",
+      "auto-configuration",
+      "property binding"
+    ]
+  },
+  {
+    "label": "couchbase",
+    "description": "Issues with Couchbase vector store integration including connection string problems, bucket configuration errors, and search index setup failures. Common problems include 'Couchbase connection failed', 'bucket not found', 'search index creation error', and 'vector query timeout'.",
+    "relevant_modules": [
+      "spring-ai-couchbase-store",
+      "spring-ai-autoconfigure-vector-store-couchbase"
+    ],
+    "key_classes": [
+      "CouchbaseSearchVectorStore"
+    ],
+    "developer_touchpoints": [
+      "Couchbase cluster setup",
+      "search index configuration",
+      "vector search"
+    ]
+  },
+  {
+    "label": "cross platform",
+    "description": "Issues with multi-platform compatibility and deployment support including platform-specific configuration problems, dependency conflicts, and deployment environment issues. Common problems include 'platform dependency conflict', 'deployment environment mismatch', 'OS-specific configuration error', and 'multi-platform compatibility issues'.",
+    "relevant_modules": [],
+    "key_classes": [],
+    "developer_touchpoints": [
+      "platform deployment",
+      "environment setup",
+      "compatibility testing"
+    ]
+  },
+  {
+    "label": "deepseek",
+    "description": "Issues with DeepSeek AI model integration including API key configuration problems, connection failures, and model response handling errors. Common problems include 'DeepSeek API key invalid', 'model connection timeout', 'response parsing error', and 'streaming not supported'.",
+    "relevant_modules": [
+      "spring-ai-deepseek",
+      "spring-ai-autoconfigure-model-deepseek"
+    ],
+    "key_classes": [
+      "DeepSeekChatModel",
+      "DeepSeekChatOptions"
+    ],
+    "developer_touchpoints": [
+      "API key configuration",
+      "model integration",
+      "response handling"
+    ]
+  },
+  {
+    "label": "dependencies",
+    "description": "Issues with Maven dependency management and version compatibility including transitive dependency conflicts, version incompatibilities, and BOM usage problems. Common problems include 'dependency version conflict', 'transitive dependency issue', 'BOM version mismatch', and 'classpath dependency problem'.",
+    "relevant_modules": [
+      "spring-ai-bom"
+    ],
+    "key_classes": [],
+    "developer_touchpoints": [
+      "dependency management",
+      "version conflicts",
+      "BOM usage"
+    ]
+  },
+  {
+    "label": "deprecation",
+    "description": "Issues with deprecated APIs, classes, or configuration options including migration guidance, replacement API usage, and deprecation warnings. Common problems include 'deprecated method usage', 'configuration property deprecated', 'class moved to new package', and 'migration path unclear'.",
+    "relevant_modules": [],
+    "key_classes": [],
+    "developer_touchpoints": [
+      "API migration",
+      "deprecation warnings",
+      "replacement APIs"
+    ]
+  },
+  {
+    "label": "design",
+    "description": "Issues related to architecture and design discussions for Spring AI components including API design decisions, architectural patterns, and design consistency problems. Common problems include 'API design inconsistency', 'architectural pattern violation', 'design decision clarification needed', and 'component design review'.",
+    "relevant_modules": [],
+    "key_classes": [],
+    "developer_touchpoints": [
+      "API design",
+      "architecture decisions",
+      "design patterns"
+    ]
+  },
+  {
+    "label": "docker-compose",
+    "description": "Issues with Docker Compose integration for Spring AI services including service configuration problems, connection details setup, and local development environment issues. Common problems include 'docker-compose service not starting', 'connection details not configured', 'service dependency issues', and 'local development setup problems'.",
+    "relevant_modules": [
+      "spring-ai-spring-boot-docker-compose"
+    ],
+    "key_classes": [
+      "*ConnectionDetailsFactory"
+    ],
+    "developer_touchpoints": [
+      "Docker Compose setup",
+      "service configuration",
+      "local development"
+    ]
+  },
+  {
+    "label": "documentation",
+    "description": "Issues with documentation improvements, missing examples, and reference material updates including outdated documentation, missing code examples, and unclear configuration guides. Common problems include 'documentation outdated', 'example code missing', 'configuration guide unclear', and 'API reference incomplete'.",
+    "relevant_modules": [
+      "spring-ai-docs"
+    ],
+    "key_classes": [],
+    "developer_touchpoints": [
+      "documentation updates",
+      "examples",
+      "reference guides"
+    ]
+  },
+  {
+    "label": "document-reader",
+    "description": "Issues with document reading and parsing capabilities including file format support problems, content extraction failures, and parser configuration errors. Common problems include 'PDF parsing failed', 'document format not supported', 'content extraction error', and 'parser configuration issue'.",
+    "relevant_modules": [
+      "document-readers/jsoup-reader",
+      "document-readers/pdf-reader",
+      "document-readers/tika-reader",
+      "document-readers/markdown-reader"
+    ],
+    "key_classes": [
+      "DocumentReader",
+      "JsoupDocumentReader",
+      "PdfDocumentReader",
+      "TikaDocumentReader"
+    ],
+    "developer_touchpoints": [
+      "document parsing",
+      "content extraction",
+      "format support"
+    ]
+  },
+  {
+    "label": "duplicate",
+    "description": "Issues that are duplicates of existing reports including similar bug reports, repeated feature requests, and redundant issue submissions. Common problems include 'duplicate bug report', 'feature request already exists', 'similar issue already reported', and 'redundant issue submission'.",
+    "relevant_modules": [],
+    "key_classes": [],
+    "developer_touchpoints": [
+      "issue tracking",
+      "duplicate detection"
+    ]
+  },
+  {
+    "label": "elastic search",
+    "description": "Issues with Elasticsearch vector store integration including cluster connection problems, index configuration errors, and vector search performance issues. Common problems include 'Elasticsearch cluster unreachable', 'index mapping configuration error', 'vector search timeout', and 'cluster authentication failed'.",
+    "relevant_modules": [
+      "spring-ai-elasticsearch-store",
+      "spring-ai-autoconfigure-vector-store-elasticsearch"
+    ],
+    "key_classes": [
+      "ElasticsearchVectorStore"
+    ],
+    "developer_touchpoints": [
+      "Elasticsearch cluster setup",
+      "index configuration",
+      "vector search"
+    ]
+  },
+  {
+    "label": "embedding",
+    "description": "Issues with vector embedding generation and management including embedding model failures, dimension mismatches, and vector storage problems. Common problems include 'embedding generation failed', 'dimension mismatch error', 'vector storage timeout', and 'embedding model not responding'.",
+    "relevant_modules": [
+      "spring-ai-model"
+    ],
+    "key_classes": [
+      "EmbeddingModel",
+      "EmbeddingRequest",
+      "EmbeddingResponse",
+      "Embedding"
+    ],
+    "developer_touchpoints": [
+      "embedding generation",
+      "vector storage",
+      "similarity search"
+    ]
+  },
+  {
+    "label": "enhancement",
+    "description": "Feature enhancement requests and improvements to existing Spring AI functionality including new capability additions, performance improvements, and usability enhancements. Common problems include 'feature request for new capability', 'performance improvement needed', 'usability enhancement', and 'API improvement suggestion'.",
+    "relevant_modules": [],
+    "key_classes": [],
+    "developer_touchpoints": [
+      "feature requests",
+      "improvements",
+      "enhancements"
+    ]
+  },
+  {
+    "label": "epic",
+    "description": "Large-scale feature initiatives and major development efforts including multi-component features, architectural changes, and coordinated development work. Common problems include 'large feature initiative', 'architectural change required', 'multi-component coordination needed', and 'major development effort'.",
+    "relevant_modules": [],
+    "key_classes": [],
+    "developer_touchpoints": [
+      "project planning",
+      "milestone tracking",
+      "feature coordination"
+    ]
+  },
+  {
+    "label": "ETL",
+    "description": "Issues with Extract, Transform, Load operations for document processing including data transformation failures, content splitting problems, and processing pipeline errors. Common problems include 'document transformation failed', 'content splitting error', 'processing pipeline timeout', and 'data format conversion issue'.",
+    "relevant_modules": [
+      "spring-ai-commons"
+    ],
+    "key_classes": [
+      "DocumentTransformer",
+      "TextSplitter",
+      "TokenTextSplitter",
+      "ContentFormatTransformer"
+    ],
+    "developer_touchpoints": [
+      "document processing",
+      "data transformation",
+      "content splitting"
+    ]
+  },
+  {
+    "label": "Evaluation",
+    "description": "Issues with AI model evaluation utilities and testing frameworks including evaluation metric failures, quality testing problems, and evaluation framework configuration errors. Common problems include 'evaluation metric calculation failed', 'quality test not working', 'evaluation framework configuration error', and 'metric comparison issue'.",
+    "relevant_modules": [
+      "spring-ai-commons",
+      "spring-ai-client-chat",
+      "spring-ai-test"
+    ],
+    "key_classes": [
+      "Evaluator",
+      "FactCheckingEvaluator",
+      "RelevancyEvaluator"
+    ],
+    "developer_touchpoints": [
+      "model evaluation",
+      "quality testing",
+      "evaluation metrics"
+    ]
+  },
+  {
+    "label": "follow up",
+    "description": "Issues requiring follow-up actions, additional information, or further investigation including incomplete bug reports, pending feature requests, and issues needing clarification. Common problems include 'more information needed', 'follow-up investigation required', 'issue needs clarification', and 'pending additional testing'.",
+    "relevant_modules": [],
+    "key_classes": [],
+    "developer_touchpoints": [
+      "issue tracking",
+      "follow-up actions"
+    ]
+  },
+  {
+    "label": "for: backport-to-1.0.x",
+    "description": "Issues marked for backporting to version 1.0.x maintenance branches including critical bug fixes, security patches, and compatibility improvements. Common problems include 'critical bug needs backport', 'security fix for 1.0.x', 'compatibility issue backport', and 'maintenance branch update needed'.",
+    "relevant_modules": [],
+    "key_classes": [],
+    "developer_touchpoints": [
+      "version maintenance",
+      "backport process",
+      "compatibility"
+    ]
+  },
+  {
+    "label": "gcp",
+    "description": "Issues with Google Cloud Platform integration including Vertex AI service problems, GCP credential configuration errors, and project setup failures. Common problems include 'GCP credentials not found', 'Vertex AI access denied', 'project ID configuration error', and 'GCP service authentication failed'.",
+    "relevant_modules": [
+      "spring-ai-vertex-ai-gemini",
+      "spring-ai-vertex-ai-embedding"
+    ],
+    "key_classes": [
+      "VertexAiGeminiChatModel",
+      "VertexAiTextEmbeddingModel"
+    ],
+    "developer_touchpoints": [
+      "GCP credentials",
+      "Vertex AI setup",
+      "model configuration"
+    ]
+  },
+  {
+    "label": "gemfire",
+    "description": "Issues with VMware Tanzu GemFire vector store integration including cluster connection problems, region configuration errors, and vector indexing failures. Common problems include 'GemFire cluster not accessible', 'region configuration error', 'vector index creation failed', and 'cluster authentication issue'.",
+    "relevant_modules": [
+      "spring-ai-gemfire-store",
+      "spring-ai-autoconfigure-vector-store-gemfire"
+    ],
+    "key_classes": [
+      "GemFireVectorStore"
+    ],
+    "developer_touchpoints": [
+      "GemFire cluster setup",
+      "region configuration",
+      "vector indexing"
+    ]
+  },
+  {
+    "label": "gemini",
+    "description": "Issues with Google's Gemini models through Vertex AI including multimodal support problems, model configuration errors, and API integration failures. Common problems include 'Gemini model not available', 'multimodal input not supported', 'model configuration error', and 'Vertex AI integration failed'.",
+    "relevant_modules": [
+      "spring-ai-vertex-ai-gemini"
+    ],
+    "key_classes": [
+      "VertexAiGeminiChatModel"
+    ],
+    "developer_touchpoints": [
+      "Gemini model configuration",
+      "Vertex AI integration",
+      "multimodal support"
+    ]
+  },
+  {
+    "label": "Getting Started Experience",
+    "description": "Issues with onboarding and initial developer experience including setup difficulties, unclear getting started guides, and initial configuration problems. Common problems include 'getting started guide unclear', 'initial setup too complex', 'onboarding experience poor', and 'first-time user confusion'.",
+    "relevant_modules": [],
+    "key_classes": [],
+    "developer_touchpoints": [
+      "getting started guides",
+      "initial setup",
+      "developer onboarding"
+    ]
+  },
+  {
+    "label": "good first issue",
+    "description": "Issues suitable for new contributors including simple bug fixes, documentation improvements, and straightforward feature additions. Common problems include 'simple bug fix needed', 'documentation update required', 'beginner-friendly enhancement', and 'straightforward implementation task'.",
+    "relevant_modules": [],
+    "key_classes": [],
+    "developer_touchpoints": [
+      "contributor onboarding",
+      "beginner issues",
+      "contribution guide"
+    ]
+  },
+  {
+    "label": "guardrails",
+    "description": "Issues with safety and content filtering mechanisms including content moderation failures, safety check bypasses, and filtering configuration problems. Common problems include 'content filter not working', 'safety check bypassed', 'guardrail configuration error', and 'inappropriate content not blocked'.",
+    "relevant_modules": [
+      "spring-ai-client-chat"
+    ],
+    "key_classes": [
+      "SafeGuardAdvisor"
+    ],
+    "developer_touchpoints": [
+      "content filtering",
+      "safety checks",
+      "advisor configuration"
+    ]
+  },
+  {
+    "label": "help wanted",
+    "description": "Issues where community contributions are particularly welcome including complex features, specialized knowledge requirements, and community-driven improvements. Common problems include 'community contribution needed', 'specialized knowledge required', 'help implementing feature', and 'community input requested'.",
+    "relevant_modules": [],
+    "key_classes": [],
+    "developer_touchpoints": [
+      "community contribution",
+      "help requests",
+      "collaboration"
+    ]
+  },
+  {
+    "label": "huggingface",
+    "description": "Issues with Hugging Face model integration including API configuration problems, model loading failures, and inference endpoint errors. Common problems include 'Hugging Face API key invalid', 'model loading failed', 'inference endpoint timeout', and 'model format not supported'.",
+    "relevant_modules": [
+      "spring-ai-huggingface",
+      "spring-ai-autoconfigure-model-huggingface"
+    ],
+    "key_classes": [
+      "HuggingfaceChatModel"
+    ],
+    "developer_touchpoints": [
+      "Hugging Face API",
+      "model configuration",
+      "inference endpoints"
+    ]
+  },
+  {
+    "label": "hybrid search",
+    "description": "Issues with combined keyword and vector search capabilities including ranking algorithm problems, query processing errors, and search result integration failures. Common problems include 'hybrid search not working', 'ranking algorithm issue', 'query processing error', and 'search result merging failed'.",
+    "relevant_modules": [],
+    "key_classes": [],
+    "developer_touchpoints": [
+      "search implementation",
+      "ranking algorithms",
+      "query processing"
+    ]
+  },
+  {
+    "label": "i18n",
+    "description": "Issues with internationalization and localization support including message translation problems, locale configuration errors, and multi-language support failures. Common problems include 'message translation not working', 'locale configuration error', 'multi-language support missing', and 'i18n configuration issue'.",
+    "relevant_modules": [],
+    "key_classes": [],
+    "developer_touchpoints": [
+      "locale support",
+      "message translation",
+      "i18n configuration"
+    ]
+  },
+  {
+    "label": "image models",
+    "description": "Issues with AI image generation and processing including model configuration problems, image format errors, and generation parameter issues. Common problems include 'image generation failed', 'model configuration error', 'image format not supported', and 'generation parameters invalid'.",
+    "relevant_modules": [
+      "spring-ai-model"
+    ],
+    "key_classes": [
+      "ImageModel",
+      "ImagePrompt",
+      "ImageResponse",
+      "Image"
+    ],
+    "developer_touchpoints": [
+      "image generation",
+      "model configuration",
+      "prompt engineering"
+    ]
+  },
+  {
+    "label": "improvement",
+    "description": "General improvements to existing functionality including performance optimizations, code enhancements, and feature refinements. Common problems include 'performance improvement needed', 'code enhancement suggestion', 'feature refinement required', and 'optimization opportunity identified'.",
+    "relevant_modules": [],
+    "key_classes": [],
+    "developer_touchpoints": [
+      "performance optimization",
+      "feature enhancement",
+      "code improvement"
+    ]
+  },
+  {
+    "label": "integration testing",
+    "description": "Issues with integration testing infrastructure including test setup failures, test execution problems, and CI/CD pipeline integration errors. Common problems include 'integration test failing', 'test setup issue', 'CI pipeline test failure', and 'test environment configuration error'.",
+    "relevant_modules": [
+      "spring-ai-integration-tests"
+    ],
+    "key_classes": [],
+    "developer_touchpoints": [
+      "test setup",
+      "integration tests",
+      "CI/CD pipeline"
+    ]
+  },
+  {
+    "label": "invalid",
+    "description": "Invalid issue reports or requests that cannot be processed including malformed bug reports, invalid feature requests, and non-actionable submissions. Common problems include 'invalid bug report', 'malformed issue description', 'non-actionable request', and 'invalid problem statement'.",
+    "relevant_modules": [],
+    "key_classes": [],
+    "developer_touchpoints": [
+      "issue validation",
+      "problem reporting"
+    ]
+  },
+  {
+    "label": "kotlin",
+    "description": "Issues with Kotlin language support and extensions including compilation problems, type safety issues, and Kotlin-specific integration errors. Common problems include 'Kotlin compilation error', 'type safety issue', 'Kotlin extension not working', and 'language support problem'.",
+    "relevant_modules": [
+      "spring-ai-client-chat"
+    ],
+    "key_classes": [
+      "KotlinModule"
+    ],
+    "developer_touchpoints": [
+      "Kotlin extensions",
+      "language support",
+      "type safety"
+    ]
+  },
+  {
+    "label": "Malicious/Attack",
+    "description": "Security issues related to malicious inputs or attack vectors including input validation failures, security bypass attempts, and vulnerability exploitation. Common problems include 'malicious input not blocked', 'security bypass detected', 'vulnerability exploitation', and 'attack vector identified'.",
+    "relevant_modules": [],
+    "key_classes": [],
+    "developer_touchpoints": [
+      "security testing",
+      "input validation",
+      "vulnerability assessment"
+    ]
+  },
+  {
+    "label": "mariadb",
+    "description": "Issues with MariaDB vector store integration including database connection problems, vector indexing errors, and query performance issues. Common problems include 'MariaDB connection failed', 'vector index creation error', 'database query timeout', and 'vector search performance issue'.",
+    "relevant_modules": [
+      "spring-ai-mariadb-store",
+      "spring-ai-autoconfigure-vector-store-mariadb"
+    ],
+    "key_classes": [
+      "MariaDBVectorStore"
+    ],
+    "developer_touchpoints": [
+      "MariaDB setup",
+      "vector indexing",
+      "database configuration"
+    ]
+  },
+  {
+    "label": "MCP",
+    "description": "Issues with Model Context Protocol implementation including protocol communication failures, tool integration problems, and client-server setup errors. Common problems include 'MCP protocol error', 'tool integration failed', 'client-server communication issue', and 'protocol configuration error'.",
+    "relevant_modules": [
+      "mcp/common",
+      "spring-ai-autoconfigure-mcp-client",
+      "spring-ai-autoconfigure-mcp-server"
+    ],
+    "key_classes": [
+      "McpToolCallback",
+      "McpToolCallbackProvider"
+    ],
+    "developer_touchpoints": [
+      "MCP protocol",
+      "tool integration",
+      "client-server communication"
+    ]
+  },
+  {
+    "label": "messages",
+    "description": "Issues with message handling and conversation management including message type problems, conversation flow errors, and message processing failures. Common problems include 'message type not supported', 'conversation flow broken', 'message processing error', and 'message handling issue'.",
+    "relevant_modules": [
+      "spring-ai-model"
+    ],
+    "key_classes": [
+      "Message",
+      "UserMessage",
+      "SystemMessage",
+      "AssistantMessage",
+      "ToolResponseMessage"
+    ],
+    "developer_touchpoints": [
+      "message handling",
+      "conversation flow",
+      "message types"
+    ]
+  },
+  {
+    "label": "metadata filters",
+    "description": "Issues with SQL-like filtering capabilities for vector store metadata including filter expression errors, query building problems, and search refinement failures. Common problems include 'metadata filter not working', 'filter expression error', 'query building failed', and 'search refinement issue'.",
+    "relevant_modules": [
+      "spring-ai-vector-store"
+    ],
+    "key_classes": [
+      "Filter",
+      "FilterExpressionBuilder",
+      "FilterExpressionConverter"
+    ],
+    "developer_touchpoints": [
+      "metadata filtering",
+      "query building",
+      "search refinement"
+    ]
+  },
+  {
+    "label": "milvus",
+    "description": "Issues with Milvus vector database integration including server connection problems, collection configuration errors, and vector indexing failures. Common problems include 'Milvus server not accessible', 'collection configuration error', 'vector index creation failed', and 'query performance issue'.",
+    "relevant_modules": [
+      "spring-ai-milvus-store",
+      "spring-ai-autoconfigure-vector-store-milvus"
+    ],
+    "key_classes": [
+      "MilvusVectorStore"
+    ],
+    "developer_touchpoints": [
+      "Milvus server setup",
+      "collection configuration",
+      "vector indexing"
+    ]
+  },
+  {
+    "label": "minimax",
+    "description": "Issues with MiniMax AI model integration including API configuration problems, model access errors, and response handling failures. Common problems include 'MiniMax API key invalid', 'model access denied', 'response parsing error', and 'connection timeout'.",
+    "relevant_modules": [
+      "spring-ai-minimax",
+      "spring-ai-autoconfigure-model-minimax"
+    ],
+    "key_classes": [
+      "MiniMaxChatModel",
+      "MiniMaxEmbeddingModel"
+    ],
+    "developer_touchpoints": [
+      "API key configuration",
+      "model integration",
+      "response handling"
+    ]
+  },
+  {
+    "label": "mistral",
+    "description": "Issues with Mistral AI model integration including API configuration problems, streaming support errors, and model parameter issues. Common problems include 'Mistral API authentication failed', 'streaming not supported', 'model parameter error', and 'response format issue'.",
+    "relevant_modules": [
+      "spring-ai-mistral-ai",
+      "spring-ai-autoconfigure-model-mistral-ai"
+    ],
+    "key_classes": [
+      "MistralAiChatModel",
+      "MistralAiEmbeddingModel"
+    ],
+    "developer_touchpoints": [
+      "API configuration",
+      "model integration",
+      "streaming support"
+    ]
+  },
+  {
+    "label": "model client",
+    "description": "Issues with core model client interfaces including request/response handling problems, model abstraction errors, and client implementation failures. Common problems include 'model client not responding', 'request/response handling error', 'model abstraction issue', and 'client implementation problem'.",
+    "relevant_modules": [
+      "spring-ai-model"
+    ],
+    "key_classes": [
+      "ChatModel",
+      "Model",
+      "ModelRequest",
+      "ModelResponse"
+    ],
+    "developer_touchpoints": [
+      "model interface",
+      "request/response handling",
+      "model abstraction"
+    ]
+  },
+  {
+    "label": "model-option-utils",
+    "description": "Issues with model options and parameter management including configuration utility problems, option validation errors, and parameter handling failures. Common problems include 'model option not applied', 'parameter validation error', 'option utility issue', and 'parameter handling problem'.",
+    "relevant_modules": [
+      "spring-ai-model"
+    ],
+    "key_classes": [
+      "ModelOptions",
+      "ModelOptionsUtils"
+    ],
+    "developer_touchpoints": [
+      "model configuration",
+      "option management",
+      "parameter handling"
+    ]
+  },
+  {
+    "label": "moderation",
+    "description": "Issues with content moderation capabilities including filtering failures, safety check problems, and compliance verification errors. Common problems include 'content moderation failed', 'safety check not working', 'compliance verification error', and 'filtering rule issue'.",
+    "relevant_modules": [
+      "spring-ai-model"
+    ],
+    "key_classes": [
+      "ModerationModel",
+      "ModerationPrompt",
+      "ModerationResponse",
+      "Categories"
+    ],
+    "developer_touchpoints": [
+      "content moderation",
+      "safety filtering",
+      "compliance checks"
+    ]
+  },
+  {
+    "label": "mongo",
+    "description": "Issues with MongoDB Atlas vector store integration including connection string problems, database configuration errors, and vector search index failures. Common problems include 'MongoDB connection failed', 'Atlas vector search not working', 'database configuration error', and 'vector index creation failed'.",
+    "relevant_modules": [
+      "spring-ai-mongodb-atlas-store",
+      "spring-ai-autoconfigure-vector-store-mongodb-atlas"
+    ],
+    "key_classes": [
+      "MongoDBAtlasVectorStore"
+    ],
+    "developer_touchpoints": [
+      "MongoDB Atlas setup",
+      "vector search index",
+      "atlas configuration"
+    ]
+  },
+  {
+    "label": "moonshot",
+    "description": "Issues with Moonshot AI model integration (autoconfiguration only) including configuration problems, missing implementation features, and provider setup errors. Common problems include 'Moonshot configuration missing', 'provider integration incomplete', 'autoconfiguration not working', and 'model setup failed'.",
+    "relevant_modules": [
+      "spring-ai-autoconfigure-model-moonshot"
+    ],
+    "key_classes": [],
+    "developer_touchpoints": [
+      "model configuration",
+      "API integration",
+      "provider setup"
+    ]
+  },
+  {
+    "label": "multimodality",
+    "description": "Issues with multiple input/output modalities including image processing problems, multimodal input handling errors, and content type support failures. Common problems include 'multimodal input not supported', 'image processing failed', 'content type not handled', and 'multimodal response error'.",
+    "relevant_modules": [
+      "spring-ai-model"
+    ],
+    "key_classes": [
+      "ImageMessage",
+      "UserMessage",
+      "ImageModel"
+    ],
+    "developer_touchpoints": [
+      "multimodal inputs",
+      "image processing",
+      "content handling"
+    ]
+  },
+  {
+    "label": "multiple models",
+    "description": "Issues with using multiple AI models simultaneously including provider configuration conflicts, model switching problems, and multi-provider setup errors. Common problems include 'multiple model configuration conflict', 'provider switching failed', 'model selection issue', and 'multi-provider setup error'.",
+    "relevant_modules": [
+      "models/*"
+    ],
+    "key_classes": [
+      "ChatModel",
+      "EmbeddingModel",
+      "ImageModel"
+    ],
+    "developer_touchpoints": [
+      "multi-provider setup",
+      "model switching",
+      "provider configuration"
+    ]
+  },
+  {
+    "label": "neo4j",
+    "description": "Issues with Neo4j vector store and chat memory repository integration including database connection problems, graph query errors, and vector indexing failures. Common problems include 'Neo4j connection failed', 'graph query error', 'vector index creation failed', and 'database authentication issue'.",
+    "relevant_modules": [
+      "spring-ai-neo4j-store",
+      "spring-ai-model-chat-memory-repository-neo4j"
+    ],
+    "key_classes": [
+      "Neo4jVectorStore"
+    ],
+    "developer_touchpoints": [
+      "Neo4j database setup",
+      "vector indexing",
+      "graph queries"
+    ]
+  },
+  {
+    "label": "next priorities",
+    "description": "Issues marked as next development priorities including high-priority features, critical improvements, and roadmap items. Common problems include 'high priority feature request', 'critical improvement needed', 'roadmap item planning', and 'development priority assignment'.",
+    "relevant_modules": [],
+    "key_classes": [],
+    "developer_touchpoints": [
+      "development planning",
+      "feature prioritization",
+      "roadmap items"
+    ]
+  },
+  {
+    "label": "nomic",
+    "description": "Not found in project codebase",
+    "relevant_modules": [],
+    "key_classes": [],
+    "developer_touchpoints": []
+  },
+  {
+    "label": "Observability",
+    "description": "Issues with monitoring, metrics, and observability features including metrics collection problems, monitoring integration failures, and observability setup errors. Common problems include 'metrics not collected', 'monitoring integration failed', 'observability setup error', and 'telemetry data missing'.",
+    "relevant_modules": [
+      "spring-ai-commons",
+      "auto-configurations/*/observation"
+    ],
+    "key_classes": [
+      "ChatModelObservationConvention",
+      "EmbeddingModelObservationConvention",
+      "ObservabilityHelper"
+    ],
+    "developer_touchpoints": [
+      "metrics collection",
+      "observability setup",
+      "monitoring integration"
+    ]
+  },
+  {
+    "label": "ollama",
+    "description": "Issues with Ollama local AI model integration including server connection problems, model management errors, and local model configuration issues. Common problems include 'Ollama server not running', 'model not found', 'local model configuration error', and 'model download failed'.",
+    "relevant_modules": [
+      "spring-ai-ollama",
+      "spring-ai-autoconfigure-model-ollama"
+    ],
+    "key_classes": [
+      "OllamaChatModel",
+      "OllamaEmbeddingModel"
+    ],
+    "developer_touchpoints": [
+      "Ollama server setup",
+      "local model configuration",
+      "model management"
+    ]
+  },
+  {
+    "label": "onxx",
+    "description": "Issues with ONNX runtime support for transformer models including model loading problems, runtime configuration errors, and local inference failures. Common problems include 'ONNX model loading failed', 'runtime configuration error', 'local inference not working', and 'transformer model issue'.",
+    "relevant_modules": [
+      "spring-ai-transformers"
+    ],
+    "key_classes": [
+      "TransformersEmbeddingModel"
+    ],
+    "developer_touchpoints": [
+      "ONNX models",
+      "transformer integration",
+      "local inference"
+    ]
+  },
+  {
+    "label": "openai",
+    "description": "Issues with OpenAI model integration including API key problems, connection timeouts, function calling failures, and streaming response issues. Common problems include 'OpenAI API key invalid', 'connection timeout', 'function calling not working', and 'streaming response error'.",
+    "relevant_modules": [
+      "spring-ai-openai",
+      "spring-ai-autoconfigure-model-openai"
+    ],
+    "key_classes": [
+      "OpenAiChatModel",
+      "OpenAiEmbeddingModel",
+      "OpenAiImageModel",
+      "OpenAiAudioSpeechModel"
+    ],
+    "developer_touchpoints": [
+      "API key configuration",
+      "model integration",
+      "streaming responses"
+    ]
+  },
+  {
+    "label": "openrouter",
+    "description": "Not found in project codebase",
+    "relevant_modules": [],
+    "key_classes": [],
+    "developer_touchpoints": []
+  },
+  {
+    "label": "opensearch",
+    "description": "Issues with OpenSearch vector store integration including cluster connection problems, index configuration errors, and vector search performance issues. Common problems include 'OpenSearch cluster not accessible', 'index configuration error', 'vector search timeout', and 'cluster authentication failed'.",
+    "relevant_modules": [
+      "spring-ai-opensearch-store",
+      "spring-ai-autoconfigure-vector-store-opensearch"
+    ],
+    "key_classes": [
+      "OpenSearchVectorStore"
+    ],
+    "developer_touchpoints": [
+      "OpenSearch cluster setup",
+      "index configuration",
+      "vector search"
+    ]
+  },
+  {
+    "label": "oracle",
+    "description": "Issues with Oracle Database vector store integration including database connection problems, vector indexing errors, and SQL query failures. Common problems include 'Oracle database connection failed', 'vector index creation error', 'SQL query timeout', and 'database authentication issue'.",
+    "relevant_modules": [
+      "spring-ai-oracle-store",
+      "spring-ai-autoconfigure-vector-store-oracle"
+    ],
+    "key_classes": [
+      "OracleVectorStore"
+    ],
+    "developer_touchpoints": [
+      "Oracle database setup",
+      "vector indexing",
+      "database configuration"
+    ]
+  },
+  {
+    "label": "pgvector",
+    "description": "Issues with PostgreSQL pgvector extension integration including database connection problems, extension setup errors, and vector query failures. Common problems include 'pgvector extension not installed', 'PostgreSQL connection failed', 'vector query error', and 'database configuration issue'.",
+    "relevant_modules": [
+      "spring-ai-pgvector-store",
+      "spring-ai-autoconfigure-vector-store-pgvector"
+    ],
+    "key_classes": [
+      "PgVectorStore"
+    ],
+    "developer_touchpoints": [
+      "PostgreSQL setup",
+      "pgvector extension",
+      "vector indexing"
+    ]
+  },
+  {
+    "label": "pinecone",
+    "description": "Issues with Pinecone vector database integration including API key problems, index configuration errors, and vector operation failures. Common problems include 'Pinecone API key invalid', 'index not found', 'vector operation failed', and 'environment configuration error'.",
+    "relevant_modules": [
+      "spring-ai-pinecone-store",
+      "spring-ai-autoconfigure-vector-store-pinecone"
+    ],
+    "key_classes": [
+      "PineconeVectorStore"
+    ],
+    "developer_touchpoints": [
+      "Pinecone API setup",
+      "index configuration",
+      "vector operations"
+    ]
+  },
+  {
+    "label": "postgresml",
+    "description": "Issues with PostgresML machine learning embeddings integration including database connection problems, embedding generation errors, and ML model configuration issues. Common problems include 'PostgresML connection failed', 'embedding generation error', 'ML model not found', and 'database integration issue'.",
+    "relevant_modules": [
+      "spring-ai-postgresml",
+      "spring-ai-autoconfigure-model-postgresml-embedding"
+    ],
+    "key_classes": [
+      "PostgresMlEmbeddingModel"
+    ],
+    "developer_touchpoints": [
+      "PostgresML setup",
+      "embedding generation",
+      "database integration"
+    ]
+  },
+  {
+    "label": "prompt management",
+    "description": "Issues with prompt templates and management including template processing errors, prompt engineering problems, and template configuration issues. Common problems include 'prompt template not working', 'template processing error', 'prompt engineering issue', and 'template configuration problem'.",
+    "relevant_modules": [
+      "spring-ai-model"
+    ],
+    "key_classes": [
+      "Prompt",
+      "PromptTemplate",
+      "ChatPromptTemplate",
+      "SystemPromptTemplate"
+    ],
+    "developer_touchpoints": [
+      "prompt templates",
+      "prompt engineering",
+      "template management"
+    ]
+  },
+  {
+    "label": "qdrant",
+    "description": "Issues with Qdrant vector database integration including server connection problems, collection configuration errors, and vector search failures. Common problems include 'Qdrant server not accessible', 'collection configuration error', 'vector search failed', and 'NPE when document contains only media'.",
+    "relevant_modules": [
+      "spring-ai-qdrant-store",
+      "spring-ai-autoconfigure-vector-store-qdrant"
+    ],
+    "key_classes": [
+      "QdrantVectorStore"
+    ],
+    "developer_touchpoints": [
+      "Qdrant server setup",
+      "collection configuration",
+      "vector search"
+    ]
+  },
+  {
+    "label": "qianfan",
+    "description": "Issues with Baidu Qianfan AI model integration (autoconfiguration only) including configuration problems, missing implementation features, and provider setup errors. Common problems include 'Qianfan configuration missing', 'provider integration incomplete', 'autoconfiguration not working', and 'model setup failed'.",
+    "relevant_modules": [
+      "spring-ai-autoconfigure-model-qianfan"
+    ],
+    "key_classes": [],
+    "developer_touchpoints": [
+      "model configuration",
+      "API integration",
+      "provider setup"
+    ]
+  },
+  {
+    "label": "question",
+    "description": "General questions about Spring AI usage and functionality including usage clarifications, feature inquiries, and implementation guidance requests. Common problems include 'how to use feature X', 'usage clarification needed', 'implementation guidance required', and 'feature inquiry'.",
+    "relevant_modules": [],
+    "key_classes": [],
+    "developer_touchpoints": [
+      "usage questions",
+      "documentation queries",
+      "support requests"
+    ]
+  },
+  {
+    "label": "RAG",
+    "description": "Issues with Retrieval Augmented Generation capabilities including document retrieval problems, knowledge integration errors, and RAG setup failures. Common problems include 'document retrieval failed', 'RAG setup not working', 'knowledge integration error', and 'retrieval augmentation issue'.",
+    "relevant_modules": [
+      "spring-ai-rag"
+    ],
+    "key_classes": [
+      "RetrievalAugmentationAdvisor",
+      "DocumentRetriever",
+      "VectorStoreDocumentRetriever"
+    ],
+    "developer_touchpoints": [
+      "RAG setup",
+      "document retrieval",
+      "knowledge integration"
+    ]
+  },
+  {
+    "label": "reasoning",
+    "description": "Not found in project codebase",
+    "relevant_modules": [],
+    "key_classes": [],
+    "developer_touchpoints": []
+  },
+  {
+    "label": "redis",
+    "description": "Issues with Redis vector store integration including connection problems, vector indexing errors, and search configuration issues. Common problems include 'Redis connection failed', 'vector index creation error', 'search configuration issue', and 'Redis server not accessible'.",
+    "relevant_modules": [
+      "spring-ai-redis-store",
+      "spring-ai-autoconfigure-vector-store-redis"
+    ],
+    "key_classes": [
+      "RedisVectorStore"
+    ],
+    "developer_touchpoints": [
+      "Redis setup",
+      "vector indexing",
+      "search configuration"
+    ]
+  },
+  {
+    "label": "refactoring",
+    "description": "Issues related to code refactoring and architectural improvements including code restructuring needs, architectural changes, and improvement initiatives. Common problems include 'code refactoring needed', 'architectural improvement required', 'code restructuring issue', and 'improvement initiative'.",
+    "relevant_modules": [],
+    "key_classes": [],
+    "developer_touchpoints": [
+      "code restructuring",
+      "architectural changes",
+      "improvement"
+    ]
+  },
+  {
+    "label": "retry",
+    "description": "Issues with retry logic and resilience patterns including retry configuration problems, backoff strategy errors, and error handling failures. Common problems include 'retry configuration not working', 'backoff strategy issue', 'error handling problem', and 'resilience pattern failure'.",
+    "relevant_modules": [
+      "spring-ai-retry",
+      "spring-ai-autoconfigure-retry"
+    ],
+    "key_classes": [
+      "RetryTemplate",
+      "RetryUtils"
+    ],
+    "developer_touchpoints": [
+      "retry configuration",
+      "resilience patterns",
+      "error handling"
+    ]
+  },
+  {
+    "label": "security",
+    "description": "Security-related issues including vulnerability assessments, secure configuration practices, and security feature implementations. Common problems include 'security vulnerability found', 'secure configuration needed', 'security feature missing', and 'vulnerability assessment required'.",
+    "relevant_modules": [],
+    "key_classes": [],
+    "developer_touchpoints": [
+      "security configuration",
+      "vulnerability assessment",
+      "secure practices"
+    ]
+  },
+  {
+    "label": "speech",
+    "description": "Issues with text-to-speech and speech processing including TTS model problems, audio processing errors, and speech generation failures. Common problems include 'TTS model not working', 'speech generation failed', 'audio processing error', and 'speech integration issue'.",
+    "relevant_modules": [
+      "spring-ai-model",
+      "spring-ai-elevenlabs"
+    ],
+    "key_classes": [
+      "TextToSpeechModel",
+      "ElevenLabsTextToSpeechModel"
+    ],
+    "developer_touchpoints": [
+      "speech generation",
+      "audio processing",
+      "TTS integration"
+    ]
+  },
+  {
+    "label": "stabilityai",
+    "description": "Issues with Stability AI image generation models including API key problems, image generation failures, and model configuration errors. Common problems include 'Stability AI API key invalid', 'image generation failed', 'model configuration error', and 'API connection issue'.",
+    "relevant_modules": [
+      "spring-ai-stability-ai",
+      "spring-ai-autoconfigure-model-stability-ai"
+    ],
+    "key_classes": [
+      "StabilityAiImageModel"
+    ],
+    "developer_touchpoints": [
+      "API key configuration",
+      "image generation",
+      "model integration"
+    ]
+  },
+  {
+    "label": "status: backported",
+    "description": "Issues that have been successfully backported to maintenance branches including completed backport work, maintenance branch updates, and version compatibility fixes. Common problems include 'backport completed successfully', 'maintenance branch updated', 'version compatibility fixed', and 'backport verification needed'.",
+    "relevant_modules": [],
+    "key_classes": [],
+    "developer_touchpoints": [
+      "version maintenance",
+      "backport tracking",
+      "release management"
+    ]
+  },
+  {
+    "label": "status: to-discuss",
+    "description": "Issues requiring team discussion before implementation including design decisions, architectural choices, and implementation strategy discussions. Common problems include 'design decision needed', 'architectural choice required', 'implementation strategy discussion', and 'team input needed'.",
+    "relevant_modules": [],
+    "key_classes": [],
+    "developer_touchpoints": [
+      "team discussion",
+      "decision making",
+      "planning"
+    ]
+  },
+  {
+    "label": "status: waiting-for-feedback",
+    "description": "Issues awaiting feedback from reporters or community members including pending responses, clarification requests, and community input needs. Common problems include 'waiting for user response', 'clarification needed from reporter', 'community input required', and 'feedback pending'.",
+    "relevant_modules": [],
+    "key_classes": [],
+    "developer_touchpoints": [
+      "feedback collection",
+      "issue clarification",
+      "community engagement"
+    ]
+  },
+  {
+    "label": "status: waiting-for-triage",
+    "description": "New issues awaiting initial triage and prioritization including new bug reports, feature requests, and issue assessments. Common problems include 'new issue needs triage', 'priority assignment needed', 'initial assessment required', and 'triage queue processing'.",
+    "relevant_modules": [],
+    "key_classes": [],
+    "developer_touchpoints": [
+      "issue triage",
+      "priority assignment",
+      "initial assessment"
+    ]
+  },
+  {
+    "label": "streaming",
+    "description": "Issues with real-time streaming capabilities including streaming response problems, connection issues, and usage metadata missing. Common problems include 'streaming response not working', 'streaming connection failed', 'usage metadata missing in stream', and 'streaming performance issue'.",
+    "relevant_modules": [
+      "spring-ai-model"
+    ],
+    "key_classes": [
+      "StreamingChatModel",
+      "StreamingModel",
+      "StreamingTextToSpeechModel"
+    ],
+    "developer_touchpoints": [
+      "streaming responses",
+      "real-time processing",
+      "reactive programming"
+    ]
+  },
+  {
+    "label": "structured output",
+    "description": "Issues with converting AI model outputs to structured Java objects including POJO mapping problems, type conversion errors, and output converter failures. Common problems include 'structured output conversion failed', 'POJO mapping error', 'type conversion issue', and 'output converter not working'.",
+    "relevant_modules": [
+      "spring-ai-model"
+    ],
+    "key_classes": [
+      "StructuredOutputConverter",
+      "BeanOutputConverter",
+      "ListOutputConverter"
+    ],
+    "developer_touchpoints": [
+      "output conversion",
+      "POJO mapping",
+      "type conversion"
+    ]
+  },
+  {
+    "label": "templating",
+    "description": "Issues with template processing and rendering including template engine problems, content generation errors, and template configuration issues. Common problems include 'template processing failed', 'template rendering error', 'content generation issue', and 'template configuration problem'.",
+    "relevant_modules": [
+      "spring-ai-template-st",
+      "spring-ai-commons"
+    ],
+    "key_classes": [
+      "TemplateRenderer",
+      "NoOpTemplateRenderer"
+    ],
+    "developer_touchpoints": [
+      "template processing",
+      "prompt templating",
+      "content generation"
+    ]
+  },
+  {
+    "label": "testcontainers",
+    "description": "Issues with Testcontainers integration for testing including container management problems, connection details setup, and test environment configuration. Common problems include 'testcontainer not starting', 'connection details not configured', 'test environment setup failed', and 'container management issue'.",
+    "relevant_modules": [
+      "spring-ai-spring-boot-testcontainers"
+    ],
+    "key_classes": [
+      "*ContainerConnectionDetailsFactory"
+    ],
+    "developer_touchpoints": [
+      "test setup",
+      "container management",
+      "integration testing"
+    ]
+  },
+  {
+    "label": "testing",
+    "description": "Issues with testing utilities and frameworks including evaluation test problems, test utility failures, and testing pattern issues. Common problems include 'evaluation test failed', 'test utility not working', 'testing pattern issue', and 'test framework configuration error'.",
+    "relevant_modules": [
+      "spring-ai-test"
+    ],
+    "key_classes": [
+      "BasicEvaluationTest",
+      "BaseVectorStoreTests"
+    ],
+    "developer_touchpoints": [
+      "test utilities",
+      "evaluation framework",
+      "testing patterns"
+    ]
+  },
+  {
+    "label": "tool/function calling",
+    "description": "Issues with AI model tool and function calling capabilities including function registration problems, tool callback failures, and Spring bean integration errors. Common problems include 'function calling not working', 'tool callback failed', 'Spring bean integration issue', and 'function registration error'.",
+    "relevant_modules": [
+      "spring-ai-model",
+      "spring-ai-autoconfigure-model-tool"
+    ],
+    "key_classes": [
+      "ToolCallback",
+      "@Tool",
+      "ToolDefinition",
+      "ToolCallingManager"
+    ],
+    "developer_touchpoints": [
+      "tool registration",
+      "function calling",
+      "Spring bean integration"
+    ]
+  },
+  {
+    "label": "transcription models",
+    "description": "Issues with audio transcription models including file extension problems, speech recognition errors, and model integration failures. Common problems include 'transcription API file extension issue', 'speech recognition failed', 'model integration error', and 'audio format not supported'.",
+    "relevant_modules": [
+      "spring-ai-model"
+    ],
+    "key_classes": [
+      "TranscriptionModel",
+      "AudioTranscriptionPrompt",
+      "AudioTranscriptionResponse"
+    ],
+    "developer_touchpoints": [
+      "audio transcription",
+      "speech recognition",
+      "model integration"
+    ]
+  },
+  {
+    "label": "type: backport",
+    "description": "Issues classified as backport candidates for maintenance releases including critical fixes, compatibility updates, and maintenance branch requirements. Common problems include 'backport candidate identified', 'maintenance release requirement', 'compatibility backport needed', and 'critical fix backport'.",
+    "relevant_modules": [],
+    "key_classes": [],
+    "developer_touchpoints": [
+      "backport process",
+      "version maintenance",
+      "release planning"
+    ]
+  },
+  {
+    "label": "typesense",
+    "description": "Issues with Typesense vector store integration including server connection problems, collection configuration errors, and vector search failures. Common problems include 'Typesense server not accessible', 'collection configuration error', 'vector search failed', and 'server authentication issue'.",
+    "relevant_modules": [
+      "spring-ai-typesense-store",
+      "spring-ai-autoconfigure-vector-store-typesense"
+    ],
+    "key_classes": [
+      "TypesenseVectorStore"
+    ],
+    "developer_touchpoints": [
+      "Typesense server setup",
+      "collection configuration",
+      "vector search"
+    ]
+  },
+  {
+    "label": "usability",
+    "description": "User experience improvements and ease-of-use enhancements including developer experience issues, API usability problems, and configuration simplification needs. Common problems include 'developer experience poor', 'API usability issue', 'configuration too complex', and 'ease-of-use improvement needed'.",
+    "relevant_modules": [],
+    "key_classes": [],
+    "developer_touchpoints": [
+      "developer experience",
+      "API usability",
+      "configuration simplification"
+    ]
+  },
+  {
+    "label": "usage",
+    "description": "Usage examples, patterns, and best practices including implementation examples, usage pattern documentation, and best practice guidance. Common problems include 'usage example missing', 'implementation pattern unclear', 'best practice guidance needed', and 'usage documentation incomplete'.",
+    "relevant_modules": [],
+    "key_classes": [],
+    "developer_touchpoints": [
+      "usage examples",
+      "best practices",
+      "implementation patterns"
+    ]
+  },
+  {
+    "label": "vector store",
+    "description": "Issues with vector database integrations including connection problems, indexing failures, and search performance issues. Common problems include 'vector store connection failed', 'vector indexing error', 'similarity search timeout', and 'storage configuration issue'.",
+    "relevant_modules": [
+      "spring-ai-vector-store",
+      "vector-stores/*"
+    ],
+    "key_classes": [
+      "VectorStore",
+      "SearchRequest",
+      "SimpleVectorStore"
+    ],
+    "developer_touchpoints": [
+      "vector search",
+      "similarity matching",
+      "storage configuration"
+    ]
+  },
+  {
+    "label": "vertex",
+    "description": "Issues with Google Cloud Vertex AI integration including GCP setup problems, model configuration errors, and service access failures. Common problems include 'Vertex AI access denied', 'GCP project configuration error', 'model configuration issue', and 'service authentication failed'.",
+    "relevant_modules": [
+      "spring-ai-vertex-ai-gemini",
+      "spring-ai-vertex-ai-embedding"
+    ],
+    "key_classes": [
+      "VertexAiGeminiChatModel",
+      "VertexAiTextEmbeddingModel"
+    ],
+    "developer_touchpoints": [
+      "Vertex AI setup",
+      "GCP integration",
+      "model configuration"
+    ]
+  },
+  {
+    "label": "vllm",
+    "description": "Not found in project codebase",
+    "relevant_modules": [],
+    "key_classes": [],
+    "developer_touchpoints": []
+  },
+  {
+    "label": "watson",
+    "description": "Issues with IBM Watson AI model integration (autoconfiguration only) including configuration problems, missing implementation features, and provider setup errors. Common problems include 'Watson configuration missing', 'IBM AI service integration incomplete', 'provider setup failed', and 'autoconfiguration not working'.",
+    "relevant_modules": [
+      "spring-ai-autoconfigure-model-watsonx-ai"
+    ],
+    "key_classes": [],
+    "developer_touchpoints": [
+      "Watson integration",
+      "IBM AI services",
+      "provider setup"
+    ]
+  },
+  {
+    "label": "weaviate",
+    "description": "Issues with Weaviate vector database integration including server connection problems, schema configuration errors, and vector search failures. Common problems include 'Weaviate server not accessible', 'schema configuration error', 'vector search failed', and 'server authentication issue'.",
+    "relevant_modules": [
+      "spring-ai-weaviate-store",
+      "spring-ai-autoconfigure-vector-store-weaviate"
+    ],
+    "key_classes": [
+      "WeaviateVectorStore"
+    ],
+    "developer_touchpoints": [
+      "Weaviate server setup",
+      "schema configuration",
+      "vector search"
+    ]
+  },
+  {
+    "label": "wontfix",
+    "description": "Issues that will not be addressed due to design decisions or constraints including limitation acceptances, design decision confirmations, and alternative approach recommendations. Common problems include 'design decision limitation', 'constraint prevents implementation', 'alternative approach recommended', and 'limitation accepted'.",
+    "relevant_modules": [],
+    "key_classes": [],
+    "developer_touchpoints": [
+      "design decisions",
+      "limitation acceptance",
+      "alternative approaches"
+    ]
+  },
+  {
+    "label": "wordlift",
+    "description": "Not found in project codebase",
+    "relevant_modules": [],
+    "key_classes": [],
+    "developer_touchpoints": []
+  },
+  {
+    "label": "ZhiPu",
+    "description": "Issues with ZhiPu AI model integration including API key configuration problems, multi-modal support errors, and model access failures. Common problems include 'ZhiPu API key invalid', 'multi-modal support issue', 'model access denied', and 'integration configuration error'.",
+    "relevant_modules": [
+      "spring-ai-zhipuai",
+      "spring-ai-autoconfigure-model-zhipuai"
+    ],
+    "key_classes": [
+      "ZhiPuAiChatModel",
+      "ZhiPuAiEmbeddingModel",
+      "ZhiPuAiImageModel"
+    ],
+    "developer_touchpoints": [
+      "API key configuration",
+      "model integration",
+      "multi-modal support"
+    ]
+  }
+]
