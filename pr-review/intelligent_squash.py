@@ -160,6 +160,32 @@ class IntelligentSquash:
             
         return merge_commits
     
+    def extract_dco_signatures(self, base_sha: str) -> str:
+        """Extract all unique Signed-off-by lines from commits being squashed"""
+        try:
+            # Get all commit messages from base to HEAD
+            result = self.run_git(["log", "--format=%B", f"{base_sha}..HEAD"])
+            commit_messages = result.stdout
+            
+            signed_off_lines = set()
+            for line in commit_messages.split('\n'):
+                line = line.strip()
+                if line.startswith('Signed-off-by:'):
+                    signed_off_lines.add(line)
+            
+            if signed_off_lines:
+                Logger.info(f"🔏 Found {len(signed_off_lines)} DCO signature(s) to preserve")
+                for sig in signed_off_lines:
+                    Logger.info(f"   {sig}")
+                return '\n'.join(sorted(signed_off_lines))
+            else:
+                Logger.info("ℹ️  No DCO signatures found in commits")
+                return ""
+                
+        except subprocess.CalledProcessError as e:
+            Logger.warn(f"⚠️  Could not extract DCO signatures: {e}")
+            return ""
+    
     def choose_squash_strategy(self, pr_number: str, base_sha: str, commits: List[dict]) -> SquashStrategy:
         """Analyze PR and choose the best squashing strategy"""
         commits_count = len(commits)
@@ -196,17 +222,22 @@ class IntelligentSquash:
         Logger.info("🔄 Using git reset --soft approach (conflict-free)")
         
         try:
-            # Step 1: Reset to base commit keeping changes staged
+            # Step 1: Extract DCO signatures before reset
+            dco_signatures = self.extract_dco_signatures(base_sha)
+            
+            # Step 2: Reset to base commit keeping changes staged
             Logger.info(f"Resetting to base commit: {base_sha[:8]}")
             self.run_git(["reset", "--soft", base_sha])
             
-            # Step 2: Create squashed commit with meaningful message
+            # Step 3: Create squashed commit with meaningful message and preserve DCO
             commit_message = f"{title}\n\nSquashed {commits_count} commits from PR #{pr_number}"
-            Logger.info("Creating squashed commit...")
+            if dco_signatures:
+                commit_message += f"\n\n{dco_signatures}"
             
+            Logger.info("Creating squashed commit...")
             self.run_git(["commit", "-m", commit_message])
             
-            # Step 3: Verify success
+            # Step 4: Verify success
             result = self.run_git(["log", "--oneline", "-1"])
             new_commit = result.stdout.strip()
             Logger.success(f"✅ Squash successful: {new_commit}")
@@ -709,14 +740,19 @@ class IntelligentSquash:
             # Get the base SHA from the PR info
             base_sha, commits_data, title = self.get_pr_info(pr_number)
             
+            # Extract DCO signatures before reset
+            dco_signatures = self.extract_dco_signatures(base_sha)
+            
             # Reset to base commit keeping all changes staged
             Logger.info(f"Resetting to base commit: {base_sha[:8]} while preserving changes")
             self.run_git(["reset", "--soft", base_sha])
             
-            # Create single squashed commit
+            # Create single squashed commit with DCO preservation
             commit_message = f"{title}\n\nSquashed {commit_count} commits from PR #{pr_number} after conflict resolution"
-            Logger.info("Creating final squashed commit...")
+            if dco_signatures:
+                commit_message += f"\n\n{dco_signatures}"
             
+            Logger.info("Creating final squashed commit...")
             self.run_git(["commit", "-m", commit_message])
             
             # Verify we now have exactly 1 commit

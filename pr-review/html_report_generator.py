@@ -77,6 +77,7 @@ class PRSummary:
     quality_assessment: str
     recommendations: List[str]
     stakeholder_feedback: List[str]
+    discussion_themes: List[str]
     
     # Solution assessment data
     scope_analysis: str

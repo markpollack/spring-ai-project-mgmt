@@ -279,7 +279,9 @@ class BackportAssessor:
             Logger.warn(f"⚠️  Error formatting conversation summary: {e}")
             conversation_summary = f"Conversation summary formatting failed - {len(conversation) if conversation else 0} comments"
         
-        # Build complete prompt
+        # Build complete prompt with explicit file paths
+        context_dir = self.working_dir / "context" / f"pr-{pr_number}"
+        
         prompt_content = f"""# Backport Candidate Assessment Request
 
 Please analyze this Spring AI Pull Request to determine if it's suitable for backporting to the 1.0.x maintenance branch.
@@ -299,15 +301,31 @@ Please analyze this Spring AI Pull Request to determine if it's suitable for bac
 ## Assessment Instructions
 {template_content}
 
-## Context Files Available
+## Required Analysis Steps
 
-You have access to the complete PR context data. Please analyze:
-1. PR metadata and description for initial classification
-2. File changes and code diffs for API impact assessment
-3. Issue links and conversation for understanding the problem being solved
-4. Any AI risk assessment data if available
+**CRITICAL**: Please analyze the complete PR context data using these file paths:
 
-Please provide your assessment following the exact format specified in the template above.
+1. **File Changes Analysis**: Read the complete file changes data:
+```
+Please read the file {context_dir}/file-changes.json and analyze ALL files listed in it.
+```
+
+2. **PR Context Data**: Read the PR metadata:
+```
+Please read the file {context_dir}/pr-data.json for detailed PR information.
+```
+
+3. **Risk Assessment Data**: If available, read the risk assessment:
+```
+Please read the file {context_dir}/ai-risk-assessment.json for breaking change analysis (if it exists).
+```
+
+4. **Solution Assessment Data**: If available, read the solution assessment:
+```
+Please read the file {context_dir}/solution-assessment.json for technical analysis (if it exists).
+```
+
+After analyzing all available data, provide your assessment following the exact JSON format specified in the template above.
 """
         
         # Save prompt to temporary file
@@ -369,9 +387,9 @@ Please provide your assessment following the exact format specified in the templ
             return "No file changes data available"
         
         total_files = len(file_changes)
-        java_files = len([f for f in file_changes if f.get('path', '').endswith('.java')])
-        test_files = len([f for f in file_changes if 'test' in f.get('path', '').lower()])
-        doc_files = len([f for f in file_changes if f.get('path', '').endswith(('.md', '.adoc'))])
+        java_files = len([f for f in file_changes if f.get('filename', '').endswith('.java')])
+        test_files = len([f for f in file_changes if 'test' in f.get('filename', '').lower()])
+        doc_files = len([f for f in file_changes if f.get('filename', '').endswith(('.md', '.adoc'))])
         
         summary = f"""**Total Files**: {total_files}
 **Java Files**: {java_files}
@@ -383,9 +401,9 @@ Please provide your assessment following the exact format specified in the templ
         status_counts = {}
         for file_change in file_changes[:10]:  # Show first 10 files
             status = file_change.get('status', 'unknown')
-            path = file_change.get('path', 'unknown')
+            filename = file_change.get('filename', 'unknown')
             status_counts[status] = status_counts.get(status, 0) + 1
-            summary += f"\n- {status}: {path}"
+            summary += f"\n- {status}: {filename}"
         
         if total_files > 10:
             summary += f"\n- ... and {total_files - 10} more files"

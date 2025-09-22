@@ -8,8 +8,10 @@ The issues collection system has evolved from a single JBang script to a compreh
 
 ## Architecture
 
-### Current Implementation (Maven-based)
-- **Location**: `project/` subdirectory
+### Current Implementation (Multi-Module Maven)
+- **Location**: `project/` subdirectory with multi-module structure:
+  - `collection-library/` - Reusable GitHub API and collection components
+  - `collection-app/` - Main Spring Boot CLI application
 - **Technology**: Spring Boot application with Java 17+
 - **Build Tool**: Maven with Maven Daemon (`mvnd`) recommended
 
@@ -27,7 +29,7 @@ export GITHUB_TOKEN="your_github_token"
 
 ### Maven Application (Recommended)
 ```bash
-cd project
+cd project/collection-app
 
 # Fast compilation (skip tests and javadoc)
 mvnd clean compile -Dmaven.javadoc.skip=true -DskipTests
@@ -38,6 +40,9 @@ mvnd spring-boot:run -Dspring-boot.run.arguments="--repo spring-projects/spring-
 
 # Collect open issues with specific labels
 mvnd spring-boot:run -Dspring-boot.run.arguments="--repo spring-projects/spring-ai --labels bug,enhancement --state open"
+
+# NEW: Collect pull requests with soft approval detection
+mvnd spring-boot:run -Dspring-boot.run.arguments="--type prs --repo spring-projects/spring-ai --number 4347"
 ```
 
 ### JBang Script (Legacy)
@@ -55,12 +60,22 @@ mvnd spring-boot:run -Dspring-boot.run.arguments="--repo spring-projects/spring-
 ## Features
 
 ### Core Capabilities
+
+#### Issue Collection
 - **State Filtering**: `open`, `closed`, or `all` issues
 - **Label Filtering**: Multiple labels with configurable matching mode (any/all)
+- **Dashboard Support**: Limited result sets with sorting for UI applications
 - **Batch Processing**: Resume support for large collections with configurable batch sizes
 - **Rate Limit Management**: Intelligent GitHub API rate limiting
 - **Incremental Collection**: Skip already collected issues
 - **Collection Resume**: Continue from last successful batch after interruption
+
+#### Pull Request Collection (NEW!)
+- **PR Collection**: Collect specific pull requests or all PRs from a repository
+- **Soft Approval Detection**: Identify PRs with approvals from contributors (not members)
+- **Review Analysis**: Collect and analyze PR reviews and author associations
+- **PR State Filtering**: Filter by open, closed, merged, or all PR states
+- **Specific PR Targeting**: Collect individual PRs by number
 
 ### Output Options
 - **JSON Format**: Structured issue data with comprehensive metadata
@@ -212,20 +227,24 @@ issues/
 
 ### Running Tests
 ```bash
-cd project
+cd project/collection-app
 
 # Run all tests
 mvnd test
 
 # Run specific test class
 mvnd test -Dtest=CollectionServiceTest
+
+# Test from parent directory (all modules)
+cd project && mvnd test
 ```
 
 ### Adding New CLI Arguments
-1. Update `CollectionProperties` class with new property and default
-2. Modify argument parsing logic in `ArgumentParser.java`
-3. Add comprehensive tests for new arguments
-4. Update help text and documentation
+1. Update `CollectionProperties` class in collection-library module
+2. Modify argument parsing logic in `ArgumentParser.java` (collection-library)
+3. Update main application in collection-app module
+4. Add comprehensive tests for new arguments
+5. Update help text and documentation
 
 ### Testing Strategies
 - **Critical**: Avoid `@SpringBootTest` - triggers CommandLineRunner production operations
@@ -312,21 +331,20 @@ The JBang script remains available for compatibility but new features are added 
 
 The following features are planned but not yet implemented:
 
-### Planned Features (Not Yet Implemented)
+### Recently Implemented ✅
+- **Pull Request Collection** - `--type prs` with comprehensive PR state filtering
+- **Soft Approval Detection** - Identify contributor approvals in PRs
+- **Specific PR Targeting** - `--number N` for individual PR collection
+- **Multi-Module Architecture** - Separate collection-library and collection-app modules
 
-The following features are planned for future releases:
+### Planned Features (Not Yet Implemented)
 
 #### Date Range Filtering
 - `--since YYYY-MM-DD` - Issues/PRs created after date
 - `--since-hours N` - Issues/PRs created in the past N hours (e.g., `--since-hours 24`)
-- `--until YYYY-MM-DD` - Issues/PRs created before date  
+- `--until YYYY-MM-DD` - Issues/PRs created before date
 - `--updated-since YYYY-MM-DD` - Issues/PRs updated after date
 - `--limit N` - Limit number of issues/PRs collected
-
-#### Content Type Selection
-- `--type issues` - Collect issues only (default)
-- `--type prs` - Collect pull requests only
-- `--type both` - Collect both issues and pull requests
 
 #### Advanced Filtering Options
 - `--milestone MILESTONE` - Filter by specific milestones
@@ -357,12 +375,12 @@ The following features are planned for future releases:
 
 ### Use Case Examples (When Implemented)
 ```bash
-# New issues in past 24 hours
+# New issues in past 24 hours (when implemented)
 mvnd spring-boot:run -Dspring-boot.run.arguments="--repo spring-projects/spring-ai --type issues --state open --since-hours 24 --limit 20"
 
-# New PRs in past 24 hours
-mvnd spring-boot:run -Dspring-boot.run.arguments="--repo spring-projects/spring-ai --type prs --state open --since-hours 24 --limit 20"
+# NEW PRs with soft approval detection (AVAILABLE NOW!)
+mvnd spring-boot:run -Dspring-boot.run.arguments="--repo spring-projects/spring-ai --type prs --pr-state open"
 
-# All recent activity (issues + PRs) in past week
-mvnd spring-boot:run -Dspring-boot.run.arguments="--repo spring-projects/spring-ai --type both --since-hours 168 --limit 100"
+# Specific PR analysis with soft approval (AVAILABLE NOW!)
+mvnd spring-boot:run -Dspring-boot.run.arguments="--repo spring-projects/spring-ai --type prs --number 4347"
 ```

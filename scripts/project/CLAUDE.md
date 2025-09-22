@@ -2,14 +2,18 @@
 
 ## Project Overview
 
-This is a Spring Boot Maven application for collecting GitHub issues with advanced filtering capabilities. The project has been refactored from a monolithic JBang script into a modular, testable Maven architecture.
+This is a Spring Boot Maven application for collecting GitHub issues and pull requests with advanced filtering capabilities. The project has been refactored from a monolithic JBang script into a multi-module, testable Maven architecture with comprehensive PR collection and soft approval detection.
 
 ## Current Architecture
 
-### Core Modules
+### Multi-Module Architecture
+
+#### collection-library Module
+Reusable components for GitHub API interactions:
 
 1. **DataModels.java** - GitHub API data structures
-   - Record definitions: `Issue`, `Comment`, `Author`, `Label`
+   - Issue collection: `Issue`, `Comment`, `Author`, `Label`
+   - **PR collection**: `PullRequest`, `Review` (with author association for soft approval detection)
    - Collection metadata: `CollectionMetadata`, `CollectionRequest`, `CollectionResult`
    - Internal processing: `BatchData`, `CollectionStats`, `ResumeState`
 
@@ -37,21 +41,35 @@ This is a Spring Boot Maven application for collecting GitHub issues with advanc
    - Search query building with advanced filtering capabilities
    - Pure Java service with comprehensive mocked testing strategy
 
-6. **CollectGithubIssues.java** - Main Spring Boot application with CommandLineRunner
+6. **PRCollectionService.java** - **NEW: Pull request collection with soft approval detection**
+   - PR collection orchestration with state filtering (open/closed/merged/all)
+   - **Soft approval detection** for contributor reviews (not formal members)
+   - Review analysis with author association tracking
+   - Specific PR targeting by number
+   - Integration with existing batch processing and file operations
+
+#### collection-app Module
+Main Spring Boot CLI application:
+
+7. **CollectGithubIssuesApp.java** - Main Spring Boot application with CommandLineRunner
+   - **PR collection logic**: `collectPullRequests()` method
+   - **Soft approval detection**: `detectSoftApproval()` method for contributor reviews
+   - Multi-type collection support (issues, PRs)
 
 ### Refactoring Status
 
 **Completed Phases:**
 - ✅ Phase 0: JBang to Maven conversion using `jbang export portable`
-- ✅ Phase 1: DataModels.java extraction 
+- ✅ Phase 1: DataModels.java extraction
 - ✅ Phase 2: ConfigurationSupport.java extraction
 - ✅ Phase 3: ArgumentParser.java extraction
 - ✅ Phase 4: GitHubServices.java extraction
 - ✅ Phase 5: IssueCollectionService.java extraction (Highest Risk Phase)
+- ✅ Phase 6: Multi-module architecture implementation
+- ✅ Phase 7: **PR Collection with Soft Approval Detection**
+- ✅ Phase 8: Integration testing and comprehensive documentation
 
-**Remaining Phases:**
-- Phase 6: Documentation completion
-- Phase 7: Integration testing and main class refactoring
+**ALL PHASES COMPLETE! ✅**
 
 ## Development Guidelines
 
@@ -104,16 +122,22 @@ static class GoodSpringTest {
 
 ### Build Commands
 
-**Recommended:** Use Maven Daemon for faster builds
+**Multi-Module Structure:**
 ```bash
-# Fast compilation (skip tests and javadoc)
+# From collection-app directory (recommended for development)
+cd collection-app
 mvnd clean compile -Dmaven.javadoc.skip=true -DskipTests
-
-# Run tests
 mvnd test
-
-# Run application
 mvnd spring-boot:run -Dspring-boot.run.arguments="--help"
+
+# From parent project directory (build all modules)
+cd project
+mvnd clean compile -Dmaven.javadoc.skip=true -DskipTests
+mvnd test  # Tests all modules
+
+# Test PR collection features
+cd collection-app
+mvnd spring-boot:run -Dspring-boot.run.arguments="--type prs --number 4347 --dry-run"
 ```
 
 ### Safety Measures
@@ -151,26 +175,36 @@ find . -name "logs" -type d -exec rm -rf {} + 2>/dev/null || true
 3. Add integration tests with mocked responses
 4. Update error handling patterns
 
-## Module Dependencies
+## Multi-Module Dependencies
 
 ```
-CollectGithubIssues.java (main)
+collection-app/
+└── CollectGithubIssuesApp.java (main)
+    ├── Issue collection workflow
+    ├── **PR collection workflow** (NEW)
+    └── **Soft approval detection** (NEW)
+
+collection-library/
 ├── DataModels.java (records)
+│   ├── Issue, Comment, Author, Label
+│   ├── **PullRequest, Review** (NEW)
+│   └── CollectionMetadata, CollectionRequest, CollectionResult
 ├── ConfigurationSupport.java (Spring config)
 │   ├── GitHubConfig (beans)
 │   └── CollectionProperties (properties)
 ├── ArgumentParser.java (CLI parsing)
+│   └── **PR collection arguments** (NEW)
 ├── GitHubServices.java (API services)
 │   ├── GitHubRestService (REST operations)
+│   │   └── **PR methods and search queries** (NEW)
 │   ├── GitHubGraphQLService (GraphQL operations)
 │   └── JsonNodeUtils (JSON utilities)
-└── IssueCollectionService.java (business logic)
-    ├── Collection orchestration (collectIssues)
-    ├── Batch processing (adaptive sizing)
-    ├── File operations (JSON, ZIP)
-    ├── Resume state management
-    ├── Error handling (exponential backoff)
-    └── Search query building
+├── IssueCollectionService.java (issue business logic)
+└── **PRCollectionService.java** (PR business logic - NEW)
+    ├── **PR collection orchestration**
+    ├── **Soft approval detection logic**
+    ├── **Review analysis with author associations**
+    └── **PR state filtering (open/closed/merged/all)**
 ```
 
 ## Testing Requirements
@@ -253,15 +287,22 @@ CollectGithubIssues.java (main)
 ### Debug Commands
 
 ```bash
+# From collection-app directory
+cd collection-app
+
 # Verify Spring context loads correctly
 mvnd spring-boot:run -Dspring-boot.run.arguments="--dry-run"
 
-# Check configuration properties
+# Check configuration properties and PR collection options
 mvnd spring-boot:run -Dspring-boot.run.arguments="--help"
+
+# Test PR collection functionality
+mvnd spring-boot:run -Dspring-boot.run.arguments="--type prs --number 4347 --dry-run"
 
 # Test specific functionality
 mvnd test -Dtest=ConfigurationSupportTest
 mvnd test -Dtest=DataModelsTest
+mvnd test -Dtest=PRCollectionServiceTest  # NEW
 ```
 
 ## Phase-Specific Notes
