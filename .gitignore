@@ -73,6 +73,9 @@ release/contributors-output/
 # Raw outputs from classification engine and debugging
 raw_outputs/
 
+# Classification engine debug outputs
+scripts/project/classification-engine/debug_output/
+
 # IDE files
 pr-review/.idea/
 .idea/

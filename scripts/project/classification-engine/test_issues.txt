@@ -1,0 +1,107 @@
+Issue #3110
+Title: If the MCP server defines content path, the client endpoint can pass the first GET request sent to the/se path, but sending a post request with the response/mcp/message is incorrect, resulting in a 404 error
+Body: **Bug description**
+How does MCP Server define content path and connect to URL: localhost: port sse endpoint:/contentPath/sse using SSE after defining it? This format can be used for the first get request to connect, but for the second post request to access/mcp/message, the contentpath cannot be added, resulting in a 404 error
+
+**Environment**
+springboot:3.4.2  jdk 17 spring-ai 1.0.0-SNAPSHOT
+
+**Steps to reproduce**
+    mcp:
+      client:
+        enabled: true
+        name: mock-client
+        version: 0.0.1
+        type: SYNC
+        request-timeout: 20s
+        sse:
+          connections:
+            soldier-server:
+              url: http://localhost:port
+              sse-endpoint: /content-path/sse
+Current Labels: [MCP]
+
+Issue #2334
+Title: WatsonxAiChatModel is using wrong APIs
+Body: **Bug description**
+While using WatsonxAiChatModel I see the request is sent to the following endpoint:
+**/ml/v1/text/generation?version=2023-05-29**
+https://cloud.ibm.com/apidocs/watsonx-ai#text-generation
+
+while I expect it should use the following one:
+**/ml/v1/text/chat?version=2023-05-29**
+https://cloud.ibm.com/apidocs/watsonx-ai#text-chat
+
+and consequently all the parameters associated with the second API (such as _tools_)
+
+[watsonx-ai.text-chat](https://cloud.ibm.com/apidocs/watsonx-ai#text-chat) is very close to [opeai.completions](https://platform.openai.com/docs/guides/text-generation)
+
+**Environment**
+Spring AI 1.0.0-M6, Java version 21
+
+**Steps to reproduce**
+add the following fragment to the pom.xml
+```
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-watsonx-ai-spring-boot-starter</artifactId>
+        </dependency>
+```
+
+**Expected behavior**
+I think that the WatsonxAiChatModel should be changed and be more close ...
+Current Labels: [watson]
+
+Issue #3219
+Title: VectorStoreChatMemoryAdvisor Never Persist Assistant Response in Database For Bedrock Converse Streaming
+Body: **Bug description**
+VectorStoreChatMemoryAdvisor   `after`  method is not never called for stream based advisor. This leads not having the `ASSISTANT` messages being persisted in in database i.e Postgres with PG Vector
+
+Note, this issue was not present in `M8` and it happened after upgrading to RC1. This probably  caused by `StreamAroundAdvisor` removal and relying on `after` method instead. This behavior have changed introduced in RC1. See below for detailed investigation.
+
+
+**Environment**
+This is occurs in RC1 release.
+
+**Steps to reproduce**
+1. Configure a VectorStoreChatMemoryAdvisor  bean. Note The vector stored injected here of type `PgVectorStore'
+
+```java
+
+  @Bean
+    public VectorStoreChatMemoryAdvisor vectorStoreChatMemoryAdvisor(VectorStore chatMemoryStore) {
+        return VectorStoreChatMemoryAdvisor.builder(chatMemoryStore)
+                .systemPromptTemplate(PromptTemplate.builder()
+                        .build())
+                .defaultTopK(CHAT_MEMORY_RETRIEVE_S...
+Current Labels: [Chat Memory]
+
+Issue #1386
+Title: NullPointerException in TokenTextSplitter
+Body: Context: I'm using spring-ai 1.0.0-M2 with spring boot 3.3.3
+
+I have data as a string that I want to pass to a `TokenTextSplitter`. The code looks like this:
+
+```kotlin
+val string = .. // My data
+val textReader = TextReader(ByteArrayResource(string.toByteArray()))
+val documents = TokenTextSplitter().apply(textReader.get())
+```
+
+Running this code will result in a NPE:
+
+```
+java.lang.NullPointerException: null
+	at java.base/java.util.Objects.requireNonNull(Objects.java:233) ~[na:na]
+	at java.base/java.util.stream.Collectors.lambda$uniqKeysMapAccumulator$1(Collectors.java:180) ~[na:na]
+	at java.base/java.util.stream.ReduceOps$3ReducingSink.accept(ReduceOps.java:169) ~[na:na]
+	at java.base/java.util.HashMap$EntrySpliterator.forEachRemaining(HashMap.java:1858) ~[na:na]
+	at java.base/java.util.stream.AbstractPipeline.copyInto(AbstractPipeline.java:509) ~[na:na]
+	at java.base/java.util.stream.AbstractPipeline.wrapAndCopyInto(AbstractPipeline.java:499) ~[na:na]
+	at java.bas...
+Current Labels: [ETL]
+
+Issue #2105
+Title: Vector store API for deleting by filter expression
+Body: Allow vector store implementations to provide a new API that allows users to delete a collection of documents using a filter expression. This will be especially handy when deleting using metadata is required.
+Current Labels: [vector store]

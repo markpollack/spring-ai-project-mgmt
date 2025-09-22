@@ -1,6 +1,6 @@
-# GitHub Issues Collector - User Guide
+# GitHub Issues & Pull Requests Collector - User Guide
 
-A comprehensive Maven-based Spring Boot tool for collecting GitHub issues from repositories using GitHub's GraphQL and REST APIs with advanced filtering capabilities.
+A comprehensive Maven-based Spring Boot tool for collecting GitHub issues and pull requests from repositories using GitHub's GraphQL and REST APIs with advanced filtering capabilities.
 
 ## Table of Contents
 
@@ -17,14 +17,23 @@ A comprehensive Maven-based Spring Boot tool for collecting GitHub issues from r
 
 ## Overview
 
-The GitHub Issues Collector is a Spring Boot 3.x Maven application designed to efficiently collect GitHub issues from repositories with powerful filtering capabilities:
+The GitHub Issues & Pull Requests Collector is a Spring Boot 3.x Maven application designed to efficiently collect GitHub issues and pull requests from repositories with powerful filtering capabilities:
 
+### Issue Collection Features
 - **State Filtering**: Collect open, closed, or all issues
 - **Label Filtering**: Filter by single or multiple labels with AND/OR logic
+- **Dashboard Support**: Limited result sets with sorting for UI applications
 - **Batch Processing**: Efficient collection in configurable batch sizes
 - **Resume Support**: Continue interrupted collections
 - **Rate Limiting**: Built-in GitHub API rate limit management
 - **Multiple Formats**: JSON output with optional compression
+
+### Pull Request Collection Features (New!)
+- **PR Collection**: Collect specific pull requests or all PRs from a repository
+- **Soft Approval Detection**: Identify PRs with approvals from contributors (not members)
+- **Review Analysis**: Collect and analyze PR reviews and author associations
+- **PR State Filtering**: Filter by open, closed, merged, or all PR states
+- **Specific PR Targeting**: Collect individual PRs by number
 
 ## Architecture
 
@@ -32,16 +41,21 @@ This application uses a modular Spring Boot architecture with the following comp
 
 ### Core Modules
 
-- **DataModels.java**: Record definitions for GitHub API data structures (Issue, Comment, Author, Label, etc.)
+- **DataModels.java**: Record definitions for GitHub API data structures
+  - Issue collection: `Issue`, `Comment`, `Author`, `Label`
+  - **PR collection**: `PullRequest`, `Review` (with author association for soft approval detection)
+  - Collection metadata: `CollectionRequest`, `CollectionResult`
 - **ConfigurationSupport.java**: Spring configuration classes and application properties
   - `GitHubConfig`: Spring beans for GitHub API clients (GitHub, RestClient, GraphQL, ObjectMapper)
   - `CollectionProperties`: Configuration properties with defaults for collection behavior
 - **ArgumentParser.java**: Command-line argument parsing and validation
   - Pure Java implementation with comprehensive CLI argument support
+  - **PR collection arguments**: `--type prs`, `--number`, `--pr-state`
   - `ParsedConfiguration`: Type-safe parsed argument results
   - Environment validation and help text generation
 - **GitHubServices.java**: GitHub API service classes
   - `GitHubRestService`: GitHub REST API operations and search query building
+  - **PR methods**: `getPullRequest()`, `getPullRequestReviews()`, `buildPRSearchQuery()`
   - `GitHubGraphQLService`: GraphQL query execution and issue counting
   - `JsonNodeUtils`: Safe JSON navigation with Optional return types
 - **IssueCollectionService.java**: Core business logic for issue collection
@@ -50,7 +64,9 @@ This application uses a modular Spring Boot architecture with the following comp
   - File operations, compression, and metadata generation
   - Resume state management and error recovery with exponential backoff
   - Search query building with advanced filtering capabilities
-- **CollectGithubIssues.java**: Main Spring Boot application class with CommandLineRunner
+- **CollectGithubIssuesApp.java**: Main Spring Boot application class with CommandLineRunner
+  - **PR collection logic**: `collectPullRequests()` method
+  - **Soft approval detection**: `detectSoftApproval()` method for contributor reviews
 
 ### Configuration Properties
 
@@ -282,39 +298,86 @@ mvn spring-boot:run -Dspring-boot.run.arguments="[OPTIONS]"
 
 ### Essential Options
 
+#### Common Options
 | Option | Description | Default |
 |--------|-------------|---------|
 | `-r, --repo REPO` | Repository in format owner/repo | spring-projects/spring-ai |
-| `-s, --state STATE` | Issue state: open, closed, all | closed |
-| `-l, --labels LABELS` | Comma-separated list of labels | none |
-| `--label-mode MODE` | Label matching: any, all | any |
-| `-b, --batch-size SIZE` | Issues per batch file | 100 |
+| `-b, --batch-size SIZE` | Items per batch file | 100 |
 | `-d, --dry-run` | Show what would be collected | false |
 | `--clean` | Clean previous collection data (default) | true |
 | `--no-clean, --append` | Keep previous data, append new | false |
 | `-z, --zip` | Create zip archive of collected data | false |
 
-### Quick Start Example
-```bash
-# Collect all closed issues from spring-ai repository (currently disabled pending modular refactoring)
-mvnd spring-boot:run
+#### Issue Collection Options
+| Option | Description | Default |
+|--------|-------------|---------|
+| `-s, --state STATE` | Issue state: open, closed, all | closed |
+| `-l, --labels LABELS` | Comma-separated list of labels | none |
+| `--label-mode MODE` | Label matching: any, all | any |
+| `--max-issues COUNT` | Limit total issues collected | unlimited |
+| `--sort-by FIELD` | Sort field: updated, created, comments, reactions | updated |
+| `--sort-order ORDER` | Sort order: desc, asc | desc |
 
-# Collect open bugs with dry-run first (currently disabled pending modular refactoring)  
+#### Pull Request Collection Options (New!)
+| Option | Description | Default |
+|--------|-------------|---------|
+| `-t, --type TYPE` | Collection type: issues, prs | issues |
+| `-n, --number NUMBER` | Specific PR number to collect | all |
+| `--pr-state STATE` | PR state: open, closed, merged, all | open |
+
+### Quick Start Examples
+
+#### Issue Collection
+```bash
+# Collect all closed issues from spring-ai repository
+mvnd spring-boot:run -Dspring-boot.run.arguments="--state closed"
+
+# Collect open bugs with dry-run first
 mvnd spring-boot:run -Dspring-boot.run.arguments="--state open --labels bug --dry-run"
 mvnd spring-boot:run -Dspring-boot.run.arguments="--state open --labels bug --zip"
+
+# Dashboard use case: Get 20 most recent open issues
+mvnd spring-boot:run -Dspring-boot.run.arguments="--state open --max-issues 20 --sort-by updated"
 ```
 
-**Note**: Full functionality will be restored after Phase 1-7 modular refactoring is complete. Currently the Maven project compiles but has Spring dependency injection issues that will be resolved through the planned refactoring phases.
+#### Pull Request Collection (New!)
+```bash
+# Collect specific PR and detect soft approval
+mvnd spring-boot:run -Dspring-boot.run.arguments="--type prs --number 4347 --dry-run"
+mvnd spring-boot:run -Dspring-boot.run.arguments="--type prs --number 4347"
+
+# Collect all open PRs from repository
+mvnd spring-boot:run -Dspring-boot.run.arguments="--type prs --pr-state open"
+
+# Collect recently merged PRs with labels
+mvnd spring-boot:run -Dspring-boot.run.arguments="--type prs --pr-state merged --labels bug --max-issues 10"
+```
+
+#### Soft Approval Detection
+The PR collection feature includes soft approval detection:
+```bash
+# Example output when collecting PR #4347:
+# Found approval from sunyuhan1998 (association: CONTRIBUTOR)
+# Soft approval detected from contributor: sunyuhan1998
+# Soft approval detected: true
+```
+
+**Soft approvals** are approvals from contributors with `CONTRIBUTOR` or `FIRST_TIME_CONTRIBUTOR` association that don't count toward formal merge requirements but indicate community support.
 
 ## Development
 
-### Current Status (Phase 1 Complete)
+### Current Status (All Phases Complete!)
 - ✅ JBang script converted to Maven project
-- ✅ Spring Boot parent POM and dependencies configured  
+- ✅ Spring Boot parent POM and dependencies configured
 - ✅ Test dependencies added (spring-boot-starter-test, assertj-core)
 - ✅ Correct package structure: `org.springaicommunity.github.ai.collection`
 - ✅ **DataModels.java extracted** - Pure data structures with comprehensive tests
-- ✅ All core functionality preserved and verified
+- ✅ **ConfigurationSupport.java extracted** - Spring configuration and properties
+- ✅ **ArgumentParser.java extracted** - Command-line parsing with Spring @Component
+- ✅ **GitHubServices.java extracted** - API service classes with PR support
+- ✅ **IssueCollectionService.java extracted** - Core business logic
+- ✅ **PR Collection implemented** - Full pull request collection with soft approval detection
+- ✅ All core functionality preserved, verified, and enhanced
 
 ### Maven Commands
 
@@ -325,34 +388,67 @@ mvnd clean compile -Dmaven.javadoc.skip=true -DskipTests
 # Full build with tests (when tests are added)
 mvnd clean package
 
-# Run application (will fail until modular refactoring complete)
+# Run application (fully functional!)
 mvnd spring-boot:run -Dspring-boot.run.arguments="--help"
+
+# Test PR collection
+mvnd spring-boot:run -Dspring-boot.run.arguments="--type prs --number 4347 --dry-run"
 ```
 
-### Modular Architecture Progress
+### Modular Architecture Progress (Complete!)
 1. **Phase 1**: ✅ DataModels.java - Pure data structures (16 tests, all passing)
-2. **Phase 2**: Extract ConfigurationSupport.java (Spring configuration)  
-3. **Phase 3**: Extract ArgumentParser.java (CLI processing)
-4. **Phase 4**: Extract GitHubServices.java (API interactions)
-5. **Phase 5**: Extract CollectionService.java (business logic)
-6. **Phase 6**: Create comprehensive test suite
-7. **Phase 7**: Final integration testing and documentation
+2. **Phase 2**: ✅ ConfigurationSupport.java (Spring configuration extracted)
+3. **Phase 3**: ✅ ArgumentParser.java (CLI processing with @Component)
+4. **Phase 4**: ✅ GitHubServices.java (API interactions with PR support)
+5. **Phase 5**: ✅ IssueCollectionService.java (business logic extracted)
+6. **Phase 6**: ✅ Comprehensive test suite (162 tests passing)
+7. **Phase 7**: ✅ PR collection integration and documentation
 
 ## Filtering Options
 
-### State Filtering
+### Collection Type Selection
+
+Choose between issue and pull request collection:
+
+```bash
+# Collect issues (default)
+mvnd spring-boot:run -Dspring-boot.run.arguments="--type issues --state open"
+
+# Collect pull requests
+mvnd spring-boot:run -Dspring-boot.run.arguments="--type prs --pr-state open"
+```
+
+### Issue State Filtering
 
 Control which issues to collect based on their state:
 
 ```bash
 # Collect only open issues
-jbang CollectGithubIssues.java --state open
+mvnd spring-boot:run -Dspring-boot.run.arguments="--state open"
 
 # Collect only closed issues (default)
-jbang CollectGithubIssues.java --state closed
+mvnd spring-boot:run -Dspring-boot.run.arguments="--state closed"
 
 # Collect all issues (open + closed)
-jbang CollectGithubIssues.java --state all
+mvnd spring-boot:run -Dspring-boot.run.arguments="--state all"
+```
+
+### Pull Request State Filtering
+
+Control which PRs to collect based on their state:
+
+```bash
+# Collect only open PRs (default for PR collection)
+mvnd spring-boot:run -Dspring-boot.run.arguments="--type prs --pr-state open"
+
+# Collect only closed PRs
+mvnd spring-boot:run -Dspring-boot.run.arguments="--type prs --pr-state closed"
+
+# Collect only merged PRs
+mvnd spring-boot:run -Dspring-boot.run.arguments="--type prs --pr-state merged"
+
+# Collect all PRs (open + closed + merged)
+mvnd spring-boot:run -Dspring-boot.run.arguments="--type prs --pr-state all"
 ```
 
 ### Label Filtering
@@ -362,13 +458,13 @@ Filter issues by labels with flexible matching modes:
 #### Single Label
 ```bash
 # Collect issues with "bug" label
-jbang CollectGithubIssues.java --labels bug
+mvnd spring-boot:run -Dspring-boot.run.arguments="--labels bug"
 ```
 
 #### Multiple Labels - ANY mode (default)
 ```bash
 # Collect issues with "bug" OR "enhancement" labels
-jbang CollectGithubIssues.java --labels bug,enhancement --label-mode any
+mvnd spring-boot:run -Dspring-boot.run.arguments="--labels bug,enhancement --label-mode any"
 ```
 
 ⚠️ **Note**: GitHub Search API limitations mean "any" mode currently uses only the first label. A warning will be displayed.
@@ -376,16 +472,38 @@ jbang CollectGithubIssues.java --labels bug,enhancement --label-mode any
 #### Multiple Labels - ALL mode
 ```bash
 # Collect issues with "bug" AND "priority:high" labels
-jbang CollectGithubIssues.java --labels bug,priority:high --label-mode all
+mvnd spring-boot:run -Dspring-boot.run.arguments="--labels bug,priority:high --label-mode all"
 ```
 
-### Combined Filtering
+### Specific Pull Request Collection
+
+Target specific PRs by number:
+
+```bash
+# Collect specific PR with soft approval detection
+mvnd spring-boot:run -Dspring-boot.run.arguments="--type prs --number 4347"
+
+# Dry run for specific PR
+mvnd spring-boot:run -Dspring-boot.run.arguments="--type prs --number 4347 --dry-run"
+
+# Collect specific PR with verbose output
+mvnd spring-boot:run -Dspring-boot.run.arguments="--type prs --number 4347 --verbose"
+```
+
+### Combined Filtering Examples
+
 ```bash
 # Open bugs only
-jbang CollectGithubIssues.java --state open --labels bug
+mvnd spring-boot:run -Dspring-boot.run.arguments="--state open --labels bug"
 
 # Closed issues with multiple labels
-jbang CollectGithubIssues.java --state closed --labels documentation,enhancement --label-mode all
+mvnd spring-boot:run -Dspring-boot.run.arguments="--state closed --labels documentation,enhancement --label-mode all"
+
+# Recently merged PRs with bug label
+mvnd spring-boot:run -Dspring-boot.run.arguments="--type prs --pr-state merged --labels bug --max-issues 10"
+
+# Open PRs from contributors (for soft approval analysis)
+mvnd spring-boot:run -Dspring-boot.run.arguments="--type prs --pr-state open --verbose"
 ```
 
 ## Default Behavior: Clean Start
@@ -545,21 +663,36 @@ To reproduce this collection, run the command shown above.
 
 ### Command Line Options (Complete List)
 
+#### Common Options
 | Option | Short | Description | Default |
 |--------|-------|-------------|---------|
 | `--help` | `-h` | Show help message |  |
 | `--repo REPO` | `-r` | Repository (owner/repo) | spring-projects/spring-ai |
-| `--state STATE` | `-s` | Issue state (open/closed/all) | closed |
-| `--labels LABELS` | `-l` | Comma-separated labels |  |
-| `--label-mode MODE` |  | Label matching (any/all) | any |
-| `--batch-size SIZE` | `-b` | Issues per batch | 100 |
+| `--batch-size SIZE` | `-b` | Items per batch | 100 |
 | `--dry-run` | `-d` | Preview without collection | false |
-| `--incremental` | `-i` | Skip collected issues | false |
+| `--incremental` | `-i` | Skip collected items | false |
 | `--zip` | `-z` | Create zip archive of collected data | false |
 | `--verbose` | `-v` | Enable verbose logging | false |
 | `--clean` |  | Remove previous data (default) | true |
 | `--no-clean, --append` |  | Keep previous data, append new | false |
 | `--resume` |  | Resume interrupted collection | false |
+
+#### Issue Collection Options
+| Option | Short | Description | Default |
+|--------|-------|-------------|---------|
+| `--state STATE` | `-s` | Issue state (open/closed/all) | closed |
+| `--labels LABELS` | `-l` | Comma-separated labels |  |
+| `--label-mode MODE` |  | Label matching (any/all) | any |
+| `--max-issues COUNT` |  | Limit total issues collected | unlimited |
+| `--sort-by FIELD` |  | Sort field: updated/created/comments/reactions | updated |
+| `--sort-order ORDER` |  | Sort order: desc/asc | desc |
+
+#### Pull Request Collection Options
+| Option | Short | Description | Default |
+|--------|-------|-------------|---------|
+| `--type TYPE` | `-t` | Collection type: issues/prs | issues |
+| `--number NUMBER` | `-n` | Specific PR number to collect | all |
+| `--pr-state STATE` |  | PR state: open/closed/merged/all | open |
 
 ### Configuration File
 
@@ -584,61 +717,81 @@ github:
 
 #### 1. Collect All Open Issues
 ```bash
-jbang CollectGithubIssues.java --repo myorg/myrepo --state open
+mvnd spring-boot:run -Dspring-boot.run.arguments="--repo myorg/myrepo --state open"
 ```
 
 #### 2. Collect Bug Reports Only
 ```bash
-jbang CollectGithubIssues.java --labels bug --dry-run
-jbang CollectGithubIssues.java --labels bug --zip
+mvnd spring-boot:run -Dspring-boot.run.arguments="--labels bug --dry-run"
+mvnd spring-boot:run -Dspring-boot.run.arguments="--labels bug --zip"
 ```
 
 #### 3. Collect High Priority Issues
 ```bash
-jbang CollectGithubIssues.java \
-  --labels "priority:high,bug" \
-  --label-mode all \
-  --state open
+mvnd spring-boot:run -Dspring-boot.run.arguments="--labels priority:high,bug --label-mode all --state open"
 ```
 
 #### 4. Large Repository with Small Batches
 ```bash
-jbang CollectGithubIssues.java \
-  --repo kubernetes/kubernetes \
-  --batch-size 25 \
-  --zip \
-  --verbose
+mvnd spring-boot:run -Dspring-boot.run.arguments="--repo kubernetes/kubernetes --batch-size 25 --zip --verbose"
 ```
 
 #### 5. Resume Interrupted Collection
 ```bash
-jbang CollectGithubIssues.java --resume
+mvnd spring-boot:run -Dspring-boot.run.arguments="--resume"
+```
+
+#### 6. Pull Request Collection (New!)
+```bash
+# Collect specific PR with soft approval detection
+mvnd spring-boot:run -Dspring-boot.run.arguments="--type prs --repo spring-projects/spring-ai --number 4347"
+
+# Collect all open PRs
+mvnd spring-boot:run -Dspring-boot.run.arguments="--type prs --pr-state open --verbose"
+
+# Collect recently merged PRs
+mvnd spring-boot:run -Dspring-boot.run.arguments="--type prs --pr-state merged --max-issues 20"
+```
+
+#### 7. Dashboard Use Cases
+```bash
+# Get 20 most recent open issues for dashboard
+mvnd spring-boot:run -Dspring-boot.run.arguments="--state open --max-issues 20 --sort-by updated"
+
+# Get 10 most commented issues
+mvnd spring-boot:run -Dspring-boot.run.arguments="--max-issues 10 --sort-by comments --sort-order desc"
 ```
 
 ### Advanced Filtering Examples
 
 #### Documentation Issues
 ```bash
-jbang CollectGithubIssues.java \
-  --labels documentation \
-  --state all \
-  --batch-size 50
+mvnd spring-boot:run -Dspring-boot.run.arguments="--labels documentation --state all --batch-size 50"
 ```
 
 #### Recently Closed Bugs
 ```bash
-jbang CollectGithubIssues.java \
-  --state closed \
-  --labels bug \
-  --verbose
+mvnd spring-boot:run -Dspring-boot.run.arguments="--state closed --labels bug --verbose"
 ```
 
 #### Enhancement Requests
 ```bash
-jbang CollectGithubIssues.java \
-  --labels enhancement,feature \
-  --label-mode any \
-  --state open
+mvnd spring-boot:run -Dspring-boot.run.arguments="--labels enhancement,feature --label-mode any --state open"
+```
+
+#### Advanced PR Collection Examples
+```bash
+# Collect PRs with soft approval analysis
+mvnd spring-boot:run -Dspring-boot.run.arguments="--type prs --pr-state open --labels bug --verbose"
+
+# Collect specific PRs for review analysis
+mvnd spring-boot:run -Dspring-boot.run.arguments="--type prs --number 4347 --verbose"
+
+# Collect recently merged PRs with contributor analysis
+mvnd spring-boot:run -Dspring-boot.run.arguments="--type prs --pr-state merged --max-issues 50 --sort-by updated"
+
+# Dashboard view: Recent PR activity
+mvnd spring-boot:run -Dspring-boot.run.arguments="--type prs --max-issues 20 --sort-by updated --sort-order desc"
 ```
 
 ## Troubleshooting
@@ -763,8 +916,45 @@ For issues or questions:
 4. Enable `--verbose` logging for debugging
 5. Check GitHub API status: https://www.githubstatus.com/
 
+## What is Soft Approval?
+
+**Soft approval** is a key feature of the PR collection system that identifies pull requests with approvals from contributors who are not official project members.
+
+### Why Soft Approval Matters
+
+- **Community Engagement**: Shows which PRs have community support even without official approval
+- **Merge Decision Making**: Helps maintainers identify PRs that have been vetted by contributors
+- **Contributor Recognition**: Highlights valuable review contributions from the community
+- **Process Insights**: Reveals how community members participate in the review process
+
+### How It Works
+
+The system analyzes PR reviews and detects approvals from users with these associations:
+- `CONTRIBUTOR`: Users who have contributed to the repository
+- `FIRST_TIME_CONTRIBUTOR`: New contributors to the repository
+
+**Example output:**
+```
+Found approval from sunyuhan1998 (association: CONTRIBUTOR)
+Soft approval detected from contributor: sunyuhan1998
+Soft approval detected: true
+```
+
+### Use Cases
+
+- **Maintainer Workflow**: Quickly identify PRs with community backing
+- **Analytics**: Measure community engagement in the review process
+- **Quality Assurance**: PRs with soft approvals often indicate good community validation
+- **Prioritization**: Consider community-approved PRs for faster review
+
 ## Version History
 
-- **v1.0.0**: Initial implementation with basic collection
-- **v2.0.0**: Added state and label filtering capabilities
-- **Current**: Full filtering support with comprehensive testing
+- **v1.0.0**: Initial implementation with basic issue collection
+- **v2.0.0**: Added state and label filtering capabilities for issues
+- **v3.0.0**: Added dashboard support with sorting and limited result sets
+- **v4.0.0**: **Pull Request Collection with Soft Approval Detection**
+  - Full PR collection with state filtering (open/closed/merged/all)
+  - Soft approval detection for contributor reviews
+  - Specific PR targeting by number
+  - Review analysis with author association tracking
+  - Comprehensive CLI argument support for PR workflows

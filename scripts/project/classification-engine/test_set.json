@@ -1,0 +1,126 @@
+[ {
+  "body" : "1. Incorrect comment in OpenAiAudioApi\r\nThe constructor's comment incorrectly refers to creating a chat completion API instead of an audio API.\r\n\r\n2. Missing @param in OpenAiApi\r\nThe @param for webClientBuilder is missing in the constructor's comment.\r\n\r\n<br>\r\n\r\nI would like to fix this and submit a PR.\r\n\r\n<br>\r\n\r\n***\r\n\r\nResolves #1330 \r\nPlease take a look when you have time. Thank you!\r\n\r\n",
+  "labels" : [ "documentation", "openai" ],
+  "title" : "Incorrect comment and missing parameter in OpenAiAudioApi and OpenAiApi constructors",
+  "issue_number" : 1329
+}, {
+  "body" : "",
+  "labels" : [ "embedding", "Bedrock" ],
+  "title" : "Add Observability to Bedrock Embedding Models",
+  "issue_number" : 2983
+}, {
+  "body" : "Why are all the usage values obtained when using the Stream method all 0 and the call method not 0",
+  "labels" : [ "question", "status: waiting-for-feedback" ],
+  "title" : "Why are all the usage values obtained when using the Stream method all 0 and the call method not 0",
+  "issue_number" : 1307
+}, {
+  "body" : "Please add a config to modify the  request time of mcp server in the McpServerAutoConfiguration.java .\nThe mcp server has a default value of 10s,  it's too short.\n\n\nSyncSpecification serverBuilder = McpServer.sync(transportProvider).serverInfo(serverInfo);\nserverBuilder.requestTimeout(Duration.of(xxxxx))",
+  "labels" : [ "MCP" ],
+  "title" : "Please add a config of mcp server request timeout, default 10s is too short.",
+  "issue_number" : 3205
+}, {
+  "body" : "\r\nCan Spring AI support the Qwen large language model? \r\nAnd can spring-ai-ollama-spring-boot-starter support function calling?\r\n",
+  "labels" : [ "tool/function calling", "ollama" ],
+  "title" : "Question about ollama + qwen",
+  "issue_number" : 992
+}, {
+  "body" : "# Issue Report: Inconsistency in Spring AI MCP Client documentation regarding default value of `toolcallback.enabled`\n\n## Issue Description\n\nI've identified a documentation inconsistency in the Spring AI documentation regarding the default value of the `spring.ai.mcp.client.toolcallback.enabled` property.\n\n### Conflicting Information\n\nIn the [MCP Client Boot Starter documentation](https://docs.spring.io/spring-ai/reference/api/mcp/mcp-client-boot-starter-docs.html#_usage_example), there are two conflicting statements:\n\n1. **First statement indicates default value is `true`**:\n   ```\n   Property: toolcallback.enabled\n   Description: Enable/disable the MCP tool callback integration with Spring AI's tool execution framework\n   Default Value: true\n   ```\n\n2. **Second statement indicates default value is `false`**:\n   ```\n   Note that the tool callback functionality is disabled by default and must be explicitly enabled with:\n   spring:\n     ai:\n       mcp:\n         client:\n           toolcallback:\n             enabled: true\n   ```\n\n## Impact\n\nThis inconsistency makes it unclear whether the tool callback functionality is enabled or disabled by default, leading to potential confusion for developers using the Spring AI MCP Client.\n\n## Additional Information\n\n- Spring AI Version: [version number]\n- Documentation URL: https://docs.spring.io/spring-ai/reference/api/mcp/mcp-client-boot-starter-docs.html#_usage_example\n- Date observed: [current date]\n\n## Suggested Fix\n\nUpdate the documentation to provide consistent information about the default value of `toolcallback.enabled`. If the actual default value is `false`, then the properties table should be updated to reflect this. If the default value is `true`, then the note about explicit enabling should be removed or clarified.\n\n## Question\n\nCould you confirm the actual default value for `spring.ai.mcp.client.toolcallback.enabled` in the current implementation?\n\nThank you for your attention to this matter and for maintaining the Spring AI documentation.",
+  "labels" : [ "documentation", "MCP" ],
+  "title" : "Issue Report: Inconsistency in Spring AI MCP Client documentation regarding default value of toolcallback.enabled",
+  "issue_number" : 3086
+}, {
+  "body" : "Please do a quick search on GitHub issues first, there might be already a duplicate issue for the one you are about to create.\r\nIf the bug is trivial, just go ahead and create the issue. Otherwise, please take a few moments and fill in the following sections:\r\n\r\n**Bug description**\r\nMilvus 2.3.4 and earlier versions of the search interface parameter SearchParam cannot pass databaseName parameter, resulting in the query only supporting the default library. Milvus 2.3.4 and earlier versions already support passing this parameter. . But in the spring - ai MilvusVectorStore doSimilaritySearch method didn't pass, switch library query\r\n![image](https://github.com/user-attachments/assets/371ef65f-7749-4636-ae92-c94f41fb29b7)\r\n\r\n\r\n**Environment**\r\nPlease provide as many details as possible: Spring AI version, Java version, which vector store you use if any, etc\r\n\r\n**Steps to reproduce**\r\nSteps to reproduce the issue.\r\n\r\n**Expected behavior**\r\nA clear and concise description of what you expected to happen.\r\n\r\n**Minimal Complete Reproducible example**\r\nPlease provide a failing test or a minimal complete verifiable example that reproduces the issue.\r\nBug reports that are reproducible will take priority in resolution over reports that are not reproducible.\r\n",
+  "labels" : [ "bug", "vector store", "milvus" ],
+  "title" : "Milvus 2.3.4 Search for bugs",
+  "issue_number" : 1617
+}, {
+  "body" : "Hello,\r\n\r\nWhile testing the latest build for spring-ai-elasticsearch-store I found myself unable to index documents, getting the following error: \r\n\r\n```\r\nfailed to parse: The [dense_vector] field [embedding] in doc [document with id '5e09ac56-e171-4075-a597-e93755fa63a1'] has a different number of dimensions [0] than defined in the mapping [1536]\r\n```\r\n\r\nafter some debugging I found out that most of the documents I was trying to index had the `embedding` field empty, and after some more debugging I have a suspicion that this code might be faulty:\r\n\r\nhttps://github.com/spring-projects/spring-ai/blame/9f33e326b1fa7087c21b2d55d9f147db94332001/spring-ai-core/src/main/java/org/springframework/ai/embedding/TokenCountBatchingStrategy.java#L124\r\n\r\n```java\r\nif (currentSize + tokenCount > maxInputTokenCount) {\r\n    batches.add(currentBatch);\r\n    currentBatch.clear();\r\n    currentSize = 0;\r\n}\r\n```\r\n\r\n`currentBatch.clear()` is also clearing the lists referenced in `batches`, which gets emptied after every cycle, so only the last few documents actually get to stay in `batches`, so only those documents are referenced when it's time to fill the `embeddings` field.\r\n\r\nLet me know if more details are needed, happy to help. ",
+  "labels" : [ "bug" ],
+  "title" : "Possible bug found in TokenCountBatchingStrategy, affecting vector stores",
+  "issue_number" : 1341
+}, {
+  "body" : "Hi,\r\n\r\nWhile uploading a book onto vector db, it would be good to have an option to turn on status log saying how many docs processed/left to process as at some point i just thought nothing really happens, but in fact the program was still processing 100 pages pdf",
+  "labels" : [ "vector store" ],
+  "title" : "Add vector data upload log",
+  "issue_number" : 315
+}, {
+  "body" : "* I want get Usage stats for ChatResponse\r\n\r\n* I want get Usage stats for streaming\r\n\r\n  ```\r\n     \"stream_options\": {\r\n          \"include_usage\": true\r\n      },\r\n  ```\r\n  \r\n  https://community.openai.com/t/usage-stats-now-available-when-using-streaming-with-the-chat-completions-api-or-completions-api/738156\r\n  \r\n  ```bash\r\n  data: {\r\n      \"id\": \"chatcmpl-9VvDzy405iABmaFVxI4lrE5Ho6rPl\",\r\n      \"object\": \"chat.completion.chunk\",\r\n      \"created\": 1717395167,\r\n      \"model\": \"gpt-4o-2024-05-13\",\r\n      \"system_fingerprint\": \"fp_319be4768e\",\r\n      \"choices\": [],\r\n      \"usage\": {\r\n          \"prompt_tokens\": 19,\r\n          \"completion_tokens\": 10,\r\n          \"total_tokens\": 29\r\n      }\r\n  }\r\n  ```\r\n",
+  "labels" : [ "status: to-discuss", "design", "follow up" ],
+  "title" : "Add Support for get usage tokens",
+  "issue_number" : 814
+}, {
+  "body" : "I'am trying to use AzureOpenAiChatClient.\r\nWhen I'am using the stream() method, I can not get info about input and output tokens. It seems all is 0. But i can get from the callI() method.",
+  "labels" : [ "azure" ],
+  "title" : "Can not get the usage info when using AzureOpenAiChatClient with stream() method",
+  "issue_number" : 694
+}, {
+  "body" : "Backport of gh-3651",
+  "labels" : [ "code cleanup", "type: backport" ],
+  "title" : "fix: Added a license header for `FileDocumentWriterTest`",
+  "issue_number" : 3655
+}, {
+  "body" : "In some cases we have a dedicated top level object as a builder and in some cases it in an inner class.  Also, most options builders do not implement an interface.  We should adhere to the design that has been used pretty consistently in spring-framework which has the builder as an inner object and also an interface for the builder.\r\n\r\nWe should also add tests for the builders.\r\n\r\nThis came out of the PR discussion #414 ",
+  "labels" : [ "design" ],
+  "title" : "Consistent design of Options builder classes",
+  "issue_number" : 1592
+}, {
+  "body" : "\n## Problem\nOur code breaks when users upgrade to Spring 7 because we override the deprecated `handleError(ClientHttpResponse)` method that gets completely removed.\n\n**Current code:**\n```java\n@Override\npublic void handleError(@NonNull ClientHttpResponse response) throws IOException {\n    // our error handling logic\n}\n```\n\n**What changed:**\n- Spring 6.2.x: Has both `handleError(response)` and `handleError(url, method, response)` \n- Spring 7.x: Removes the deprecated `handleError(response)` method entirely\n\n## Solution\nImplement both methods, but don't use `@Override` on the old one:\n\n```java\n@Override\npublic void handleError(URI url, HttpMethod method, @NonNull ClientHttpResponse response) throws IOException {\n    handleError(response);  // delegate to existing logic\n}\n\n// No @Override annotation - works in both versions\npublic void handleError(@NonNull ClientHttpResponse response) throws IOException {\n    // existing error handling logic stays here\n}\n```\n\n**How it works:**\n- When using Spring 6.2.x, we call the old method directly (no overhead)\n- When using Spring 7.x, we call the new method, which delegates to our logic\n- Same behavior, works with both versions\n\n",
+  "labels" : [ "enhancement" ],
+  "title" : "ResponseErrorHandler used in `RetryUtils` fails with Spring Framework 7.x",
+  "issue_number" : 3415
+}, {
+  "body" : "The next release is RC1 which will not have any @Deprecated code.  There is not another M8 to allow users one more release cycle to upgrade.  So some changes such as \n\n\nhttps://github.com/spring-projects/spring-ai/commit/1f59ccadad13f007f07a2389edc33923b6d710ea\n\nwrt to Advisors will be breaking changes.  This needs to be clearly communicate in upgrade-notes.adoc\n\nThis is the fine grained list of what deprecated code needs to be removed.\n\n\nLarge Effort\n\n- [x] CallAroundAdvisor needs to be removed and code updated.  So does usage of AdvisedRequest, AdvisedResponse - > use ChatClientRequest and ChatClientResponse  **[Post M8]**\n\n\nMedium Effort\n- [x] Ctors for UserMessage **[Post M8]**\n- [x] ChatMemory, InMemoryChatMemory, JdbcChatMemory and JdbcChatMemoryConfig\n- [x] All the classes in the model.function package.  This requires minimax and potentially zhipu refactoring. **[In M8]**\n- [x] OpenAiApi - ChatCompletionRequest - check about useage of max_tokens, other OpenAI API compatibly libraries may still use it.  **[In M8]**\n- [x] https://github.com/spring-projects/spring-ai/issues/2518 **[In M8]** \n\nLow Effort\n\n- [x] Media\n- [x] PromptTemplate\n- [x] Prompt\n- [x] ToolCallingChatOptions\n- [x] AnthropicApi\n- [x] OllamaApi\n- [x] BedrockConverseChatClientIT\n- [x] ChatClient, DefaultChatClient\n- [x] DocumentRanker, DocumentCompressor and DocumentSelector\n- [x] ContentFormatter was listed as deprecated, but we are going to keep it.\n- [x] ChatModelObservationContext - remove getRequestOptions **[In M8]** #2518\n- [x] Same as above for Embedding and Image modelobservationcontext. **[In M8]** #2518\n- [x] ToolCallback **[In M8]** \n- [x] AnthropicApi - left over 'with' Builder methods.\n- [x] VertexAiGeminiChatOptions - some simple left over methods.\n- [x] Deprecated test methods in ITs, e.g.  BedrockProxyChatModelIT - need to make sure there are equivalents in the updated API.\n- [x] SimpleVectorStoreContent\n\n\n\nUpdate examples in our exmaples repo.\n\n- [x] Move to snapshot and rebuilt the examples.",
+  "labels" : [ "deprecation" ],
+  "title" : "EPIC - Removing deprecated code",
+  "issue_number" : 2861
+}, {
+  "body" : "Hey team,\r\n\r\nCould you add support for cached_tokens in the Usage model for OpenAI responses?\r\n\r\nThe new response structure from OpenAI looks like this:\r\n`\"usage\": {\r\n  \"prompt_tokens\": 2006,\r\n  \"completion_tokens\": 300,\r\n  \"total_tokens\": 2306,\r\n  \"prompt_tokens_details\": {\r\n    \"cached_tokens\": 1920\r\n  },\r\n  \"completion_tokens_details\": {\r\n    \"reasoning_tokens\": 0\r\n  }\r\n}`\r\n\r\nFor more details, you can refer to the official OpenAI documentation on prompt caching:\r\n[OpenAI Prompt Caching Guide](https://platform.openai.com/docs/guides/prompt-caching)\r\n\r\nThis would be a valuable addition to enhance the accuracy of token usage tracking.\r\n\r\nThanks!\r\n\r\n\r\n",
+  "labels" : [ "openai" ],
+  "title" : "Add Support for Cached Tokens in OpenAI Usage Model",
+  "issue_number" : 1506
+}, {
+  "body" : "Backport of gh-3613",
+  "labels" : [ "vector store", "type: backport" ],
+  "title" : "Remove `@Nullable` from VectorStore similaritySearch",
+  "issue_number" : 3670
+}, {
+  "body" : "As per https://ai.google.dev/palm_docs/deprecation , the \"classic\" Palm model support has been removed.  The Palm2 modules should be removed.\r\n\r\n```\r\nAs of August 15, 2024, the PaLM API is decommissioned, meaning that you can't use a PaLM model in a prompt, tune a new PaLM model, or run inference on PaLM-tuned models.\r\n\r\nTo interact with models using Google AI services and tooling, use the [Gemini API](https://ai.google.dev/gemini-api/docs), which is now available in a stable version. For more information on migrating from PaLM to Gemini, see the [migration guide](https://ai.google.dev/docs/migration_guide).\r\n\r\nNote that this deprecation notice does not pertain to PaLM API support in Vertex AI.\r\n```",
+  "labels" : [ "gcp" ],
+  "title" : "Remove PALM2 Model",
+  "issue_number" : 1431
+}, {
+  "body" : "Following the walkthrough in spring ai documenation for opensearch vector store on aws, the following properties are incorrectly located:\r\n\r\nspring.opensearch.aws.host\r\nspring.opensearch.aws.service-name \r\nspring.opensearch.aws.access-key\r\nspring.opensearch.aws.secret-key \r\nspring.opensearch.aws.region\r\n\r\nthese only work if located on\r\nspring.ai.vectorstore.opensearch.*\r\n\r\nelse causes error:\r\nCaused by: java.lang.NullPointerException: Access key ID cannot be blank.\r\n\r\n\r\nAlso similarity search for index with the following json mapping gives:\r\nSimilarity search results with error:\r\norg.opensearch.client.opensearch._types.OpenSearchException: Request failed: [search_phase_execution_exception] all shards failed\r\n\r\nfor mapping json:\r\nmappingJson: |\r\n              \"properties\": {\r\n                \"embedding\": {\r\n                  \"type\": \"knn_vector\",\r\n                  \"dimension\": 1536\r\n                }\r\n              }\r\n             \r\n\r\n",
+  "labels" : [ "vector store", "opensearch" ],
+  "title" : "Opensearch vector store bugs",
+  "issue_number" : 1589
+}, {
+  "body" : "The [response-format (json_schema)](https://platform.openai.com/docs/api-reference/chat/create#chat-create-response_format) is a relatively new OpenAI feature and we've been providing support for: [Spring AI Embraces OpenAI's Structured Outputs](https://spring.io/blog/2024/08/09/spring-ai-embraces-openais-structured-outputs-enhancing-json-response)\r\n\r\nThe regression is related to the the #1645 refactoring. \r\n",
+  "labels" : [ "bug", "openai", "structured output" ],
+  "title" : "OpenAI ResponseFormat handling is broken",
+  "issue_number" : 1681
+}, {
+  "body" : "Backport of gh-3802",
+  "labels" : [ "documentation", "type: backport" ],
+  "title" : "Fix exmaple code for \"Streaming Responses\"",
+  "issue_number" : 3828
+}, {
+  "body" : "The correct property name is _[url](https://github.com/CyangGitHub/springBoot/blob/ffd35aaf5f0fd3e7b9ad5618201ea639acd3edbc/spring-boot-autoconfigure/src/main/java/org/springframework/boot/autoconfigure/data/redis/RedisProperties.java#L42)_, not _uri_. \n\nDocument to review: https://github.com/spring-projects/spring-ai/blame/bed1db352a44da91d4a3f1bf2383cbaf5e361247/spring-ai-docs/src/main/antora/modules/ROOT/pages/api/vectordbs/redis.adoc#L87",
+  "labels" : [ "documentation" ],
+  "title" : "Documentation: \"spring.data.redis.uri\" must be \"spring.data.redis.url\"",
+  "issue_number" : 2414
+}, {
+  "body" : "Given the following code...\r\n\r\n```\r\n            Flux<String> content = chatClientBuilder.build().prompt()\r\n                    .user(userSpec -> {\r\n                        userSpec.text(\"Write a haiku about this image.\")\r\n                                .media(MediaType.IMAGE_JPEG, imageResource);\r\n                    })\r\n                    .stream()\r\n                    .content();\r\n            content.subscribe(s -> {\r\n            System.err.println(\"Response: \" + s);\r\n            });\r\n```\r\n\r\nWhere `imageResource` is defined as...\r\n\r\n```\r\n    @Value(\"classpath:/oldfaithful.jpeg\")\r\n    Resource imageResource;\r\n```\r\n\r\nAnd using Ollama (Moondream, Llava, and Bakllava models tested), things work fine. But if you give it something like this:\r\n\r\n```\r\n    @Value(\"classpath:/oldfaithful.webp\")\r\n    Resource imageResource;\r\n```\r\n\r\nWhere the difference is that it's sending a WEBP instead of a JPEG, you get a `NullPointerException`.\r\n\r\nIt's not surprising that you get an error. WEBP isn't a supported media type, after all. But getting a NPE is not as graceful of a failure as one would hope for. Also, it's not just WEBP...any non-image media gives the same error. Again, not surprising that there's an error. Just not as useful of an error as you'd like to see. I believe that this could be improved upon somehow.\r\n\r\nIncidentally, if you change the app to use OpenAI instead of Ollama, it actually works fine. I was a bit surprised that it was able to \"see\" webp.",
+  "labels" : [ "ollama" ],
+  "title" : "NullPointerException with Ollama + streaming + image",
+  "issue_number" : 1459
+}, {
+  "body" : "https://github.com/spring-projects/spring-ai/blob/4230038b28d854bcec27d8c0a454a6c96840ea50/models/spring-ai-openai/src/main/java/org/springframework/ai/openai/OpenAiAudioSpeechClient.java#L136\r\n\r\nHere the default options take precedence over the runtime ones. The parameters to the merge call should be in reverse order to accomplish what is wanted.",
+  "labels" : [ "bug" ],
+  "title" : "The merging is done in the wrong order",
+  "issue_number" : 601
+}, {
+  "body" : "**Expected Behavior**\r\nWant to delete data based on conditions in a vector database.\r\n\r\n**Current Behavior**\r\ndelete by ids\r\n\r\n**Context**\r\n\r\nvectorStore.delete()\r\n",
+  "labels" : [ "enhancement", "vector store" ],
+  "title" : "vector store delete by filter",
+  "issue_number" : 897
+} ]

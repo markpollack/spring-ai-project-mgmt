@@ -1,0 +1,11 @@
+Test prompt for parameter validation system.
+
+This is a simple test to verify that the classification engine can handle basic prompts and parameter validation correctly.
+
+Parameters to test:
+- Input validation
+- Output formatting
+- Error handling
+- Response consistency
+
+Expected behavior: The system should process this prompt and return a structured response indicating successful parameter validation.

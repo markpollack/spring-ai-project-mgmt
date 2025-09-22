@@ -127,7 +127,8 @@ public class CollectGithubIssuesApp implements CommandLineRunner {
                 repo, batchSize, dryRun, incremental, zip, clean, resume,
                 issueState, labelFilters, labelMode,
                 maxIssues, sortBy, sortOrder,
-                collectionType, prNumber, prState
+                collectionType, prNumber, prState,
+                verbose
             );
             
             // Execute collection based on type
