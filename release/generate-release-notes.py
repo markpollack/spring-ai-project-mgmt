@@ -1036,7 +1036,8 @@ class GitCommitCollector:
     def _get_latest_version_tag(self) -> Optional[str]:
         """Get the latest version tag from git with proper semantic version parsing"""
         # Use centralized utility function with branch-specific detection
-        return get_latest_version_tag(self.config.repo_path, branch_specific=True)
+        # Pass the branch name from config to ensure correct version filtering
+        return get_latest_version_tag(self.config.repo_path, branch_specific=True, branch_name=self.config.branch)
     
     def _parse_semantic_version(self, tag: str) -> Tuple[int, int, int, int, str]:
         """

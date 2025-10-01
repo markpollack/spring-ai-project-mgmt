@@ -11,37 +11,31 @@ from typing import Optional, Tuple, List
 import re
 
 
-def get_latest_version_tag(repo_path: Path, branch_specific: bool = True) -> Optional[str]:
+def get_latest_version_tag(repo_path: Path, branch_specific: bool = True, branch_name: Optional[str] = None) -> Optional[str]:
     """
     Get the latest version tag from git repository.
 
     Args:
         repo_path: Path to the git repository
-        branch_specific: If True, only returns tags reachable from current branch (default: True)
-                        If False, returns latest tag across all branches
+        branch_specific: If True, filters tags by branch version pattern (default: True)
+        branch_name: Branch name to derive version pattern from (e.g., '1.0.x', 'main')
+                    If None, attempts to detect from current branch
 
     Returns:
         Latest version tag (e.g., 'v1.0.2') or None if no tags found
 
     Examples:
         # On 1.0.x branch with branch_specific=True
-        >>> get_latest_version_tag(Path('.'), branch_specific=True)
-        'v1.0.2'  # Returns latest 1.0.x tag, not milestone tags from main
+        >>> get_latest_version_tag(Path('.'), branch_specific=True, branch_name='1.0.x')
+        'v1.0.2'  # Returns latest 1.0.* tag (GA releases only)
 
         # With branch_specific=False
         >>> get_latest_version_tag(Path('.'), branch_specific=False)
         'v1.1.0-M2'  # Returns latest tag across all branches
     """
     try:
-        if branch_specific:
-            # Get only tags reachable from current branch (--merged HEAD)
-            # This ensures we only get tags from the current branch (e.g., 1.0.x)
-            # and not from other branches (e.g., main with milestone tags)
-            cmd = ['git', 'tag', '--merged', 'HEAD', '-l', 'v*.*.*']
-        else:
-            # Get all version tags across all branches
-            cmd = ['git', 'tag', '-l', 'v*.*.*']
-
+        # Get all version tags
+        cmd = ['git', 'tag', '-l', 'v*.*.*']
         result = subprocess.run(
             cmd,
             capture_output=True,
@@ -50,11 +44,57 @@ def get_latest_version_tag(repo_path: Path, branch_specific: bool = True) -> Opt
             cwd=repo_path
         )
 
-        if result.stdout.strip():
-            tags = result.stdout.strip().split('\n')
-            # Sort tags by semantic version with proper pre-release handling
-            tags.sort(key=parse_semantic_version)
-            return tags[-1]  # Return the latest tag
+        if not result.stdout.strip():
+            return None
+
+        tags = result.stdout.strip().split('\n')
+
+        if branch_specific:
+            # Detect branch name if not provided
+            if branch_name is None:
+                branch_cmd = ['git', 'rev-parse', '--abbrev-ref', 'HEAD']
+                branch_result = subprocess.run(
+                    branch_cmd,
+                    capture_output=True,
+                    text=True,
+                    check=True,
+                    cwd=repo_path
+                )
+                branch_name = branch_result.stdout.strip()
+
+                # Handle detached HEAD state
+                if branch_name == 'HEAD':
+                    # Try to get branch from reflog or remote tracking
+                    symbolic_cmd = ['git', 'symbolic-ref', 'HEAD']
+                    symbolic_result = subprocess.run(
+                        symbolic_cmd,
+                        capture_output=True,
+                        text=True,
+                        cwd=repo_path
+                    )
+                    if symbolic_result.returncode == 0:
+                        # Extract branch name from refs/heads/...
+                        branch_name = symbolic_result.stdout.strip().split('/')[-1]
+
+            # Filter tags by branch version pattern
+            # For 1.0.x branch, only include v1.0.* GA tags (no milestones/RCs)
+            # For main branch, include all tags
+            if branch_name and branch_name != 'main' and branch_name != 'HEAD':
+                # Extract version prefix from branch name (e.g., '1.0.x' -> '1.0')
+                version_match = re.match(r'(\d+\.\d+)\.x', branch_name)
+                if version_match:
+                    version_prefix = version_match.group(1)
+                    # Filter for tags matching version pattern without pre-release suffixes
+                    # e.g., v1.0.0, v1.0.1, v1.0.2 (but not v1.0.0-M1, v1.1.0-M1)
+                    tags = [
+                        tag for tag in tags
+                        if tag.startswith(f'v{version_prefix}.')
+                        and '-' not in tag  # Exclude pre-release tags (M1, RC1, etc.)
+                    ]
+
+        # Sort tags by semantic version with proper pre-release handling
+        tags.sort(key=parse_semantic_version)
+        return tags[-1] if tags else None
 
     except subprocess.CalledProcessError:
         pass
