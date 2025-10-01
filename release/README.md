@@ -313,7 +313,7 @@ python3 update-spring-blog.py 1.0.3 spring-ai-1-0-3-available-now.md --cleanup
 **After PR is merged**, watch the blog publish action at:
 - **Blog Publishing**: https://github.com/spring-io/spring-website/actions
 
-The blog post will be live on https://spring.io/blog after the GitHub Action completes (typically 5-10 minutes).
+The blog post will be live on https://spring.io/blog after the GitHub Action completes (typically 20 minutes).
 
 ## 📁 Self-Contained Release Directory
 

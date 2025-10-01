@@ -438,7 +438,7 @@ This blog post announces the Spring AI {self.version} release with key highlight
             Logger.info("2. Watch the blog publish action at:")
             Logger.info("   https://github.com/spring-io/spring-website/actions")
             Logger.info("3. Blog will be live on https://spring.io/blog after GitHub Action completes")
-            Logger.info("   (typically 5-10 minutes after PR merge)")
+            Logger.info("   (typically 20 minutes after PR merge)")
 
             return True
             
