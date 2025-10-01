@@ -53,6 +53,9 @@ from collections import defaultdict
 sys.path.insert(0, str(Path(__file__).parent.parent / "pr-review"))
 from claude_code_wrapper import ClaudeCodeWrapper
 
+# Import centralized git tag utilities
+from git_tag_utils import get_latest_version_tag, parse_semantic_version
+
 
 @dataclass 
 class TokenUsage:
@@ -1032,21 +1035,8 @@ class GitCommitCollector:
     
     def _get_latest_version_tag(self) -> Optional[str]:
         """Get the latest version tag from git with proper semantic version parsing"""
-        try:
-            # Get all version tags sorted by version
-            cmd = ['git', 'tag', '-l', 'v*.*.*']
-            result = subprocess.run(cmd, capture_output=True, text=True, check=True, cwd=self.config.repo_path)
-            
-            if result.stdout.strip():
-                tags = result.stdout.strip().split('\n')
-                # Sort tags by semantic version with proper pre-release handling
-                tags.sort(key=self._parse_semantic_version)
-                return tags[-1]  # Return the latest tag
-            
-        except subprocess.CalledProcessError as e:
-            Logger.debug(f"Failed to get latest tag: {e}")
-        
-        return None
+        # Use centralized utility function with branch-specific detection
+        return get_latest_version_tag(self.config.repo_path, branch_specific=True)
     
     def _parse_semantic_version(self, tag: str) -> Tuple[int, int, int, int, str]:
         """

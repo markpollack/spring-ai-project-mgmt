@@ -22,6 +22,9 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from collections import defaultdict
 
+# Import centralized git tag utilities
+from git_tag_utils import get_latest_version_tag
+
 
 @dataclass
 class ContributorConfig:
@@ -251,26 +254,8 @@ class ContributorCollector:
     
     def _get_latest_version_tag(self) -> Optional[str]:
         """Get the latest version tag from git"""
-        try:
-            original_dir = os.getcwd()
-            os.chdir(self.config.repo_path)
-            
-            # Get all version tags sorted by version
-            cmd = ['git', 'tag', '-l', 'v*.*.*']
-            result = subprocess.run(cmd, capture_output=True, text=True, check=True)
-            
-            if result.stdout.strip():
-                tags = result.stdout.strip().split('\n')
-                # Sort tags by version number (assumes semantic versioning)
-                tags.sort(key=lambda t: [int(x) for x in t.lstrip('v').split('.')])
-                return tags[-1]  # Return the latest tag
-            
-        except subprocess.CalledProcessError as e:
-            Logger.debug(f"Failed to get latest tag: {e}")
-        finally:
-            os.chdir(original_dir)
-        
-        return None
+        # Use centralized utility function with branch-specific detection
+        return get_latest_version_tag(self.config.repo_path, branch_specific=True)
     
     def collect_contributors(self) -> bool:
         """Collect contributor information from git log"""
