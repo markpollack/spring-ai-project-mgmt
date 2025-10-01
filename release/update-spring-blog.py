@@ -432,7 +432,14 @@ This blog post announces the Spring AI {self.version} release with key highlight
             Logger.success("✅ BLOG POST PUBLISHING COMPLETED SUCCESSFULLY!")
             Logger.bold("="*60)
             Logger.info("Pull request is ready for review and merge.")
-            
+            Logger.info("")
+            Logger.info("📝 Next Steps:")
+            Logger.info("1. Review and merge the pull request")
+            Logger.info("2. Watch the blog publish action at:")
+            Logger.info("   https://github.com/spring-io/spring-website/actions")
+            Logger.info("3. Blog will be live on https://spring.io/blog after GitHub Action completes")
+            Logger.info("   (typically 5-10 minutes after PR merge)")
+
             return True
             
         except Exception as e:

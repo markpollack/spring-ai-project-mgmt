@@ -289,6 +289,32 @@ python3 create-github-release.py v1.1.0-M1 --prerelease
 
 **Self-Contained**: No need to change directories or specify paths - automatically finds tags and release notes in the workspace.
 
+### update-spring-blog.py
+Publishes Spring AI release blog posts to the spring.io blog:
+
+```bash
+# Preview changes
+python3 update-spring-blog.py 1.0.3 spring-ai-1-0-3-available-now.md --dry-run
+
+# Execute with step-by-step confirmation
+python3 update-spring-blog.py 1.0.3 spring-ai-1-0-3-available-now.md
+
+# Clean up
+python3 update-spring-blog.py 1.0.3 spring-ai-1-0-3-available-now.md --cleanup
+```
+
+**What it does**:
+1. **Fresh clone** - Removes any existing checkout and clones https://github.com/spring-io/spring-website-content
+2. **Feature branch** - Creates branch for the blog post
+3. **Copies blog post** - Places markdown file in `blog/YYYY/MM/` directory
+4. **Commits with DCO** - Uses `git commit -s` for Developer Certificate of Origin compliance
+5. **Creates pull request** - Pushes feature branch and creates PR
+
+**After PR is merged**, watch the blog publish action at:
+- **Blog Publishing**: https://github.com/spring-io/spring-website/actions
+
+The blog post will be live on https://spring.io/blog after the GitHub Action completes (typically 5-10 minutes).
+
 ## 📁 Self-Contained Release Directory
 
 The `/release` directory is **completely self-contained** - all scripts run from this directory and use the local `./spring-ai-release` workspace:
