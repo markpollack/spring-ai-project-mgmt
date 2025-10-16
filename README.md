@@ -55,6 +55,10 @@ JBang-based and Maven-based tools for collecting GitHub issues with advanced fil
   - **Main Function**: `CollectGithubIssues.main()` - CollectGithubIssues.java:217
 - `project/` - Maven-based modular architecture (refactored from JBang)
   - **Main Function**: `CollectGithubIssues.run()` - project/src/main/java/org/springaicommunity/github/ai/collection/CollectGithubIssues.java:94
+- `project/collection-library/` - Java-based GitHub API integration library
+  - **GitHubRestService.java**: REST API wrapper using org.kohsuke:github-api
+  - **PRCollectionService.java**: Full PR collection with metadata
+  - **Note**: Uses Java GitHub libraries (not shell execution)
 - `application.yaml` - Configuration for collection parameters
 
 **Features:**
