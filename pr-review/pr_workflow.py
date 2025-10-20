@@ -24,7 +24,7 @@ from compilation_error_resolver import CompilationErrorResolver
 from github_utils import GitHubUtils
 from claude_code_wrapper import ClaudeCodeWrapper
 from commit_message_generator import CommitMessageGenerator
-from test_discovery import TestDiscovery
+from test_discovery import PRTestDiscovery
 from workflow_execution_tracker import WorkflowExecutionTracker
 
 
@@ -1829,30 +1829,24 @@ Please fix all violations using the Spring AI project's specific checkstyle conf
             return True
         
         try:
-            # Initialize test discovery
-            discovery = TestDiscovery(pr_number, self.config.spring_ai_dir)
-            
-            # Run discovery (force refresh to ensure we have the latest data)
-            result = discovery.discover(force_refresh=True)
-            
+            # Initialize new test discovery
+            discovery = PRTestDiscovery(repo_root=self.config.spring_ai_dir)
+
+            # Run discovery to get affected modules (use origin/main with three-dot diff)
+            affected_modules = discovery.modules_from_diff(base_ref="origin/main", verbose=False)
+
             # Log summary
             Logger.info(f"✅ Test discovery completed for PR #{pr_number}")
-            if result.affected_modules:
-                Logger.info(f"   Affected modules: {len(result.affected_modules)}")
-                for module in result.affected_modules[:3]:  # Show first 3
-                    module_display = "Root module" if module == "." else module
-                    Logger.info(f"     - {module_display}")
-                if len(result.affected_modules) > 3:
-                    Logger.info(f"     ... and {len(result.affected_modules) - 3} more")
+            if affected_modules:
+                modules_list = affected_modules.split(',')
+                Logger.info(f"   Affected modules: {len(modules_list)}")
+                for module in modules_list[:3]:  # Show first 3
+                    Logger.info(f"     - {module}")
+                if len(modules_list) > 3:
+                    Logger.info(f"     ... and {len(modules_list) - 3} more")
             else:
                 Logger.info("   No code modules affected")
-            
-            if result.test_commands:
-                Logger.info("   Test commands generated:")
-                for cmd_type in list(result.test_commands.keys())[:2]:  # Show first 2 commands
-                    if cmd_type != 'info':
-                        Logger.info(f"     - {cmd_type}")
-            
+
             return True
             
         except Exception as e:
@@ -2782,18 +2776,59 @@ File content with conflicts:"""
         build_log_file = self.config.logs_dir / f"full-build-{timestamp}.log"
         build_log_file.parent.mkdir(exist_ok=True)
         
-        # Use exact same command as Spring AI CI for test preparation
-        # Match continuous-integration.yml exactly, but disable checkstyle to focus on functionality
-        full_build_cmd = [
-            "./mvnw", 
-            "-Pci-fast-integration-tests", 
-            "-Pjavadoc",
-            "-Dfailsafe.rerunFailingTestsCount=3",
-            "-Ddisable.checks=true",  # Disable checkstyle - focus on functional testing like real PR validation
-            "--batch-mode", 
-            "--update-snapshots", 
-            "verify"
-        ]
+        # Detect affected modules using GitHub Actions test discovery logic
+        Logger.info("🔍 Detecting affected modules for targeted testing...")
+        try:
+            # Import the new test discovery script
+            from test_discovery import PRTestDiscovery
+
+            discovery = PRTestDiscovery(repo_root=self.config.spring_ai_dir)
+            # Use origin/main to ensure we compare against the remote branch, not stale local
+            # Three-dot syntax (in test_discovery.py) compares against merge-base
+            affected_modules = discovery.modules_from_diff(base_ref="origin/main", verbose=True)
+
+            if affected_modules:
+                Logger.info(f"✅ Affected modules detected: {affected_modules}")
+                Logger.info("🎯 Using targeted testing - will test only affected modules")
+                # Use same build command but target only affected modules
+                full_build_cmd = [
+                    "./mvnw",
+                    "-Pci-fast-integration-tests",
+                    "-Pjavadoc",
+                    "-Dfailsafe.rerunFailingTestsCount=3",
+                    "-Ddisable.checks=true",
+                    "--batch-mode",
+                    "--update-snapshots",
+                    "-pl", affected_modules,
+                    "verify"
+                ]
+            else:
+                Logger.info("ℹ️  No affected modules detected - using full build")
+                # Fallback to full build if no modules detected
+                full_build_cmd = [
+                    "./mvnw",
+                    "-Pci-fast-integration-tests",
+                    "-Pjavadoc",
+                    "-Dfailsafe.rerunFailingTestsCount=3",
+                    "-Ddisable.checks=true",
+                    "--batch-mode",
+                    "--update-snapshots",
+                    "verify"
+                ]
+        except Exception as e:
+            Logger.warn(f"⚠️  Test discovery failed: {e}")
+            Logger.info("🔄 Falling back to full build")
+            # Fallback to original full build command
+            full_build_cmd = [
+                "./mvnw",
+                "-Pci-fast-integration-tests",
+                "-Pjavadoc",
+                "-Dfailsafe.rerunFailingTestsCount=3",
+                "-Ddisable.checks=true",
+                "--batch-mode",
+                "--update-snapshots",
+                "verify"
+            ]
         
         try:
             # Set environment variables to disable terminal features

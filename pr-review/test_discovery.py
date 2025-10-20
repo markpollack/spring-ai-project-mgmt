@@ -1,99 +1,129 @@
 #!/usr/bin/env python3
 """
-Test Discovery for Spring AI PRs
+Test discovery script for Spring AI PR review system
+Outputs comma-separated list of affected modules for targeted testing
 
-Identifies affected Maven modules and generates test commands for manual verification.
-This is a lightweight helper that provides guidance without enforcing rules.
+This script determines which Maven modules are affected by PR changes
+and outputs a comma-separated list for use with mvn -pl parameter.
+Adapted from GitHub Actions CI script for PR review workflow.
 """
 
-import json
+import sys
+import os
 import subprocess
 from pathlib import Path
-from typing import List, Dict, Set, Optional, Tuple
-from dataclasses import dataclass, asdict
+from typing import List, Optional, Set
 
-
-@dataclass
-class TestDiscoveryResult:
-    """Results from test discovery analysis"""
-    pr_number: str
-    affected_modules: List[str]
-    test_commands: Dict[str, str]  # command_type -> command
-    changed_files: List[str]
-    has_code_changes: bool
-    has_test_changes: bool
-    module_to_files: Dict[str, List[str]]  # module -> list of changed files
-
-
-class TestDiscovery:
-    """Discovers affected Maven modules and generates test commands"""
+class PRTestDiscovery:
+    """Test discovery for PR review environments"""
     
-    def __init__(self, pr_number: str, spring_ai_dir: Path):
-        self.pr_number = pr_number
-        self.spring_ai_dir = Path(spring_ai_dir)
-        self.cache_file = self.spring_ai_dir.parent / "context" / f"pr-{pr_number}" / "test-discovery.json"
+    def __init__(self, repo_root: Path = Path(".")):
+        self.repo_root = Path(repo_root)
+        self._last_git_command = None
         
-    def discover(self, force_refresh: bool = False) -> TestDiscoveryResult:
-        """
-        Main entry point for test discovery.
-        Returns cached results if available unless force_refresh is True.
-        """
-        # Try to load from cache first
-        if not force_refresh and self.cache_file.exists():
-            try:
-                with open(self.cache_file, 'r') as f:
-                    data = json.load(f)
-                    return TestDiscoveryResult(**data)
-            except Exception:
-                pass  # Fall through to fresh discovery
-        
-        # Perform fresh discovery
-        changed_files = self._get_changed_files()
-        affected_modules = self._discover_affected_modules(changed_files)
-        module_to_files = self._map_modules_to_files(changed_files, affected_modules)
-        has_code_changes = self._has_code_changes(changed_files)
-        has_test_changes = self._has_test_changes(changed_files)
-        test_commands = self._generate_test_commands(affected_modules, changed_files)
-        
-        result = TestDiscoveryResult(
-            pr_number=self.pr_number,
-            affected_modules=affected_modules,
-            test_commands=test_commands,
-            changed_files=changed_files,
-            has_code_changes=has_code_changes,
-            has_test_changes=has_test_changes,
-            module_to_files=module_to_files
-        )
-        
-        # Cache the results
-        self._save_to_cache(result)
-        
-        return result
-    
-    def _get_changed_files(self) -> List[str]:
-        """Get list of changed files in the PR"""
+    def modules_from_diff(self, base_ref: Optional[str] = None, verbose: bool = False) -> str:
+        """Get affected modules from git diff (for PR review)"""
         try:
-            # Try GitHub CLI first
-            result = subprocess.run([
-                "gh", "pr", "view", self.pr_number,
-                "--repo", "spring-projects/spring-ai",
-                "--json", "files", "--jq", ".files[].path"
-            ], capture_output=True, text=True, check=True)
+            changed_files = self._get_changed_files(base_ref)
+            affected_modules = self._discover_affected_modules(changed_files)
+            
+            # Verbose logging to stderr
+            if verbose:
+                detected_base = base_ref if base_ref else self._detect_default_base()
+                print(f"Detected base ref: {detected_base}", file=sys.stderr)
+                print(f"Git diff strategy used: {self._get_last_git_command()}", file=sys.stderr)
+                print(f"Changed files ({len(changed_files)}):", file=sys.stderr)
+                for file in changed_files[:10]:  # Limit to first 10 for readability
+                    print(f"  - {file}", file=sys.stderr)
+                if len(changed_files) > 10:
+                    print(f"  ... and {len(changed_files) - 10} more files", file=sys.stderr)
+                result_str = ",".join(affected_modules) if affected_modules else "<none>"
+                print(f"Final module list: {result_str}", file=sys.stderr)
+            
+            if not affected_modules:
+                # Return empty string for no modules (PR review will skip module-specific build)
+                return ""
+            else:
+                # Return comma-separated list for mvn -pl parameter
+                return ",".join(affected_modules)
+                
+        except Exception as e:
+            # In PR review, print error to stderr and return empty string to fail gracefully
+            print(f"Error in test discovery: {e}", file=sys.stderr)
+            print("Falling back to full build due to test discovery failure", file=sys.stderr)
+            return ""
+    
+    def _get_changed_files(self, base_ref: Optional[str] = None) -> List[str]:
+        """Get changed files from git diff in PR review context"""
+        try:
+            # Check if we're in a rebase/merge state first
+            if self._is_in_rebase_state():
+                # During rebase, staged changes represent the actual PR changes
+                cmd = ["git", "diff", "--staged", "--name-only"]
+                self._last_git_command = ' '.join(cmd) + " (rebase detected)"
+            else:
+                # Normal git diff logic
+                pr_base = os.environ.get('GITHUB_BASE_REF')   # PRs
+                pr_head = os.environ.get('GITHUB_HEAD_HEAD')   # PRs
+                branch = os.environ.get('GITHUB_REF_NAME')    # pushes
+
+                # For maintenance branches (cherry-picks) or main branch pushes, use single commit diff
+                if (branch and branch.endswith('.x')) or (branch == 'main'):
+                    # Maintenance branch or main branch - use diff with previous commit
+                    cmd = ["git", "diff", "--name-only", "HEAD~1", "HEAD"]
+                elif base_ref:
+                    # Explicit base reference provided - find merge-base and compare
+                    # This shows only changes introduced by the PR branch
+                    try:
+                        merge_base_result = subprocess.run(
+                            ["git", "merge-base", base_ref, "HEAD"],
+                            cwd=self.repo_root,
+                            capture_output=True,
+                            text=True,
+                            check=True
+                        )
+                        merge_base = merge_base_result.stdout.strip()
+                        cmd = ["git", "diff", "--name-only", f"{merge_base}..HEAD"]
+                    except subprocess.CalledProcessError:
+                        # Fallback to three-dot diff if merge-base fails
+                        cmd = ["git", "diff", "--name-only", f"{base_ref}...HEAD"]
+                elif pr_base and pr_head:
+                    # PR context - compare against base branch using three-dot for merge-base
+                    cmd = ["git", "diff", "--name-only", f"origin/{pr_base}...HEAD"]
+                elif pr_base:
+                    # PR context fallback - use three-dot for merge-base
+                    cmd = ["git", "diff", "--name-only", f"origin/{pr_base}...HEAD"]
+                else:
+                    # Final fallback - single commit diff (most reliable)
+                    cmd = ["git", "diff", "--name-only", "HEAD~1..HEAD"]
+
+                self._last_git_command = ' '.join(cmd)  # Store for debugging
+            
+            # Execute the git diff command
+            result = subprocess.run(
+                cmd, 
+                cwd=self.repo_root,
+                capture_output=True, 
+                text=True, 
+                check=True
+            )
             
             files = result.stdout.strip().split('\n')
-            return [f for f in files if f]
+            return [f for f in files if f.strip()]
             
-        except subprocess.CalledProcessError:
-            # Fallback to git diff if PR not accessible
-            try:
-                result = subprocess.run([
-                    "git", "diff", "--name-only", "origin/main...HEAD"
-                ], cwd=self.spring_ai_dir, capture_output=True, text=True)
-                
-                files = result.stdout.strip().split('\n')
-                return [f for f in files if f]
-            except:
-                return []
+        except subprocess.CalledProcessError as e:
+            print(f"Git command failed: {e}", file=sys.stderr)
+            print(f"Command: {' '.join(e.cmd) if hasattr(e, 'cmd') else 'unknown'}", file=sys.stderr)
+            print(f"Exit code: {e.returncode}", file=sys.stderr)
+            print(f"Stdout: {e.stdout if hasattr(e, 'stdout') else 'N/A'}", file=sys.stderr)
+            print(f"Stderr: {e.stderr if hasattr(e, 'stderr') else 'N/A'}", file=sys.stderr)
+            return []
+        except Exception as e:
+            print(f"Error getting changed files: {e}", file=sys.stderr)
+            print(f"Error type: {type(e).__name__}", file=sys.stderr)
+            import traceback
+            print(f"Traceback: {traceback.format_exc()}", file=sys.stderr)
+            return []
     
     def _discover_affected_modules(self, changed_files: List[str]) -> List[str]:
         """Identify which Maven modules are affected by the changed files"""
@@ -101,14 +131,20 @@ class TestDiscovery:
         
         for file_path in changed_files:
             module = self._find_module_for_file(file_path)
-            if module:
+            # DEBUG: Print what we're finding
+            print(f"DEBUG: file={file_path} -> module={module}", file=sys.stderr)
+            if module and module != ".":  # Exclude root module to prevent full builds
                 modules.add(module)
+                print(f"DEBUG: Added module: {module}", file=sys.stderr)
+            elif module == ".":
+                print(f"DEBUG: Excluded root module for file: {file_path}", file=sys.stderr)
         
+        print(f"DEBUG: Final modules before return: {sorted(list(modules))}", file=sys.stderr)
         return sorted(list(modules))
     
     def _find_module_for_file(self, file_path: str) -> Optional[str]:
         """Find the Maven module that contains a given file"""
-        # Skip non-code files
+        # Skip non-relevant files
         if not self._is_relevant_file(file_path):
             return None
         
@@ -117,25 +153,32 @@ class TestDiscovery:
         
         for i in range(len(path_parts), 0, -1):
             potential_module = '/'.join(path_parts[:i])
-            pom_path = self.spring_ai_dir / potential_module / "pom.xml"
+            # Handle root case - empty string becomes "."
+            if not potential_module:
+                potential_module = "."
+            pom_path = self.repo_root / potential_module / "pom.xml"
             
             if pom_path.exists():
-                # Found a module
+                # Never return root module to prevent full builds
+                if potential_module == ".":
+                    return None
+                # Found a module - return the relative path from repo root
                 return potential_module
         
-        # Check if it's in the root module
-        if (self.spring_ai_dir / "pom.xml").exists():
-            return "."
-        
+        # Never return root module to prevent full builds
         return None
     
     def _is_relevant_file(self, file_path: str) -> bool:
         """Check if a file is relevant for module discovery"""
+        # Always exclude root pom.xml to prevent full builds
+        if file_path == 'pom.xml':
+            return False
+            
         # Include Java source and test files
         if file_path.endswith('.java'):
             return True
         
-        # Include build files
+        # Include build files (but not root pom.xml - handled above)
         if file_path.endswith('pom.xml'):
             return True
         
@@ -143,179 +186,104 @@ class TestDiscovery:
         if '/src/main/resources/' in file_path or '/src/test/resources/' in file_path:
             return True
         
-        # Skip documentation, configs, etc.
-        return False
-    
-    def _has_code_changes(self, changed_files: List[str]) -> bool:
-        """Check if there are actual code changes (not just tests/docs)"""
-        for file_path in changed_files:
-            if '/src/main/java/' in file_path and file_path.endswith('.java'):
+        # Include Spring Boot configuration files
+        if file_path.endswith('.yml') or file_path.endswith('.yaml'):
+            if '/src/main/resources/' in file_path or '/src/test/resources/' in file_path:
                 return True
-        return False
-    
-    def _has_test_changes(self, changed_files: List[str]) -> bool:
-        """Check if there are test changes"""
-        for file_path in changed_files:
-            if '/src/test/java/' in file_path and file_path.endswith('.java'):
+        
+        # Include properties files in resources
+        if file_path.endswith('.properties'):
+            if '/src/main/resources/' in file_path or '/src/test/resources/' in file_path:
                 return True
-        return False
-    
-    def _map_modules_to_files(self, changed_files: List[str], modules: List[str]) -> Dict[str, List[str]]:
-        """Map each module to its changed files"""
-        module_to_files = {module: [] for module in modules}
         
-        for file_path in changed_files:
-            module = self._find_module_for_file(file_path)
-            if module and module in module_to_files:
-                module_to_files[module].append(file_path)
+        # Skip documentation, root configs, etc.
+        if file_path.endswith('.md') or file_path.endswith('.adoc'):
+            return False
         
-        return module_to_files
-    
-    def _generate_test_commands(self, modules: List[str], changed_files: List[str]) -> Dict[str, str]:
-        """Generate mvnd test commands for the affected modules"""
-        commands = {}
-        
-        if not modules:
-            commands['info'] = "No code modules affected - no tests needed"
-            return commands
-        
-        # Single module test
-        if len(modules) == 1:
-            module = modules[0]
-            if module == ".":
-                commands['module_test'] = "mvnd test"
-                commands['quick_test'] = "mvnd test -DskipTests=false -Dmaven.test.failure.ignore=false"
-            else:
-                commands['module_test'] = f"mvnd test -pl {module}"
-                commands['quick_test'] = f"mvnd test -pl {module} -DskipTests=false"
-        
-        # Multi-module test
-        else:
-            module_list = ",".join(modules)
-            commands['all_modules'] = f"mvnd test -pl {module_list}"
-            commands['quick_test'] = f"mvnd test -pl {module_list} -DskipTests=false"
+        if file_path in ['README.md', 'LICENSE.txt', 'CONTRIBUTING.adoc']:
+            return False
             
-            # Add individual module commands for reference
-            for i, module in enumerate(modules[:3]):  # Limit to first 3 for UI space
-                if module == ".":
-                    commands[f'module_{i+1}'] = "mvnd test"
-                else:
-                    commands[f'module_{i+1}'] = f"mvnd test -pl {module}"
-        
-        # Add specific test commands if we can identify test classes
-        test_classes = self._identify_test_classes(changed_files)
-        if test_classes:
-            for module, tests in test_classes.items():
-                if len(tests) == 1:
-                    test_name = tests[0]
-                    if module == ".":
-                        commands['specific_test'] = f"mvnd test -Dtest={test_name}"
-                    else:
-                        commands['specific_test'] = f"mvnd test -pl {module} -Dtest={test_name}"
-        
-        # Add integration test command if relevant
-        if self._has_integration_tests(changed_files):
-            if len(modules) == 1:
-                module = modules[0]
-                if module == ".":
-                    commands['integration'] = "mvnd test -Dtest=*IT"
-                else:
-                    commands['integration'] = f"mvnd test -pl {module} -Dtest=*IT"
-        
-        return commands
-    
-    def _identify_test_classes(self, changed_files: List[str]) -> Dict[str, List[str]]:
-        """Identify specific test classes that changed"""
-        test_classes = {}
-        
-        for file_path in changed_files:
-            if '/src/test/java/' in file_path and file_path.endswith('.java'):
-                # Extract test class name
-                class_name = Path(file_path).stem
-                if class_name.endswith('Test') or class_name.endswith('Tests') or class_name.endswith('IT'):
-                    module = self._find_module_for_file(file_path)
-                    if module:
-                        if module not in test_classes:
-                            test_classes[module] = []
-                        test_classes[module].append(class_name)
-        
-        return test_classes
-    
-    def _has_integration_tests(self, changed_files: List[str]) -> bool:
-        """Check if any integration tests are affected"""
-        for file_path in changed_files:
-            if file_path.endswith('IT.java'):
-                return True
         return False
     
-    def _save_to_cache(self, result: TestDiscoveryResult):
-        """Save discovery results to cache"""
-        try:
-            self.cache_file.parent.mkdir(parents=True, exist_ok=True)
-            with open(self.cache_file, 'w') as f:
-                json.dump(asdict(result), f, indent=2)
-        except Exception:
-            pass  # Caching is optional, don't fail if it doesn't work
+    def _detect_default_base(self) -> str:
+        """Detect the default base reference for verbose logging"""
+        pr_base = os.environ.get('GITHUB_BASE_REF')
+        branch = os.environ.get('GITHUB_REF_NAME')
+        
+        # Show the actual strategy being used
+        if (branch and branch.endswith('.x')) or (branch == 'main'):
+            branch_type = "maintenance" if branch.endswith('.x') else "main"
+            return f"git diff HEAD~1 HEAD ({branch_type} branch {branch})"
+        elif pr_base:
+            return f"origin/{pr_base} (PR base)"
+        elif branch:
+            return f"HEAD~1 (single commit - branch {branch})"
+        else:
+            return "HEAD~1 (single commit - fallback)"
     
-    def format_for_display(self, result: TestDiscoveryResult) -> str:
-        """Format the discovery results for display"""
-        lines = []
-        
-        lines.append(f"Test Discovery for PR #{result.pr_number}")
-        lines.append("=" * 50)
-        
-        if not result.affected_modules:
-            lines.append("No code modules affected - no tests needed")
-            return "\n".join(lines)
-        
-        lines.append(f"\nAffected Modules ({len(result.affected_modules)}):")
-        for module in result.affected_modules:
-            if module == ".":
-                lines.append("  - Root module")
-            else:
-                lines.append(f"  - {module}")
-        
-        lines.append(f"\nTest Commands:")
-        for cmd_type, command in result.test_commands.items():
-            if cmd_type == 'info':
-                continue
-            # Make command type human-readable
-            readable_type = cmd_type.replace('_', ' ').title()
-            lines.append(f"  {readable_type}:")
-            lines.append(f"    {command}")
-        
-        if result.has_code_changes:
-            lines.append("\n✓ Contains source code changes")
-        if result.has_test_changes:
-            lines.append("✓ Contains test changes")
-        
-        return "\n".join(lines)
+    def _get_last_git_command(self) -> str:
+        """Get the last git command executed for debugging"""
+        return self._last_git_command or "No git command executed yet"
+
+    def _is_in_rebase_state(self) -> bool:
+        """Check if we're currently in a rebase or merge state"""
+        try:
+            # Check for rebase directory
+            rebase_apply = self.repo_root / ".git" / "rebase-apply"
+            rebase_merge = self.repo_root / ".git" / "rebase-merge"
+
+            # Check for merge head (indicates merge in progress)
+            merge_head = self.repo_root / ".git" / "MERGE_HEAD"
+
+            return rebase_apply.exists() or rebase_merge.exists() or merge_head.exists()
+        except Exception:
+            return False
+
+
+def modules_from_diff_cli():
+    """Get affected modules from git diff (for GitHub Actions)"""
+    base = None
+    verbose = False
+    
+    # Parse command line arguments
+    args = sys.argv[2:]  # Skip script name and command
+    i = 0
+    while i < len(args):
+        if args[i] == "--base" and i + 1 < len(args):
+            base = args[i + 1]
+            i += 2
+        elif args[i] == "--verbose":
+            verbose = True
+            i += 1
+        else:
+            print(f"Unknown argument: {args[i]}", file=sys.stderr)
+            i += 1
+    
+    discovery = PRTestDiscovery()
+    result = discovery.modules_from_diff(base_ref=base, verbose=verbose)
+    print(result)  # Print to stdout for GitHub Actions to capture
 
 
 def main():
-    """CLI interface for testing"""
-    import sys
-    
-    if len(sys.argv) != 3:
-        print("Usage: python test_discovery.py <pr_number> <spring_ai_dir>")
+    """CLI entry point"""
+    if len(sys.argv) < 2:
+        print("Usage: test_discovery.py <command> [options]", file=sys.stderr)
+        print("Commands:", file=sys.stderr)
+        print("  modules-from-diff [--base <ref>] [--verbose]  - Output comma-separated list of affected Maven modules", file=sys.stderr)
+        print("", file=sys.stderr)
+        print("Options:", file=sys.stderr)
+        print("  --base <ref>   - Explicit base reference for git diff (e.g., origin/1.0.x)", file=sys.stderr)
+        print("  --verbose      - Show detailed logging to stderr", file=sys.stderr)
         sys.exit(1)
     
-    pr_number = sys.argv[1]
-    spring_ai_dir = Path(sys.argv[2])
+    command = sys.argv[1]
     
-    if not spring_ai_dir.exists():
-        print(f"Error: Directory {spring_ai_dir} does not exist")
+    if command == "modules-from-diff":
+        modules_from_diff_cli()
+    else:
+        print(f"Unknown command: {command}", file=sys.stderr)
+        print("Available commands: modules-from-diff", file=sys.stderr)
         sys.exit(1)
-    
-    discovery = TestDiscovery(pr_number, spring_ai_dir)
-    result = discovery.discover(force_refresh=True)
-    
-    print(discovery.format_for_display(result))
-    
-    # Also print JSON for debugging
-    print("\n" + "=" * 50)
-    print("JSON Output:")
-    print(json.dumps(asdict(result), indent=2))
 
 
 if __name__ == "__main__":
