@@ -2056,16 +2056,19 @@ Please fix all violations using the Spring AI project's specific checkstyle conf
                 f.write(content)
             Logger.info(f"🔍 Saved conflicted file for debugging: {debug_file}")
             
-            # Create prompt for Claude Code
-            claude_prompt = """Please resolve this Git merge conflict intelligently.
+            # Create prompt for Claude Code with VERY explicit instructions
+            claude_prompt = """CRITICAL INSTRUCTIONS - READ CAREFULLY:
 
-IMPORTANT: Output ONLY the clean file content - no explanations, no markdown code blocks, no comments.
+You are a file content processor. Your ONLY job is to output the resolved file content.
 
-The file contains Git conflict markers (<<<<<<< HEAD, =======, >>>>>>> branch).
-Analyze the conflicting changes and resolve them appropriately:
-- If both changes are compatible, merge them
-- If they conflict, choose the better/newer version
-- Remove all conflict markers
+DO NOT write any explanations, analysis, or commentary.
+DO NOT use markdown code blocks (no ``` fences).
+DO NOT say "I can see", "Let me analyze", "I'll output", or similar phrases.
+DO NOT describe what you're doing.
+
+OUTPUT FORMAT: Start your response with the FIRST LINE of the resolved file. Nothing before it.
+
+TASK: Remove Git conflict markers (<<<<<<< HEAD, =======, >>>>>>>) and output the resolved content.
 
 File content with conflicts:"""
             
@@ -2126,15 +2129,93 @@ File content with conflicts:"""
                 if result['success'] and result['response'] and result['response'].strip():
                     resolved_content = result['response'].strip()
                     Logger.info(f"🔍 Claude Code response preview: {resolved_content[:100]}...")
-                    
-                    # Strip markdown code fences if present
+
                     lines = resolved_content.split('\n')
-                    if lines and lines[0].startswith('```'):
-                        lines = lines[1:]
-                        Logger.info("🔍 Stripped opening code fence")
-                    if lines and lines[-1].startswith('```'):
-                        lines = lines[:-1]
-                        Logger.info("🔍 Stripped closing code fence")
+
+                    # Step 1: Strip markdown code fences if present
+                    opening_fence_idx = None
+                    closing_fence_idx = None
+
+                    for i, line in enumerate(lines):
+                        if line.startswith('```'):
+                            opening_fence_idx = i
+                            Logger.info(f"🔍 Found opening code fence at line {i}")
+                            break
+
+                    for i in range(len(lines) - 1, -1, -1):
+                        if lines[i].startswith('```'):
+                            closing_fence_idx = i
+                            Logger.info(f"🔍 Found closing code fence at line {i}")
+                            break
+
+                    if opening_fence_idx is not None and closing_fence_idx is not None and opening_fence_idx < closing_fence_idx:
+                        lines = lines[opening_fence_idx + 1:closing_fence_idx]
+                        Logger.info(f"🔍 Extracted {len(lines)} lines between code fences")
+                    elif opening_fence_idx is not None:
+                        lines = lines[opening_fence_idx + 1:]
+                        Logger.info(f"🔍 Stripped opening fence and preceding content")
+                    elif closing_fence_idx is not None:
+                        lines = lines[:closing_fence_idx]
+                        Logger.info(f"🔍 Stripped closing fence")
+
+                    # Step 2: Detect and strip explanatory text before actual file content
+                    # Common patterns in Claude Code responses that indicate explanatory text
+                    explanatory_patterns = [
+                        'I can see', 'Let me analyze', "I'll output", 'I will output',
+                        'Let me resolve', 'Looking at', 'The conflict is', 'This appears to be',
+                        'Here is the resolved', 'Here\'s the resolved', 'merge conflict'
+                    ]
+
+                    # File type specific start patterns
+                    file_start_patterns = {
+                        '.adoc': ['=', '//', ':'],  # AsciiDoc title, comment, or attribute
+                        '.java': ['package ', 'import ', '//', '/*', '@'],  # Java file starts
+                        '.xml': ['<?xml', '<'],  # XML declaration or root element
+                        '.yml': ['---', '#'],  # YAML document start or comment
+                        '.yaml': ['---', '#'],
+                        '.properties': ['#', '!'],  # Properties comment
+                        '.md': ['#', ''],  # Markdown heading or could be blank
+                    }
+
+                    # Find where actual file content starts
+                    content_start_idx = 0
+                    file_ext = file_path.suffix
+
+                    # First, skip any lines that look like explanatory text
+                    for i, line in enumerate(lines):
+                        stripped = line.strip()
+
+                        # Skip empty lines at start
+                        if not stripped:
+                            continue
+
+                        # Check if line contains explanatory patterns (case insensitive)
+                        is_explanatory = any(pattern.lower() in stripped.lower()
+                                           for pattern in explanatory_patterns)
+
+                        if is_explanatory:
+                            Logger.info(f"🔍 Skipping explanatory line {i}: {stripped[:60]}...")
+                            content_start_idx = i + 1
+                            continue
+
+                        # Check if line matches expected file start pattern
+                        if file_ext in file_start_patterns:
+                            patterns = file_start_patterns[file_ext]
+                            if any(stripped.startswith(p) for p in patterns):
+                                content_start_idx = i
+                                Logger.info(f"🔍 Found file content start at line {i}: {stripped[:60]}...")
+                                break
+
+                        # For unknown file types, assume non-explanatory text is content
+                        if not is_explanatory:
+                            content_start_idx = i
+                            Logger.info(f"🔍 Assuming content starts at line {i}: {stripped[:60]}...")
+                            break
+
+                    if content_start_idx > 0:
+                        lines = lines[content_start_idx:]
+                        Logger.info(f"🔍 Stripped {content_start_idx} lines of explanatory text")
+
                     resolved_content = '\n'.join(lines)
                     
                     # Verify the result doesn't still have conflict markers
@@ -2148,7 +2229,38 @@ File content with conflicts:"""
                         
                         Logger.info(f"🔍 Line count: {original_lines} → {resolved_lines}")
                         Logger.info(f"🔍 Content length: {len(content)} → {len(resolved_content)} chars")
-                        
+
+                        # File-type specific validation
+                        validation_passed = True
+                        validation_warnings = []
+
+                        if file_path.suffix == '.adoc':
+                            # AsciiDoc files should start with = (title) or valid AsciiDoc content
+                            first_line = resolved_content.split('\n')[0].strip()
+                            if first_line.startswith('This file contains') or 'merge conflict' in first_line.lower():
+                                validation_passed = False
+                                validation_warnings.append(f"AsciiDoc starts with explanatory text: '{first_line[:50]}'")
+                            elif not (first_line.startswith('=') or first_line.startswith('//') or
+                                     first_line.startswith(':') or first_line == ''):
+                                validation_warnings.append(f"AsciiDoc first line unusual: '{first_line[:50]}'")
+                                Logger.warn(f"⚠️  Warning: {validation_warnings[-1]}")
+
+                        elif file_path.suffix == '.java':
+                            # Java files should start with package, import, or comments
+                            first_line = resolved_content.lstrip().split('\n')[0]
+                            if not (first_line.startswith('package ') or first_line.startswith('import ') or
+                                   first_line.startswith('//') or first_line.startswith('/*') or
+                                   first_line.startswith('@')):
+                                validation_warnings.append(f"Java first line unusual: '{first_line[:50]}'")
+                                Logger.warn(f"⚠️  Warning: {validation_warnings[-1]}")
+
+                        if not validation_passed:
+                            Logger.warn(f"❌ File-type validation failed for: {file_path.name}")
+                            for warning in validation_warnings:
+                                Logger.warn(f"   {warning}")
+                            Logger.info(f"🔍 Content preview: {resolved_content[:200]}...")
+                            return False
+
                         if resolved_content.strip() and resolved_lines > original_lines // 2:
                             # Write resolved content back to original file
                             with open(file_path, 'w', encoding='utf-8') as f:
