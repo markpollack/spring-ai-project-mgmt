@@ -93,6 +93,14 @@ except ImportError as e:
     BlogGitAnalyzer = None
     BlogGitAnalyzer_available = False
 
+# Import shared version utilities for DRY compliance
+try:
+    from version_utils import get_release_type, get_previous_version, parse_version_components
+    VERSION_UTILS_AVAILABLE = True
+except ImportError as e:
+    VERSION_UTILS_AVAILABLE = False
+    Logger.warn(f"version_utils not available: {e}")
+
 @dataclass
 class ReleaseData:
     """Data structure for Spring AI release information"""
@@ -372,34 +380,68 @@ class SpringAIBlogGenerator:
         return clean_title.strip()
     
     def _determine_since_version(self) -> str:
-        """Determine since version based on release type with tag-date awareness"""
-        # For milestone releases like 1.1.0-M1, baseline from latest patch in previous minor series
-        if re.match(r'^\d+\.\d+\.\d+-M\d+$', self.version):
-            parts = self.version.split('-')[0].split('.')
+        """Determine since version based on release type with tag-date awareness
+
+        Uses shared version_utils for DRY compliance across all release scripts.
+        """
+        if not VERSION_UTILS_AVAILABLE:
+            Logger.warn("version_utils not available, using fallback logic")
+            return "1.0.0"
+
+        # Use shared utility to get previous version
+        previous_version = get_previous_version(self.version)
+
+        # Handle special cases where get_previous_version returns a pattern
+        # that needs to be resolved to an actual tag
+
+        # Case 1: Milestone M1 returns pattern like "1.0" (need latest patch in 1.0.x)
+        if re.match(r'^\d+\.\d+$', previous_version):
+            latest_patch = self._get_latest_patch_release(previous_version)
+            if latest_patch:
+                Logger.info(f"Using baseline version: {latest_patch} (latest patch in {previous_version}.x series)")
+                return latest_patch
+            else:
+                fallback = f"{previous_version}.0"
+                Logger.warn(f"No patches found in {previous_version}.x series, using fallback: {fallback}")
+                return fallback
+
+        # Case 2: RC1 returns pattern like "1.1.0-M" (need highest milestone)
+        if previous_version.endswith('-M'):
+            base_version = previous_version[:-2]  # Remove "-M"
+            try:
+                result = subprocess.run([
+                    'git', 'tag', '-l', f'v{base_version}-M*'
+                ], cwd=self.spring_ai_repo, capture_output=True, text=True, timeout=10)
+
+                if result.returncode == 0 and result.stdout.strip():
+                    tags = result.stdout.strip().split('\n')
+                    # Extract milestone numbers and find the highest
+                    milestone_nums = []
+                    for tag in tags:
+                        m = re.match(r'^v\d+\.\d+\.\d+-M(\d+)$', tag)
+                        if m:
+                            milestone_nums.append(int(m.group(1)))
+                    if milestone_nums:
+                        last_milestone = f"{base_version}-M{max(milestone_nums)}"
+                        Logger.info(f"Using baseline version: {last_milestone} (last milestone before RC1)")
+                        return last_milestone
+            except Exception as e:
+                Logger.warn(f"Could not find highest milestone for {base_version}: {e}")
+
+            # Fallback: use latest patch in previous minor series
+            parts = base_version.split('.')
             major, minor = int(parts[0]), int(parts[1])
-            
-            # Find latest patch release in previous minor series (e.g., for 1.1.0-M1, find latest 1.0.x)
             prev_minor_base = f"{major}.{minor-1}" if minor > 0 else f"{major-1}.0" if major > 1 else "1.0"
-            
-            # Get latest patch release with tag-date awareness
             latest_patch = self._get_latest_patch_release(prev_minor_base)
             if latest_patch:
                 Logger.info(f"Using baseline version: {latest_patch} (latest patch in {prev_minor_base}.x series)")
                 return latest_patch
-            else:
-                # Fallback to .0 if no patches exist
-                fallback = f"{prev_minor_base}.0"
-                Logger.warn(f"No patches found in {prev_minor_base}.x series, using fallback: {fallback}")
-                return fallback
-        
-        # For patch releases like 1.0.2, compare since previous patch
-        if re.match(r'^\d+\.\d+\.\d+$', self.version):
-            parts = self.version.split('.')
-            prev_patch = max(0, int(parts[2]) - 1)
-            return f"{parts[0]}.{parts[1]}.{prev_patch}"
-            
-        # Default fallback
-        return "1.0.0"
+            return f"{prev_minor_base}.0"
+
+        # Standard case: previous_version is a concrete version
+        release_type = get_release_type(self.version)
+        Logger.info(f"Using baseline version: {previous_version} (previous {release_type} release)")
+        return previous_version
     
     def _get_latest_patch_release(self, minor_series: str) -> Optional[str]:
         """Get the latest patch release in a minor series with tag-date awareness"""
@@ -862,7 +904,7 @@ class SpringAIBlogGenerator:
             highlights.append(f"Major stability improvements with {release_data.bug_fixes} bug fixes")
         
         if release_data.documentation > 20:
-            highlights.append(f"Comprehensive documentation updates with {release_data.documentation} improvements")
+            highlights.append(f"Documentation updates with {release_data.documentation} improvements")
             
         if release_data.dependency_upgrades > 0:
             highlights.append(f"Updated dependencies for better security and performance")
@@ -1001,7 +1043,7 @@ Thanks to all those who have contributed with issue reports and pull requests.''
 
 {doc_highlights}
 
-These improvements ensure that Spring AI continues to provide a robust and reliable foundation for building production-ready AI applications.'''
+'''
         
         # Try to use synthesis data first (commit-based facts)
         synthesis_highlights = self._generate_synthesis_highlights()
@@ -1012,7 +1054,7 @@ These improvements ensure that Spring AI continues to provide a robust and relia
 
 {synthesis_highlights}
 
-These improvements ensure that Spring AI continues to provide a robust and reliable foundation for building production-ready AI applications.'''
+'''
         
         # Fallback to seed content
         seed_highlights = self._extract_seed_highlights()
@@ -1022,7 +1064,7 @@ These improvements ensure that Spring AI continues to provide a robust and relia
 
 {seed_highlights}
 
-These improvements ensure that Spring AI continues to provide a robust and reliable foundation for building production-ready AI applications.'''
+'''
         
         # Final fallback to generic highlights
         if not release_data.key_highlights:
@@ -1035,28 +1077,13 @@ These improvements ensure that Spring AI continues to provide a robust and relia
 
 {highlights_text}
 
-These improvements ensure that Spring AI continues to provide a robust and reliable foundation for building production-ready AI applications.'''
+'''
     
     
     def _generate_community_section(self, release_data: ReleaseData) -> str:
-        """Generate community appreciation section"""
-        contributor_text = ""
-        if release_data.contributors:
-            contributor_list = ", ".join(release_data.contributors[:10])  # Limit for readability
-            if len(release_data.contributors) > 10:
-                contributor_list += f" and {len(release_data.contributors) - 10} others"
-            contributor_text = f" Special thanks to our contributors: {contributor_list}."
-        
-        return f'''
-## Community
-
-The Spring AI community continues to grow and contribute in meaningful ways. This release includes contributions from community members who reported issues, submitted fixes, and provided valuable feedback.{contributor_text}
-
-Thanks to all those who have contributed with issue reports and pull requests.
-
-### How can you help?
-
-If you're interested in contributing, check out the ["ideal for contribution" tag](https://github.com/spring-projects/spring-ai/labels/ideal-for-contribution) in our issue repository. For general questions, please ask on [Stack Overflow](https://stackoverflow.com) using the [`spring-ai` tag](https://stackoverflow.com/tags/spring-ai).'''
+        """Generate community appreciation section - removed, contributors listed at end"""
+        # This section is now redundant - contributors are listed once at the end
+        return ""
     
     def _generate_functional_themes_section(self, release_data: ReleaseData) -> str:
         """Generate functional themes section from AI-analyzed release notes"""
@@ -1119,27 +1146,33 @@ If you're interested in contributing, check out the ["ideal for contribution" ta
                 release_notes_content = f.read()
             
             # Create analysis prompt with the actual release notes content
-            analysis_prompt = f"""Analyze the following Spring AI release notes and extract 5-6 compelling, specific functional themes for a blog post.
+            analysis_prompt = f"""Analyze the following Spring AI release notes and extract 5-6 specific functional improvements for a blog post.
 
 Requirements:
 1. Each theme should be **bold** with a descriptive title
 2. Follow with a dash and specific details about what changed
-3. Focus on major functional areas, not generic improvements
-4. Use compelling language that highlights significance
+3. Focus on concrete features, avoiding superlatives like "revolutionary", "cutting-edge", "comprehensive", "production-ready"
+4. Use modest, factual language
 5. Be specific about technologies, models, and capabilities mentioned
-6. Avoid generic phrases like "enhanced" or "improved" - be specific
+6. Look for NEW features (commits starting with "feat:", "Add", major upgrades)
+7. Prioritize:
+   - MCP (Model Context Protocol) upgrades and features
+   - New AI model support (specific model names)
+   - Chat memory and conversation management improvements
+   - Vector store enhancements
+   - Security fixes and documentation
+   - Tool calling and function improvements
 
-Example format:
-- **Model Context Protocol Revolution** - complete MCP integration with annotation-based configuration, enabling seamless tool execution across HTTP, stdio, and SSE protocols
-- **Next-Generation AI Model Arsenal** - native support for GPT-5, Claude Opus-4, Google GenAI SDK, and ElevenLabs text-to-speech bringing cutting-edge capabilities directly to Spring Boot
+Example format (MODEST TONE):
+- **Azure Cosmos DB Chat Memory** - Added Azure Cosmos DB integration for chat memory storage
+- **Anthropic Prompt Caching** - Updated Anthropic integration with prompt caching strategies (system-only, system-and-tools, conversation-history)
+- **GemFire Vector Search** - Added metadata filtering for similarity search queries
 
-Focus on functional areas like:
-- Specific AI model integrations (name the models)
-- Vector store and RAG capabilities (specific improvements)
-- Tool calling and MCP protocol support (what's new)
-- Multimodal capabilities (audio, image, PDF processing)
-- Developer experience improvements (specific tooling)
-- Chat and memory management (what's enhanced)
+DO NOT USE phrases like:
+- "Revolutionary", "game-changing", "cutting-edge"
+- "Comprehensive", "production-ready", "enterprise-grade"
+- "Robust", "powerful", "advanced"
+- "Next-generation", "state-of-the-art"
 
 Return only the bullet points, no other text.
 
