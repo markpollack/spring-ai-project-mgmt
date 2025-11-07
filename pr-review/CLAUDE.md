@@ -7,6 +7,10 @@ AI-powered PR review automation system for Spring AI project with comprehensive 
 ## Essential Commands
 
 ```bash
+# Pre-flight validation (recommended before running workflow)
+python3 validate.py                          # Quick system check
+python3 validate.py --verbose                # Detailed validation
+
 # Complete PR analysis
 python3 pr_workflow.py 3914
 
@@ -24,7 +28,9 @@ python3 batch_pr_workflow.py 3920 3919 3921 3922 3927 3929
 
 - `pr_workflow.py` - Main workflow orchestrator
 - `batch_pr_workflow.py` - Batch processing for multiple PRs
-- `enhanced_report_generator.py` - AI-powered report generation
+- `validate.py` - Pre-flight validation for system state
+- `intelligent_squash.py` - Optimized commit squashing with reset_soft strategy
+- `enhanced_report_generator.py` - AI-powered report generation with test failure summaries
 - `ai_conversation_analyzer.py` - Claude Code conversation analysis
 - `solution_assessor.py` - Technical solution assessment
 - `ai_risk_assessor.py` - Security and quality risk assessment

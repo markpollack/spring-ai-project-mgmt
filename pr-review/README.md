@@ -278,14 +278,18 @@ The Spring AI PR Review system provides a **complete automated workflow** for ef
 When you run `python3 pr_workflow.py 3386`, here's what happens automatically:
 
 ### Phase 1: Repository Setup & PR Preparation
-1. **Repository Management**: Clones/updates Spring AI repository in isolated workspace
-2. **PR Checkout**: Uses GitHub CLI to fetch the specific PR branch
-3. **Branch Management**: Creates clean PR branch with proper upstream tracking
-4. **Initial Validation**: Ensures PR is in valid state for processing
+1. **Pre-flight Checks**: Auto-detects and cleans stuck git states (rebase, unmerged files)
+2. **Repository Management**: Clones/updates Spring AI repository in isolated workspace
+3. **PR Checkout**: Uses GitHub CLI to fetch the specific PR branch
+4. **Branch Management**: Creates clean PR branch with proper upstream tracking
+5. **Initial Validation**: Ensures PR is in valid state for processing
 
-### Phase 2: Intelligent Commit Management  
+### Phase 2: Intelligent Commit Management
 1. **Commit Analysis**: Analyzes PR commit structure and history
-2. **Intelligent Squashing**: Automatically squashes multiple commits into clean single commit
+2. **Intelligent Squashing**: Uses optimized `git reset --soft` strategy for instant squashing
+   - Handles PRs with any number of commits (1-100+)
+   - Preserves DCO signatures from all commits
+   - 16x faster than interactive rebase for multi-commit PRs
 3. **AI-Powered Commit Messages**: Uses Claude Code AI to generate comprehensive, professional commit messages based on PR context, changes, and discussions
 4. **Conflict-Aware Rebase**: Rebases against latest upstream with intelligent conflict detection
 
@@ -541,6 +545,30 @@ done
 
 ## 🛠️ Troubleshooting
 
+### Pre-flight Validation
+
+**Before running workflow**: Run validation script to catch common issues early:
+```bash
+python3 validate.py                  # Quick check
+python3 validate.py --verbose        # Detailed output
+```
+
+The validator checks:
+- Python syntax for all workflow scripts
+- Git repository state (stuck rebase, unmerged files)
+- Required dependencies (gh, git, Python 3.8+)
+
+**Problem**: Workflow fails with "needs merge" or rebase errors
+**Solution**: The workflow now includes automatic pre-flight checks that clean stuck states. If issues persist:
+```bash
+# Manual cleanup if needed
+cd spring-ai
+git rebase --abort
+git reset --hard HEAD
+git clean -fd
+cd ..
+```
+
 ### AI Analysis Issues
 
 **Problem**: AI assessments show "Manual assessment required due to AI parsing failure"
@@ -548,6 +576,16 @@ done
 ```bash
 python3 pr_workflow.py --report-only 3386
 ```
+
+**Problem**: Report shows "no test execution data available"
+**Solution**: Tests ran after report generation. Regenerate report to include test results:
+```bash
+python3 pr_workflow.py --report-only 3386
+```
+The report will now show:
+- Prominent test failure summary at top of test section
+- Error excerpts with stack traces (10 lines)
+- Direct links to detailed log files
 
 **Problem**: Claude Code returns "Execution error"
 **Solution**: Run the diagnostic test suite:
@@ -683,6 +721,10 @@ python3 commit_message_generator.py 3386     # AI-powered commit message generat
 
 ### Utility Scripts
 ```bash
+# Pre-flight validation
+python3 validate.py                          # Check system state before running workflow
+python3 validate.py --verbose                # Detailed validation output
+
 # Intelligent commit squashing
 python3 intelligent_squash.py 3386           # Analyze and squash commits automatically
 python3 intelligent_squash.py --dry-run 3386 # Preview squash operations
