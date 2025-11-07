@@ -2445,11 +2445,6 @@ File content with conflicts:"""
                 else:
                     Logger.error("❌ Context collection failed")
                     return False
-            
-            # Run test discovery after context collection
-            Logger.info("🔍 Running test discovery for affected modules...")
-            if not self.run_test_discovery(pr_number, dry_run):
-                Logger.warn("⚠️  Test discovery failed, continuing anyway")
         
         # Phase 4.6: Generate comprehensive commit message (DISABLED)
         # TODO: Fix commit message generation before re-enabling
@@ -2501,6 +2496,13 @@ File content with conflicts:"""
                 if self.execution_tracker:
                     self.execution_tracker.end_workflow(success=False)
                 return False
+
+        # Phase 5.2: Test Discovery (after rebase)
+        # Run test discovery AFTER rebase to ensure we only detect modules affected by THIS PR
+        # Running before rebase would compare old base commit vs current main (incorrect)
+        Logger.info("🔍 Running test discovery for affected modules...")
+        if not self.run_test_discovery(pr_number, dry_run):
+            Logger.warn("⚠️  Test discovery failed, continuing anyway")
 
         # Phase 5.5: Build documentation if PR contains .adoc files
         # This happens after rebase/conflict resolution and compilation

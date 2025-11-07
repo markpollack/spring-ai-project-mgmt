@@ -26,19 +26,23 @@ class PRTestDiscovery:
         try:
             changed_files = self._get_changed_files(base_ref)
             affected_modules = self._discover_affected_modules(changed_files)
-            
-            # Verbose logging to stderr
+
+            # Debug logging to stderr (always enabled for troubleshooting)
+            detected_base = base_ref if base_ref else self._detect_default_base()
+            print(f"[TEST-DISCOVERY] Base ref: {detected_base}", file=sys.stderr)
+            print(f"[TEST-DISCOVERY] Git diff: {self._get_last_git_command()}", file=sys.stderr)
+            print(f"[TEST-DISCOVERY] Changed files: {len(changed_files)}", file=sys.stderr)
+            for i, file in enumerate(changed_files[:5], 1):  # Show first 5
+                print(f"[TEST-DISCOVERY]   {i}. {file}", file=sys.stderr)
+            if len(changed_files) > 5:
+                print(f"[TEST-DISCOVERY]   ... and {len(changed_files) - 5} more", file=sys.stderr)
+            result_str = ",".join(affected_modules) if affected_modules else "<none>"
+            print(f"[TEST-DISCOVERY] Affected modules ({len(affected_modules)}): {result_str}", file=sys.stderr)
+
+            # Original verbose logging for compatibility
             if verbose:
-                detected_base = base_ref if base_ref else self._detect_default_base()
-                print(f"Detected base ref: {detected_base}", file=sys.stderr)
-                print(f"Git diff strategy used: {self._get_last_git_command()}", file=sys.stderr)
-                print(f"Changed files ({len(changed_files)}):", file=sys.stderr)
-                for file in changed_files[:10]:  # Limit to first 10 for readability
+                for file in changed_files[5:10]:  # Show next 5 if verbose
                     print(f"  - {file}", file=sys.stderr)
-                if len(changed_files) > 10:
-                    print(f"  ... and {len(changed_files) - 10} more files", file=sys.stderr)
-                result_str = ",".join(affected_modules) if affected_modules else "<none>"
-                print(f"Final module list: {result_str}", file=sys.stderr)
             
             if not affected_modules:
                 # Return empty string for no modules (PR review will skip module-specific build)
@@ -128,18 +132,14 @@ class PRTestDiscovery:
     def _discover_affected_modules(self, changed_files: List[str]) -> List[str]:
         """Identify which Maven modules are affected by the changed files"""
         modules = set()
-        
+
         for file_path in changed_files:
             module = self._find_module_for_file(file_path)
-            # DEBUG: Print what we're finding
-            print(f"DEBUG: file={file_path} -> module={module}", file=sys.stderr)
+            # Debug logging (always enabled for troubleshooting)
+            print(f"[TEST-DISCOVERY] {file_path} -> {module if module else '<skipped>'}", file=sys.stderr)
             if module and module != ".":  # Exclude root module to prevent full builds
                 modules.add(module)
-                print(f"DEBUG: Added module: {module}", file=sys.stderr)
-            elif module == ".":
-                print(f"DEBUG: Excluded root module for file: {file_path}", file=sys.stderr)
-        
-        print(f"DEBUG: Final modules before return: {sorted(list(modules))}", file=sys.stderr)
+
         return sorted(list(modules))
     
     def _find_module_for_file(self, file_path: str) -> Optional[str]:
