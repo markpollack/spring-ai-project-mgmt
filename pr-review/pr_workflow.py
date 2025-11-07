@@ -585,10 +585,34 @@ class PRWorkflow:
             Logger.error(f"Directory {self.config.spring_ai_dir} exists but is not a git repository")
             return False
         
+        # Pre-flight checks: Clean up any stuck git state before proceeding
+        Logger.info("Running pre-flight checks...")
+        rebase_head = self.config.spring_ai_dir / ".git" / "REBASE_HEAD"
+        if rebase_head.exists():
+            Logger.warn("⚠️  Detected stuck rebase state - cleaning up...")
+            try:
+                self.git.run_git(["rebase", "--abort"])
+                Logger.info("✅ Aborted stuck rebase")
+            except subprocess.CalledProcessError:
+                Logger.warn("Could not abort rebase, will try alternative cleanup")
+
+        # Check for unmerged files and reset if needed
+        try:
+            status_result = self.git.run_git(["status", "--porcelain"], check=False)
+            unmerged = [line for line in status_result.stdout.split('\n')
+                       if line.startswith(('UU ', 'AA ', 'DD '))]
+            if unmerged:
+                Logger.warn(f"⚠️  Found {len(unmerged)} unmerged files - resetting repository...")
+                self.git.run_git(["reset", "--hard", "HEAD"])
+                self.git.run_git(["clean", "-fd"])
+                Logger.info("✅ Repository reset to clean state")
+        except Exception as e:
+            Logger.warn(f"Pre-flight check encountered issue (will continue): {e}")
+
         # Fetch latest changes from origin
         Logger.info("Fetching latest changes from origin...")
         self.git.run_git(["fetch", self.config.upstream_remote])
-        
+
         # Switch to main branch and update
         Logger.info(f"Switching to {self.config.main_branch} branch...")
         self.git.run_git(["checkout", self.config.main_branch])
