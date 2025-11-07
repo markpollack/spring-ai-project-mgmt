@@ -265,49 +265,43 @@ class IntelligentSquash:
             Logger.info(f"📥 Fetching PR head commit: {github_head_sha[:8]}")
             self.run_git(["fetch", "origin", github_head_sha])
 
-            # Step 2: Create a patch of ONLY the PR's changes
-            Logger.info(f"📄 Creating patch: {github_base_sha[:8]}..{github_head_sha[:8]}")
-            patch_result = self.run_git([
-                "diff", f"{github_base_sha}..{github_head_sha}"
+            # Step 2: Get list of files actually changed by the PR (from GitHub API)
+            Logger.info(f"📄 Getting PR changed files from GitHub API...")
+            pr_files_result = self.run_gh([
+                "pr", "view", pr_number, "--repo", self.spring_ai_repo,
+                "--json", "files", "--jq", ".files[].path"
             ])
-            patch_content = patch_result.stdout
+            changed_files = [f.strip() for f in pr_files_result.stdout.strip().split('\n') if f.strip()]
 
-            if not patch_content.strip():
-                Logger.warn("⚠️  Patch is empty - no changes to apply")
+            if not changed_files:
+                Logger.warn("⚠️  No files changed - nothing to apply")
                 return False
 
-            # Log patch stats
-            lines = patch_content.split('\n')
-            files_changed = len([l for l in lines if l.startswith('diff --git')])
-            Logger.info(f"📋 Patch affects {files_changed} file(s)")
+            Logger.info(f"📋 PR actually changes {len(changed_files)} file(s):")
+            for f in changed_files:
+                Logger.info(f"   - {f}")
 
             # Step 3: Reset to current origin/main
             Logger.info("🔄 Resetting to current origin/main")
             self.run_git(["fetch", "origin", "main:refs/remotes/origin/main"])
             self.run_git(["reset", "--hard", "origin/main"])
 
-            # Step 4: Apply the patch
-            Logger.info("📝 Applying PR changes...")
+            # Step 4: Checkout changed files from PR head
+            Logger.info("📝 Checking out PR changes from head commit...")
 
-            # Write patch to temp file
-            import tempfile
-            with tempfile.NamedTemporaryFile(mode='w', suffix='.patch', delete=False) as f:
-                patch_file = f.name
-                f.write(patch_content)
-
+            # Checkout all changed files from PR head
             try:
-                # Apply patch
-                self.run_git(["apply", "--index", patch_file])
-                Logger.success("✅ Patch applied successfully")
-            finally:
-                # Clean up temp file
-                os.unlink(patch_file)
+                self.run_git(["checkout", github_head_sha, "--"] + changed_files)
+                Logger.success(f"✅ Checked out {len(changed_files)} file(s) from PR")
+            except subprocess.CalledProcessError as e:
+                Logger.error(f"❌ Failed to checkout files from PR head: {e}")
+                raise
 
             # Step 5: Create comprehensive commit message
             commit_message = self.build_squash_commit_message(pr_number, title, commits)
 
             # Step 6: Commit the changes
-            Logger.info("📝 Creating squashed commit...")
+            Logger.info("💾 Creating squashed commit...")
 
             # Write commit message to temp file for proper multi-line handling
             with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False) as f:
