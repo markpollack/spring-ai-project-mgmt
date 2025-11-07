@@ -501,7 +501,8 @@ class EnhancedReportGenerator:
                 'summary_available': True,
                 'summary_file': str(test_summary_file),
                 'logs_directory': str(test_logs_dir),
-                'raw_content': content
+                'raw_content': content,
+                'pr_number': pr_number  # Include PR number for log links
             }
             
             # Parse basic statistics from the content
@@ -713,6 +714,7 @@ class EnhancedReportGenerator:
             'skipped_tests_count': 0,  # Not tracked in current implementation
             'test_execution_time': 'Not tracked',  # Could be added to workflow
             'overall_test_status': self._get_overall_test_status(test_results),
+            'test_failure_summary': self._build_prominent_test_failure_summary(test_results),
             'test_categories_section': self._build_test_categories_section(test_results),
             'test_results_by_module_section': self._build_test_results_by_module_section(test_results),
             'failed_tests_section': self._build_failed_tests_section(test_results),
@@ -1075,7 +1077,119 @@ class EnhancedReportGenerator:
                 failed_section.append(f"- **{test_info}**: FAILED")
         
         return '\n'.join(failed_section)
-    
+
+    def _build_prominent_test_failure_summary(self, test_results: Dict[str, Any]) -> str:
+        """Build a prominent test failure summary with detailed error excerpts
+
+        This creates a red-highlighted summary box at the top of the test section
+        showing failed tests with their error details for quick visibility.
+        """
+        failed_tests = test_results.get('failed_test_list', [])
+
+        if not failed_tests:
+            return ""
+
+        test_logs_dir = test_results.get('logs_directory', '')
+
+        summary_lines = [
+            "### ⚠️ Test Failures Detected",
+            "",
+            f"**{len(failed_tests)} test(s) failed. Review required before merge.**",
+            ""
+        ]
+
+        for idx, test_info in enumerate(failed_tests, 1):
+            if isinstance(test_info, dict):
+                name = test_info.get('name', 'Unknown')
+                status = test_info.get('status', 'FAILED')
+                log_file = test_info.get('log_file', '')
+
+                # Extract detailed error excerpt (first 10 lines of actual error)
+                error_excerpt = self._extract_error_excerpt(test_logs_dir, log_file, max_lines=10)
+
+                # Build the failure entry
+                summary_lines.append(f"#### {idx}. {name}")
+                summary_lines.append(f"**Status**: {status}")
+
+                if error_excerpt:
+                    summary_lines.append("")
+                    summary_lines.append("**Error Details:**")
+                    summary_lines.append("```")
+                    summary_lines.append(error_excerpt)
+                    summary_lines.append("```")
+
+                if log_file:
+                    # Make the log path relative to reports directory for proper linking
+                    log_link = f"test-logs-pr-{test_results.get('pr_number', 'unknown')}/{log_file}"
+                    summary_lines.append(f"📋 [View Full Log]({log_link})")
+
+                summary_lines.append("")
+                summary_lines.append("---")
+                summary_lines.append("")
+
+        return '\n'.join(summary_lines)
+
+    def _extract_error_excerpt(self, logs_dir: str, log_file: str, max_lines: int = 10) -> str:
+        """Extract the most relevant error excerpt from test log file
+
+        Args:
+            logs_dir: Directory containing log files
+            log_file: Name of the log file
+            max_lines: Maximum number of lines to extract
+
+        Returns:
+            String containing the error excerpt, or empty string if not found
+        """
+        if not logs_dir or not log_file:
+            return ""
+
+        try:
+            import re
+            log_path = Path(logs_dir) / log_file
+            if not log_path.exists():
+                return f"Log file not found: {log_file}"
+
+            with open(log_path, 'r', encoding='utf-8') as f:
+                lines = f.readlines()
+
+            # Look for key error indicators
+            error_indicators = [
+                'Tests run:',
+                'Failures:',
+                'java.lang.AssertionError',
+                'AssertionFailedError',
+                'Exception',
+                '[ERROR]',
+                'FAILED',
+                'BUILD FAILURE'
+            ]
+
+            # Find lines with error indicators
+            error_start_idx = None
+            for i, line in enumerate(lines):
+                if any(indicator in line for indicator in error_indicators):
+                    error_start_idx = i
+                    break
+
+            if error_start_idx is None:
+                # No clear error found, return last few lines
+                excerpt_lines = lines[-max_lines:] if len(lines) > max_lines else lines
+            else:
+                # Extract from error start
+                excerpt_lines = lines[error_start_idx:error_start_idx + max_lines]
+
+            # Clean up and join
+            excerpt = ''.join(excerpt_lines).strip()
+
+            # Truncate if too long
+            if len(excerpt) > 1000:
+                excerpt = excerpt[:1000] + "\n... (truncated)"
+
+            return excerpt
+
+        except Exception as e:
+            return f"Error reading log: {str(e)}"
+
     def _build_test_coverage_section(self, test_results: Dict[str, Any]) -> str:
         """Build test coverage analysis section"""
         if not test_results.get('summary_available', False):

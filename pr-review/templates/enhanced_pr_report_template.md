@@ -104,6 +104,8 @@ Status: {pr_status}
 
 ## 🧪 Test Execution Results
 
+{test_failure_summary}
+
 ### Test Summary
 - **Total Tests**: {total_tests_count}
 - **Passed**: {passed_tests_count} ✅
