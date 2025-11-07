@@ -109,23 +109,38 @@ class IntelligentSquash:
         )
     
     def get_pr_info(self, pr_number: str) -> Tuple[str, List[dict], str]:
-        """Get PR information from GitHub API"""
+        """Get PR information from GitHub API and calculate actual merge-base"""
         Logger.info("📋 Fetching PR information from GitHub...")
-        
+
         result = self.run_gh([
             "pr", "view", pr_number, "--repo", self.spring_ai_repo,
             "--json", "baseRefOid,commits,title"
         ])
-        
+
         pr_data = json.loads(result.stdout)
-        base_sha = pr_data["baseRefOid"]
+        github_base_sha = pr_data["baseRefOid"]
         commits = pr_data["commits"]
         title = pr_data["title"]
-        
+
         Logger.info(f"PR Title: {title}")
-        Logger.info(f"Base SHA: {base_sha[:8]}")
-        Logger.info(f"Total commits: {len(commits)}")
-        
+        Logger.info(f"GitHub base (target branch HEAD): {github_base_sha[:8]}")
+        Logger.info(f"Total commits in PR: {len(commits)}")
+
+        # Calculate the actual merge-base with origin/main
+        # This is where the PR branch actually diverged from main
+        try:
+            merge_base_result = self.run_git(["merge-base", "HEAD", "origin/main"])
+            merge_base_sha = merge_base_result.stdout.strip()
+            Logger.info(f"Calculated merge-base: {merge_base_sha[:8]}")
+
+            # Use merge-base as the actual base for squashing
+            base_sha = merge_base_sha
+        except subprocess.CalledProcessError as e:
+            Logger.warn(f"⚠️  Could not calculate merge-base, falling back to GitHub base: {e}")
+            base_sha = github_base_sha
+
+        Logger.info(f"Using base SHA for squash: {base_sha[:8]}")
+
         return base_sha, commits, title
     
     def detect_merge_commits(self, base_sha: str, commits: List[dict]) -> List[str]:
