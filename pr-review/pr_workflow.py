@@ -2482,7 +2482,26 @@ File content with conflicts:"""
                 if self.execution_tracker:
                     self.execution_tracker.end_workflow(success=False)
                 return False
-        
+
+        # Phase 5.1: Post-Rebase Build Check
+        # Verify the rebased code compiles with upstream changes
+        # This catches incompatibilities introduced by rebasing against latest main
+        Logger.info("🔍 Running post-rebase compilation check...")
+        Logger.info("This checks the final merged state after rebasing against upstream")
+        if not self.run_build_check(pr_number, skip_compile=False, dry_run=dry_run):
+            if batch_mode:
+                Logger.warn("⚠️  Post-rebase build check failed (batch mode - continuing)")
+            else:
+                Logger.error("❌ Post-rebase build check failed")
+                Logger.error("The PR code may be incompatible with latest upstream changes")
+                Logger.info("This is often caused by:")
+                Logger.info("  - API changes in upstream that affect this PR")
+                Logger.info("  - Method signature changes in base classes")
+                Logger.info("  - Interface changes that require implementation updates")
+                if self.execution_tracker:
+                    self.execution_tracker.end_workflow(success=False)
+                return False
+
         # Phase 5.5: Build documentation if PR contains .adoc files
         # This happens after rebase/conflict resolution and compilation
         if not self.run_antora_docs_build(pr_number, skip_docs=skip_docs, dry_run=dry_run):

@@ -301,17 +301,32 @@ When you run `python3 pr_workflow.py 3386`, here's what happens automatically:
    - Maintains code integrity and functionality
 3. **Verification**: Ensures all conflicts are properly resolved and code compiles
 
-### Phase 4: Human-Assisted Compilation Error Resolution
-1. **Compilation Validation**: Runs full compilation check before proceeding
-2. **Single AI Attempt**: Makes one focused attempt to fix compilation errors using Claude Code
+### Phase 4: Two-Stage Compilation Validation with AI Error Resolution
+
+**Stage 1: Pre-Rebase Compilation Check** (fail-fast)
+1. **Early Validation**: Runs before squash/rebase to catch broken PRs immediately
+2. **AI Error Resolution**: Makes one focused attempt to fix compilation errors using Claude Code
    - Understands Java/Spring patterns and conventions
    - Fixes method signature issues, import problems, API changes
    - Uses MCP Java SDK for accurate type information
-3. **Human Handoff**: If errors remain, stops with clear guidance:
+3. **Cost Savings**: Prevents wasting time on obviously broken PRs (~5 seconds)
+
+**Stage 2: Post-Rebase Compilation Check** (integration validation)
+1. **Final Merged State**: Runs after rebasing against latest upstream main
+2. **Catches Upstream Incompatibilities**: Detects issues like:
+   - API changes in upstream that affect this PR
+   - Method signature changes in base classes
+   - Interface changes that require implementation updates
+3. **AI Error Resolution**: Same intelligent fixing as Stage 1
+4. **Human Handoff**: If errors remain after both stages, stops with clear guidance
    - Shows exactly what compilation errors still exist
    - Provides the working directory path
    - Instructions to resume with `--resume-after-compile`
-4. **Seamless Resume**: `--resume-after-compile` continues full workflow after manual fixes
+
+**Why Two Stages?**
+- Total overhead: ~10 seconds (5s each)
+- Maximum safety: Catches both PR bugs and rebase-introduced incompatibilities
+- AI fixes available at both stages for automated resolution
 
 ### Phase 5: Comprehensive Testing
 1. **Test Discovery**: Identifies all tests affected by PR changes
