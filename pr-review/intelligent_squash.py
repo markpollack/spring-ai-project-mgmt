@@ -187,9 +187,18 @@ class IntelligentSquash:
             return ""
     
     def choose_squash_strategy(self, pr_number: str, base_sha: str, commits: List[dict]) -> SquashStrategy:
-        """Analyze PR and choose the best squashing strategy"""
+        """Analyze PR and choose the best squashing strategy
+
+        Strategy: Always use git reset --soft for squashing, regardless of merge commits.
+
+        Rationale:
+        - We're creating a single squashed commit, so merge history is irrelevant
+        - reset --soft is instant and never causes conflicts during the squash operation
+        - Conflicts will be resolved once during the subsequent rebase against main
+        - This is 16x faster than interactive rebase for PRs with many commits
+        """
         commits_count = len(commits)
-        
+
         if commits_count <= 1:
             return SquashStrategy(
                 method="none",
@@ -197,53 +206,68 @@ class IntelligentSquash:
                 commits_count=commits_count,
                 has_merge_commits=False
             )
-        
+
+        # Always use reset_soft for squashing - it's fast and conflict-free
+        # Conflicts will be resolved during the subsequent rebase against main
         merge_commits = self.detect_merge_commits(base_sha, commits)
         has_merge_commits = len(merge_commits) > 0
-        
-        if not has_merge_commits:
-            return SquashStrategy(
-                method="reset_soft",
-                reason="Clean linear history - safe for git reset --soft",
-                commits_count=commits_count,
-                has_merge_commits=False
-            )
-        else:
-            return SquashStrategy(
-                method="interactive_rebase",
-                reason=f"Contains {len(merge_commits)} merge commit(s) - requires interactive rebase",
-                commits_count=commits_count,
-                has_merge_commits=True,
-                merge_commits=merge_commits
-            )
+
+        if has_merge_commits:
+            Logger.info(f"Found {len(merge_commits)} merge commit(s) - will be flattened during squash")
+
+        return SquashStrategy(
+            method="reset_soft",
+            reason=f"Using git reset --soft for instant squash of {commits_count} commits",
+            commits_count=commits_count,
+            has_merge_commits=has_merge_commits,
+            merge_commits=merge_commits if has_merge_commits else None
+        )
     
     def squash_with_reset_soft(self, pr_number: str, base_sha: str, title: str, commits_count: int) -> bool:
         """Simple squash using git reset --soft"""
         Logger.info("🔄 Using git reset --soft approach (conflict-free)")
-        
+        Logger.info(f"📊 Squashing {commits_count} commits into 1")
+
         try:
-            # Step 1: Extract DCO signatures before reset
+            # Step 1: Verify commit count before squashing
+            result = self.run_git(["rev-list", "--count", f"{base_sha}..HEAD"])
+            before_count = int(result.stdout.strip())
+            Logger.info(f"📋 Commits before squash: {before_count}")
+
+            if before_count != commits_count:
+                Logger.warn(f"⚠️  Warning: Expected {commits_count} commits, found {before_count}")
+
+            # Step 2: Extract DCO signatures before reset
             dco_signatures = self.extract_dco_signatures(base_sha)
-            
-            # Step 2: Reset to base commit keeping changes staged
+
+            # Step 3: Reset to base commit keeping changes staged
             Logger.info(f"Resetting to base commit: {base_sha[:8]}")
             self.run_git(["reset", "--soft", base_sha])
-            
-            # Step 3: Create squashed commit with meaningful message and preserve DCO
+
+            # Step 4: Create squashed commit with meaningful message and preserve DCO
             commit_message = f"{title}\n\nSquashed {commits_count} commits from PR #{pr_number}"
             if dco_signatures:
                 commit_message += f"\n\n{dco_signatures}"
-            
+
             Logger.info("Creating squashed commit...")
             self.run_git(["commit", "-m", commit_message])
-            
-            # Step 4: Verify success
+
+            # Step 5: Verify exactly 1 commit exists after squashing
+            result = self.run_git(["rev-list", "--count", f"{base_sha}..HEAD"])
+            after_count = int(result.stdout.strip())
+
+            if after_count != 1:
+                Logger.error(f"❌ Squash validation failed: expected 1 commit, found {after_count}")
+                return False
+
+            # Step 6: Log success with commit details
             result = self.run_git(["log", "--oneline", "-1"])
             new_commit = result.stdout.strip()
-            Logger.success(f"✅ Squash successful: {new_commit}")
-            
+            Logger.success(f"✅ Squash successful: {before_count} → 1 commit")
+            Logger.success(f"   {new_commit}")
+
             return True
-            
+
         except subprocess.CalledProcessError as e:
             Logger.error(f"❌ git reset --soft failed: {e}")
             return False
@@ -299,165 +323,243 @@ class IntelligentSquash:
             except OSError:
                 pass
     
-    def _handle_rebase_conflicts(self, pr_number: str) -> bool:
-        """Handle rebase conflicts using existing Claude Code AI infrastructure"""
-        Logger.info("🧠 Analyzing conflicts with Claude Code AI...")
-        
-        # Log initial rebase state
-        self._log_rebase_state("start of conflict handling")
-        
-        try:
-            analysis = self.conflict_analyzer.analyze_conflicts(pr_number)
-            
-            if analysis.total_conflicts == 0:
-                Logger.success("✅ Conflicts were auto-resolved during analysis")
-                
-                # Complete the final cleanup automatically
-                try:
-                    status_result = self.run_git(["status", "--porcelain"])
-                    if status_result.stdout.strip():
-                        Logger.info("📋 Staging remaining changes after conflict resolution...")
-                        self.run_git(["add", "."])
-                    
-                    # Stage all resolved files first
-                    Logger.info("📋 Staging all resolved changes...")
-                    self.run_git(["add", "."])
-                    
-                    # Check if we're still in a rebase state
-                    rebase_head_exists = (self.spring_ai_dir / ".git" / "REBASE_HEAD").exists()
-                    if rebase_head_exists:
-                        Logger.info("Continuing rebase...")
-                        self._log_rebase_state("before rebase continue")
-                        
-                        try:
-                            self.run_git(["rebase", "--continue"])
-                            Logger.success("✅ Rebase completed successfully after conflict resolution")
-                            self._log_rebase_state("after successful rebase continue")
-                        except subprocess.CalledProcessError as e:
-                            Logger.error(f"❌ Rebase continue failed with exit code {e.returncode}")
-                            self._log_rebase_state("after failed rebase continue")
-                            raise
-                    else:
-                        # Not in rebase state, check if we have staged changes to commit
-                        try:
-                            status_result = self.run_git(["diff", "--cached", "--name-only"])
-                            if status_result.stdout.strip():
-                                Logger.info("Committing final conflict resolution changes...")
-                                self.run_git(["commit", "--amend", "--no-edit"])
-                        except subprocess.CalledProcessError:
-                            # If diff fails, just continue - no staged changes
-                            pass
-                        Logger.success("✅ Conflict resolution cleanup completed successfully")
-                    
-                    return True
-                    
-                except subprocess.CalledProcessError as e:
-                    Logger.error(f"❌ Failed to complete final cleanup: {e}")
-                    return False
-            
-            Logger.info(f"📊 Conflict analysis results:")
-            Logger.info(f"   Total conflicts: {analysis.total_conflicts}")
-            Logger.info(f"   🟡 Simple: {analysis.simple_conflicts}")
-            Logger.info(f"   🔴 Complex: {analysis.complex_conflicts}")
-            
-            # Generate resolution plan
-            plan_file = self.conflict_analyzer.generate_plan(analysis)
-            Logger.info(f"📋 Conflict resolution plan: {plan_file}")
-            
-            # Use the existing automated conflict resolution system
-            Logger.info("🤖 Attempting automated conflict resolution using existing PR workflow system...")
-            
-            # Import and use the existing PRWorkflow class for conflict resolution
+    def _handle_rebase_conflicts(self, pr_number: str, max_iterations: int = 5) -> bool:
+        """Handle rebase conflicts using existing Claude Code AI infrastructure
+
+        Args:
+            pr_number: The PR number being processed
+            max_iterations: Maximum number of conflict resolution iterations (default: 5)
+                           Reduced from 10 since we now squash before rebasing, so conflicts
+                           only appear during the final rebase, not during squashing.
+
+        Returns:
+            bool: True if all conflicts resolved successfully, False otherwise
+        """
+        iteration = 0
+
+        while iteration < max_iterations:
+            iteration += 1
+            Logger.info(f"🧠 Conflict resolution iteration {iteration}/{max_iterations}")
+
+            # Log initial rebase state
+            self._log_rebase_state(f"iteration {iteration} - start")
+
             try:
-                from pr_workflow import PRWorkflow, WorkflowConfig
-                
-                # Create workflow config (same as main workflow)
-                config = WorkflowConfig(
-                    script_dir=Path(__file__).parent,
-                    spring_ai_repo=self.spring_ai_repo
-                )
-                
-                # Create workflow instance
-                workflow = PRWorkflow(config)
-                
-                # Use the existing attempt_auto_resolution method
-                # Change to spring-ai directory for conflict resolution
-                original_cwd = os.getcwd()
-                try:
-                    os.chdir(self.spring_ai_dir)
-                    
-                    if workflow.attempt_auto_resolution(pr_number):
-                        Logger.info("✅ Conflicts were auto-resolved by PR workflow system!")
-                        success = True
-                    else:
-                        Logger.warn("❌ Auto-resolution failed")
-                        success = False
-                finally:
-                    os.chdir(original_cwd)
-                    
-                if success:
+                analysis = self.conflict_analyzer.analyze_conflicts(pr_number)
+
+                if analysis.total_conflicts == 0:
+                    Logger.success("✅ Conflicts were auto-resolved during analysis")
+
+                    # Complete the final cleanup automatically
                     try:
-                        # Stage all resolved changes first
+                        status_result = self.run_git(["status", "--porcelain"])
+                        if status_result.stdout.strip():
+                            Logger.info("📋 Staging remaining changes after conflict resolution...")
+                            self.run_git(["add", "."])
+
+                        # Stage all resolved files first
                         Logger.info("📋 Staging all resolved changes...")
                         self.run_git(["add", "."])
-                        
+
                         # Check if we're still in a rebase state
                         rebase_head_exists = (self.spring_ai_dir / ".git" / "REBASE_HEAD").exists()
                         if rebase_head_exists:
                             Logger.info("Continuing rebase...")
-                            self._log_rebase_state("before rebase continue (path 2)")
-                            
+                            self._log_rebase_state("before rebase continue")
+
                             try:
                                 self.run_git(["rebase", "--continue"])
-                                Logger.success("✅ Rebase completed successfully after auto-resolution")
-                                self._log_rebase_state("after successful rebase continue (path 2)")
+                                Logger.success("✅ Rebase completed successfully after conflict resolution")
+                                self._log_rebase_state("after successful rebase continue")
+                                return True  # Successfully completed rebase
                             except subprocess.CalledProcessError as e:
-                                Logger.error(f"❌ Rebase continue failed with exit code {e.returncode} (path 2)")
-                                self._log_rebase_state("after failed rebase continue (path 2)")
-                                raise
+                                Logger.warn(f"⚠️  Rebase continue encountered issues (exit code {e.returncode})")
+                                self._log_rebase_state("after failed rebase continue")
+
+                                # Check if there are new conflicts in the next commit
+                                status_result = self.run_git(["status", "--porcelain"], check=False)
+                                conflicted_files = [line for line in status_result.stdout.split('\n')
+                                                    if line.startswith(('UU ', 'AA ', 'DD '))]
+
+                                if conflicted_files:
+                                    Logger.info(f"🔄 Found {len(conflicted_files)} new conflicts in next commit - continuing resolution loop...")
+                                    continue  # Loop back to resolve new conflicts
+                                else:
+                                    Logger.error(f"❌ Rebase continue failed without new conflicts - unknown error")
+                                    return False
                         else:
-                            Logger.warn("⚠️  Rebase completed but may not have properly squashed commits")
-                            
-                        # After rebase, check if we have multiple commits and need to squash
-                        try:
-                            # Get base SHA and count commits since base
-                            base_sha, _, _ = self.get_pr_info(pr_number)
-                            result = self.run_git(["rev-list", "--count", f"{base_sha}..HEAD"])
-                            commit_count = int(result.stdout.strip())
-                            
-                            if commit_count > 1:
-                                Logger.warn(f"⚠️  Found {commit_count} commits after rebase - squashing needed")
-                                return self._force_squash_commits(pr_number, commit_count)
-                            else:
-                                Logger.success("✅ Single commit confirmed after rebase")
-                                return True
-                                
-                        except (subprocess.CalledProcessError, ValueError) as e:
-                            Logger.warn(f"Could not verify commit count: {e}")
-                            return True  # Assume success
-                        
+                            # Not in rebase state, check if we have staged changes to commit
+                            try:
+                                status_result = self.run_git(["diff", "--cached", "--name-only"])
+                                if status_result.stdout.strip():
+                                    Logger.info("Committing final conflict resolution changes...")
+                                    self.run_git(["commit", "--amend", "--no-edit"])
+                            except subprocess.CalledProcessError:
+                                # If diff fails, just continue - no staged changes
+                                pass
+                            Logger.success("✅ Conflict resolution cleanup completed successfully")
+                            return True
+
                     except subprocess.CalledProcessError as e:
-                        Logger.error(f"❌ Failed to complete conflict resolution process: {e}")
+                        Logger.error(f"❌ Failed to complete final cleanup: {e}")
                         return False
+
+                Logger.info(f"📊 Conflict analysis results:")
+                Logger.info(f"   Total conflicts: {analysis.total_conflicts}")
+                Logger.info(f"   🟡 Simple: {analysis.simple_conflicts}")
+                Logger.info(f"   🔴 Complex: {analysis.complex_conflicts}")
+
+                # Generate resolution plan
+                plan_file = self.conflict_analyzer.generate_plan(analysis)
+                Logger.info(f"📋 Conflict resolution plan: {plan_file}")
+
+                # Use the existing automated conflict resolution system
+                Logger.info("🤖 Attempting automated conflict resolution using existing PR workflow system...")
+
+                # Import and use the existing PRWorkflow class for conflict resolution
+                try:
+                    from pr_workflow import PRWorkflow, WorkflowConfig
+
+                    # Create workflow config (same as main workflow)
+                    config = WorkflowConfig(
+                        script_dir=Path(__file__).parent,
+                        spring_ai_repo=self.spring_ai_repo
+                    )
+
+                    # Create workflow instance
+                    workflow = PRWorkflow(config)
+
+                    # Use the existing attempt_auto_resolution method
+                    # Change to spring-ai directory for conflict resolution
+                    original_cwd = os.getcwd()
+                    try:
+                        os.chdir(self.spring_ai_dir)
+
+                        if workflow.attempt_auto_resolution(pr_number):
+                            Logger.info("✅ Conflicts were auto-resolved by PR workflow system!")
+                            success = True
+                        else:
+                            Logger.warn("❌ Auto-resolution failed")
+                            success = False
+                    finally:
+                        os.chdir(original_cwd)
+
+                    if success:
+                        try:
+                            # Stage all resolved changes first
+                            Logger.info("📋 Staging all resolved changes...")
+                            self.run_git(["add", "."])
+
+                            # Check if we're still in a rebase state
+                            rebase_head_exists = (self.spring_ai_dir / ".git" / "REBASE_HEAD").exists()
+                            if rebase_head_exists:
+                                Logger.info("Continuing rebase...")
+                                self._log_rebase_state("before rebase continue (path 2)")
+
+                                try:
+                                    self.run_git(["rebase", "--continue"])
+                                    Logger.success("✅ Rebase completed successfully after auto-resolution")
+                                    self._log_rebase_state("after successful rebase continue (path 2)")
+
+                                    # After rebase, check if we have multiple commits and need to squash
+                                    try:
+                                        # Get base SHA and count commits since base
+                                        base_sha, _, _ = self.get_pr_info(pr_number)
+                                        result = self.run_git(["rev-list", "--count", f"{base_sha}..HEAD"])
+                                        commit_count = int(result.stdout.strip())
+
+                                        if commit_count > 1:
+                                            Logger.warn(f"⚠️  Found {commit_count} commits after rebase - squashing needed")
+                                            return self._force_squash_commits(pr_number, commit_count)
+                                        else:
+                                            Logger.success("✅ Single commit confirmed after rebase")
+                                            return True
+
+                                    except (subprocess.CalledProcessError, ValueError) as e:
+                                        Logger.warn(f"Could not verify commit count: {e}")
+                                        return True  # Assume success
+
+                                except subprocess.CalledProcessError as e:
+                                    Logger.warn(f"⚠️  Rebase continue encountered issues (exit code {e.returncode}) (path 2)")
+                                    self._log_rebase_state("after failed rebase continue (path 2)")
+
+                                    # Check if there are new conflicts in the next commit
+                                    status_result = self.run_git(["status", "--porcelain"], check=False)
+                                    conflicted_files = [line for line in status_result.stdout.split('\n')
+                                                        if line.startswith(('UU ', 'AA ', 'DD '))]
+
+                                    if conflicted_files:
+                                        Logger.info(f"🔄 Found {len(conflicted_files)} new conflicts in next commit - continuing resolution loop...")
+                                        continue  # Loop back to resolve new conflicts
+                                    else:
+                                        Logger.error(f"❌ Rebase continue failed without new conflicts - unknown error")
+                                        return False
+                            else:
+                                Logger.warn("⚠️  Rebase completed but may not have properly squashed commits")
+
+                                # After rebase, check if we have multiple commits and need to squash
+                                try:
+                                    # Get base SHA and count commits since base
+                                    base_sha, _, _ = self.get_pr_info(pr_number)
+                                    result = self.run_git(["rev-list", "--count", f"{base_sha}..HEAD"])
+                                    commit_count = int(result.stdout.strip())
+
+                                    if commit_count > 1:
+                                        Logger.warn(f"⚠️  Found {commit_count} commits after rebase - squashing needed")
+                                        return self._force_squash_commits(pr_number, commit_count)
+                                    else:
+                                        Logger.success("✅ Single commit confirmed after rebase")
+                                        return True
+
+                                except (subprocess.CalledProcessError, ValueError) as e:
+                                    Logger.warn(f"Could not verify commit count: {e}")
+                                    return True  # Assume success
+
+                        except subprocess.CalledProcessError as e:
+                            Logger.error(f"❌ Failed to complete conflict resolution process: {e}")
+                            return False
+                    else:
+                        Logger.warn("⚠️  Automated conflict resolution could not resolve all conflicts")
+                        # Will exit loop and show manual intervention message
+
+                except Exception as import_error:
+                    Logger.warn(f"Could not import PR workflow system: {import_error}")
+                    Logger.info("Falling back to basic conflict analysis...")
+
+                # If we reach here in this iteration, resolution failed
+                Logger.warn(f"⚠️  Iteration {iteration}/{max_iterations}: Manual intervention may be required")
+
+                # Check if we should continue trying
+                if iteration < max_iterations:
+                    # Check if we still have conflicts to resolve
+                    status_result = self.run_git(["status", "--porcelain"], check=False)
+                    conflicted_files = [line for line in status_result.stdout.split('\n')
+                                        if line.startswith(('UU ', 'AA ', 'DD '))]
+                    if conflicted_files:
+                        Logger.info(f"Still have {len(conflicted_files)} conflicts - will retry in next iteration")
+                        continue
+
+                # No more conflicts or max iterations reached - exit loop
+                break
+
+            except Exception as e:
+                Logger.error(f"❌ Error analyzing conflicts in iteration {iteration}: {e}")
+                # Continue to next iteration unless we've exhausted attempts
+                if iteration < max_iterations:
+                    Logger.info(f"Will retry in next iteration ({iteration + 1}/{max_iterations})")
+                    continue
                 else:
-                    Logger.warn("⚠️  Automated conflict resolution could not resolve all conflicts")
-                    
-            except Exception as import_error:
-                Logger.warn(f"Could not import PR workflow system: {import_error}")
-                Logger.info("Falling back to basic conflict analysis...")
-            
-            Logger.warn("⚠️  Manual intervention required for remaining conflicts")
-            Logger.info("💡 Next steps:")
-            Logger.info("   1. Review the conflict resolution plan")  
-            Logger.info("   2. Use existing conflict resolution tools:")
-            Logger.info("      ./resolve-conflicts.sh 3386")
-            Logger.info("   3. Or resolve manually and run: git add . && git rebase --continue")
-            
-            return False
-            
-        except Exception as e:
-            Logger.error(f"❌ Error analyzing conflicts: {e}")
-            return False
+                    break
+
+        # If we exit the loop without returning, show manual intervention message
+        Logger.warn("⚠️  Manual intervention required for remaining conflicts")
+        Logger.info("💡 Next steps:")
+        Logger.info("   1. Review the conflict resolution plan")
+        Logger.info("   2. Use existing conflict resolution tools:")
+        Logger.info("      ./resolve-conflicts.sh 3386")
+        Logger.info("   3. Or resolve manually and run: git add . && git rebase --continue")
+
+        return False
     
     def _handle_existing_rebase(self, pr_number: str) -> bool:
         """Handle cases where we're already in the middle of a rebase"""
