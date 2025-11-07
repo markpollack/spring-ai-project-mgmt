@@ -108,40 +108,31 @@ class IntelligentSquash:
             check=True
         )
     
-    def get_pr_info(self, pr_number: str) -> Tuple[str, List[dict], str]:
-        """Get PR information from GitHub API and calculate actual merge-base"""
+    def get_pr_info(self, pr_number: str) -> Tuple[str, str, List[dict], str]:
+        """Get PR information from GitHub API
+
+        Returns:
+            Tuple of (github_base_sha, github_head_sha, commits, title)
+        """
         Logger.info("📋 Fetching PR information from GitHub...")
 
         result = self.run_gh([
             "pr", "view", pr_number, "--repo", self.spring_ai_repo,
-            "--json", "baseRefOid,commits,title"
+            "--json", "baseRefOid,headRefOid,commits,title"
         ])
 
         pr_data = json.loads(result.stdout)
         github_base_sha = pr_data["baseRefOid"]
+        github_head_sha = pr_data["headRefOid"]
         commits = pr_data["commits"]
         title = pr_data["title"]
 
         Logger.info(f"PR Title: {title}")
-        Logger.info(f"GitHub base (target branch HEAD): {github_base_sha[:8]}")
+        Logger.info(f"GitHub base (current target branch): {github_base_sha[:8]}")
+        Logger.info(f"GitHub head (PR branch tip): {github_head_sha[:8]}")
         Logger.info(f"Total commits in PR: {len(commits)}")
 
-        # Calculate the actual merge-base with origin/main
-        # This is where the PR branch actually diverged from main
-        try:
-            merge_base_result = self.run_git(["merge-base", "HEAD", "origin/main"])
-            merge_base_sha = merge_base_result.stdout.strip()
-            Logger.info(f"Calculated merge-base: {merge_base_sha[:8]}")
-
-            # Use merge-base as the actual base for squashing
-            base_sha = merge_base_sha
-        except subprocess.CalledProcessError as e:
-            Logger.warn(f"⚠️  Could not calculate merge-base, falling back to GitHub base: {e}")
-            base_sha = github_base_sha
-
-        Logger.info(f"Using base SHA for squash: {base_sha[:8]}")
-
-        return base_sha, commits, title
+        return github_base_sha, github_head_sha, commits, title
     
     def detect_merge_commits(self, base_sha: str, commits: List[dict]) -> List[str]:
         """Detect merge commits in the PR"""
@@ -200,7 +191,155 @@ class IntelligentSquash:
         except subprocess.CalledProcessError as e:
             Logger.warn(f"⚠️  Could not extract DCO signatures: {e}")
             return ""
-    
+
+    def build_squash_commit_message(self, pr_number: str, title: str, commits: List[dict]) -> str:
+        """Build comprehensive commit message with all PR commit details"""
+        commit_count = len(commits)
+
+        # Start with PR title
+        message_lines = [title, ""]
+
+        # Add commit details if there are multiple commits
+        if commit_count > 1:
+            message_lines.append(f"Squashed {commit_count} commits from PR #{pr_number}:")
+            message_lines.append("")
+
+            # Add each commit's message
+            for commit in commits:
+                oid_short = commit['oid'][:8]
+                headline = commit.get('messageHeadline', '(no message)')
+                message_lines.append(f"- {oid_short}: {headline}")
+
+                # Add commit body if present and not empty
+                body = commit.get('messageBody', '').strip()
+                if body:
+                    # Indent body lines
+                    for line in body.split('\n'):
+                        if line.strip():
+                            message_lines.append(f"  {line}")
+
+            message_lines.append("")
+        else:
+            message_lines.append(f"From PR #{pr_number}")
+            message_lines.append("")
+
+        # Extract and add DCO signatures
+        try:
+            dco_signatures = set()
+            for commit in commits:
+                message_body = commit.get('messageBody', '')
+                for line in message_body.split('\n'):
+                    line = line.strip()
+                    if line.startswith('Signed-off-by:'):
+                        dco_signatures.add(line)
+
+            if dco_signatures:
+                for sig in sorted(dco_signatures):
+                    message_lines.append(sig)
+        except Exception as e:
+            Logger.warn(f"⚠️  Could not extract DCO signatures from commit messages: {e}")
+
+        return '\n'.join(message_lines)
+
+    def squash_with_patch(self, pr_number: str, github_base_sha: str, github_head_sha: str,
+                          title: str, commits: List[dict]) -> bool:
+        """Create clean squashed commit using patch from GitHub base to head
+
+        This approach:
+        1. Creates a patch of ONLY the PR's actual changes (GitHub base -> head)
+        2. Resets to current origin/main
+        3. Applies the patch
+        4. Creates a single commit with comprehensive message including all commit details
+
+        Benefits:
+        - No conflicts during squash (we're applying a clean patch)
+        - Fast (single patch operation, no multi-commit rebase)
+        - Gets only PR changes, not old file versions from outdated branch
+        - Preserves full commit history in message
+        """
+        Logger.info("🔄 Using patch-based squash (conflict-free)")
+        Logger.info(f"📊 Extracting changes from {len(commits)} commits")
+
+        try:
+            # Step 1: Fetch the actual PR head commit from GitHub
+            Logger.info(f"📥 Fetching PR head commit: {github_head_sha[:8]}")
+            self.run_git(["fetch", "origin", github_head_sha])
+
+            # Step 2: Create a patch of ONLY the PR's changes
+            Logger.info(f"📄 Creating patch: {github_base_sha[:8]}..{github_head_sha[:8]}")
+            patch_result = self.run_git([
+                "diff", f"{github_base_sha}..{github_head_sha}"
+            ])
+            patch_content = patch_result.stdout
+
+            if not patch_content.strip():
+                Logger.warn("⚠️  Patch is empty - no changes to apply")
+                return False
+
+            # Log patch stats
+            lines = patch_content.split('\n')
+            files_changed = len([l for l in lines if l.startswith('diff --git')])
+            Logger.info(f"📋 Patch affects {files_changed} file(s)")
+
+            # Step 3: Reset to current origin/main
+            Logger.info("🔄 Resetting to current origin/main")
+            self.run_git(["fetch", "origin", "main:refs/remotes/origin/main"])
+            self.run_git(["reset", "--hard", "origin/main"])
+
+            # Step 4: Apply the patch
+            Logger.info("📝 Applying PR changes...")
+
+            # Write patch to temp file
+            import tempfile
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.patch', delete=False) as f:
+                patch_file = f.name
+                f.write(patch_content)
+
+            try:
+                # Apply patch
+                self.run_git(["apply", "--index", patch_file])
+                Logger.success("✅ Patch applied successfully")
+            finally:
+                # Clean up temp file
+                os.unlink(patch_file)
+
+            # Step 5: Create comprehensive commit message
+            commit_message = self.build_squash_commit_message(pr_number, title, commits)
+
+            # Step 6: Commit the changes
+            Logger.info("📝 Creating squashed commit...")
+
+            # Write commit message to temp file for proper multi-line handling
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False) as f:
+                msg_file = f.name
+                f.write(commit_message)
+
+            try:
+                self.run_git(["commit", "-F", msg_file])
+                Logger.success(f"✅ Created squashed commit with {len(commits)} commit details")
+            finally:
+                os.unlink(msg_file)
+
+            # Step 7: Verify the result
+            result = self.run_git(["rev-list", "--count", "origin/main..HEAD"])
+            commit_count = int(result.stdout.strip())
+
+            if commit_count == 1:
+                Logger.success("✅ Squash validation passed: exactly 1 commit created")
+
+                # Show the commit
+                self.run_git(["log", "-1", "--stat"])
+                return True
+            else:
+                Logger.error(f"❌ Squash validation failed: expected 1 commit, found {commit_count}")
+                return False
+
+        except subprocess.CalledProcessError as e:
+            Logger.error(f"❌ Patch-based squash failed: {e}")
+            if hasattr(e, 'stderr') and e.stderr:
+                Logger.error(f"Error details: {e.stderr}")
+            return False
+
     def choose_squash_strategy(self, pr_number: str, base_sha: str, commits: List[dict]) -> SquashStrategy:
         """Analyze PR and choose the best squashing strategy
 
@@ -479,7 +618,7 @@ class IntelligentSquash:
                                     # After rebase, check if we have multiple commits and need to squash
                                     try:
                                         # Get base SHA and count commits since base
-                                        base_sha, _, _ = self.get_pr_info(pr_number)
+                                        base_sha, _, _, _ = self.get_pr_info(pr_number)
                                         result = self.run_git(["rev-list", "--count", f"{base_sha}..HEAD"])
                                         commit_count = int(result.stdout.strip())
 
@@ -515,7 +654,7 @@ class IntelligentSquash:
                                 # After rebase, check if we have multiple commits and need to squash
                                 try:
                                     # Get base SHA and count commits since base
-                                    base_sha, _, _ = self.get_pr_info(pr_number)
+                                    base_sha, _, _, _ = self.get_pr_info(pr_number)
                                     result = self.run_git(["rev-list", "--count", f"{base_sha}..HEAD"])
                                     commit_count = int(result.stdout.strip())
 
@@ -642,7 +781,7 @@ class IntelligentSquash:
                         Logger.info("✅ Aborted stuck rebase, starting fresh squash...")
                         
                         # Start fresh squash process
-                        base_sha, commits, title = self.get_pr_info(pr_number)
+                        base_sha, _, commits, title = self.get_pr_info(pr_number)
                         strategy = self.choose_squash_strategy(pr_number, base_sha, commits)
                         
                         if strategy.method == "reset_soft":
@@ -659,7 +798,7 @@ class IntelligentSquash:
                         if self._emergency_cleanup():
                             Logger.info("✅ Emergency cleanup successful, starting fresh squash...")
                             # Try to start fresh after cleanup
-                            base_sha, commits, title = self.get_pr_info(pr_number)
+                            base_sha, _, commits, title = self.get_pr_info(pr_number)
                             strategy = self.choose_squash_strategy(pr_number, base_sha, commits)
                             
                             if strategy.method == "reset_soft":
@@ -803,47 +942,21 @@ class IntelligentSquash:
                 Logger.info("🔄 Detected existing rebase in progress, attempting to continue...")
                 return self._handle_existing_rebase(pr_number)
             
-            # Step 1: Get PR information
-            base_sha, commits, title = self.get_pr_info(pr_number)
-            
-            # Additional check: count current commits on this branch vs base
-            try:
-                current_commit_count = self.run_git(["rev-list", "--count", f"{base_sha}..HEAD"])
-                current_count = int(current_commit_count.stdout.strip())
-                pr_commit_count = len(commits)
-                
-                Logger.info(f"📊 PR original commits: {pr_commit_count}, Current commits: {current_count}")
-                if current_count > pr_commit_count:
-                    Logger.info(f"📋 Detected {current_count - pr_commit_count} additional commit(s) (likely auto-fixes)")
-            except Exception as e:
-                Logger.warn(f"Could not count current commits: {e}")
-            
-            # Step 2: Choose squash strategy
-            strategy = self.choose_squash_strategy(pr_number, base_sha, commits)
-            
-            Logger.info(f"📋 Squash Strategy: {strategy.method}")
-            Logger.info(f"📋 Reason: {strategy.reason}")
-            
-            if strategy.method == "none":
-                Logger.info("✅ No squashing needed")
+            # Step 1: Get PR information from GitHub
+            github_base_sha, github_head_sha, commits, title = self.get_pr_info(pr_number)
+
+            # Check if squashing is needed
+            if len(commits) <= 1:
+                Logger.info("✅ Only one commit in PR - no squashing needed")
                 return True
-            
+
             if dry_run:
-                Logger.info(f"[DRY RUN] Would squash {strategy.commits_count} commits using {strategy.method}")
-                if strategy.has_merge_commits:
-                    Logger.info("[DRY RUN] Merge commits detected:")
-                    for merge_commit in strategy.merge_commits:
-                        Logger.info(f"[DRY RUN]   {merge_commit}")
+                Logger.info(f"[DRY RUN] Would squash {len(commits)} commits using patch-based approach")
+                Logger.info(f"[DRY RUN] Patch: {github_base_sha[:8]}..{github_head_sha[:8]}")
                 return True
-            
-            # Step 3: Execute chosen strategy
-            if strategy.method == "reset_soft":
-                return self.squash_with_reset_soft(pr_number, base_sha, title, strategy.commits_count)
-            elif strategy.method == "interactive_rebase":
-                return self.squash_with_interactive_rebase(pr_number, base_sha, title, strategy.commits_count)
-            else:
-                Logger.error(f"❌ Unknown squash method: {strategy.method}")
-                return False
+
+            # Step 2: Use patch-based squash (fast, conflict-free, preserves commit history)
+            return self.squash_with_patch(pr_number, github_base_sha, github_head_sha, title, commits)
                 
         except Exception as e:
             Logger.error(f"❌ Squash failed with error: {e}")
@@ -855,7 +968,7 @@ class IntelligentSquash:
         
         try:
             # Get the base SHA from the PR info
-            base_sha, commits_data, title = self.get_pr_info(pr_number)
+            base_sha, _, commits_data, title = self.get_pr_info(pr_number)
             
             # Extract DCO signatures before reset
             dco_signatures = self.extract_dco_signatures(base_sha)
