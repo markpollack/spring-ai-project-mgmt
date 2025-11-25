@@ -87,11 +87,11 @@ class EnhancedReportGenerator:
             self.reports_dir = Path(reports_dir).absolute()
         self.reports_dir.mkdir(parents=True, exist_ok=True)
     
-    def generate_enhanced_report(self, pr_number: str, skip_backport: bool = False, force_fresh: bool = False) -> bool:
+    def generate_enhanced_report(self, pr_number: str, skip_backport: bool = False, force_fresh: bool = False, modernized_branch: str = None) -> bool:
         """Generate comprehensive enhanced PR report"""
         Logger.info(f"📋 Generating enhanced PR report for PR #{pr_number}")
         Logger.info(f"🔍 DEBUG: Starting enhanced report generation...")
-        
+
         try:
             # Load all analysis data
             Logger.info(f"🔍 DEBUG: Loading report data...")
@@ -100,9 +100,9 @@ class EnhancedReportGenerator:
             if not report_data:
                 Logger.error("❌ Failed to load report data")
                 return False
-            
+
             # Generate enhanced report content
-            report_content = self._generate_report_content(report_data)
+            report_content = self._generate_report_content(report_data, modernized_branch=modernized_branch)
             
             # Save enhanced report
             report_file = self.reports_dir / f"review-pr-{pr_number}.md"
@@ -562,24 +562,45 @@ class EnhancedReportGenerator:
             Logger.warn(f"⚠️  Could not load test results: {e}")
             return {}
     
-    def _generate_report_content(self, data: EnhancedReportData) -> str:
+    def _generate_report_content(self, data: EnhancedReportData, modernized_branch: str = None) -> str:
         """Generate the complete enhanced report content using template"""
-        
+
         # Load enhanced report template
         template_path = self.working_dir / "templates" / "enhanced_pr_report_template.md"
         if not template_path.exists():
             Logger.error(f"❌ Enhanced report template not found: {template_path}")
             raise FileNotFoundError(f"Enhanced report template not found: {template_path}")
-        
+
         with open(template_path, 'r', encoding='utf-8') as f:
             template = f.read()
-        
+
         # Build all template sections
         template_vars = self._build_template_variables(data)
-        
+
         # Format template with variables
         try:
             formatted_report = template.format(**template_vars)
+
+            # Add modernized branch banner if applicable
+            if modernized_branch:
+                banner = f"""
+---
+## ⚙️ Modernized Branch Report
+
+> **Note**: This report is generated for the modernized branch `{modernized_branch}`.
+> The code has been adapted from the original PR to work with the current codebase structure.
+> The PR metadata (description, comments, files) still references the original PR for context.
+
+---
+
+"""
+                # Insert banner after the title (first line) but before the rest of the report
+                lines = formatted_report.split('\n', 1)
+                if len(lines) == 2:
+                    formatted_report = lines[0] + '\n' + banner + lines[1]
+                else:
+                    formatted_report = banner + formatted_report
+
             return formatted_report
         except KeyError as e:
             Logger.error(f"❌ Template formatting error - missing variable: {e}")
@@ -707,6 +728,15 @@ class EnhancedReportGenerator:
         
         # Test Execution Results
         test_results = data.test_results
+        pr_number = data.pr_number
+
+        # Build test logs directory path
+        test_logs_dir = test_results.get('logs_directory', '')
+        if test_logs_dir:
+            test_logs_directory_path = test_logs_dir
+        else:
+            test_logs_directory_path = str(self.reports_dir / f"test-logs-pr-{pr_number}")
+
         template_vars.update({
             'total_tests_count': test_results.get('total_tests', 'N/A'),
             'passed_tests_count': test_results.get('passed_tests', 'N/A'),
@@ -715,6 +745,9 @@ class EnhancedReportGenerator:
             'test_execution_time': 'Not tracked',  # Could be added to workflow
             'overall_test_status': self._get_overall_test_status(test_results),
             'test_failure_summary': self._build_prominent_test_failure_summary(test_results),
+            'test_plan_section': self._build_test_plan_section(str(pr_number), data.file_changes),
+            'test_logs_directory_path': test_logs_directory_path,
+            'build_log_path': self._get_build_log_location(str(pr_number)),
             'test_categories_section': self._build_test_categories_section(test_results),
             'test_results_by_module_section': self._build_test_results_by_module_section(test_results),
             'failed_tests_section': self._build_failed_tests_section(test_results),
@@ -1083,6 +1116,7 @@ class EnhancedReportGenerator:
 
         This creates a red-highlighted summary box at the top of the test section
         showing failed tests with their error details for quick visibility.
+        Includes a quick-reference table and detailed per-test breakdowns.
         """
         failed_tests = test_results.get('failed_test_list', [])
 
@@ -1090,6 +1124,7 @@ class EnhancedReportGenerator:
             return ""
 
         test_logs_dir = test_results.get('logs_directory', '')
+        pr_number = test_results.get('pr_number', 'unknown')
 
         summary_lines = [
             "### ⚠️ Test Failures Detected",
@@ -1098,34 +1133,85 @@ class EnhancedReportGenerator:
             ""
         ]
 
-        for idx, test_info in enumerate(failed_tests, 1):
+        # Build quick-reference summary table
+        summary_lines.extend([
+            "#### Quick Reference",
+            "",
+            "| Test | Status | Root Cause |",
+            "|------|--------|------------|"
+        ])
+
+        # Collect failure info for table
+        failure_details = []
+        for test_info in failed_tests:
             if isinstance(test_info, dict):
                 name = test_info.get('name', 'Unknown')
                 status = test_info.get('status', 'FAILED')
                 log_file = test_info.get('log_file', '')
 
-                # Extract detailed error excerpt (first 10 lines of actual error)
-                error_excerpt = self._extract_error_excerpt(test_logs_dir, log_file, max_lines=10)
+                # Read log content for categorization
+                root_cause = 'Unknown'
+                log_content = ''
+                if test_logs_dir and log_file:
+                    try:
+                        log_path = Path(test_logs_dir) / log_file
+                        if log_path.exists():
+                            with open(log_path, 'r', encoding='utf-8') as f:
+                                log_content = f.read()
+                            root_cause = self._categorize_failure(log_content)
+                    except Exception:
+                        pass
 
-                # Build the failure entry
-                summary_lines.append(f"#### {idx}. {name}")
-                summary_lines.append(f"**Status**: {status}")
+                # Truncate name for table if too long
+                display_name = name if len(name) <= 40 else name[:37] + '...'
+                summary_lines.append(f"| `{display_name}` | {status} | {root_cause} |")
 
-                if error_excerpt:
-                    summary_lines.append("")
-                    summary_lines.append("**Error Details:**")
-                    summary_lines.append("```")
-                    summary_lines.append(error_excerpt)
-                    summary_lines.append("```")
+                failure_details.append({
+                    'name': name,
+                    'status': status,
+                    'log_file': log_file,
+                    'log_content': log_content,
+                    'root_cause': root_cause
+                })
 
-                if log_file:
-                    # Make the log path relative to reports directory for proper linking
-                    log_link = f"test-logs-pr-{test_results.get('pr_number', 'unknown')}/{log_file}"
-                    summary_lines.append(f"📋 [View Full Log]({log_link})")
+        summary_lines.append("")
+
+        # Detailed breakdown per test
+        summary_lines.append("#### Detailed Failure Information")
+        summary_lines.append("")
+
+        for idx, detail in enumerate(failure_details, 1):
+            name = detail['name']
+            status = detail['status']
+            log_file = detail['log_file']
+            root_cause = detail['root_cause']
+
+            summary_lines.append(f"##### {idx}. {name}")
+            summary_lines.append(f"**Status**: {status} | **Root Cause**: {root_cause}")
+
+            # Extract detailed error excerpt
+            error_excerpt = self._extract_error_excerpt(test_logs_dir, log_file, max_lines=10)
+
+            if error_excerpt:
+                summary_lines.append("")
+                summary_lines.append("**Error Details:**")
+                summary_lines.append("```")
+                summary_lines.append(error_excerpt)
+                summary_lines.append("```")
+
+            if log_file:
+                # Provide both relative and absolute paths
+                relative_log = f"test-logs-pr-{pr_number}/{log_file}"
+                absolute_log = Path(test_logs_dir) / log_file if test_logs_dir else None
 
                 summary_lines.append("")
-                summary_lines.append("---")
-                summary_lines.append("")
+                summary_lines.append(f"📋 [View Full Log]({relative_log})")
+                if absolute_log and absolute_log.exists():
+                    summary_lines.append(f"📁 Full path: `{absolute_log}`")
+
+            summary_lines.append("")
+            summary_lines.append("---")
+            summary_lines.append("")
 
         return '\n'.join(summary_lines)
 
@@ -1205,9 +1291,130 @@ class EnhancedReportGenerator:
         
         if test_results.get('logs_directory'):
             coverage_analysis.append(f"- **Detailed Logs**: Available in test-logs directory")
-        
+
         return '\n'.join(coverage_analysis)
-    
+
+    def _build_test_plan_section(self, pr_number: str, file_changes: List[Dict[str, Any]]) -> str:
+        """Build test plan section showing what tests will be run for this PR
+
+        Analyzes modified test files and affected modules to show what testing
+        will be performed, even before tests actually run.
+        """
+        if not file_changes:
+            return "*No test files identified in this PR*"
+
+        # Identify test files from the PR changes
+        test_files = []
+        affected_modules = set()
+
+        for change in file_changes:
+            filename = change.get('filename', '')
+            if '/test/' in filename and filename.endswith('.java'):
+                # Extract test file name
+                test_name = filename.split('/')[-1]
+
+                # Determine test type based on naming convention
+                if test_name.endswith('IT.java'):
+                    test_type = 'Integration'
+                elif test_name.endswith('Tests.java') or test_name.endswith('Test.java'):
+                    test_type = 'Unit'
+                else:
+                    test_type = 'Unknown'
+
+                # Extract module path (everything up to src/)
+                module_path = filename.split('/src/')[0] if '/src/' in filename else 'Unknown'
+
+                test_files.append({
+                    'name': test_name,
+                    'type': test_type,
+                    'module': module_path,
+                    'full_path': filename
+                })
+                affected_modules.add(module_path)
+
+        if not test_files:
+            return "*No test files modified in this PR*"
+
+        # Build the section
+        lines = [
+            f"**Modified Test Files**: {len(test_files)}",
+            f"**Affected Modules**: {len(affected_modules)}",
+            "",
+            "| Module | Test File | Type |",
+            "|--------|-----------|------|"
+        ]
+
+        for test in test_files:
+            # Truncate long module paths for readability
+            module_display = test['module']
+            if len(module_display) > 50:
+                module_display = '...' + module_display[-47:]
+            lines.append(f"| {module_display} | `{test['name']}` | {test['type']} |")
+
+        return '\n'.join(lines)
+
+    def _categorize_failure(self, log_content: str) -> str:
+        """Categorize the type of test failure based on log content
+
+        Returns a brief category string useful for quick triage.
+        """
+        import re
+
+        # Priority patterns for categorization (most specific first)
+        categories = [
+            (r'expected:\s*<(.+?)>\s*but was:\s*<(.+?)>', 'Assertion Failed'),
+            (r'expected same:<(.+?)>\s*was not:<(.+?)>', 'Reference Mismatch'),
+            (r'NoSuchMethodError', 'API Mismatch'),
+            (r'NoClassDefFoundError', 'Missing Class'),
+            (r'ClassNotFoundException', 'Missing Class'),
+            (r'Failed to load ApplicationContext', 'Spring Context Failed'),
+            (r'BeanCreationException', 'Spring Bean Error'),
+            (r'Connection refused|ConnectException', 'Connection Failed'),
+            (r'SocketTimeoutException|TimeoutException', 'Timeout'),
+            (r'OutOfMemoryError', 'Memory Error'),
+            (r'NullPointerException', 'Null Pointer'),
+            (r'IllegalArgumentException', 'Invalid Argument'),
+            (r'IllegalStateException', 'Invalid State'),
+            (r'java\.lang\.AssertionError', 'Assertion Failed'),
+            (r'BUILD FAILURE', 'Build Failed'),
+        ]
+
+        for pattern, category in categories:
+            if re.search(pattern, log_content, re.IGNORECASE):
+                return category
+
+        return 'Unknown'
+
+    def _get_build_log_location(self, pr_number: str) -> str:
+        """Get the build log file location from workflow execution tracking or logs directory
+
+        Returns a path to the most recent build log for this PR.
+        """
+        import json
+        import glob
+
+        # Try to get from workflow execution tracking
+        execution_file = self.context_dir / f"pr-{pr_number}" / "workflow-execution.json"
+        if execution_file.exists():
+            try:
+                with open(execution_file, 'r') as f:
+                    data = json.load(f)
+                for step in data.get('steps', []):
+                    if step.get('name') in ('compilation', 'build', 'test_execution'):
+                        log_file = step.get('details', {}).get('log_file')
+                        if log_file:
+                            return str(log_file)
+            except Exception:
+                pass
+
+        # Fallback: Find most recent full-build log
+        logs_pattern = str(self.working_dir / "logs" / "full-build-*.log")
+        build_logs = sorted(glob.glob(logs_pattern), reverse=True)
+        if build_logs:
+            return build_logs[0]
+
+        return "Not available"
+
     def _extract_failure_reason(self, logs_dir: str, log_file: str) -> str:
         """Extract failure reason from test log file"""
         if not logs_dir or not log_file:
@@ -1358,6 +1565,8 @@ def main():
                        help="Force fresh AI analysis (ignore cached assessments)")
     parser.add_argument("--skip-backport", action="store_true",
                        help="Skip backport assessment in report generation")
+    parser.add_argument("--modernized-branch", type=str, metavar='BRANCH_NAME',
+                       help="Indicate this report is for a pre-prepared modernized branch")
     parser.add_argument("--context-dir", type=str,
                        help="Directory containing PR context data (default: working_dir/context)")
     parser.add_argument("--reports-dir", type=str,
@@ -1410,7 +1619,7 @@ def main():
                     print(f"🗑️  Removed cached {cache_file}")
     
     # Generate enhanced report
-    success = generator.generate_enhanced_report(pr_number, skip_backport=args.skip_backport, force_fresh=force_fresh)
+    success = generator.generate_enhanced_report(pr_number, skip_backport=args.skip_backport, force_fresh=force_fresh, modernized_branch=getattr(args, 'modernized_branch', None))
     
     if success:
         print(f"\n✅ Enhanced report generated for PR #{pr_number}")

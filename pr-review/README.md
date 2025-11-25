@@ -593,20 +593,69 @@ python3 pr_workflow.py --report-only 3386
 ```
 
 **Problem**: Report shows "no test execution data available"
-**Solution**: Tests ran after report generation. Regenerate report to include test results:
+**Solution**: This typically means the report was generated from cached data before tests ran. The workflow now runs tests BEFORE report generation, so this should be rare. If you see this with old cached data, regenerate:
 ```bash
 python3 pr_workflow.py --report-only 3386
 ```
-The report will now show:
-- Prominent test failure summary at top of test section
-- Error excerpts with stack traces (10 lines)
-- Direct links to detailed log files
+The report includes comprehensive test information:
+- **Test Plan**: Shows what test files and modules are affected by the PR
+- **Quick Reference Table**: Failed tests with status and root cause categorization
+- **Error Excerpts**: Detailed stack traces (10 lines) with failure categorization
+- **Log Links**: Both relative and absolute paths to test log files
+- **Build Artifacts**: Paths to test logs directory and full build log
 
 **Problem**: Claude Code returns "Execution error"
 **Solution**: Run the diagnostic test suite:
 ```bash
 python3 test_claude_code_wrapper.py
 ```
+
+### Re-running Workflows on Existing PR Branches
+
+The workflow is designed to be **safely re-runnable** without losing work or affecting other branches in your spring-ai repository.
+
+**Scenario**: You've already run the workflow for a PR and want to re-run it (e.g., to test changes, regenerate reports, or re-run tests).
+
+**Default Behavior** (no flags):
+```bash
+python3 pr_workflow.py 4921
+```
+- If the PR branch exists locally, the workflow **switches to it** without re-fetching
+- Your local changes, squashes, and other branches are **preserved**
+- Compilation, tests, and reports run on the existing branch state
+
+**Report-Only Mode** (fastest for report regeneration):
+```bash
+python3 pr_workflow.py --report-only 4921
+```
+- Assumes PR is already checked out and prepared
+- Only regenerates the analysis report
+- Skips checkout, compilation, and tests
+- Ideal for testing report formatting changes
+
+**Force Fresh Checkout** (overwrites local branch):
+```bash
+python3 pr_workflow.py --force 4921
+```
+- Re-fetches the PR from GitHub
+- **Overwrites** local branch with GitHub's version
+- Use when you need a clean slate from upstream
+
+**Test-Only Mode** (re-run tests without full workflow):
+```bash
+python3 pr_workflow.py --test-only 4921
+```
+- Runs tests on the existing branch
+- Skips checkout, compilation (assumes already done)
+- Creates new test logs in `reports/test-logs-pr-4921/`
+
+**Summary Table**:
+| Command | Preserves Local Branch? | Re-runs Tests? | Regenerates Report? |
+|---------|------------------------|----------------|---------------------|
+| `pr_workflow.py 4921` | ✅ Yes (switches to it) | ✅ Yes | ✅ Yes |
+| `--report-only` | ✅ Yes | ❌ No | ✅ Yes |
+| `--test-only` | ✅ Yes | ✅ Yes | ❌ No |
+| `--force` | ❌ No (overwrites) | ✅ Yes | ✅ Yes |
 
 ### Batch Processing Issues
 

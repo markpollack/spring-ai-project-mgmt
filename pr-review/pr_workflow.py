@@ -285,7 +285,7 @@ class PRAnalyzer:
         except subprocess.CalledProcessError:
             return False
     
-    def generate_report(self, pr_number: str, dry_run: bool = False, force_fresh: bool = False, skip_backport: bool = False) -> Optional[Path]:
+    def generate_report(self, pr_number: str, dry_run: bool = False, force_fresh: bool = False, skip_backport: bool = False, modernized_branch: str = None) -> Optional[Path]:
         """Generate enhanced PR analysis report using context collection and AI-powered analysis"""
         
         # Check GitHub CLI authentication
@@ -337,7 +337,11 @@ class PRAnalyzer:
             if skip_backport:
                 cmd.append("--skip-backport")
                 Logger.info("⏭️  Skipping backport assessment")
-            
+
+            if modernized_branch:
+                cmd.extend(["--modernized-branch", modernized_branch])
+                Logger.info(f"📦 Using modernized branch: {modernized_branch}")
+
             # Pass the context directory to the enhanced report generator
             cmd.extend(["--context-dir", str(self.config.context_dir)])
             
@@ -660,14 +664,32 @@ class PRWorkflow:
         
         return True
     
-    def checkout_pr(self, pr_number: str, force: bool = False, dry_run: bool = False) -> bool:
-        """Checkout the PR using smart branch switching"""
-        Logger.info(f"Checking out PR #{pr_number}...")
-        
+    def checkout_pr(self, pr_number: str, force: bool = False, dry_run: bool = False, modernized_branch: str = None) -> bool:
+        """Checkout the PR using smart branch switching or use a pre-prepared modernized branch"""
+        if modernized_branch:
+            Logger.info(f"Using modernized branch '{modernized_branch}' for PR #{pr_number}...")
+        else:
+            Logger.info(f"Checking out PR #{pr_number}...")
+
         if dry_run:
-            Logger.info(f"[DRY RUN] Would checkout PR #{pr_number}")
+            if modernized_branch:
+                Logger.info(f"[DRY RUN] Would switch to modernized branch '{modernized_branch}'")
+            else:
+                Logger.info(f"[DRY RUN] Would checkout PR #{pr_number}")
             return True
-        
+
+        # If modernized branch is specified, just switch to it
+        if modernized_branch:
+            Logger.info(f"📥 Switching to pre-prepared modernized branch: {modernized_branch}")
+            if not self.github_utils.switch_to_branch(self.config.spring_ai_dir, modernized_branch):
+                Logger.error(f"Failed to switch to modernized branch '{modernized_branch}'")
+                return False
+
+            # Store the branch name for cleanup purposes
+            self.current_pr_branch = modernized_branch
+            Logger.success(f"✅ Now on modernized branch: {modernized_branch}")
+            return True
+
         # Get the expected branch name for this PR
         expected_branch = self.github_utils.get_pr_branch_name(pr_number)
         if not expected_branch:
@@ -2329,8 +2351,8 @@ File content with conflicts:"""
     
     
     
-    def run_complete_workflow(self, pr_number: str, skip_squash: bool = False, skip_compile: bool = False, 
-                            skip_tests: bool = False, skip_docs: bool = False, auto_resolve: bool = False, force: bool = False, generate_report: bool = True, skip_commit_message: bool = False, resume_after_compile: bool = False, dry_run: bool = False, batch_mode: bool = False, skip_auth_check: bool = False) -> bool:
+    def run_complete_workflow(self, pr_number: str, skip_squash: bool = False, skip_compile: bool = False,
+                            skip_tests: bool = False, skip_docs: bool = False, auto_resolve: bool = False, force: bool = False, generate_report: bool = True, skip_commit_message: bool = False, resume_after_compile: bool = False, dry_run: bool = False, batch_mode: bool = False, skip_auth_check: bool = False, modernized_branch: str = None) -> bool:
         """Run the complete PR workflow"""
         Logger.info(f"🚀 Starting complete PR review workflow for PR #{pr_number}")
         
@@ -2389,7 +2411,7 @@ File content with conflicts:"""
             
             # Phase 2: Checkout PR
             self.execution_tracker.start_step("pr_checkout")
-            if not self.checkout_pr(pr_number, force, dry_run):
+            if not self.checkout_pr(pr_number, force, dry_run, modernized_branch):
                 self.execution_tracker.end_step("pr_checkout", success=False,
                                                error_message="PR checkout failed")
                 if batch_mode:
@@ -2425,10 +2447,12 @@ File content with conflicts:"""
                 return False
         
         # Phase 4: Squash commits (mandatory for multi-commit PRs)
-        # Skip squash when resuming to preserve manual fix commits
-        effective_skip_squash = skip_squash or resume_after_compile
+        # Skip squash when resuming to preserve manual fix commits or when using modernized branch
+        effective_skip_squash = skip_squash or resume_after_compile or (modernized_branch is not None)
         if resume_after_compile:
             Logger.info("🔄 Skipping squash to preserve manual compilation fix commits")
+        elif modernized_branch:
+            Logger.info(f"🔄 Skipping squash for pre-prepared modernized branch '{modernized_branch}'")
         if not self.squash_commits(pr_number, effective_skip_squash, dry_run):
             if batch_mode:
                 Logger.warn("⚠️  Squash commits failed (batch mode - continuing)")
@@ -2512,49 +2536,13 @@ File content with conflicts:"""
             else:
                 Logger.error("❌ Documentation build failed")
                 return False
-        
-        # Phase 6: Generate PR Analysis Report (if requested)
-        report_file = None
-        html_report_file = None
-        if generate_report and not dry_run:
-            Logger.info("📊 Generating PR analysis reports...")
-            
-            # Generate markdown report
-            report_file = self.pr_analyzer.generate_report(pr_number, dry_run)
-            if report_file:
-                Logger.success(f"📋 Markdown report generated: {report_file}")
-            else:
-                Logger.warn("⚠️  Markdown report generation failed, but PR preparation was successful")
-            
-            # Generate HTML report
-            try:
-                from single_pr_html_generator import SinglePRHTMLGenerator
-                
-                html_generator = SinglePRHTMLGenerator(
-                    working_dir=self.config.script_dir,
-                    context_dir=self.config.context_dir,
-                    reports_dir=self.config.reports_dir,
-                    logs_dir=self.config.logs_dir
-                )
-                
-                html_report_file = html_generator.generate_html_report(pr_number)
-                
-                if html_report_file:
-                    Logger.success(f"🎨 HTML report generated: {html_report_file}")
-                    Logger.info(f"🔗 Open HTML: file://{html_report_file.absolute()}")
-                else:
-                    Logger.warn("⚠️  HTML report generation failed")
-                    
-            except Exception as e:
-                Logger.warn(f"⚠️  HTML report generation failed: {e}")
-        elif generate_report and dry_run:
-            Logger.info("📊 Report generation skipped in dry-run mode")
-        
-        # Phase 7: Run tests for changed test files
+
+        # Phase 6: Run tests for changed test files
+        # NOTE: Tests run BEFORE report generation so test results appear in the report
         test_success = True
         if not skip_compile and not skip_tests and not dry_run:
             test_success = self.run_changed_tests(pr_number)
-            
+
             # Create test results summary for visibility
             if not test_success:
                 test_summary_file = self.config.logs_dir / f"test-failures-pr-{pr_number}.txt"
@@ -2568,10 +2556,48 @@ File content with conflicts:"""
                         f.write("Check the full build logs for detailed error information.\n")
                         f.write(f"\nBuild log location: {self.config.logs_dir}/\n")
                         f.write("Look for files matching: full-build-*.log\n")
-                    
+
                     Logger.error(f"🚨 Test failure summary saved to: {test_summary_file}")
                 except Exception as e:
                     Logger.warn(f"Could not create test summary file: {e}")
+
+        # Phase 7: Generate PR Analysis Report (if requested)
+        # NOTE: Runs AFTER tests so test results are included in the report
+        report_file = None
+        html_report_file = None
+        if generate_report and not dry_run:
+            Logger.info("📊 Generating PR analysis reports...")
+
+            # Generate markdown report
+            report_file = self.pr_analyzer.generate_report(pr_number, dry_run, modernized_branch=modernized_branch)
+            if report_file:
+                Logger.success(f"📋 Markdown report generated: {report_file}")
+            else:
+                Logger.warn("⚠️  Markdown report generation failed, but PR preparation was successful")
+
+            # Generate HTML report
+            try:
+                from single_pr_html_generator import SinglePRHTMLGenerator
+
+                html_generator = SinglePRHTMLGenerator(
+                    working_dir=self.config.script_dir,
+                    context_dir=self.config.context_dir,
+                    reports_dir=self.config.reports_dir,
+                    logs_dir=self.config.logs_dir
+                )
+
+                html_report_file = html_generator.generate_html_report(pr_number)
+
+                if html_report_file:
+                    Logger.success(f"🎨 HTML report generated: {html_report_file}")
+                    Logger.info(f"🔗 Open HTML: file://{html_report_file.absolute()}")
+                else:
+                    Logger.warn("⚠️  HTML report generation failed")
+
+            except Exception as e:
+                Logger.warn(f"⚠️  HTML report generation failed: {e}")
+        elif generate_report and dry_run:
+            Logger.info("📊 Report generation skipped in dry-run mode")
         
         # Check overall workflow success
         workflow_success = test_success  # Could add other success criteria here
@@ -2618,8 +2644,8 @@ File content with conflicts:"""
         
         return workflow_success
     
-    def run_report_only(self, pr_number: str, dry_run: bool = False, skip_backport: bool = False, force_fresh: bool = False, 
-                       no_html: bool = False, html_only: bool = False, open_browser: bool = False) -> bool:
+    def run_report_only(self, pr_number: str, dry_run: bool = False, skip_backport: bool = False, force_fresh: bool = False,
+                       no_html: bool = False, html_only: bool = False, open_browser: bool = False, modernized_branch: str = None) -> bool:
         """Generate enhanced PR analysis report with AI-powered analysis (assumes PR is already prepared)"""
         Logger.info(f"📊 Generating PR analysis report for PR #{pr_number}")
         
@@ -2635,15 +2661,20 @@ File content with conflicts:"""
             return False
         
         # Ensure repository is set up and on main branch first (this prevents merge conflicts)
-        Logger.info("🔄 Ensuring repository is properly set up and on main branch...")
-        if not self.setup_repository(dry_run):
-            Logger.error("❌ Failed to setup repository and switch to main branch")
-            return False
-        
-        # Now ensure we're on the correct branch for this PR
-        if not self.github_utils.ensure_correct_branch(pr_number, self.config.spring_ai_dir):
-            Logger.error(f"Failed to switch to correct branch for PR #{pr_number}")
-            return False
+        # Skip this step if using a modernized branch (we want to stay on that branch)
+        if not modernized_branch:
+            Logger.info("🔄 Ensuring repository is properly set up and on main branch...")
+            if not self.setup_repository(dry_run):
+                Logger.error("❌ Failed to setup repository and switch to main branch")
+                return False
+
+            # Now ensure we're on the correct branch for this PR
+            if not self.github_utils.ensure_correct_branch(pr_number, self.config.spring_ai_dir):
+                Logger.error(f"Failed to switch to correct branch for PR #{pr_number}")
+                return False
+        else:
+            Logger.info(f"📦 Using pre-prepared modernized branch: {modernized_branch}")
+            Logger.info(f"🔄 Skipping branch checkout - staying on modernized branch")
         
         # Validate we're working with the correct PR by checking GitHub
         current_branch = self.git.get_current_branch()
@@ -2678,7 +2709,7 @@ File content with conflicts:"""
         
         # Generate markdown report unless html-only mode
         if not html_only:
-            report_file = self.pr_analyzer.generate_report(pr_number, dry_run, force_fresh=force_fresh, skip_backport=skip_backport)
+            report_file = self.pr_analyzer.generate_report(pr_number, dry_run, force_fresh=force_fresh, skip_backport=skip_backport, modernized_branch=modernized_branch)
             if report_file:
                 Logger.success(f"📋 Markdown report generated: {report_file}")
             else:
@@ -3373,7 +3404,9 @@ Examples:
     parser.add_argument('--dry-run', action='store_true', help='Show what would be done without executing')
     parser.add_argument('--resume-after-compile', action='store_true', help='Resume workflow after manual compilation fixes (skips compilation check)')
     parser.add_argument('--batch-mode', action='store_true', help='Run in batch mode (continue on errors, no human intervention, best-effort reporting)')
-    
+    parser.add_argument('--modernized-branch', type=str, metavar='BRANCH_NAME',
+                       help='Use a pre-prepared modernized branch instead of checking out the PR branch directly')
+
     args = parser.parse_args()
     
     # Validate PR number
@@ -3403,7 +3436,8 @@ Examples:
             force_fresh=args.force_fresh,
             no_html=args.no_html,
             html_only=args.html_only,
-            open_browser=args.open_browser
+            open_browser=args.open_browser,
+            modernized_branch=args.modernized_branch
         )
     elif args.test_only:
         success = workflow.run_test_only(
@@ -3444,7 +3478,8 @@ Examples:
             skip_commit_message=args.skip_commit_message,
             resume_after_compile=args.resume_after_compile,
             dry_run=args.dry_run,
-            batch_mode=args.batch_mode
+            batch_mode=args.batch_mode,
+            modernized_branch=args.modernized_branch
         )
     
     sys.exit(0 if success else 1)

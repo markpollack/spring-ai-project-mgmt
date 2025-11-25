@@ -106,6 +106,9 @@ Status: {pr_status}
 
 {test_failure_summary}
 
+### Test Plan (Modules Affected by This PR)
+{test_plan_section}
+
 ### Test Summary
 - **Total Tests**: {total_tests_count}
 - **Passed**: {passed_tests_count} ✅
@@ -113,6 +116,10 @@ Status: {pr_status}
 - **Skipped**: {skipped_tests_count} ⏭️
 - **Execution Time**: {test_execution_time}
 - **Overall Status**: {overall_test_status}
+
+### Build Artifacts
+- **Test Logs Directory**: `{test_logs_directory_path}`
+- **Full Build Log**: `{build_log_path}`
 
 ### Test Categories Executed
 {test_categories_section}
