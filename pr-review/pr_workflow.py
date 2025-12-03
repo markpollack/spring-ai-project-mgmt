@@ -1875,8 +1875,12 @@ Please fix all violations using the Spring AI project's specific checkstyle conf
             return True
         
         try:
-            # Initialize new test discovery
-            discovery = PRTestDiscovery(repo_root=self.config.spring_ai_dir)
+            # Initialize new test discovery with PR number for GitHub API fallback
+            discovery = PRTestDiscovery(
+                repo_root=self.config.spring_ai_dir,
+                pr_number=pr_number,
+                spring_ai_repo=self.config.spring_ai_repo
+            )
 
             # Run discovery to get affected modules (use origin/main with three-dot diff)
             affected_modules = discovery.modules_from_diff(base_ref="origin/main", verbose=False)
@@ -2970,7 +2974,11 @@ File content with conflicts:"""
             # Import the new test discovery script
             from test_discovery import PRTestDiscovery
 
-            discovery = PRTestDiscovery(repo_root=self.config.spring_ai_dir)
+            discovery = PRTestDiscovery(
+                repo_root=self.config.spring_ai_dir,
+                pr_number=pr_number,
+                spring_ai_repo=self.config.spring_ai_repo
+            )
             # Use origin/main to ensure we compare against the remote branch, not stale local
             # Three-dot syntax (in test_discovery.py) compares against merge-base
             affected_modules = discovery.modules_from_diff(base_ref="origin/main", verbose=True)

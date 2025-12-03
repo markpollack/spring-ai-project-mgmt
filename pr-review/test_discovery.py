@@ -16,10 +16,12 @@ from typing import List, Optional, Set
 
 class PRTestDiscovery:
     """Test discovery for PR review environments"""
-    
-    def __init__(self, repo_root: Path = Path(".")):
+
+    def __init__(self, repo_root: Path = Path("."), pr_number: str = None, spring_ai_repo: str = "spring-projects/spring-ai"):
         self.repo_root = Path(repo_root)
         self._last_git_command = None
+        self.pr_number = pr_number
+        self.spring_ai_repo = spring_ai_repo
         
     def modules_from_diff(self, base_ref: Optional[str] = None, verbose: bool = False) -> str:
         """Get affected modules from git diff (for PR review)"""
@@ -113,8 +115,17 @@ class PRTestDiscovery:
             )
             
             files = result.stdout.strip().split('\n')
-            return [f for f in files if f.strip()]
-            
+            files = [f for f in files if f.strip()]
+
+            # If git diff returns empty and we have a PR number, fall back to GitHub API
+            if not files and self.pr_number:
+                print(f"[TEST-DISCOVERY] Git diff returned no files, trying GitHub API fallback for PR #{self.pr_number}", file=sys.stderr)
+                files = self._get_changed_files_from_github()
+                if files:
+                    self._last_git_command = f"GitHub API fallback (PR #{self.pr_number})"
+
+            return files
+
         except subprocess.CalledProcessError as e:
             print(f"Git command failed: {e}", file=sys.stderr)
             print(f"Command: {' '.join(e.cmd) if hasattr(e, 'cmd') else 'unknown'}", file=sys.stderr)
@@ -238,6 +249,33 @@ class PRTestDiscovery:
             return rebase_apply.exists() or rebase_merge.exists() or merge_head.exists()
         except Exception:
             return False
+
+    def _get_changed_files_from_github(self) -> List[str]:
+        """Get changed files from GitHub API as fallback when git diff fails"""
+        if not self.pr_number:
+            return []
+
+        try:
+            result = subprocess.run(
+                ["gh", "pr", "view", self.pr_number, "--repo", self.spring_ai_repo,
+                 "--json", "files", "--jq", ".files[].path"],
+                cwd=self.repo_root,
+                capture_output=True,
+                text=True,
+                check=True
+            )
+
+            files = [f.strip() for f in result.stdout.strip().split('\n') if f.strip()]
+            if files:
+                print(f"[TEST-DISCOVERY] GitHub API returned {len(files)} changed files", file=sys.stderr)
+            return files
+
+        except subprocess.CalledProcessError as e:
+            print(f"[TEST-DISCOVERY] GitHub API fallback failed: {e}", file=sys.stderr)
+            return []
+        except Exception as e:
+            print(f"[TEST-DISCOVERY] GitHub API error: {e}", file=sys.stderr)
+            return []
 
 
 def modules_from_diff_cli():

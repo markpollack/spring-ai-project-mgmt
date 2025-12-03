@@ -203,7 +203,10 @@ class AIPoweredConversationAnalyzer:
         
         # Build file changes detail section (especially important for shallow PRs)
         file_changes_detail = self._build_file_changes_detail(file_changes)
-        
+
+        # Calculate test statistics to prevent AI miscounting
+        test_stats = self._calculate_test_statistics(file_changes)
+
         # Format template with context data
         formatted_prompt = template.format(
             pr_number=pr_number,
@@ -223,7 +226,15 @@ class AIPoweredConversationAnalyzer:
             heuristic_problem_summary=heuristic.get('problem_summary', 'N/A'),
             heuristic_requirements_count=len(heuristic.get('key_requirements', [])),
             heuristic_concerns_count=len(heuristic.get('outstanding_concerns', [])),
-            heuristic_themes=', '.join(heuristic.get('discussion_themes', [])) or 'None'
+            heuristic_themes=', '.join(heuristic.get('discussion_themes', [])) or 'None',
+            # Pre-calculated test statistics to prevent AI miscounting
+            unit_test_file_count=test_stats['unit_test_file_count'],
+            unit_test_lines=test_stats['unit_test_lines'],
+            integration_test_file_count=test_stats['integration_test_file_count'],
+            integration_test_lines=test_stats['integration_test_lines'],
+            total_test_lines=test_stats['total_test_lines'],
+            unit_test_files_list=', '.join(test_stats['unit_test_files']) if test_stats['unit_test_files'] else 'None',
+            integration_test_files_list=', '.join(test_stats['integration_test_files']) if test_stats['integration_test_files'] else 'None'
         )
         
         return formatted_prompt
@@ -249,7 +260,37 @@ class AIPoweredConversationAnalyzer:
                 types['Other'] = types.get('Other', 0) + 1
         
         return ', '.join(f"{k}: {v}" for k, v in types.items())
-    
+
+    def _calculate_test_statistics(self, file_changes: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """Calculate test file statistics to prevent AI miscounting"""
+        unit_test_files = []
+        integration_test_files = []
+        unit_test_lines = 0
+        integration_test_lines = 0
+
+        for f in file_changes:
+            filename = f.get('filename', '')
+            additions = f.get('additions', 0)
+
+            # Check if it's a test file
+            if '/test/' in filename and filename.endswith('.java'):
+                if 'IT.java' in filename or 'IntegrationTest' in filename:
+                    integration_test_files.append(filename.split('/')[-1])
+                    integration_test_lines += additions
+                elif 'Test' in filename or 'Tests' in filename:
+                    unit_test_files.append(filename.split('/')[-1])
+                    unit_test_lines += additions
+
+        return {
+            'unit_test_file_count': len(unit_test_files),
+            'unit_test_files': unit_test_files,
+            'unit_test_lines': unit_test_lines,
+            'integration_test_file_count': len(integration_test_files),
+            'integration_test_files': integration_test_files,
+            'integration_test_lines': integration_test_lines,
+            'total_test_lines': unit_test_lines + integration_test_lines
+        }
+
     def _build_file_changes_detail(self, file_changes: List[Dict[str, Any]]) -> str:
         """Build detailed file changes section for shallow PRs with minimal conversation"""
         if not file_changes:
@@ -269,7 +310,7 @@ class AIPoweredConversationAnalyzer:
 - Changes: +{additions} -{deletions}
 - Diff:
 ```diff
-{patch[:1000]}
+{patch}
 ```
 """
         

@@ -22,6 +22,15 @@ You are analyzing a Spring AI pull request to provide deep insights into the pro
 - **Total files changed**: {total_files_changed}
 - **File types**: {file_types_summary}
 
+### Test Coverage Statistics (Pre-calculated - USE THESE EXACT NUMBERS)
+- **Unit Test Files**: {unit_test_file_count} files, {unit_test_lines} lines added
+  - Files: {unit_test_files_list}
+- **Integration Test Files**: {integration_test_file_count} files, {integration_test_lines} lines added
+  - Files: {integration_test_files_list}
+- **Total New Test Lines**: {total_test_lines}
+
+**IMPORTANT**: When summarizing test coverage in your response, use the EXACT numbers above. Do not recalculate or estimate.
+
 ### File Changes Detail
 {file_changes_detail}
 
