@@ -1277,14 +1277,23 @@ class PRWorkflow:
             Logger.error("❌ Compilation errors could not be resolved")
             return False
         
-        # Run Maven build using same approach as Spring AI CI
-        # Match continuous-integration.yml exactly (but skip tests for compilation check)
-        build_commands = [
-            (["./mvnw", "-Pci-fast-integration-tests", "-Ddisable.checks=true", "--batch-mode", "--update-snapshots", "compile"], "Run Maven compile (Spring AI CI style)")
-        ]
-        
+        # Use mvnd for fast compilation check during development workflow
+        # Use 'install -DskipTests' instead of 'compile' to ensure all modules are installed
+        # to local repo. This is required when main branch adds new modules that the PR
+        # doesn't modify - Maven needs all sibling modules in the reactor installed locally.
+        # Reserve ./mvnw for final CI-style validation only (in run_full_build_with_tests)
+        if shutil.which("mvnd"):
+            build_commands = [
+                (["mvnd", "install", "-DskipTests", "-Ddisable.checks=true", "--batch-mode"], "Run mvnd install (fast compilation check)")
+            ]
+        else:
+            Logger.warn("mvnd not found - falling back to ./mvnw (slower)")
+            build_commands = [
+                (["./mvnw", "install", "-DskipTests", "-Ddisable.checks=true", "-Dmaven.build.cache.enabled=false", "--batch-mode"], "Run Maven install (fallback)")
+            ]
+
         for cmd, description in build_commands:
-            
+
             Logger.info(f"Using {cmd[0]} for build...")
             
             # Create timestamped log file for build output
@@ -1347,28 +1356,35 @@ class PRWorkflow:
         """Check if build failure is due to checkstyle violations"""
         if not build_log_file.exists():
             return False
-        
+
         try:
             with open(build_log_file, 'r') as f:
                 content = f.read()
-                
-            # Look for checkstyle-specific error patterns
+
+            # Look for checkstyle-specific ERROR patterns only
+            # Note: Avoid matching "[INFO] Skipping plugin execution (cached): checkstyle:check"
+            # which is just informational, not a failure
             checkstyle_patterns = [
                 "Failed to execute goal org.apache.maven.plugins:maven-checkstyle-plugin:",
-                "checkstyle:check",
+                "[ERROR].*checkstyle",
                 "Checkstyle violations found",
-                "checkstyle:violation",
                 "There are checkstyle errors"
             ]
-            
+
+            import re
             for pattern in checkstyle_patterns:
-                if pattern in content:
+                # Use regex matching for patterns with wildcards
+                if ".*" in pattern:
+                    if re.search(pattern, content, re.IGNORECASE):
+                        Logger.info(f"Detected checkstyle failure pattern: {pattern}")
+                        return True
+                elif pattern in content:
                     Logger.info(f"Detected checkstyle failure pattern: {pattern}")
                     return True
-                    
+
         except Exception as e:
             Logger.warn(f"Could not read build log to check for checkstyle failures: {e}")
-            
+
         return False
     
     def _attempt_checkstyle_ai_fix(self, build_log_file: Path, pr_number: str = None) -> bool:
@@ -2430,25 +2446,19 @@ File content with conflicts:"""
             Logger.info("🔄 Resuming after manual compilation fixes - preserving current git state")
             Logger.info(f"💡 Working in current branch with manual fixes intact")
         
-        # Phase 3: Build check
-        # Skip compilation when resuming after manual fixes
+        # Phase 3: Pre-rebase build check (non-fatal)
+        # This is an early check that may fail for outdated PRs due to dependency version mismatches
+        # The post-rebase build check (Phase 5.1) is the authoritative compilation check
         effective_skip_compile = skip_compile or resume_after_compile or batch_mode  # Skip in batch mode too
         if resume_after_compile:
             Logger.info("🔄 Resuming after manual compilation fixes - skipping compilation check")
         elif batch_mode:
             Logger.info("🤖 Batch mode - skipping interactive compilation fixes")
         if not self.run_build_check(pr_number, effective_skip_compile, dry_run):
-            if batch_mode:
-                Logger.warn("⚠️  Build check failed (batch mode - continuing)")
-            else:
-                Logger.error("❌ Build check failed")
-                # Start and immediately fail the test execution step since build failed
-                if self.execution_tracker:
-                    self.execution_tracker.start_step("test_execution")
-                    self.execution_tracker.end_step("test_execution", success=False,
-                                                   error_message="Build check failed - tests cannot run",
-                                                   details={"reason": "compilation_failure"})
-                return False
+            # Pre-rebase build failure is non-fatal - the PR may need rebasing to get updated dependencies
+            # The post-rebase build check (Phase 5.1) will be the authoritative check
+            Logger.warn("⚠️  Pre-rebase build check failed - PR may need rebasing for updated dependencies")
+            Logger.info("💡 Continuing with rebase - post-rebase build check will verify final state")
         
         # Phase 4: Squash commits (mandatory for multi-commit PRs)
         # Skip squash when resuming to preserve manual fix commits or when using modernized branch
@@ -2993,6 +3003,7 @@ File content with conflicts:"""
                     "-Pjavadoc",
                     "-Dfailsafe.rerunFailingTestsCount=3",
                     "-Ddisable.checks=true",
+                    "-Dmaven.build.cache.enabled=false",
                     "--batch-mode",
                     "--update-snapshots",
                     "-pl", affected_modules,
@@ -3007,6 +3018,7 @@ File content with conflicts:"""
                     "-Pjavadoc",
                     "-Dfailsafe.rerunFailingTestsCount=3",
                     "-Ddisable.checks=true",
+                    "-Dmaven.build.cache.enabled=false",
                     "--batch-mode",
                     "--update-snapshots",
                     "verify"
@@ -3021,6 +3033,7 @@ File content with conflicts:"""
                 "-Pjavadoc",
                 "-Dfailsafe.rerunFailingTestsCount=3",
                 "-Ddisable.checks=true",
+                "-Dmaven.build.cache.enabled=false",
                 "--batch-mode",
                 "--update-snapshots",
                 "verify"
@@ -3221,18 +3234,22 @@ File content with conflicts:"""
                 # Create log file for this test
                 log_file = test_logs_dir / f"{test_class.replace('.', '_')}.log"
                 
-                # Run single test class using mvnd from project root (dependencies already built)
+                # Run single test class from project root (dependencies already built)
                 # Get relative module path from project root
                 relative_module = module_path.relative_to(self.config.spring_ai_dir)
-                
-                # Run the specific test in the target module (dependencies already compiled)
+
+                # Use mvnd if available (faster), otherwise fall back to ./mvnw
+                maven_cmd = "mvnd" if shutil.which("mvnd") else "./mvnw"
                 test_cmd = [
-                    "mvnd", "test", 
+                    maven_cmd, "test",
                     f"-pl", str(relative_module),
                     "-U",  # Force update snapshots - ignore cached dependency failures
                     f"-Dtest={test_class}",
                     "-Dmaven.javadoc.skip=true"
                 ]
+                # Add cache disable for ./mvnw only (mvnd doesn't use the build cache)
+                if maven_cmd == "./mvnw":
+                    test_cmd.insert(2, "-Dmaven.build.cache.enabled=false")
                 
                 try:
                     result = subprocess.run(
