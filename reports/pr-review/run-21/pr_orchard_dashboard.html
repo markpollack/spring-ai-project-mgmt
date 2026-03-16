@@ -1,0 +1,3370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🌳 Spring AI PR Orchard Dashboard</title>
+    
+        <style>
+        /* === ORCHARD DASHBOARD THEME === */
+        :root {
+            --orchard-green: #2d5016;
+            --apple-red: #dc3545;
+            --leaf-green: #28a745;
+            --bark-brown: #8b4513;
+            --sky-blue: #87ceeb;
+            --earth-tan: #deb887;
+            --harvest-gold: #ffd700;
+            --fresh-mint: #f0fff0;
+            --shadow-soft: rgba(0, 0, 0, 0.1);
+            --shadow-medium: rgba(0, 0, 0, 0.15);
+        }
+        
+        * {
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #f0fff0 0%, #e8f5e8 100%);
+            min-height: 100vh;
+            color: var(--orchard-green);
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        /* === HEADER STYLES === */
+        .dashboard-header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 30px;
+            background: linear-gradient(45deg, var(--orchard-green), var(--leaf-green));
+            border-radius: 20px;
+            color: white;
+            box-shadow: 0 8px 32px var(--shadow-medium);
+        }
+        
+        .dashboard-header h1 {
+            margin: 0 0 15px 0;
+            font-size: 2.5rem;
+            font-weight: 700;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .header-info {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            flex-wrap: wrap;
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+        
+        .header-info span {
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+        }
+        
+        /* === SUMMARY STATS === */
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 16px;
+            padding: 25px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            box-shadow: 0 4px 20px var(--shadow-soft);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border-left: 5px solid;
+            cursor: pointer;
+            user-select: none;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 30px var(--shadow-medium);
+        }
+        
+        .stat-card.active {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 40px var(--shadow-medium);
+            border-left-width: 8px;
+        }
+        
+        .stat-card.low-hanging {
+            border-left-color: var(--apple-red);
+            background: linear-gradient(135deg, #fff 0%, #ffe6e6 100%);
+        }
+        
+        .stat-card.low-risk {
+            border-left-color: var(--leaf-green);
+            background: linear-gradient(135deg, #fff 0%, #e6ffe6 100%);
+        }
+        
+        .stat-card.total {
+            border-left-color: var(--sky-blue);
+            background: linear-gradient(135deg, #fff 0%, #e6f7ff 100%);
+        }
+        
+        .stat-card.backport-ready {
+            border-left-color: #17a2b8;
+            background: linear-gradient(135deg, #fff 0%, #e6f8fb 100%);
+        }
+        
+        .stat-icon {
+            font-size: 3rem;
+            line-height: 1;
+        }
+        
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--orchard-green);
+            line-height: 1;
+        }
+        
+        .stat-label {
+            font-size: 1rem;
+            color: #666;
+            margin-top: 5px;
+            font-weight: 500;
+        }
+        
+        /* === ORCHARD SECTIONS === */
+        .orchard-section {
+            margin-bottom: 50px;
+        }
+        
+        .section-header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 2px 10px var(--shadow-soft);
+        }
+        
+        .section-header h2 {
+            margin: 0 0 10px 0;
+            font-size: 2rem;
+            font-weight: 600;
+        }
+        
+        .ready-harvest .section-header {
+            background: linear-gradient(135deg, #ffe6e6 0%, #ffcccc 100%);
+            border-left: 5px solid var(--apple-red);
+        }
+        
+        .easy-picks .section-header {
+            background: linear-gradient(135deg, #e6ffe6 0%, #ccffcc 100%);
+            border-left: 5px solid var(--leaf-green);
+        }
+        
+        .requires-ladder .section-header {
+            background: linear-gradient(135deg, #fff3e0 0%, #ffe0b3 100%);
+            border-left: 5px solid #ff9800;
+        }
+        
+        .top-shelf .section-header {
+            background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%);
+            border-left: 5px solid #9c27b0;
+        }
+        
+        .section-subtitle {
+            margin: 0;
+            color: #666;
+            font-size: 1.1rem;
+        }
+        
+        .section-description {
+            margin: 0;
+            color: #666;
+            font-size: 1.1rem;
+        }
+        
+        /* === BACKPORT SECTION === */
+        .backport-section {
+            margin-bottom: 50px;
+            padding: 30px;
+            background: linear-gradient(135deg, #e6f8fb 0%, #b3e5fc 100%);
+            border-radius: 20px;
+            border: 2px solid #17a2b8;
+            box-shadow: 0 8px 32px rgba(23, 162, 184, 0.2);
+        }
+        
+        .backport-section .section-header {
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            border-left: 5px solid #17a2b8;
+        }
+        
+        .backport-section .section-header h2 {
+            color: #17a2b8;
+        }
+        
+        .backport-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
+            gap: 25px;
+        }
+        
+        /* === PR GRID === */
+        .pr-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
+            gap: 25px;
+        }
+        
+        /* === PR CARDS === */
+        .pr-card {
+            background: white;
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 4px 20px var(--shadow-soft);
+            transition: all 0.3s ease;
+            border-left: 4px solid transparent;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .pr-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 100px;
+            height: 100px;
+            background: radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 70%);
+            transform: translate(30px, -30px);
+        }
+        
+        .pr-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 40px var(--shadow-medium);
+        }
+        
+        .pr-card[data-risk="low"] {
+            border-left-color: var(--leaf-green);
+        }
+        
+        .pr-card[data-risk="medium"] {
+            border-left-color: #ff9800;
+        }
+        
+        .pr-card[data-risk="high"] {
+            border-left-color: var(--apple-red);
+        }
+        
+        .pr-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .pr-icon {
+            font-size: 2.5rem;
+            line-height: 1;
+            flex-shrink: 0;
+        }
+        
+        .pr-title-section {
+            flex-grow: 1;
+            min-width: 0;
+        }
+        
+        .pr-title {
+            margin: 0 0 10px 0;
+            font-size: 1.2rem;
+            font-weight: 600;
+            line-height: 1.3;
+        }
+        
+        .pr-link {
+            text-decoration: none;
+            color: var(--orchard-green);
+            transition: color 0.3s ease;
+        }
+        
+        .pr-link:hover {
+            color: var(--leaf-green);
+            text-decoration: underline;
+        }
+        
+        .pr-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: center;
+            font-size: 0.9rem;
+        }
+        
+        .badge-group {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .badge-label {
+            font-size: 0.8rem;
+            color: #6c757d;
+            font-weight: 500;
+        }
+        
+        .assessment-section {
+            margin-bottom: 15px;
+        }
+        
+        .assessment-label {
+            margin: 0 0 8px 0;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--orchard-green);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .problem-summary {
+            margin: 0 0 12px 0;
+            line-height: 1.5;
+            color: #24292f;
+        }
+        
+        .key-requirements {
+            margin: 8px 0 0 0;
+            padding-left: 20px;
+            list-style-type: disc;
+        }
+        
+        .key-requirements li {
+            margin: 4px 0;
+            line-height: 1.4;
+            color: #656d76;
+        }
+        
+        .requirements-more {
+            font-style: italic;
+            color: #8b949e !important;
+        }
+        
+        .pr-author {
+            color: #666;
+            font-weight: 500;
+        }
+        
+        .author-link {
+            color: #0969da;
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.2s ease;
+        }
+        
+        .author-link:hover {
+            color: #0550ae;
+            text-decoration: underline;
+        }
+        
+        .pr-type {
+            background: var(--earth-tan);
+            color: var(--orchard-green);
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            text-transform: capitalize;
+        }
+        
+        .risk-badge {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .risk-low {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .risk-medium {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        
+        .risk-high {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        /* === BACKPORT BADGES === */
+        .backport-badge {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-left: 8px;
+            cursor: help;
+        }
+        
+        .backport-approve {
+            background: #d1f2eb;
+            color: #0c5460;
+            border: 1px solid #7bdcb5;
+        }
+        
+        .backport-reject {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .backport-unknown {
+            background: #e2e3e5;
+            color: #495057;
+            border: 1px solid #d6d8db;
+        }
+        
+        /* === PR STATS === */
+        .pr-stats {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+        
+        .stat {
+            text-align: center;
+        }
+        
+        .stat-label {
+            display: block;
+            font-size: 0.8rem;
+            color: #666;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        
+        .stat-value {
+            display: block;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--orchard-green);
+        }
+        
+        /* === PR SUMMARY === */
+        .pr-summary {
+            margin-bottom: 20px;
+        }
+        
+        .risk-summary {
+            margin: 0 0 15px 0;
+            color: #333;
+            line-height: 1.5;
+            font-size: 0.95rem;
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 3px solid var(--leaf-green);
+        }
+        
+        .positive-findings {
+            margin: 0;
+            padding-left: 20px;
+            list-style: none;
+        }
+        
+        .positive-findings li {
+            position: relative;
+            margin-bottom: 8px;
+            padding-left: 25px;
+            font-size: 0.9rem;
+            color: #2d5016;
+            line-height: 1.4;
+        }
+        
+        .positive-findings li::before {
+            content: '✅';
+            position: absolute;
+            left: 0;
+            top: 0;
+        }
+        
+        /* === BACKPORT INFO === */
+        .backport-info {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 12px;
+            border-left: 4px solid #6c757d;
+        }
+        
+        .backport-info .backport-classification {
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+        
+        .backport-info .backport-risk {
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .backport-info .backport-reasoning {
+            font-size: 0.85rem;
+            color: #6c757d;
+            line-height: 1.4;
+            font-style: italic;
+        }
+        
+        /* Update backport-info based on approval status */
+        .pr-card[data-backport="approve"] .backport-info {
+            border-left-color: #28a745;
+            background: linear-gradient(135deg, #d1f2eb 0%, #a3e4d7 100%);
+        }
+        
+        .pr-card[data-backport="reject"] .backport-info {
+            border-left-color: #dc3545;
+            background: linear-gradient(135deg, #f8d7da 0%, #f1aeb5 100%);
+        }
+        
+        /* === DIFF PREVIEW === */
+        .show-diff-btn {
+            background: var(--leaf-green);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            margin-bottom: 15px;
+        }
+        
+        .show-diff-btn:hover {
+            background: var(--orchard-green);
+            transform: translateY(-2px);
+        }
+        
+        .diff-preview {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .diff-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .diff-header h4 {
+            margin: 0;
+            color: var(--orchard-green);
+            font-size: 1rem;
+        }
+        
+        .toggle-diff {
+            background: none;
+            border: 1px solid #ccc;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        
+        .file-diff {
+            margin-bottom: 15px;
+        }
+        
+        .file-header {
+            background: var(--earth-tan);
+            padding: 8px 12px;
+            border-radius: 5px 5px 0 0;
+            font-weight: 500;
+            font-size: 0.9rem;
+            color: var(--orchard-green);
+        }
+        
+        .diff-content {
+            background: #f8f9fa;
+            padding: 12px;
+            margin: 0;
+            border-radius: 0 0 5px 5px;
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+            font-size: 0.8rem;
+            line-height: 1.4;
+            overflow-x: auto;
+            border: 1px solid #e9ecef;
+            border-top: none;
+        }
+        
+        /* === PR ACTIONS === */
+        .pr-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border-radius: 20px;
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+            text-align: center;
+            flex: 1;
+        }
+        
+        .btn-primary {
+            background: var(--leaf-green);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: var(--orchard-green);
+            transform: translateY(-2px);
+        }
+        
+        .btn-secondary {
+            background: white;
+            color: var(--orchard-green);
+            border: 2px solid var(--leaf-green);
+        }
+        
+        .btn-secondary:hover {
+            background: var(--leaf-green);
+            color: white;
+            transform: translateY(-2px);
+        }
+        
+        .btn-details {
+            background: var(--earth-tan);
+            color: var(--orchard-green);
+            border: 2px solid var(--orchard-green);
+        }
+        
+        .btn-details:hover {
+            background: var(--orchard-green);
+            color: white;
+            transform: translateY(-2px);
+        }
+        
+        .modal-details-btn {
+            background: var(--leaf-green);
+            color: white;
+            border: 2px solid var(--leaf-green);
+        }
+        
+        .modal-details-btn:hover {
+            background: var(--orchard-green);
+            border-color: var(--orchard-green);
+            color: white;
+            transform: translateY(-2px);
+        }
+        
+        .btn-backport {
+            background: #ff6b35;
+            color: white;
+            border: 2px solid #ff6b35;
+            font-weight: 600;
+        }
+        
+        .btn-backport:hover {
+            background: #e55a30;
+            border-color: #e55a30;
+            color: white;
+            transform: translateY(-2px);
+        }
+        
+        /* === EXPANDABLE DETAILS === */
+        .pr-details-expandable {
+            margin-top: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+            animation: slideDownFade 0.3s ease-out;
+        }
+        
+        @keyframes slideDownFade {
+            from {
+                opacity: 0;
+                max-height: 0;
+                padding-top: 0;
+                padding-bottom: 0;
+            }
+            to {
+                opacity: 1;
+                max-height: 500px;
+                padding-top: 15px;
+                padding-bottom: 15px;
+            }
+        }
+        
+        .file-changes-summary h4 {
+            color: var(--orchard-green);
+            margin: 15px 0 10px 0;
+            font-size: 1rem;
+        }
+        
+        .file-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            margin: 5px 0;
+            background: white;
+            border-radius: 5px;
+            border-left: 3px solid var(--leaf-green);
+        }
+        
+        .file-status {
+            font-size: 1.1rem;
+            margin-right: 8px;
+        }
+        
+        .file-name {
+            flex: 1;
+            font-family: 'SF Mono', 'Monaco', monospace;
+            font-size: 0.85rem;
+            color: var(--orchard-green);
+        }
+        
+        .file-changes {
+            font-size: 0.8rem;
+            color: #666;
+            font-weight: 500;
+        }
+        
+        .file-more {
+            text-align: center;
+            color: #666;
+            font-style: italic;
+            padding: 10px;
+        }
+        
+        /* === RESPONSIVE DESIGN === */
+        
+        /* Large screens: 2 cards per row for better readability */
+        @media (min-width: 1200px) {
+            .pr-grid, .backport-grid {
+                grid-template-columns: repeat(2, 1fr);
+                max-width: 1200px;
+                margin: 0 auto;
+            }
+        }
+        
+        /* Medium screens: maintain flexible layout */
+        @media (min-width: 769px) and (max-width: 1199px) {
+            .pr-grid, .backport-grid {
+                grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            
+            .dashboard-header h1 {
+                font-size: 2rem;
+            }
+            
+            .header-info {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .pr-grid, .backport-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .pr-header {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .pr-stats {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .pr-actions {
+                flex-direction: column;
+            }
+        }
+        
+        /* === LOADING AND ANIMATIONS === */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .pr-card {
+            animation: fadeInUp 0.6s ease forwards;
+        }
+        
+        .pr-card:nth-child(2) { animation-delay: 0.1s; }
+        .pr-card:nth-child(3) { animation-delay: 0.2s; }
+        .pr-card:nth-child(4) { animation-delay: 0.3s; }
+        .pr-card:nth-child(5) { animation-delay: 0.4s; }
+        .pr-card:nth-child(6) { animation-delay: 0.5s; }
+        
+        /* === ASSESSMENT CARDS === */
+        .assessment-card {
+            margin: 20px 0;
+            background: white;
+            border-radius: 12px;
+            border: 1px solid #e9ecef;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+        
+        .assessment-title {
+            background: linear-gradient(135deg, var(--orchard-green), var(--leaf-green));
+            color: white;
+            margin: 0;
+            padding: 12px 16px;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+        
+        .assessment-content {
+            padding: 16px;
+        }
+        
+        .risk-level-display, .backport-decision-display {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        
+        .risk-explanation, .backport-classification {
+            font-size: 0.9rem;
+            color: #666;
+            font-weight: 500;
+        }
+        
+        .risk-details, .backport-details {
+            line-height: 1.6;
+        }
+        
+        .commit-message-content {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+        
+        .commit-message {
+            margin: 0;
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            color: var(--orchard-green);
+        }
+        
+        .commit-actions {
+            display: flex;
+            justify-content: flex-end;
+        }
+        
+        .btn-copy {
+            background: var(--earth-tan);
+            color: var(--orchard-green);
+            border: 2px solid var(--orchard-green);
+            padding: 8px 16px;
+            font-size: 0.85rem;
+        }
+        
+        .btn-copy:hover {
+            background: var(--orchard-green);
+            color: white;
+        }
+        
+        /* === EXPANDABLE DETAILS === */
+        .pr-details {
+            margin-top: 20px;
+            border-top: 1px solid #e1e5e9;
+            padding-top: 20px;
+        }
+        
+        /* === ASSESSMENT CARDS === */
+        .assessment-cards-container {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin-top: 16px;
+        }
+        
+        .assessment-card {
+            background: #fafbfc;
+            border: 1px solid #e1e5e9;
+            border-radius: 8px;
+            padding: 16px;
+            transition: all 0.2s ease;
+        }
+        
+        .assessment-card:hover {
+            border-color: #d0d7de;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        
+        .assessment-title {
+            margin: 0 0 12px 0;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #24292f;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .assessment-content {
+            color: #656d76;
+            line-height: 1.5;
+        }
+        
+        /* Risk Assessment Card */
+        .risk-assessment-card {
+            border-left: 4px solid var(--risk-color);
+        }
+        
+        .risk-level-display {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        
+        .risk-explanation {
+            font-size: 0.9rem;
+            color: #656d76;
+        }
+        
+        .risk-summary {
+            margin: 0 0 12px 0;
+            font-weight: 500;
+            color: #24292f;
+        }
+        
+        .risk-details ul {
+            margin: 8px 0;
+            padding-left: 20px;
+        }
+        
+        .risk-details li {
+            margin: 4px 0;
+        }
+        
+        /* Backport Assessment Card */
+        .backport-assessment-card {
+            border-left: 4px solid #0969da;
+        }
+        
+        .backport-decision {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+        
+        .backport-decision.approve {
+            background: #dcfce7;
+            color: #166534;
+        }
+        
+        .backport-decision.reject {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+        
+        .backport-reasoning {
+            margin: 12px 0;
+            font-style: italic;
+            color: #656d76;
+        }
+        
+        .backport-recommendations {
+            margin-top: 12px;
+            padding: 12px;
+            background: #f6f8fa;
+            border-radius: 6px;
+            border-left: 3px solid #0969da;
+        }
+        
+        /* Commit Message Card */
+        .commit-message-card {
+            border-left: 4px solid #8b5cf6;
+        }
+        
+        .commit-message-content {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 20px;
+            font-family: 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            color: #334155;
+            position: relative;
+            min-height: 120px;
+        }
+        
+        .copy-button {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: #0969da;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        
+        .copy-button:hover {
+            background: #0550ae;
+        }
+        
+        .copy-button:active {
+            background: #033d8b;
+        }
+        
+        /* === MODAL STYLES === */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(4px);
+        }
+        
+        .modal-container {
+            background: white;
+            border-radius: 12px;
+            width: 95%;
+            max-width: 1200px;
+            max-height: 90vh;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: modalSlideIn 0.3s ease-out;
+        }
+        
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-50px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 30px;
+            border-bottom: 1px solid #e1e5e9;
+            background: #f8f9fa;
+        }
+        
+        .modal-header h2 {
+            margin: 0;
+            color: var(--orchard-green);
+            font-size: 1.5rem;
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 2rem;
+            color: #6c757d;
+            cursor: pointer;
+            padding: 0;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.2s ease;
+        }
+        
+        .modal-close:hover {
+            background: #e9ecef;
+            color: #495057;
+        }
+        
+        .modal-content {
+            padding: 30px;
+            overflow-y: auto;
+            max-height: calc(90vh - 100px);
+        }
+        
+        .modal-assessment-layout {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+        
+        .modal-top-row, .modal-middle-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+        
+        .modal-bottom-row {
+            display: flex;
+            width: 100%;
+        }
+        
+        .modal-assessment-card {
+            background: #fafbfc;
+            border: 1px solid #e1e5e9;
+            border-radius: 8px;
+            padding: 24px;
+            min-height: 300px;
+        }
+        
+        .modal-assessment-card h3 {
+            margin: 0 0 20px 0;
+            color: #24292f;
+            font-size: 1.2rem;
+            border-bottom: 2px solid #e1e5e9;
+            padding-bottom: 12px;
+        }
+        
+        .modal-problem-card {
+            border-left: 4px solid #0969da;
+        }
+        
+        .modal-backport-card {
+            border-left: 4px solid #28a745;
+        }
+        
+        .modal-concerns-card {
+            border-left: 4px solid #ffc107;
+        }
+        
+        .modal-solution-card {
+            border-left: 4px solid #6f42c1;
+        }
+        
+        .modal-commit-card {
+            border-left: 4px solid #fd7e14;
+        }
+        
+        .modal-commit-card .commit-message-text {
+            font-family: 'SF Mono', Consolas, 'Liberation Mono', Menlo, monospace;
+            font-size: 1rem;
+            line-height: 1.7;
+            white-space: pre-wrap;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 24px;
+            min-height: 200px;
+            color: #334155;
+        }
+        
+        .modal-section {
+            margin-bottom: 20px;
+        }
+        
+        .modal-section h4 {
+            margin: 0 0 8px 0;
+            color: #24292f;
+            font-size: 0.95rem;
+            font-weight: 600;
+        }
+        
+        .modal-section p {
+            margin: 0 0 8px 0;
+            line-height: 1.5;
+            color: #656d76;
+        }
+        
+        .modal-section ul {
+            margin: 0 0 8px 0;
+            padding-left: 20px;
+        }
+        
+        .modal-section li {
+            margin: 4px 0;
+            line-height: 1.4;
+            color: #656d76;
+        }
+        
+        /* Responsive modal */
+        @media (max-width: 1024px) {
+            .modal-top-row, .modal-middle-row {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .modal-assessment-layout {
+                gap: 20px;
+            }
+            
+            .modal-container {
+                width: 98%;
+                margin: 10px;
+            }
+            
+            .modal-content {
+                padding: 20px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .modal-header {
+                padding: 15px 20px;
+            }
+            
+            .modal-header h2 {
+                font-size: 1.2rem;
+            }
+            
+            .modal-content {
+                padding: 15px;
+            }
+        }
+        
+        /* === BACKPORT MODAL STYLES === */
+        .backport-modal-content {
+            max-width: 700px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        
+        .backport-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #ff6b35;
+        }
+        
+        .branch-info, .status-info {
+            margin-bottom: 8px;
+        }
+        
+        .status-approved {
+            color: #28a745;
+            font-weight: 600;
+        }
+        
+        .command-section {
+            margin-bottom: 20px;
+        }
+        
+        .command-section h3 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+        
+        .command-box {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            cursor: pointer;
+            border: 2px solid #4a5568;
+            transition: all 0.2s ease;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        
+        .command-box:hover {
+            border-color: #ff6b35;
+            background: #3a4553;
+        }
+        
+        .command-box code {
+            color: #e2e8f0;
+            background: none;
+            padding: 0;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+        
+        .copy-feedback {
+            margin-top: 8px;
+            color: #28a745;
+        }
+        
+        /* New styling for split command sections */
+        .automation-command-section {
+            margin-bottom: 30px;
+        }
+        
+        .automation-command-section h3 {
+            color: #2d6e3b;
+            margin-bottom: 10px;
+            font-size: 16px;
+            font-weight: 600;
+        }
+        
+        .command-box.copyable {
+            background: #1e3a8a;
+            border: 2px solid #3b82f6;
+            cursor: pointer;
+        }
+        
+        .command-box.copyable:hover {
+            border-color: #60a5fa;
+            background: #1e40af;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+        
+        .automation-options {
+            margin-top: 15px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border-left: 4px solid #3b82f6;
+        }
+        
+        .automation-options h4 {
+            margin: 0 0 8px 0;
+            font-size: 14px;
+            color: #374151;
+        }
+        
+        .automation-options ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        
+        .automation-options li {
+            margin-bottom: 4px;
+            color: #6b7280;
+            font-size: 13px;
+        }
+        
+        .manual-commands-section {
+            margin-bottom: 20px;
+        }
+        
+        .manual-commands-section h3 {
+            color: #6b7280;
+            margin-bottom: 10px;
+            font-size: 16px;
+            font-weight: 600;
+        }
+        
+        .command-reference {
+            background: #f9fafb;
+            color: #374151;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            border: 1px solid #d1d5db;
+            white-space: pre-wrap;
+            word-break: break-all;
+            font-size: 12px;
+            line-height: 1.4;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+            font-weight: 600;
+            text-align: center;
+        }
+        
+        .safety-warnings {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .warning-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .warning-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .warning-icon {
+            margin-right: 8px;
+            font-size: 16px;
+        }
+        
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        </style>
+        
+</head>
+<body>
+    <div class="container">
+        
+        <header class="dashboard-header">
+            <h1>🌳 Spring AI PR Orchard Dashboard</h1>
+            <div class="header-info">
+                <span class="run-info">Run: run-21</span>
+                <span class="pr-count">PRs Analyzed: 6</span>
+                <span class="timestamp">Generated: 2025-08-20 22:24:34</span>
+            </div>
+        </header>
+        
+        
+        <section class="summary-stats">
+            <div class="stat-card backport-ready" data-filter="backport-ready" onclick="filterPRsByType('backport-ready')">
+                <div class="stat-icon">📦</div>
+                <div class="stat-content">
+                    <div class="stat-number">4</div>
+                    <div class="stat-label">Backport Ready</div>
+                </div>
+            </div>
+            <div class="stat-card low-hanging" data-filter="ready-harvest" onclick="filterPRsByType('ready-harvest')">
+                <div class="stat-icon">🍎</div>
+                <div class="stat-content">
+                    <div class="stat-number">4</div>
+                    <div class="stat-label">Ready to Harvest</div>
+                </div>
+            </div>
+            <div class="stat-card low-risk" data-filter="low-risk" onclick="filterPRsByType('low-risk')">
+                <div class="stat-icon">✅</div>
+                <div class="stat-content">
+                    <div class="stat-number">6</div>
+                    <div class="stat-label">Low Risk PRs</div>
+                </div>
+            </div>
+            <div class="stat-card total" data-filter="all" onclick="filterPRsByType('all')">
+                <div class="stat-icon">📊</div>
+                <div class="stat-content">
+                    <div class="stat-number">6</div>
+                    <div class="stat-label">Total PRs</div>
+                </div>
+            </div>
+        </section>
+        
+        
+        <section class="backport-section">
+            <div class="section-header">
+                <h2>📦 Spring AI 1.0.x Backport Candidates</h2>
+                <p class="section-description">
+                    4 PR(s) approved for backporting to the maintenance branch
+                </p>
+            </div>
+            <div class="backport-grid">
+                
+        <div class="pr-card" data-pr-number="4189" data-risk="low" data-type="bugfix" data-backport="approve">
+            <div class="pr-header">
+                <div class="pr-icon">🍎</div>
+                <div class="pr-title-section">
+                    <h3 class="pr-title">
+                        <a href="https://github.com/spring-projects/spring-ai/pull/4189" target="_blank" class="pr-link">
+                            #4189: GH-4170 Fixed the issue where `SystemMessage` was not being saved to the chat memory
+                        </a>
+                    </h3>
+                    <div class="pr-meta">
+                        <span class="pr-author">by <a href="https://github.com/spring-projects/spring-ai/pulls?q=author:sunyuhan1998" target="_blank" class="author-link">sunyuhan1998</a></span>
+                        <span class="badge-group">
+                            <span class="badge-label">Type:</span>
+                            <span class="pr-type" title="Bug Fix: Resolves existing issues or errors">bugfix</span>
+                        </span>
+                        <span class="badge-group">
+                            <span class="badge-label">Risk:</span>
+                            <span class="risk-badge risk-low" title="Low Risk: Minimal security/stability impact, safe to review">LOW</span>
+                        </span>
+                        <span class="badge-group">
+                            <span class="badge-label">Backport:</span>
+                            <span class="backport-badge backport-approve" title="Backport Approved: Safe for 1.0.x release branch">
+                                ✅ APPROVE
+                            </span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="pr-stats">
+                <div class="stat">
+                    <span class="stat-label">Files:</span>
+                    <span class="stat-value">1</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Lines:</span>
+                    <span class="stat-value">+12/-2</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Effort:</span>
+                    <span class="stat-value">2/10</span>
+                </div>
+            </div>
+            
+            <div class="pr-summary">
+                <div class="assessment-section">
+                    <h4 class="assessment-label">💡 Problem Summary</h4>
+                    <p class="problem-summary">The MessageChatMemoryAdvisor in Spring AI does not save SystemMessage instances to ChatMemory, causing conversation role ordering errors when using default system prompts. This creates a &#x27;conversation roles must alternate user/assistant/user/assistant&#x27; error that breaks the chat flow.</p>
+                    <ul class='key-requirements'><li>SystemMessage must be properly saved to chat memory when present</li><li>Chat memory should maintain correct message ordering (system, user, assistant pattern)</li><li>Solution must handle first conversation turn detection correctly</li><li class='requirements-more'>+ 5 more requirements...</li></ul>
+                </div>
+            </div>
+            
+            <div class="pr-actions">
+                <a href="https://github.com/spring-projects/spring-ai/pull/4189" target="_blank" class="btn btn-primary">View on GitHub</a>
+                <button class="btn btn-secondary" onclick="openManualMergeModal(4189, 'fix-issue-4170')">
+                    🔀 Checkout & Merge
+                </button>
+                <button class="btn btn-details modal-details-btn" onclick="openAssessmentModal(4189)">
+                    🔍 View Assessments
+                </button>
+            </div>
+            
+            <!-- Hidden assessment data for modal population -->
+            <div class="assessment-data" style="display: none;" data-pr="4189">
+                <div class="problem-analysis-data">
+                    
+        <div class='modal-section'>
+            <h4>Problem Summary:</h4>
+            <p>The MessageChatMemoryAdvisor in Spring AI does not save SystemMessage instances to ChatMemory, causing conversation role ordering errors when using default system prompts. This creates a &#x27;conversation roles must alternate user/assistant/user/assistant&#x27; error that breaks the chat flow.</p>
+        </div>
+        <div class='modal-section'><h4>Key Requirements:</h4><ul><li>SystemMessage must be properly saved to chat memory when present</li><li>Chat memory should maintain correct message ordering (system, user, assistant pattern)</li><li>Solution must handle first conversation turn detection correctly</li><li>Implementation must detect when SystemMessage content changes between conversations</li><li>Backward compatibility with existing MessageChatMemoryAdvisor usage</li><li>Integration with Spring AI&#x27;s conversation flow patterns</li><li>Performance efficiency when checking for SystemMessage changes</li><li>Support for various AI providers (OpenAI, local models, etc.)</li></ul></div>
+        <div class='modal-section'><h4>Design Decisions:</h4><ul><li>Check for first conversation turn to determine when to add SystemMessage</li><li>Compare current SystemMessage with previous one to detect content changes</li><li>Modify MessageChatMemoryAdvisor to include SystemMessage in memory storage</li><li>Maintain existing API surface to avoid breaking changes</li><li>Use conditional logic rather than always saving SystemMessage to optimize performance</li></ul></div>
+        <div class='modal-section'><h4>Solution Approach:</h4><ul><li>Primary approach: Modify MessageChatMemoryAdvisor to conditionally save SystemMessage based on first turn or content change detection</li><li>Alternative approach mentioned: Redesign the relationship between MessageWindowChatMemory and MessageChatMemoryAdvisor for consistency</li><li>Conditional saving strategy to balance functionality with performance</li><li>Fix implementation focuses on the advisor layer rather than core memory classes</li></ul></div>
+        <div class='modal-section'><h4>Quality Assessment:</h4><p>The solution appears well-targeted and addresses the core issue without over-engineering. The focused single-file change and community testing provide confidence in the approach, though additional edge case testing would strengthen the implementation.</p></div>
+        
+                </div>
+                
+                <div class="backport-assessment-data">
+                    
+        <div class='modal-section'>
+            <div class="backport-decision approve">✅ APPROVE</div>
+            <p><strong>Classification:</strong> Bug Fix</p>
+            <p><strong>Risk Level:</strong> Low - corrects existing broken behavior without changing public interfaces</p>
+        </div>
+        <div class='modal-section'>
+            <h4>Reasoning:</h4>
+            <p>This PR fixes a clear bug where SystemMessage was not being properly saved to chat memory, affecting message ordering. The fix involves internal logic improvements without any public API changes, making it safe for backporting.</p>
+        </div>
+        <div class='modal-section'><h4>Recommendations:</h4><p>Safe to backport as it corrects existing functionality without breaking changes. Ensure thorough testing of chat memory behavior with system messages after backporting.</p></div>
+        
+                </div>
+                
+                <div class="technical-concerns-data">
+                    <div class='modal-section'><h4>Outstanding Concerns:</h4><ul><li>Potential performance impact of comparing SystemMessage content on every turn</li><li>Memory usage implications of storing additional SystemMessage instances</li><li>Thread safety considerations for concurrent conversation handling</li><li>Compatibility with different ChatMemory implementations beyond MessageWindowChatMemory</li><li>Edge cases where SystemMessage might change mid-conversation unexpectedly</li></ul></div><div class='modal-section'><h4>Complexity Indicators:</h4><ul><li>Single file change suggests focused, targeted fix</li><li>Logic requires careful handling of conversation state detection</li><li>Integration with existing Spring AI conversation flow patterns</li><li>Need to maintain backward compatibility with existing implementations</li><li>Testing complexity around conversation state transitions and edge cases</li></ul></div><div class='modal-section'><h4>Recommendations:</h4><ul><li>Add comprehensive unit tests covering first conversation turn and SystemMessage change scenarios</li><li>Include integration tests with multiple AI providers to ensure broad compatibility</li><li>Add performance benchmarks to validate minimal impact of SystemMessage comparison logic</li><li>Document the new behavior in Spring AI documentation with examples</li><li>Consider adding configuration options to disable SystemMessage saving if needed for specific use cases</li></ul></div><div class='modal-section'><h4>Stakeholder Feedback:</h4><ul><li>Author confirmed testing with Spring AI 1.1.0-SNAPSHOT shows issue resolution</li><li>Multiple community members provided detailed analysis and debugging insights</li><li>YunKuiLu identified specific code locations contributing to the problem</li><li>LoperLee shared debugging details and closed an earlier PR due to potential side effects</li><li>General community engagement suggests this is a well-understood, commonly encountered issue</li></ul></div>
+                </div>
+                
+                <div class="solution-quality-data">
+                    <div class='modal-section'><h4>Scope Analysis:</h4><p>The change affects a single file in the Spring AI chat client module, specifically the MessageChatMemoryAdvisor class. The scope is appropriately narrow and focused on fixing the specific issue where SystemMessage was not being saved to chat memory, which aligns well with the problem being solved.</p></div><div class='modal-section'><h4>Architecture Impact:</h4><ul><li>The change modifies a core advisor component that manages chat memory, affecting how system messages are persisted across conversations</li><li>It maintains existing Spring AI patterns by working within the established advisor chain architecture</li><li>The modification enhances the chat memory functionality without breaking the existing interface contracts</li><li>The change improves system modularity by ensuring consistent message persistence behavior across conversation rounds</li></ul></div><div class='modal-section'><h4>Implementation Quality:</h4><ul><li>Code organization is clean with logical grouping of the system message handling logic within the existing method flow</li><li>Adheres to Spring AI coding patterns by using existing prompt and memory APIs appropriately</li><li>Error handling could be improved - no null checks for systemMessage before adding to memory</li><li>Resource management is appropriate, reusing existing objects without creating unnecessary overhead</li><li>Integration follows Spring Framework patterns correctly, using existing dependency injection and configuration</li><li>Method complexity is acceptable - the before() method remains under 50 lines with straightforward logic flow</li><li>No significant code smells detected - the conditional logic is clear and the responsibility remains focused</li></ul></div><div class='modal-section'><h4>Testing Adequacy:</h4><ul><li>No test files are included in this PR, which is a significant gap for a memory persistence feature</li><li>Missing test coverage for the new conditional logic that determines when to add system messages</li><li>No tests for edge cases like null system messages or empty memory scenarios</li><li>Missing integration tests to verify system message persistence across conversation rounds</li><li>No validation that the fix actually resolves the original issue through automated testing</li><li>Test scenarios should cover both first conversation round and subsequent rounds with updated system messages</li><li>Error condition testing is absent, particularly for malformed or null system messages</li></ul></div><div class='modal-section'><h4>Solution Fitness:</h4><p>The implementation appropriately addresses the stated problem of SystemMessage not being saved to chat memory. The solution is well-scoped and not over-engineered, using a simple conditional approach to handle both first-round conversations and system message updates.</p></div>
+                </div>
+                
+                <div class="commit-message-data">
+                    <div class="commit-message-text">Commit message not available for PR #4189</div>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="pr-card" data-pr-number="4195" data-risk="low" data-type="cleanup" data-backport="approve">
+            <div class="pr-header">
+                <div class="pr-icon">🍎</div>
+                <div class="pr-title-section">
+                    <h3 class="pr-title">
+                        <a href="https://github.com/spring-projects/spring-ai/pull/4195" target="_blank" class="pr-link">
+                            #4195: Remove duplicated lines in AzureOpenAiChatOptions
+                        </a>
+                    </h3>
+                    <div class="pr-meta">
+                        <span class="pr-author">by <a href="https://github.com/spring-projects/spring-ai/pulls?q=author:asw12" target="_blank" class="author-link">asw12</a></span>
+                        <span class="badge-group">
+                            <span class="badge-label">Type:</span>
+                            <span class="pr-type" title="Cleanup: Code refactoring, unused code removal, or maintenance">cleanup</span>
+                        </span>
+                        <span class="badge-group">
+                            <span class="badge-label">Risk:</span>
+                            <span class="risk-badge risk-low" title="Low Risk: Minimal security/stability impact, safe to review">LOW</span>
+                        </span>
+                        <span class="badge-group">
+                            <span class="badge-label">Backport:</span>
+                            <span class="backport-badge backport-approve" title="Backport Approved: Safe for 1.0.x release branch">
+                                ✅ APPROVE
+                            </span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="pr-stats">
+                <div class="stat">
+                    <span class="stat-label">Files:</span>
+                    <span class="stat-value">1</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Lines:</span>
+                    <span class="stat-value">+0/-3</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Effort:</span>
+                    <span class="stat-value">1/10</span>
+                </div>
+            </div>
+            
+            <div class="pr-summary">
+                <div class="assessment-section">
+                    <h4 class="assessment-label">💡 Problem Summary</h4>
+                    <p class="problem-summary">This PR addresses code duplication in the AzureOpenAiChatOptions class where identical lines were accidentally left as duplicates during a previous cleanup in commit c0bc623. The duplicate logic already exists at lines L275-L277, making the additional lines redundant.</p>
+                    <ul class='key-requirements'><li>Remove exact duplicate lines without affecting functionality</li><li>Maintain existing API compatibility for AzureOpenAiChatOptions</li><li>Preserve all existing configuration options and behavior</li><li class='requirements-more'>+ 2 more requirements...</li></ul>
+                </div>
+            </div>
+            
+            <div class="pr-actions">
+                <a href="https://github.com/spring-projects/spring-ai/pull/4195" target="_blank" class="btn btn-primary">View on GitHub</a>
+                <button class="btn btn-secondary" onclick="openManualMergeModal(4195, 'patch-1')">
+                    🔀 Checkout & Merge
+                </button>
+                <button class="btn btn-details modal-details-btn" onclick="openAssessmentModal(4195)">
+                    🔍 View Assessments
+                </button>
+            </div>
+            
+            <!-- Hidden assessment data for modal population -->
+            <div class="assessment-data" style="display: none;" data-pr="4195">
+                <div class="problem-analysis-data">
+                    
+        <div class='modal-section'>
+            <h4>Problem Summary:</h4>
+            <p>This PR addresses code duplication in the AzureOpenAiChatOptions class where identical lines were accidentally left as duplicates during a previous cleanup in commit c0bc623. The duplicate logic already exists at lines L275-L277, making the additional lines redundant.</p>
+        </div>
+        <div class='modal-section'><h4>Key Requirements:</h4><ul><li>Remove exact duplicate lines without affecting functionality</li><li>Maintain existing API compatibility for AzureOpenAiChatOptions</li><li>Preserve all existing configuration options and behavior</li><li>Ensure Spring AI integration patterns remain intact</li><li>Maintain code quality and readability standards</li></ul></div>
+        <div class='modal-section'><h4>Design Decisions:</h4><ul><li>Simple deletion approach - removing duplicate lines rather than refactoring</li><li>No API changes to maintain backward compatibility</li><li>Preserving existing code structure and patterns</li><li>Minimal impact change to reduce regression risk</li></ul></div>
+        <div class='modal-section'><h4>Solution Approach:</h4><ul><li>Direct removal of duplicate lines identified during code review</li><li>Reference to existing implementation at L275-L277 as the canonical version</li><li>Cleanup approach following previous commit c0bc623 pattern</li></ul></div>
+        <div class='modal-section'><h4>Quality Assessment:</h4><p>This appears to be a straightforward code cleanup addressing an obvious duplication issue. The solution is minimal and low-risk, though it lacks detailed context about the specific changes being made.</p></div>
+        
+                </div>
+                
+                <div class="backport-assessment-data">
+                    
+        <div class='modal-section'>
+            <div class="backport-decision approve">✅ APPROVE</div>
+            <p><strong>Classification:</strong> Bug Fix</p>
+            <p><strong>Risk Level:</strong> Low - minimal change that removes duplicate code without affecting functionality</p>
+        </div>
+        <div class='modal-section'>
+            <h4>Reasoning:</h4>
+            <p>This is a straightforward bug fix that removes accidental duplicate lines in an internal method. The change has no impact on public APIs and carries minimal risk of breaking existing functionality.</p>
+        </div>
+        <div class='modal-section'><h4>Recommendations:</h4><p>Safe for backporting - verify during review that the removed lines are indeed duplicates and that the same functionality exists elsewhere in the method (as mentioned in L275-L277)</p></div>
+        
+                </div>
+                
+                <div class="technical-concerns-data">
+                    <div class='modal-section'><h4>Outstanding Concerns:</h4><ul><li>No test coverage verification mentioned for the affected area</li><li>Lack of explicit validation that functionality remains unchanged</li><li>No documentation update consideration</li><li>Missing details about which specific lines are being removed</li></ul></div><div class='modal-section'><h4>Complexity Indicators:</h4><ul><li>Single file modification with minimal scope</li><li>Simple line deletion without logic changes</li><li>No integration points affected</li><li>Low testing complexity due to duplicate removal nature</li></ul></div><div class='modal-section'><h4>Recommendations:</h4><ul><li>Include specific line numbers and code snippets being removed for reviewer clarity</li><li>Add verification that existing tests continue to pass</li><li>Consider adding a comment explaining the cleanup in commit message</li><li>Request explicit reviewer confirmation that functionality is preserved</li><li>Document the relationship between the duplicate and canonical code sections</li></ul></div><div class='modal-section'><h4>Stakeholder Feedback:</h4><ul><li>No reviewer comments or feedback documented</li><li>No approval or rejection signals present</li><li>No suggestions or concerns raised in conversation</li><li>Open status indicates pending review</li></ul></div>
+                </div>
+                
+                <div class="solution-quality-data">
+                    <div class='modal-section'><h4>Scope Analysis:</h4><p>The scope is extremely narrow and well-defined, affecting only one file with a simple removal of 3 lines. The change removes duplicated method calls (.toolCallbacks() and .toolNames()) from a builder pattern in the AzureOpenAiChatOptions.fromOptions() method. This is appropriate scope for the stated problem of removing duplicated lines.</p></div><div class='modal-section'><h4>Architecture Impact:</h4><ul><li>No impact on core Spring AI interfaces or abstractions - this is purely a bug fix within an existing method</li><li>Fits perfectly with existing Spring AI patterns as it maintains the builder pattern while fixing duplication</li><li>Improves code quality by eliminating redundant method calls that would overwrite previously set values</li><li>Positive impact on maintainability by reducing potential confusion about which values are actually used</li></ul></div><div class='modal-section'><h4>Implementation Quality:</h4><ul><li>Code organization remains clean with the removal of duplicated builder method calls</li><li>Properly adheres to Spring AI coding patterns by maintaining the existing builder pattern structure</li><li>No error handling changes needed as this is a simple line removal fix</li><li>No performance impact - actually slight improvement by removing unnecessary method calls</li><li>No integration issues with Spring Framework patterns as the change is internal to the builder method</li><li>Method complexity is appropriate - the fromOptions() method remains focused and readable</li><li>No code smells introduced - actually removes a minor code smell (duplication)</li></ul></div><div class='modal-section'><h4>Testing Adequacy:</h4><ul><li>No new functionality introduced, so no new test coverage needed</li><li>Existing tests should continue to pass as the external behavior remains the same</li><li>The fix actually makes the code more predictable for testing scenarios</li><li>No edge cases introduced by this change</li><li>No ignored or disabled tests in the modified file</li><li>The change simplifies the code path, making it easier to test</li><li>Existing integration tests for AzureOpenAiChatOptions should validate the fix works correctly</li></ul></div><div class='modal-section'><h4>Solution Fitness:</h4><p>The implementation perfectly solves the stated problem of removing duplicated lines. The solution is neither over-engineered nor under-engineered - it&#x27;s a precise fix that removes exactly the duplicated method calls. No alternative approaches are needed for such a straightforward duplication removal.</p></div>
+                </div>
+                
+                <div class="commit-message-data">
+                    <div class="commit-message-text">Commit message not available for PR #4195</div>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="pr-card" data-pr-number="4192" data-risk="low" data-type="feature" data-backport="approve">
+            <div class="pr-header">
+                <div class="pr-icon">🍎</div>
+                <div class="pr-title-section">
+                    <h3 class="pr-title">
+                        <a href="https://github.com/spring-projects/spring-ai/pull/4192" target="_blank" class="pr-link">
+                            #4192: Update McpToolUtils.java
+                        </a>
+                    </h3>
+                    <div class="pr-meta">
+                        <span class="pr-author">by <a href="https://github.com/spring-projects/spring-ai/pulls?q=author:shishuiwuhen2009" target="_blank" class="author-link">shishuiwuhen2009</a></span>
+                        <span class="badge-group">
+                            <span class="badge-label">Type:</span>
+                            <span class="pr-type" title="Feature: New functionality addition">feature</span>
+                        </span>
+                        <span class="badge-group">
+                            <span class="badge-label">Risk:</span>
+                            <span class="risk-badge risk-low" title="Low Risk: Minimal security/stability impact, safe to review">LOW</span>
+                        </span>
+                        <span class="badge-group">
+                            <span class="badge-label">Backport:</span>
+                            <span class="backport-badge backport-approve" title="Backport Approved: Safe for 1.0.x release branch">
+                                ✅ APPROVE
+                            </span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="pr-stats">
+                <div class="stat">
+                    <span class="stat-label">Files:</span>
+                    <span class="stat-value">1</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Lines:</span>
+                    <span class="stat-value">+2/-2</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Effort:</span>
+                    <span class="stat-value">1/10</span>
+                </div>
+            </div>
+            
+            <div class="pr-summary">
+                <div class="assessment-section">
+                    <h4 class="assessment-label">💡 Problem Summary</h4>
+                    <p class="problem-summary">The McpToolUtils.prefixedToolName method has formatting issues when handling tool names containing Chinese characters, causing improper display or processing of internationalized tool names in the MCP (Model Context Protocol) integration.</p>
+                    <ul class='key-requirements'><li>Proper Unicode character handling for tool name formatting</li><li>Maintain backward compatibility with existing tool name processing</li><li>Support for Chinese characters and other Unicode text in tool names</li><li class='requirements-more'>+ 4 more requirements...</li></ul>
+                </div>
+            </div>
+            
+            <div class="pr-actions">
+                <a href="https://github.com/spring-projects/spring-ai/pull/4192" target="_blank" class="btn btn-primary">View on GitHub</a>
+                <button class="btn btn-secondary" onclick="openManualMergeModal(4192, 'shishuiwuhen2009/main')">
+                    🔀 Checkout & Merge
+                </button>
+                <button class="btn btn-details modal-details-btn" onclick="openAssessmentModal(4192)">
+                    🔍 View Assessments
+                </button>
+            </div>
+            
+            <!-- Hidden assessment data for modal population -->
+            <div class="assessment-data" style="display: none;" data-pr="4192">
+                <div class="problem-analysis-data">
+                    
+        <div class='modal-section'>
+            <h4>Problem Summary:</h4>
+            <p>The McpToolUtils.prefixedToolName method has formatting issues when handling tool names containing Chinese characters, causing improper display or processing of internationalized tool names in the MCP (Model Context Protocol) integration.</p>
+        </div>
+        <div class='modal-section'><h4>Key Requirements:</h4><ul><li>Proper Unicode character handling for tool name formatting</li><li>Maintain backward compatibility with existing tool name processing</li><li>Support for Chinese characters and other Unicode text in tool names</li><li>Consistent formatting behavior across different character sets</li><li>Integration with Spring AI&#x27;s MCP tool utilities framework</li><li>Performance should not degrade for ASCII tool names</li><li>Proper encoding/decoding of tool name strings</li></ul></div>
+        <div class='modal-section'><h4>Design Decisions:</h4><ul><li>Focus on fixing the prefixedToolName method specifically rather than broader internationalization</li><li>Minimal code change approach to reduce regression risk</li><li>Preserve existing API contract and method signatures</li><li>Target Unicode string handling rather than locale-specific formatting</li></ul></div>
+        <div class='modal-section'><h4>Solution Approach:</h4><ul><li>Direct fix to string formatting logic in McpToolUtils.prefixedToolName method</li><li>Likely involves proper Unicode string handling or encoding corrections</li><li>Minimal invasive change targeting the specific formatting issue</li></ul></div>
+        <div class='modal-section'><h4>Quality Assessment:</h4><p>The PR addresses a specific internationalization issue but lacks comprehensive testing and documentation. The minimal scope suggests a focused fix but raises concerns about validation completeness.</p></div>
+        
+                </div>
+                
+                <div class="backport-assessment-data">
+                    
+        <div class='modal-section'>
+            <div class="backport-decision approve">✅ APPROVE</div>
+            <p><strong>Classification:</strong> Bug Fix</p>
+            <p><strong>Risk Level:</strong> Low - minimal code change with backward compatibility preserved</p>
+        </div>
+        <div class='modal-section'>
+            <h4>Reasoning:</h4>
+            <p>This is a legitimate bug fix that addresses internationalization issues in tool name formatting without breaking existing functionality. The change adds Chinese character support through a standard Unicode range modification while preserving all existing behavior.</p>
+        </div>
+        <div class='modal-section'><h4>Recommendations:</h4><p>While APPROVED for backporting, should include comprehensive unit tests for Chinese character scenarios and validate that existing test suite passes to ensure no regressions in alphanumeric tool name handling.</p></div>
+        
+                </div>
+                
+                <div class="technical-concerns-data">
+                    <div class='modal-section'><h4>Outstanding Concerns:</h4><ul><li>No test cases provided to verify Chinese character handling</li><li>Unclear what specific formatting issue was occurring</li><li>No validation of other Unicode character sets beyond Chinese</li><li>Potential impact on tool name parsing in downstream systems</li><li>No documentation update regarding internationalization support</li></ul></div><div class='modal-section'><h4>Complexity Indicators:</h4><ul><li>Single file modification suggests focused change</li><li>Internationalization bugs can have subtle edge cases</li><li>String encoding issues may affect multiple character sets</li><li>Testing complexity for various Unicode scenarios</li><li>Potential for character encoding regression in different environments</li></ul></div><div class='modal-section'><h4>Recommendations:</h4><ul><li>Add unit tests specifically testing Chinese characters and other Unicode text in tool names</li><li>Provide before/after examples demonstrating the formatting issue and fix</li><li>Include tests for edge cases like mixed character sets and special Unicode characters</li><li>Update documentation to clarify internationalization support in MCP tool utilities</li><li>Consider broader review of internationalization support across the MCP integration</li></ul></div><div class='modal-section'><h4>Stakeholder Feedback:</h4><ul><li>No conversation timeline or reviewer feedback available</li><li>No linked issues providing additional context</li><li>No community discussion or requirements clarification</li></ul></div>
+                </div>
+                
+                <div class="solution-quality-data">
+                    <div class='modal-section'><h4>Scope Analysis:</h4><p>This is a minimal, targeted change affecting only the McpToolUtils.java file to add Chinese character support in tool name formatting. The scope is appropriately narrow for the specific internationalization enhancement being implemented.</p></div><div class='modal-section'><h4>Architecture Impact:</h4><ul><li>No impact on core Spring AI interfaces or abstractions - this is a utility function modification</li><li>Fits well with Spring AI patterns as it enhances existing functionality without breaking contracts</li><li>Maintains existing API surface while expanding character support</li><li>No impact on system modularity as this is an isolated utility enhancement</li></ul></div><div class='modal-section'><h4>Implementation Quality:</h4><ul><li>Clean, minimal code change with clear intent and purpose</li><li>Follows existing Spring AI coding patterns and maintains consistency</li><li>Regex pattern correctly implements Unicode range for Chinese characters (\u4e00-\u9fa5)</li><li>No resource management concerns as this is a simple string processing operation</li><li>Integrates seamlessly with existing Spring Framework patterns</li><li>Method remains under complexity thresholds with simple string manipulation logic</li><li>No code duplication or structural issues introduced</li></ul></div><div class='modal-section'><h4>Testing Adequacy:</h4><ul><li>No test files included in this PR, which is concerning for regex pattern changes</li><li>Missing test coverage for Chinese character scenarios</li><li>No verification that existing functionality remains intact</li><li>Edge case testing needed for Unicode boundary conditions</li><li>No integration testing for MCP tool name handling with Chinese characters</li><li>Test coverage gap represents significant risk for regex modifications</li><li>Need validation that Chinese characters are properly preserved through the entire tool processing pipeline</li></ul></div><div class='modal-section'><h4>Solution Fitness:</h4><p>The implementation appropriately solves the internationalization requirement for Chinese character support in tool names. The solution is neither over-engineered nor under-engineered, using a standard Unicode range approach that is widely accepted for Chinese character handling.</p></div>
+                </div>
+                
+                <div class="commit-message-data">
+                    <div class="commit-message-text">Commit message not available for PR #4192</div>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="pr-card" data-pr-number="4197" data-risk="low" data-type="testing" data-backport="approve">
+            <div class="pr-header">
+                <div class="pr-icon">🌿</div>
+                <div class="pr-title-section">
+                    <h3 class="pr-title">
+                        <a href="https://github.com/spring-projects/spring-ai/pull/4197" target="_blank" class="pr-link">
+                            #4197: Enhance test coverage across Spring AI modules with comprehensive edge cases
+                        </a>
+                    </h3>
+                    <div class="pr-meta">
+                        <span class="pr-author">by <a href="https://github.com/spring-projects/spring-ai/pulls?q=author:alxkm" target="_blank" class="author-link">alxkm</a></span>
+                        <span class="badge-group">
+                            <span class="badge-label">Type:</span>
+                            <span class="pr-type" title="Testing: Test additions, improvements, or coverage enhancements">testing</span>
+                        </span>
+                        <span class="badge-group">
+                            <span class="badge-label">Risk:</span>
+                            <span class="risk-badge risk-low" title="Low Risk: Minimal security/stability impact, safe to review">LOW</span>
+                        </span>
+                        <span class="badge-group">
+                            <span class="badge-label">Backport:</span>
+                            <span class="backport-badge backport-approve" title="Backport Approved: Safe for 1.0.x release branch">
+                                ✅ APPROVE
+                            </span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="pr-stats">
+                <div class="stat">
+                    <span class="stat-label">Files:</span>
+                    <span class="stat-value">8</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Lines:</span>
+                    <span class="stat-value">+710/-0</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Effort:</span>
+                    <span class="stat-value">6/10</span>
+                </div>
+            </div>
+            
+            <div class="pr-summary">
+                <div class="assessment-section">
+                    <h4 class="assessment-label">💡 Problem Summary</h4>
+                    <p class="problem-summary">This PR addresses insufficient test coverage across multiple Spring AI modules, particularly lacking comprehensive edge case testing, error handling validation, and real-world scenario coverage. The existing tests were not adequately validating critical functionality like streaming, metadata handling, and observability features.</p>
+                    <ul class='key-requirements'><li>Comprehensive edge case testing for ZhiPuAI Chat Model functionality</li><li>Enhanced UUID format validation with proper structure verification</li><li>Robust error handling validation for null inputs and special characters</li><li class='requirements-more'>+ 5 more requirements...</li></ul>
+                </div>
+            </div>
+            
+            <div class="pr-actions">
+                <a href="https://github.com/spring-projects/spring-ai/pull/4197" target="_blank" class="btn btn-primary">View on GitHub</a>
+                <button class="btn btn-secondary" onclick="openManualMergeModal(4197, 'test/enhance-test-coverage-across-modules')">
+                    🔀 Checkout & Merge
+                </button>
+                <button class="btn btn-details modal-details-btn" onclick="openAssessmentModal(4197)">
+                    🔍 View Assessments
+                </button>
+            </div>
+            
+            <!-- Hidden assessment data for modal population -->
+            <div class="assessment-data" style="display: none;" data-pr="4197">
+                <div class="problem-analysis-data">
+                    
+        <div class='modal-section'>
+            <h4>Problem Summary:</h4>
+            <p>This PR addresses insufficient test coverage across multiple Spring AI modules, particularly lacking comprehensive edge case testing, error handling validation, and real-world scenario coverage. The existing tests were not adequately validating critical functionality like streaming, metadata handling, and observability features.</p>
+        </div>
+        <div class='modal-section'><h4>Key Requirements:</h4><ul><li>Comprehensive edge case testing for ZhiPuAI Chat Model functionality</li><li>Enhanced UUID format validation with proper structure verification</li><li>Robust error handling validation for null inputs and special characters</li><li>Streaming functionality validation for AI chat completions</li><li>Metadata consistency testing across multiple service calls</li><li>Tool callback testing with proper assertions</li><li>Whitespace and special character handling in observability components</li><li>Multi-instance consistency validation for ID generation services</li></ul></div>
+        <div class='modal-section'><h4>Design Decisions:</h4><ul><li>Focus on unit test enhancement rather than integration test expansion</li><li>Prioritize edge case coverage over happy path testing</li><li>Use parameterized testing approaches for metadata variation scenarios</li><li>Implement comprehensive assertion patterns for UUID structure validation</li><li>Design tests to validate both functional correctness and error resilience</li></ul></div>
+        <div class='modal-section'><h4>Solution Approach:</h4><ul><li>Systematic module-by-module test enhancement targeting specific functionality gaps</li><li>Implementation of comprehensive error handling test scenarios with null and edge inputs</li><li>Addition of streaming functionality tests with proper callback validation</li><li>Enhanced metadata testing with order independence and consistency validation</li></ul></div>
+        <div class='modal-section'><h4>Quality Assessment:</h4><p>The PR demonstrates a systematic approach to improving test coverage with focus on real-world scenarios and edge cases. However, the lack of quantified coverage metrics and performance considerations limits the ability to fully assess the quality impact.</p></div>
+        
+                </div>
+                
+                <div class="backport-assessment-data">
+                    
+        <div class='modal-section'>
+            <div class="backport-decision approve">✅ APPROVE</div>
+            <p><strong>Classification:</strong> Test Enhancement</p>
+            <p><strong>Risk Level:</strong> Low - Test-only changes typically have minimal risk for breaking existing functionality</p>
+        </div>
+        <div class='modal-section'>
+            <h4>Reasoning:</h4>
+            <p>This PR enhances test coverage without modifying public APIs or implementation logic. Test additions and improvements are generally safe for backporting to maintenance branches as they validate existing functionality and catch regressions.</p>
+        </div>
+        <div class='modal-section'><h4>Recommendations:</h4><p>Verify that test changes don&#x27;t require new dependencies or API features not available in 1.0.x branch. Review actual test code to ensure compatibility with 1.0.x Spring AI version.</p></div>
+        
+                </div>
+                
+                <div class="technical-concerns-data">
+                    <div class='modal-section'><h4>Outstanding Concerns:</h4><ul><li>No performance impact assessment for the additional test execution time</li><li>Missing integration test coverage to validate end-to-end scenarios</li><li>Potential test maintenance overhead with extensive edge case coverage</li><li>No validation of test coverage metrics improvement quantification</li><li>Unclear if existing CI/CD pipeline can handle the increased test load</li></ul></div><div class='modal-section'><h4>Complexity Indicators:</h4><ul><li>Changes span 8 different test files across multiple Spring AI modules</li><li>Requires deep understanding of Spring AI internals and testing patterns</li><li>Complex edge case scenarios involving streaming, callbacks, and metadata handling</li><li>Need for consistent testing patterns across diverse AI service integrations</li><li>Potential for test interdependencies and maintenance complexity</li></ul></div><div class='modal-section'><h4>Recommendations:</h4><ul><li>Add test coverage metrics reporting to quantify the improvement achieved</li><li>Include performance benchmarks to ensure test execution time remains acceptable</li><li>Consider adding integration tests to complement the enhanced unit test coverage</li><li>Document testing patterns and conventions established for future consistency</li><li>Validate that all new tests follow Spring Testing best practices and conventions</li></ul></div><div class='modal-section'><h4>Stakeholder Feedback:</h4><ul><li>No reviewer feedback available in the provided context</li><li>PR currently in OPEN state without apparent review activity</li><li>No linked issues or discussion threads for context</li><li>Missing stakeholder validation of test coverage improvement goals</li></ul></div>
+                </div>
+                
+                <div class="solution-quality-data">
+                    <div class='modal-section'><h4>Scope Analysis:</h4><p>The PR enhances test coverage across 8 Spring AI modules including Ollama, OpenAI, ZhiPuAI, commons, and TypeSense components. The scope is appropriately focused on improving test quality without modifying production code, targeting edge cases and comprehensive scenarios that were previously missing from the test suite.</p></div><div class='modal-section'><h4>Architecture Impact:</h4><ul><li>No changes to core Spring AI interfaces or abstractions - only test enhancements</li><li>Follows existing Spring AI testing patterns using JUnit 5, Mockito, and AssertJ consistently</li><li>Improves overall system reliability through better edge case coverage and validation testing</li><li>Maintains modular testing approach with tests isolated to their respective modules</li></ul></div><div class='modal-section'><h4>Implementation Quality:</h4><ul><li>Code organization follows Spring AI conventions with proper test class structure and naming</li><li>Consistent use of Spring testing patterns including @ExtendWith(MockitoExtension.class) and proper mocking</li><li>Comprehensive edge case coverage including null handling, empty inputs, and boundary conditions</li><li>Good resource management with @TempDir usage for file-based tests and proper cleanup</li><li>Proper integration with Spring Framework patterns using builders and dependency injection</li><li>One complex method identified: OllamaEmbeddingModelTests.options() at 59 lines exceeds recommended length</li><li>No significant code smells detected - tests are focused and well-structured</li></ul></div><div class='modal-section'><h4>Testing Adequacy:</h4><ul><li>Excellent coverage of new edge cases including null inputs, empty data, and boundary conditions</li><li>High-quality test scenarios covering success paths, error conditions, and retry mechanisms</li><li>Proper integration testing patterns for Spring AI components with realistic mock scenarios</li><li>Comprehensive validation testing including builder pattern validation and metadata handling</li><li>No ignored or disabled tests found - all tests are actively executed</li><li>Most test methods are appropriately sized (under 50 lines) with clear single responsibilities</li><li>Test naming follows descriptive conventions making test intent clear (e.g., &#x27;embeddingWithNullOptions&#x27;, &#x27;shouldHandleNullInputsGracefully&#x27;)</li></ul></div><div class='modal-section'><h4>Solution Fitness:</h4><p>The implementation appropriately addresses the goal of enhancing test coverage through comprehensive edge case testing. The solution is well-engineered with consistent patterns and thorough coverage of boundary conditions, error scenarios, and integration points without being over-engineered.</p></div>
+                </div>
+                
+                <div class="commit-message-data">
+                    <div class="commit-message-text">Commit message not available for PR #4197</div>
+                </div>
+            </div>
+        </div>
+        
+            </div>
+        </section>
+        
+        
+                <section class="orchard-section ready-harvest">
+                    <div class="section-header">
+                        <h2>🍎 Ready to Harvest</h2>
+                        <p class="section-subtitle">Low Hanging Fruit - Quick Wins (4 PRs)</p>
+                    </div>
+                    <div class="pr-grid">
+                        
+        <div class="pr-card" data-pr-number="4190" data-risk="low" data-type="bugfix" data-backport="unknown">
+            <div class="pr-header">
+                <div class="pr-icon">🍎</div>
+                <div class="pr-title-section">
+                    <h3 class="pr-title">
+                        <a href="https://github.com/spring-projects/spring-ai/pull/4190" target="_blank" class="pr-link">
+                            #4190: Add getTool method for AsyncMcpToolCallback in order to get toolName witch has been prefixed in getToolDefinition
+                        </a>
+                    </h3>
+                    <div class="pr-meta">
+                        <span class="pr-author">by <a href="https://github.com/spring-projects/spring-ai/pulls?q=author:shishuiwuhen2009" target="_blank" class="author-link">shishuiwuhen2009</a></span>
+                        <span class="badge-group">
+                            <span class="badge-label">Type:</span>
+                            <span class="pr-type" title="Bug Fix: Resolves existing issues or errors">bugfix</span>
+                        </span>
+                        <span class="badge-group">
+                            <span class="badge-label">Risk:</span>
+                            <span class="risk-badge risk-low" title="Low Risk: Minimal security/stability impact, safe to review">LOW</span>
+                        </span>
+                        <span class="badge-group">
+                            <span class="badge-label">Backport:</span>
+                            <span class="backport-badge backport-unknown" title="Backport Assessment: Analysis pending or unavailable">
+                                ❓ UNKNOWN
+                            </span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="pr-stats">
+                <div class="stat">
+                    <span class="stat-label">Files:</span>
+                    <span class="stat-value">1</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Lines:</span>
+                    <span class="stat-value">+4/-0</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Effort:</span>
+                    <span class="stat-value">1/10</span>
+                </div>
+            </div>
+            
+            <div class="pr-summary">
+                <div class="assessment-section">
+                    <h4 class="assessment-label">💡 Problem Summary</h4>
+                    <p class="problem-summary">AI analysis could not be parsed properly</p>
+                    
+                </div>
+            </div>
+            
+            <div class="pr-actions">
+                <a href="https://github.com/spring-projects/spring-ai/pull/4190" target="_blank" class="btn btn-primary">View on GitHub</a>
+                <button class="btn btn-secondary" onclick="openManualMergeModal(4190, 'patch-4')">
+                    🔀 Checkout & Merge
+                </button>
+                <button class="btn btn-details modal-details-btn" onclick="openAssessmentModal(4190)">
+                    🔍 View Assessments
+                </button>
+            </div>
+            
+            <!-- Hidden assessment data for modal population -->
+            <div class="assessment-data" style="display: none;" data-pr="4190">
+                <div class="problem-analysis-data">
+                    
+        <div class='modal-section'>
+            <h4>Problem Summary:</h4>
+            <p>AI analysis could not be parsed properly</p>
+        </div>
+        
+        
+        
+        <div class='modal-section'><h4>Quality Assessment:</h4><p>Analysis parsing failed</p></div>
+        
+                </div>
+                
+                <div class="backport-assessment-data">
+                    
+        <div class='modal-section'>
+            <div class="backport-decision unknown">❓ UNKNOWN</div>
+            <p><strong>Classification:</strong> Assessment Missing</p>
+            <p><strong>Risk Level:</strong> Unknown</p>
+        </div>
+        <div class='modal-section'>
+            <h4>Reasoning:</h4>
+            <p>Backport assessment not available</p>
+        </div>
+        
+        
+                </div>
+                
+                <div class="technical-concerns-data">
+                    <div class='modal-section'><h4>Recommendations:</h4><ul><li>Retry analysis with improved prompting</li></ul></div>
+                </div>
+                
+                <div class="solution-quality-data">
+                    <p>Solution quality analysis not available</p>
+                </div>
+                
+                <div class="commit-message-data">
+                    <div class="commit-message-text">Commit message not available for PR #4190</div>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="pr-card" data-pr-number="4192" data-risk="low" data-type="feature" data-backport="approve">
+            <div class="pr-header">
+                <div class="pr-icon">🍎</div>
+                <div class="pr-title-section">
+                    <h3 class="pr-title">
+                        <a href="https://github.com/spring-projects/spring-ai/pull/4192" target="_blank" class="pr-link">
+                            #4192: Update McpToolUtils.java
+                        </a>
+                    </h3>
+                    <div class="pr-meta">
+                        <span class="pr-author">by <a href="https://github.com/spring-projects/spring-ai/pulls?q=author:shishuiwuhen2009" target="_blank" class="author-link">shishuiwuhen2009</a></span>
+                        <span class="badge-group">
+                            <span class="badge-label">Type:</span>
+                            <span class="pr-type" title="Feature: New functionality addition">feature</span>
+                        </span>
+                        <span class="badge-group">
+                            <span class="badge-label">Risk:</span>
+                            <span class="risk-badge risk-low" title="Low Risk: Minimal security/stability impact, safe to review">LOW</span>
+                        </span>
+                        <span class="badge-group">
+                            <span class="badge-label">Backport:</span>
+                            <span class="backport-badge backport-approve" title="Backport Approved: Safe for 1.0.x release branch">
+                                ✅ APPROVE
+                            </span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="pr-stats">
+                <div class="stat">
+                    <span class="stat-label">Files:</span>
+                    <span class="stat-value">1</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Lines:</span>
+                    <span class="stat-value">+2/-2</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Effort:</span>
+                    <span class="stat-value">1/10</span>
+                </div>
+            </div>
+            
+            <div class="pr-summary">
+                <div class="assessment-section">
+                    <h4 class="assessment-label">💡 Problem Summary</h4>
+                    <p class="problem-summary">The McpToolUtils.prefixedToolName method has formatting issues when handling tool names containing Chinese characters, causing improper display or processing of internationalized tool names in the MCP (Model Context Protocol) integration.</p>
+                    <ul class='key-requirements'><li>Proper Unicode character handling for tool name formatting</li><li>Maintain backward compatibility with existing tool name processing</li><li>Support for Chinese characters and other Unicode text in tool names</li><li class='requirements-more'>+ 4 more requirements...</li></ul>
+                </div>
+            </div>
+            
+            <div class="pr-actions">
+                <a href="https://github.com/spring-projects/spring-ai/pull/4192" target="_blank" class="btn btn-primary">View on GitHub</a>
+                <button class="btn btn-secondary" onclick="openManualMergeModal(4192, 'shishuiwuhen2009/main')">
+                    🔀 Checkout & Merge
+                </button>
+                <button class="btn btn-details modal-details-btn" onclick="openAssessmentModal(4192)">
+                    🔍 View Assessments
+                </button>
+            </div>
+            
+            <!-- Hidden assessment data for modal population -->
+            <div class="assessment-data" style="display: none;" data-pr="4192">
+                <div class="problem-analysis-data">
+                    
+        <div class='modal-section'>
+            <h4>Problem Summary:</h4>
+            <p>The McpToolUtils.prefixedToolName method has formatting issues when handling tool names containing Chinese characters, causing improper display or processing of internationalized tool names in the MCP (Model Context Protocol) integration.</p>
+        </div>
+        <div class='modal-section'><h4>Key Requirements:</h4><ul><li>Proper Unicode character handling for tool name formatting</li><li>Maintain backward compatibility with existing tool name processing</li><li>Support for Chinese characters and other Unicode text in tool names</li><li>Consistent formatting behavior across different character sets</li><li>Integration with Spring AI&#x27;s MCP tool utilities framework</li><li>Performance should not degrade for ASCII tool names</li><li>Proper encoding/decoding of tool name strings</li></ul></div>
+        <div class='modal-section'><h4>Design Decisions:</h4><ul><li>Focus on fixing the prefixedToolName method specifically rather than broader internationalization</li><li>Minimal code change approach to reduce regression risk</li><li>Preserve existing API contract and method signatures</li><li>Target Unicode string handling rather than locale-specific formatting</li></ul></div>
+        <div class='modal-section'><h4>Solution Approach:</h4><ul><li>Direct fix to string formatting logic in McpToolUtils.prefixedToolName method</li><li>Likely involves proper Unicode string handling or encoding corrections</li><li>Minimal invasive change targeting the specific formatting issue</li></ul></div>
+        <div class='modal-section'><h4>Quality Assessment:</h4><p>The PR addresses a specific internationalization issue but lacks comprehensive testing and documentation. The minimal scope suggests a focused fix but raises concerns about validation completeness.</p></div>
+        
+                </div>
+                
+                <div class="backport-assessment-data">
+                    
+        <div class='modal-section'>
+            <div class="backport-decision approve">✅ APPROVE</div>
+            <p><strong>Classification:</strong> Bug Fix</p>
+            <p><strong>Risk Level:</strong> Low - minimal code change with backward compatibility preserved</p>
+        </div>
+        <div class='modal-section'>
+            <h4>Reasoning:</h4>
+            <p>This is a legitimate bug fix that addresses internationalization issues in tool name formatting without breaking existing functionality. The change adds Chinese character support through a standard Unicode range modification while preserving all existing behavior.</p>
+        </div>
+        <div class='modal-section'><h4>Recommendations:</h4><p>While APPROVED for backporting, should include comprehensive unit tests for Chinese character scenarios and validate that existing test suite passes to ensure no regressions in alphanumeric tool name handling.</p></div>
+        
+                </div>
+                
+                <div class="technical-concerns-data">
+                    <div class='modal-section'><h4>Outstanding Concerns:</h4><ul><li>No test cases provided to verify Chinese character handling</li><li>Unclear what specific formatting issue was occurring</li><li>No validation of other Unicode character sets beyond Chinese</li><li>Potential impact on tool name parsing in downstream systems</li><li>No documentation update regarding internationalization support</li></ul></div><div class='modal-section'><h4>Complexity Indicators:</h4><ul><li>Single file modification suggests focused change</li><li>Internationalization bugs can have subtle edge cases</li><li>String encoding issues may affect multiple character sets</li><li>Testing complexity for various Unicode scenarios</li><li>Potential for character encoding regression in different environments</li></ul></div><div class='modal-section'><h4>Recommendations:</h4><ul><li>Add unit tests specifically testing Chinese characters and other Unicode text in tool names</li><li>Provide before/after examples demonstrating the formatting issue and fix</li><li>Include tests for edge cases like mixed character sets and special Unicode characters</li><li>Update documentation to clarify internationalization support in MCP tool utilities</li><li>Consider broader review of internationalization support across the MCP integration</li></ul></div><div class='modal-section'><h4>Stakeholder Feedback:</h4><ul><li>No conversation timeline or reviewer feedback available</li><li>No linked issues providing additional context</li><li>No community discussion or requirements clarification</li></ul></div>
+                </div>
+                
+                <div class="solution-quality-data">
+                    <div class='modal-section'><h4>Scope Analysis:</h4><p>This is a minimal, targeted change affecting only the McpToolUtils.java file to add Chinese character support in tool name formatting. The scope is appropriately narrow for the specific internationalization enhancement being implemented.</p></div><div class='modal-section'><h4>Architecture Impact:</h4><ul><li>No impact on core Spring AI interfaces or abstractions - this is a utility function modification</li><li>Fits well with Spring AI patterns as it enhances existing functionality without breaking contracts</li><li>Maintains existing API surface while expanding character support</li><li>No impact on system modularity as this is an isolated utility enhancement</li></ul></div><div class='modal-section'><h4>Implementation Quality:</h4><ul><li>Clean, minimal code change with clear intent and purpose</li><li>Follows existing Spring AI coding patterns and maintains consistency</li><li>Regex pattern correctly implements Unicode range for Chinese characters (\u4e00-\u9fa5)</li><li>No resource management concerns as this is a simple string processing operation</li><li>Integrates seamlessly with existing Spring Framework patterns</li><li>Method remains under complexity thresholds with simple string manipulation logic</li><li>No code duplication or structural issues introduced</li></ul></div><div class='modal-section'><h4>Testing Adequacy:</h4><ul><li>No test files included in this PR, which is concerning for regex pattern changes</li><li>Missing test coverage for Chinese character scenarios</li><li>No verification that existing functionality remains intact</li><li>Edge case testing needed for Unicode boundary conditions</li><li>No integration testing for MCP tool name handling with Chinese characters</li><li>Test coverage gap represents significant risk for regex modifications</li><li>Need validation that Chinese characters are properly preserved through the entire tool processing pipeline</li></ul></div><div class='modal-section'><h4>Solution Fitness:</h4><p>The implementation appropriately solves the internationalization requirement for Chinese character support in tool names. The solution is neither over-engineered nor under-engineered, using a standard Unicode range approach that is widely accepted for Chinese character handling.</p></div>
+                </div>
+                
+                <div class="commit-message-data">
+                    <div class="commit-message-text">Commit message not available for PR #4192</div>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="pr-card" data-pr-number="4195" data-risk="low" data-type="cleanup" data-backport="approve">
+            <div class="pr-header">
+                <div class="pr-icon">🍎</div>
+                <div class="pr-title-section">
+                    <h3 class="pr-title">
+                        <a href="https://github.com/spring-projects/spring-ai/pull/4195" target="_blank" class="pr-link">
+                            #4195: Remove duplicated lines in AzureOpenAiChatOptions
+                        </a>
+                    </h3>
+                    <div class="pr-meta">
+                        <span class="pr-author">by <a href="https://github.com/spring-projects/spring-ai/pulls?q=author:asw12" target="_blank" class="author-link">asw12</a></span>
+                        <span class="badge-group">
+                            <span class="badge-label">Type:</span>
+                            <span class="pr-type" title="Cleanup: Code refactoring, unused code removal, or maintenance">cleanup</span>
+                        </span>
+                        <span class="badge-group">
+                            <span class="badge-label">Risk:</span>
+                            <span class="risk-badge risk-low" title="Low Risk: Minimal security/stability impact, safe to review">LOW</span>
+                        </span>
+                        <span class="badge-group">
+                            <span class="badge-label">Backport:</span>
+                            <span class="backport-badge backport-approve" title="Backport Approved: Safe for 1.0.x release branch">
+                                ✅ APPROVE
+                            </span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="pr-stats">
+                <div class="stat">
+                    <span class="stat-label">Files:</span>
+                    <span class="stat-value">1</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Lines:</span>
+                    <span class="stat-value">+0/-3</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Effort:</span>
+                    <span class="stat-value">1/10</span>
+                </div>
+            </div>
+            
+            <div class="pr-summary">
+                <div class="assessment-section">
+                    <h4 class="assessment-label">💡 Problem Summary</h4>
+                    <p class="problem-summary">This PR addresses code duplication in the AzureOpenAiChatOptions class where identical lines were accidentally left as duplicates during a previous cleanup in commit c0bc623. The duplicate logic already exists at lines L275-L277, making the additional lines redundant.</p>
+                    <ul class='key-requirements'><li>Remove exact duplicate lines without affecting functionality</li><li>Maintain existing API compatibility for AzureOpenAiChatOptions</li><li>Preserve all existing configuration options and behavior</li><li class='requirements-more'>+ 2 more requirements...</li></ul>
+                </div>
+            </div>
+            
+            <div class="pr-actions">
+                <a href="https://github.com/spring-projects/spring-ai/pull/4195" target="_blank" class="btn btn-primary">View on GitHub</a>
+                <button class="btn btn-secondary" onclick="openManualMergeModal(4195, 'patch-1')">
+                    🔀 Checkout & Merge
+                </button>
+                <button class="btn btn-details modal-details-btn" onclick="openAssessmentModal(4195)">
+                    🔍 View Assessments
+                </button>
+            </div>
+            
+            <!-- Hidden assessment data for modal population -->
+            <div class="assessment-data" style="display: none;" data-pr="4195">
+                <div class="problem-analysis-data">
+                    
+        <div class='modal-section'>
+            <h4>Problem Summary:</h4>
+            <p>This PR addresses code duplication in the AzureOpenAiChatOptions class where identical lines were accidentally left as duplicates during a previous cleanup in commit c0bc623. The duplicate logic already exists at lines L275-L277, making the additional lines redundant.</p>
+        </div>
+        <div class='modal-section'><h4>Key Requirements:</h4><ul><li>Remove exact duplicate lines without affecting functionality</li><li>Maintain existing API compatibility for AzureOpenAiChatOptions</li><li>Preserve all existing configuration options and behavior</li><li>Ensure Spring AI integration patterns remain intact</li><li>Maintain code quality and readability standards</li></ul></div>
+        <div class='modal-section'><h4>Design Decisions:</h4><ul><li>Simple deletion approach - removing duplicate lines rather than refactoring</li><li>No API changes to maintain backward compatibility</li><li>Preserving existing code structure and patterns</li><li>Minimal impact change to reduce regression risk</li></ul></div>
+        <div class='modal-section'><h4>Solution Approach:</h4><ul><li>Direct removal of duplicate lines identified during code review</li><li>Reference to existing implementation at L275-L277 as the canonical version</li><li>Cleanup approach following previous commit c0bc623 pattern</li></ul></div>
+        <div class='modal-section'><h4>Quality Assessment:</h4><p>This appears to be a straightforward code cleanup addressing an obvious duplication issue. The solution is minimal and low-risk, though it lacks detailed context about the specific changes being made.</p></div>
+        
+                </div>
+                
+                <div class="backport-assessment-data">
+                    
+        <div class='modal-section'>
+            <div class="backport-decision approve">✅ APPROVE</div>
+            <p><strong>Classification:</strong> Bug Fix</p>
+            <p><strong>Risk Level:</strong> Low - minimal change that removes duplicate code without affecting functionality</p>
+        </div>
+        <div class='modal-section'>
+            <h4>Reasoning:</h4>
+            <p>This is a straightforward bug fix that removes accidental duplicate lines in an internal method. The change has no impact on public APIs and carries minimal risk of breaking existing functionality.</p>
+        </div>
+        <div class='modal-section'><h4>Recommendations:</h4><p>Safe for backporting - verify during review that the removed lines are indeed duplicates and that the same functionality exists elsewhere in the method (as mentioned in L275-L277)</p></div>
+        
+                </div>
+                
+                <div class="technical-concerns-data">
+                    <div class='modal-section'><h4>Outstanding Concerns:</h4><ul><li>No test coverage verification mentioned for the affected area</li><li>Lack of explicit validation that functionality remains unchanged</li><li>No documentation update consideration</li><li>Missing details about which specific lines are being removed</li></ul></div><div class='modal-section'><h4>Complexity Indicators:</h4><ul><li>Single file modification with minimal scope</li><li>Simple line deletion without logic changes</li><li>No integration points affected</li><li>Low testing complexity due to duplicate removal nature</li></ul></div><div class='modal-section'><h4>Recommendations:</h4><ul><li>Include specific line numbers and code snippets being removed for reviewer clarity</li><li>Add verification that existing tests continue to pass</li><li>Consider adding a comment explaining the cleanup in commit message</li><li>Request explicit reviewer confirmation that functionality is preserved</li><li>Document the relationship between the duplicate and canonical code sections</li></ul></div><div class='modal-section'><h4>Stakeholder Feedback:</h4><ul><li>No reviewer comments or feedback documented</li><li>No approval or rejection signals present</li><li>No suggestions or concerns raised in conversation</li><li>Open status indicates pending review</li></ul></div>
+                </div>
+                
+                <div class="solution-quality-data">
+                    <div class='modal-section'><h4>Scope Analysis:</h4><p>The scope is extremely narrow and well-defined, affecting only one file with a simple removal of 3 lines. The change removes duplicated method calls (.toolCallbacks() and .toolNames()) from a builder pattern in the AzureOpenAiChatOptions.fromOptions() method. This is appropriate scope for the stated problem of removing duplicated lines.</p></div><div class='modal-section'><h4>Architecture Impact:</h4><ul><li>No impact on core Spring AI interfaces or abstractions - this is purely a bug fix within an existing method</li><li>Fits perfectly with existing Spring AI patterns as it maintains the builder pattern while fixing duplication</li><li>Improves code quality by eliminating redundant method calls that would overwrite previously set values</li><li>Positive impact on maintainability by reducing potential confusion about which values are actually used</li></ul></div><div class='modal-section'><h4>Implementation Quality:</h4><ul><li>Code organization remains clean with the removal of duplicated builder method calls</li><li>Properly adheres to Spring AI coding patterns by maintaining the existing builder pattern structure</li><li>No error handling changes needed as this is a simple line removal fix</li><li>No performance impact - actually slight improvement by removing unnecessary method calls</li><li>No integration issues with Spring Framework patterns as the change is internal to the builder method</li><li>Method complexity is appropriate - the fromOptions() method remains focused and readable</li><li>No code smells introduced - actually removes a minor code smell (duplication)</li></ul></div><div class='modal-section'><h4>Testing Adequacy:</h4><ul><li>No new functionality introduced, so no new test coverage needed</li><li>Existing tests should continue to pass as the external behavior remains the same</li><li>The fix actually makes the code more predictable for testing scenarios</li><li>No edge cases introduced by this change</li><li>No ignored or disabled tests in the modified file</li><li>The change simplifies the code path, making it easier to test</li><li>Existing integration tests for AzureOpenAiChatOptions should validate the fix works correctly</li></ul></div><div class='modal-section'><h4>Solution Fitness:</h4><p>The implementation perfectly solves the stated problem of removing duplicated lines. The solution is neither over-engineered nor under-engineered - it&#x27;s a precise fix that removes exactly the duplicated method calls. No alternative approaches are needed for such a straightforward duplication removal.</p></div>
+                </div>
+                
+                <div class="commit-message-data">
+                    <div class="commit-message-text">Commit message not available for PR #4195</div>
+                </div>
+            </div>
+        </div>
+        
+
+        <div class="pr-card" data-pr-number="4189" data-risk="low" data-type="bugfix" data-backport="approve">
+            <div class="pr-header">
+                <div class="pr-icon">🍎</div>
+                <div class="pr-title-section">
+                    <h3 class="pr-title">
+                        <a href="https://github.com/spring-projects/spring-ai/pull/4189" target="_blank" class="pr-link">
+                            #4189: GH-4170 Fixed the issue where `SystemMessage` was not being saved to the chat memory
+                        </a>
+                    </h3>
+                    <div class="pr-meta">
+                        <span class="pr-author">by <a href="https://github.com/spring-projects/spring-ai/pulls?q=author:sunyuhan1998" target="_blank" class="author-link">sunyuhan1998</a></span>
+                        <span class="badge-group">
+                            <span class="badge-label">Type:</span>
+                            <span class="pr-type" title="Bug Fix: Resolves existing issues or errors">bugfix</span>
+                        </span>
+                        <span class="badge-group">
+                            <span class="badge-label">Risk:</span>
+                            <span class="risk-badge risk-low" title="Low Risk: Minimal security/stability impact, safe to review">LOW</span>
+                        </span>
+                        <span class="badge-group">
+                            <span class="badge-label">Backport:</span>
+                            <span class="backport-badge backport-approve" title="Backport Approved: Safe for 1.0.x release branch">
+                                ✅ APPROVE
+                            </span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="pr-stats">
+                <div class="stat">
+                    <span class="stat-label">Files:</span>
+                    <span class="stat-value">1</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Lines:</span>
+                    <span class="stat-value">+12/-2</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Effort:</span>
+                    <span class="stat-value">2/10</span>
+                </div>
+            </div>
+            
+            <div class="pr-summary">
+                <div class="assessment-section">
+                    <h4 class="assessment-label">💡 Problem Summary</h4>
+                    <p class="problem-summary">The MessageChatMemoryAdvisor in Spring AI does not save SystemMessage instances to ChatMemory, causing conversation role ordering errors when using default system prompts. This creates a &#x27;conversation roles must alternate user/assistant/user/assistant&#x27; error that breaks the chat flow.</p>
+                    <ul class='key-requirements'><li>SystemMessage must be properly saved to chat memory when present</li><li>Chat memory should maintain correct message ordering (system, user, assistant pattern)</li><li>Solution must handle first conversation turn detection correctly</li><li class='requirements-more'>+ 5 more requirements...</li></ul>
+                </div>
+            </div>
+            
+            <div class="pr-actions">
+                <a href="https://github.com/spring-projects/spring-ai/pull/4189" target="_blank" class="btn btn-primary">View on GitHub</a>
+                <button class="btn btn-secondary" onclick="openManualMergeModal(4189, 'fix-issue-4170')">
+                    🔀 Checkout & Merge
+                </button>
+                <button class="btn btn-details modal-details-btn" onclick="openAssessmentModal(4189)">
+                    🔍 View Assessments
+                </button>
+            </div>
+            
+            <!-- Hidden assessment data for modal population -->
+            <div class="assessment-data" style="display: none;" data-pr="4189">
+                <div class="problem-analysis-data">
+                    
+        <div class='modal-section'>
+            <h4>Problem Summary:</h4>
+            <p>The MessageChatMemoryAdvisor in Spring AI does not save SystemMessage instances to ChatMemory, causing conversation role ordering errors when using default system prompts. This creates a &#x27;conversation roles must alternate user/assistant/user/assistant&#x27; error that breaks the chat flow.</p>
+        </div>
+        <div class='modal-section'><h4>Key Requirements:</h4><ul><li>SystemMessage must be properly saved to chat memory when present</li><li>Chat memory should maintain correct message ordering (system, user, assistant pattern)</li><li>Solution must handle first conversation turn detection correctly</li><li>Implementation must detect when SystemMessage content changes between conversations</li><li>Backward compatibility with existing MessageChatMemoryAdvisor usage</li><li>Integration with Spring AI&#x27;s conversation flow patterns</li><li>Performance efficiency when checking for SystemMessage changes</li><li>Support for various AI providers (OpenAI, local models, etc.)</li></ul></div>
+        <div class='modal-section'><h4>Design Decisions:</h4><ul><li>Check for first conversation turn to determine when to add SystemMessage</li><li>Compare current SystemMessage with previous one to detect content changes</li><li>Modify MessageChatMemoryAdvisor to include SystemMessage in memory storage</li><li>Maintain existing API surface to avoid breaking changes</li><li>Use conditional logic rather than always saving SystemMessage to optimize performance</li></ul></div>
+        <div class='modal-section'><h4>Solution Approach:</h4><ul><li>Primary approach: Modify MessageChatMemoryAdvisor to conditionally save SystemMessage based on first turn or content change detection</li><li>Alternative approach mentioned: Redesign the relationship between MessageWindowChatMemory and MessageChatMemoryAdvisor for consistency</li><li>Conditional saving strategy to balance functionality with performance</li><li>Fix implementation focuses on the advisor layer rather than core memory classes</li></ul></div>
+        <div class='modal-section'><h4>Quality Assessment:</h4><p>The solution appears well-targeted and addresses the core issue without over-engineering. The focused single-file change and community testing provide confidence in the approach, though additional edge case testing would strengthen the implementation.</p></div>
+        
+                </div>
+                
+                <div class="backport-assessment-data">
+                    
+        <div class='modal-section'>
+            <div class="backport-decision approve">✅ APPROVE</div>
+            <p><strong>Classification:</strong> Bug Fix</p>
+            <p><strong>Risk Level:</strong> Low - corrects existing broken behavior without changing public interfaces</p>
+        </div>
+        <div class='modal-section'>
+            <h4>Reasoning:</h4>
+            <p>This PR fixes a clear bug where SystemMessage was not being properly saved to chat memory, affecting message ordering. The fix involves internal logic improvements without any public API changes, making it safe for backporting.</p>
+        </div>
+        <div class='modal-section'><h4>Recommendations:</h4><p>Safe to backport as it corrects existing functionality without breaking changes. Ensure thorough testing of chat memory behavior with system messages after backporting.</p></div>
+        
+                </div>
+                
+                <div class="technical-concerns-data">
+                    <div class='modal-section'><h4>Outstanding Concerns:</h4><ul><li>Potential performance impact of comparing SystemMessage content on every turn</li><li>Memory usage implications of storing additional SystemMessage instances</li><li>Thread safety considerations for concurrent conversation handling</li><li>Compatibility with different ChatMemory implementations beyond MessageWindowChatMemory</li><li>Edge cases where SystemMessage might change mid-conversation unexpectedly</li></ul></div><div class='modal-section'><h4>Complexity Indicators:</h4><ul><li>Single file change suggests focused, targeted fix</li><li>Logic requires careful handling of conversation state detection</li><li>Integration with existing Spring AI conversation flow patterns</li><li>Need to maintain backward compatibility with existing implementations</li><li>Testing complexity around conversation state transitions and edge cases</li></ul></div><div class='modal-section'><h4>Recommendations:</h4><ul><li>Add comprehensive unit tests covering first conversation turn and SystemMessage change scenarios</li><li>Include integration tests with multiple AI providers to ensure broad compatibility</li><li>Add performance benchmarks to validate minimal impact of SystemMessage comparison logic</li><li>Document the new behavior in Spring AI documentation with examples</li><li>Consider adding configuration options to disable SystemMessage saving if needed for specific use cases</li></ul></div><div class='modal-section'><h4>Stakeholder Feedback:</h4><ul><li>Author confirmed testing with Spring AI 1.1.0-SNAPSHOT shows issue resolution</li><li>Multiple community members provided detailed analysis and debugging insights</li><li>YunKuiLu identified specific code locations contributing to the problem</li><li>LoperLee shared debugging details and closed an earlier PR due to potential side effects</li><li>General community engagement suggests this is a well-understood, commonly encountered issue</li></ul></div>
+                </div>
+                
+                <div class="solution-quality-data">
+                    <div class='modal-section'><h4>Scope Analysis:</h4><p>The change affects a single file in the Spring AI chat client module, specifically the MessageChatMemoryAdvisor class. The scope is appropriately narrow and focused on fixing the specific issue where SystemMessage was not being saved to chat memory, which aligns well with the problem being solved.</p></div><div class='modal-section'><h4>Architecture Impact:</h4><ul><li>The change modifies a core advisor component that manages chat memory, affecting how system messages are persisted across conversations</li><li>It maintains existing Spring AI patterns by working within the established advisor chain architecture</li><li>The modification enhances the chat memory functionality without breaking the existing interface contracts</li><li>The change improves system modularity by ensuring consistent message persistence behavior across conversation rounds</li></ul></div><div class='modal-section'><h4>Implementation Quality:</h4><ul><li>Code organization is clean with logical grouping of the system message handling logic within the existing method flow</li><li>Adheres to Spring AI coding patterns by using existing prompt and memory APIs appropriately</li><li>Error handling could be improved - no null checks for systemMessage before adding to memory</li><li>Resource management is appropriate, reusing existing objects without creating unnecessary overhead</li><li>Integration follows Spring Framework patterns correctly, using existing dependency injection and configuration</li><li>Method complexity is acceptable - the before() method remains under 50 lines with straightforward logic flow</li><li>No significant code smells detected - the conditional logic is clear and the responsibility remains focused</li></ul></div><div class='modal-section'><h4>Testing Adequacy:</h4><ul><li>No test files are included in this PR, which is a significant gap for a memory persistence feature</li><li>Missing test coverage for the new conditional logic that determines when to add system messages</li><li>No tests for edge cases like null system messages or empty memory scenarios</li><li>Missing integration tests to verify system message persistence across conversation rounds</li><li>No validation that the fix actually resolves the original issue through automated testing</li><li>Test scenarios should cover both first conversation round and subsequent rounds with updated system messages</li><li>Error condition testing is absent, particularly for malformed or null system messages</li></ul></div><div class='modal-section'><h4>Solution Fitness:</h4><p>The implementation appropriately addresses the stated problem of SystemMessage not being saved to chat memory. The solution is well-scoped and not over-engineered, using a simple conditional approach to handle both first-round conversations and system message updates.</p></div>
+                </div>
+                
+                <div class="commit-message-data">
+                    <div class="commit-message-text">Commit message not available for PR #4189</div>
+                </div>
+            </div>
+        </div>
+        
+                    </div>
+                </section>
+                
+
+                <section class="orchard-section requires-ladder">
+                    <div class="section-header">
+                        <h2>🌿 Requires Ladder</h2>
+                        <p class="section-subtitle">Medium Risk/Effort (1 PRs)</p>
+                    </div>
+                    <div class="pr-grid">
+                        
+        <div class="pr-card" data-pr-number="4197" data-risk="low" data-type="testing" data-backport="approve">
+            <div class="pr-header">
+                <div class="pr-icon">🌿</div>
+                <div class="pr-title-section">
+                    <h3 class="pr-title">
+                        <a href="https://github.com/spring-projects/spring-ai/pull/4197" target="_blank" class="pr-link">
+                            #4197: Enhance test coverage across Spring AI modules with comprehensive edge cases
+                        </a>
+                    </h3>
+                    <div class="pr-meta">
+                        <span class="pr-author">by <a href="https://github.com/spring-projects/spring-ai/pulls?q=author:alxkm" target="_blank" class="author-link">alxkm</a></span>
+                        <span class="badge-group">
+                            <span class="badge-label">Type:</span>
+                            <span class="pr-type" title="Testing: Test additions, improvements, or coverage enhancements">testing</span>
+                        </span>
+                        <span class="badge-group">
+                            <span class="badge-label">Risk:</span>
+                            <span class="risk-badge risk-low" title="Low Risk: Minimal security/stability impact, safe to review">LOW</span>
+                        </span>
+                        <span class="badge-group">
+                            <span class="badge-label">Backport:</span>
+                            <span class="backport-badge backport-approve" title="Backport Approved: Safe for 1.0.x release branch">
+                                ✅ APPROVE
+                            </span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="pr-stats">
+                <div class="stat">
+                    <span class="stat-label">Files:</span>
+                    <span class="stat-value">8</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Lines:</span>
+                    <span class="stat-value">+710/-0</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Effort:</span>
+                    <span class="stat-value">6/10</span>
+                </div>
+            </div>
+            
+            <div class="pr-summary">
+                <div class="assessment-section">
+                    <h4 class="assessment-label">💡 Problem Summary</h4>
+                    <p class="problem-summary">This PR addresses insufficient test coverage across multiple Spring AI modules, particularly lacking comprehensive edge case testing, error handling validation, and real-world scenario coverage. The existing tests were not adequately validating critical functionality like streaming, metadata handling, and observability features.</p>
+                    <ul class='key-requirements'><li>Comprehensive edge case testing for ZhiPuAI Chat Model functionality</li><li>Enhanced UUID format validation with proper structure verification</li><li>Robust error handling validation for null inputs and special characters</li><li class='requirements-more'>+ 5 more requirements...</li></ul>
+                </div>
+            </div>
+            
+            <div class="pr-actions">
+                <a href="https://github.com/spring-projects/spring-ai/pull/4197" target="_blank" class="btn btn-primary">View on GitHub</a>
+                <button class="btn btn-secondary" onclick="openManualMergeModal(4197, 'test/enhance-test-coverage-across-modules')">
+                    🔀 Checkout & Merge
+                </button>
+                <button class="btn btn-details modal-details-btn" onclick="openAssessmentModal(4197)">
+                    🔍 View Assessments
+                </button>
+            </div>
+            
+            <!-- Hidden assessment data for modal population -->
+            <div class="assessment-data" style="display: none;" data-pr="4197">
+                <div class="problem-analysis-data">
+                    
+        <div class='modal-section'>
+            <h4>Problem Summary:</h4>
+            <p>This PR addresses insufficient test coverage across multiple Spring AI modules, particularly lacking comprehensive edge case testing, error handling validation, and real-world scenario coverage. The existing tests were not adequately validating critical functionality like streaming, metadata handling, and observability features.</p>
+        </div>
+        <div class='modal-section'><h4>Key Requirements:</h4><ul><li>Comprehensive edge case testing for ZhiPuAI Chat Model functionality</li><li>Enhanced UUID format validation with proper structure verification</li><li>Robust error handling validation for null inputs and special characters</li><li>Streaming functionality validation for AI chat completions</li><li>Metadata consistency testing across multiple service calls</li><li>Tool callback testing with proper assertions</li><li>Whitespace and special character handling in observability components</li><li>Multi-instance consistency validation for ID generation services</li></ul></div>
+        <div class='modal-section'><h4>Design Decisions:</h4><ul><li>Focus on unit test enhancement rather than integration test expansion</li><li>Prioritize edge case coverage over happy path testing</li><li>Use parameterized testing approaches for metadata variation scenarios</li><li>Implement comprehensive assertion patterns for UUID structure validation</li><li>Design tests to validate both functional correctness and error resilience</li></ul></div>
+        <div class='modal-section'><h4>Solution Approach:</h4><ul><li>Systematic module-by-module test enhancement targeting specific functionality gaps</li><li>Implementation of comprehensive error handling test scenarios with null and edge inputs</li><li>Addition of streaming functionality tests with proper callback validation</li><li>Enhanced metadata testing with order independence and consistency validation</li></ul></div>
+        <div class='modal-section'><h4>Quality Assessment:</h4><p>The PR demonstrates a systematic approach to improving test coverage with focus on real-world scenarios and edge cases. However, the lack of quantified coverage metrics and performance considerations limits the ability to fully assess the quality impact.</p></div>
+        
+                </div>
+                
+                <div class="backport-assessment-data">
+                    
+        <div class='modal-section'>
+            <div class="backport-decision approve">✅ APPROVE</div>
+            <p><strong>Classification:</strong> Test Enhancement</p>
+            <p><strong>Risk Level:</strong> Low - Test-only changes typically have minimal risk for breaking existing functionality</p>
+        </div>
+        <div class='modal-section'>
+            <h4>Reasoning:</h4>
+            <p>This PR enhances test coverage without modifying public APIs or implementation logic. Test additions and improvements are generally safe for backporting to maintenance branches as they validate existing functionality and catch regressions.</p>
+        </div>
+        <div class='modal-section'><h4>Recommendations:</h4><p>Verify that test changes don&#x27;t require new dependencies or API features not available in 1.0.x branch. Review actual test code to ensure compatibility with 1.0.x Spring AI version.</p></div>
+        
+                </div>
+                
+                <div class="technical-concerns-data">
+                    <div class='modal-section'><h4>Outstanding Concerns:</h4><ul><li>No performance impact assessment for the additional test execution time</li><li>Missing integration test coverage to validate end-to-end scenarios</li><li>Potential test maintenance overhead with extensive edge case coverage</li><li>No validation of test coverage metrics improvement quantification</li><li>Unclear if existing CI/CD pipeline can handle the increased test load</li></ul></div><div class='modal-section'><h4>Complexity Indicators:</h4><ul><li>Changes span 8 different test files across multiple Spring AI modules</li><li>Requires deep understanding of Spring AI internals and testing patterns</li><li>Complex edge case scenarios involving streaming, callbacks, and metadata handling</li><li>Need for consistent testing patterns across diverse AI service integrations</li><li>Potential for test interdependencies and maintenance complexity</li></ul></div><div class='modal-section'><h4>Recommendations:</h4><ul><li>Add test coverage metrics reporting to quantify the improvement achieved</li><li>Include performance benchmarks to ensure test execution time remains acceptable</li><li>Consider adding integration tests to complement the enhanced unit test coverage</li><li>Document testing patterns and conventions established for future consistency</li><li>Validate that all new tests follow Spring Testing best practices and conventions</li></ul></div><div class='modal-section'><h4>Stakeholder Feedback:</h4><ul><li>No reviewer feedback available in the provided context</li><li>PR currently in OPEN state without apparent review activity</li><li>No linked issues or discussion threads for context</li><li>Missing stakeholder validation of test coverage improvement goals</li></ul></div>
+                </div>
+                
+                <div class="solution-quality-data">
+                    <div class='modal-section'><h4>Scope Analysis:</h4><p>The PR enhances test coverage across 8 Spring AI modules including Ollama, OpenAI, ZhiPuAI, commons, and TypeSense components. The scope is appropriately focused on improving test quality without modifying production code, targeting edge cases and comprehensive scenarios that were previously missing from the test suite.</p></div><div class='modal-section'><h4>Architecture Impact:</h4><ul><li>No changes to core Spring AI interfaces or abstractions - only test enhancements</li><li>Follows existing Spring AI testing patterns using JUnit 5, Mockito, and AssertJ consistently</li><li>Improves overall system reliability through better edge case coverage and validation testing</li><li>Maintains modular testing approach with tests isolated to their respective modules</li></ul></div><div class='modal-section'><h4>Implementation Quality:</h4><ul><li>Code organization follows Spring AI conventions with proper test class structure and naming</li><li>Consistent use of Spring testing patterns including @ExtendWith(MockitoExtension.class) and proper mocking</li><li>Comprehensive edge case coverage including null handling, empty inputs, and boundary conditions</li><li>Good resource management with @TempDir usage for file-based tests and proper cleanup</li><li>Proper integration with Spring Framework patterns using builders and dependency injection</li><li>One complex method identified: OllamaEmbeddingModelTests.options() at 59 lines exceeds recommended length</li><li>No significant code smells detected - tests are focused and well-structured</li></ul></div><div class='modal-section'><h4>Testing Adequacy:</h4><ul><li>Excellent coverage of new edge cases including null inputs, empty data, and boundary conditions</li><li>High-quality test scenarios covering success paths, error conditions, and retry mechanisms</li><li>Proper integration testing patterns for Spring AI components with realistic mock scenarios</li><li>Comprehensive validation testing including builder pattern validation and metadata handling</li><li>No ignored or disabled tests found - all tests are actively executed</li><li>Most test methods are appropriately sized (under 50 lines) with clear single responsibilities</li><li>Test naming follows descriptive conventions making test intent clear (e.g., &#x27;embeddingWithNullOptions&#x27;, &#x27;shouldHandleNullInputsGracefully&#x27;)</li></ul></div><div class='modal-section'><h4>Solution Fitness:</h4><p>The implementation appropriately addresses the goal of enhancing test coverage through comprehensive edge case testing. The solution is well-engineered with consistent patterns and thorough coverage of boundary conditions, error scenarios, and integration points without being over-engineered.</p></div>
+                </div>
+                
+                <div class="commit-message-data">
+                    <div class="commit-message-text">Commit message not available for PR #4197</div>
+                </div>
+            </div>
+        </div>
+        
+                    </div>
+                </section>
+                
+
+                <section class="orchard-section top-shelf">
+                    <div class="section-header">
+                        <h2>🌲 Top Shelf</h2>
+                        <p class="section-subtitle">High Risk/Complex (1 PRs)</p>
+                    </div>
+                    <div class="pr-grid">
+                        
+        <div class="pr-card" data-pr-number="4196" data-risk="low" data-type="major-feature" data-backport="reject">
+            <div class="pr-header">
+                <div class="pr-icon">🌲</div>
+                <div class="pr-title-section">
+                    <h3 class="pr-title">
+                        <a href="https://github.com/spring-projects/spring-ai/pull/4196" target="_blank" class="pr-link">
+                            #4196: refactor: Restructure MCP server auto-configuration modules for better modularity
+                        </a>
+                    </h3>
+                    <div class="pr-meta">
+                        <span class="pr-author">by <a href="https://github.com/spring-projects/spring-ai/pulls?q=author:tzolov" target="_blank" class="author-link">tzolov</a></span>
+                        <span class="badge-group">
+                            <span class="badge-label">Type:</span>
+                            <span class="pr-type" title="Major Feature: Large functionality addition (>20 files or >500 lines)">major-feature</span>
+                        </span>
+                        <span class="badge-group">
+                            <span class="badge-label">Risk:</span>
+                            <span class="risk-badge risk-low" title="Low Risk: Minimal security/stability impact, safe to review">LOW</span>
+                        </span>
+                        <span class="badge-group">
+                            <span class="badge-label">Backport:</span>
+                            <span class="backport-badge backport-reject" title="Backport Rejected: Not suitable for 1.0.x release">
+                                ❌ REJECT
+                            </span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="pr-stats">
+                <div class="stat">
+                    <span class="stat-label">Files:</span>
+                    <span class="stat-value">67</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Lines:</span>
+                    <span class="stat-value">+911/-2393</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Effort:</span>
+                    <span class="stat-value">7/10</span>
+                </div>
+            </div>
+            
+            <div class="pr-summary">
+                <div class="assessment-section">
+                    <h4 class="assessment-label">💡 Problem Summary</h4>
+                    <p class="problem-summary">The Spring AI MCP (Model Context Protocol) server auto-configuration modules lack proper modularity and separation of concerns, making them difficult to maintain and extend. The current structure bundles unrelated functionality together, hindering code reusability and creating tight coupling between different server implementation types.</p>
+                    <ul class='key-requirements'><li>Improve module separation of concerns for MCP server auto-configuration</li><li>Create shared configuration properties module for common MCP server settings</li><li>Maintain backward compatibility with existing Spring AI integrations</li><li class='requirements-more'>+ 5 more requirements...</li></ul>
+                </div>
+            </div>
+            
+            <div class="pr-actions">
+                <a href="https://github.com/spring-projects/spring-ai/pull/4196" target="_blank" class="btn btn-primary">View on GitHub</a>
+                <button class="btn btn-secondary" onclick="openManualMergeModal(4196, 'improve-mcp-streamable-auto-configuration')">
+                    🔀 Checkout & Merge
+                </button>
+                <button class="btn btn-details modal-details-btn" onclick="openAssessmentModal(4196)">
+                    🔍 View Assessments
+                </button>
+            </div>
+            
+            <!-- Hidden assessment data for modal population -->
+            <div class="assessment-data" style="display: none;" data-pr="4196">
+                <div class="problem-analysis-data">
+                    
+        <div class='modal-section'>
+            <h4>Problem Summary:</h4>
+            <p>The Spring AI MCP (Model Context Protocol) server auto-configuration modules lack proper modularity and separation of concerns, making them difficult to maintain and extend. The current structure bundles unrelated functionality together, hindering code reusability and creating tight coupling between different server implementation types.</p>
+        </div>
+        <div class='modal-section'><h4>Key Requirements:</h4><ul><li>Improve module separation of concerns for MCP server auto-configuration</li><li>Create shared configuration properties module for common MCP server settings</li><li>Maintain backward compatibility with existing Spring AI integrations</li><li>Establish clear boundaries between STDIO, SSE, and Streamable-HTTP server configurations</li><li>Extract common auto-configuration logic to reduce code duplication</li><li>Ensure proper Spring Boot auto-configuration ordering and dependencies</li><li>Maintain Spring Framework best practices for modular design</li><li>Support all existing MCP server types without functional regression</li></ul></div>
+        <div class='modal-section'><h4>Design Decisions:</h4><ul><li>Rename modules with clearer, more descriptive naming convention (spring-ai-autoconfigure-mcp-server-* pattern)</li><li>Extract shared properties into dedicated spring-ai-autoconfigure-mcp-server-properties module</li><li>Create spring-ai-autoconfigure-mcp-server-common for shared auto-configuration logic</li><li>Separate stateless and streamable server configurations into distinct modules</li><li>Move McpServerProperties and related configuration classes to the shared properties module</li></ul></div>
+        <div class='modal-section'><h4>Solution Approach:</h4><ul><li>Incremental refactoring approach with module renaming and extraction</li><li>Extract-then-share pattern for common properties and configuration logic</li><li>Preserve existing API contracts while reorganizing internal module structure</li><li>Gradual migration strategy allowing both old and new module references</li></ul></div>
+        <div class='modal-section'><h4>Quality Assessment:</h4><p>The refactoring demonstrates good architectural thinking by improving modularity and reducing code duplication. However, the large scope and potential for breaking changes require careful execution and thorough testing to ensure a successful transition.</p></div>
+        
+                </div>
+                
+                <div class="backport-assessment-data">
+                    
+        <div class='modal-section'>
+            <div class="backport-decision reject">❌ REJECT</div>
+            <p><strong>Classification:</strong> Other</p>
+            <p><strong>Risk Level:</strong> High - Module restructuring creates breaking changes for existing users</p>
+        </div>
+        <div class='modal-section'>
+            <h4>Reasoning:</h4>
+            <p>This PR restructures module organization for better modularity, which is a refactoring effort rather than a bug fix. The module renaming creates breaking changes that would require users to update their imports and dependency declarations, violating the strict backward compatibility requirements for the 1.0.x maintenance branch.</p>
+        </div>
+        <div class='modal-section'><h4>Recommendations:</h4><p>For backporting consideration, this change would need to maintain the existing module names while adding the new structure, or be deferred to a major version release where breaking changes are acceptable.</p></div>
+        
+                </div>
+                
+                <div class="technical-concerns-data">
+                    <div class='modal-section'><h4>Outstanding Concerns:</h4><ul><li>Potential breaking changes for applications depending on old module names</li><li>Risk of circular dependencies between the new common modules</li><li>Impact on Spring Boot auto-configuration ordering with the new module structure</li><li>Migration path unclear for existing applications using the old module structure</li><li>Testing coverage across all module combinations may be incomplete</li><li>Documentation updates needed to reflect the new module organization</li></ul></div><div class='modal-section'><h4>Complexity Indicators:</h4><ul><li>Large scope affecting 67 files across multiple module types</li><li>Complex Spring Boot auto-configuration dependency relationships</li><li>Multiple server implementation types requiring careful coordination</li><li>Risk of breaking existing integrations during module restructuring</li><li>Need to maintain compatibility across different MCP server protocols</li><li>Extensive testing required to verify all module combinations work correctly</li></ul></div><div class='modal-section'><h4>Recommendations:</h4><ul><li>Add comprehensive migration guide documenting the module name changes and any required application updates</li><li>Implement extensive integration testing to verify all module combinations work correctly across different MCP server types</li><li>Consider providing temporary backward compatibility through module aliases or deprecation warnings</li><li>Update all documentation and examples to reflect the new module structure and naming conventions</li><li>Add automated tests to verify Spring Boot auto-configuration ordering works correctly with the new module dependencies</li></ul></div><div class='modal-section'><h4>Stakeholder Feedback:</h4><ul><li>No conversation entries or reviewer feedback available in the provided data</li><li>PR is currently in OPEN state with no visible approvals or concerns</li><li>No linked issues to provide additional context or requirements</li></ul></div>
+                </div>
+                
+                <div class="solution-quality-data">
+                    <div class='modal-section'><h4>Scope Analysis:</h4><p>This is a well-architected refactoring that significantly improves MCP server auto-configuration modularity. The restructuring introduces proper separation of concerns and supports multiple transport types (SSE, Streamable HTTP, Stateless), but requires minor documentation improvements.</p></div><div class='modal-section'><h4>Architecture Impact:</h4><ul><li>Architectural Impact: HIGH</li><li>New Components: spring-ai-autoconfigure-mcp-server-common - Core shared auto-configuration, spring-ai-autoconfigure-mcp-server-properties - Centralized properties management, spring-ai-autoconfigure-mcp-server-sse - SSE transport specific configuration, spring-ai-autoconfigure-mcp-server-stateless-* - Stateless server variants, spring-ai-autoconfigure-mcp-streamable-* - Streamable HTTP transport modules</li><li>Design Patterns: Modular auto-configuration with proper separation by transport type, Properties segregation pattern with McpServerChangeNotificationProperties, Transport abstraction with McpServerTransportProviderBase hierarchy, Conditional configuration with nested condition classes</li><li>Soundness: The refactoring follows Spring Boot auto-configuration best practices with proper conditional annotations, dependency ordering, and modular separation. The introduction of transport-specific modules improves maintainability and extensibility.</li></ul></div><div class='modal-section'><h4>Implementation Quality:</h4><ul><li>Breaking Changes: Yes</li><li>Migration Complexity: MEDIUM</li><li>Migration Guidance: Documentation updates provide guidance on new module structure and property changes, but could benefit from explicit migration examples.</li></ul></div><div class='modal-section'><h4>Testing Adequacy:</h4><ul><li>Test Coverage: EXCELLENT</li><li>Test Strategy: Comprehensive integration tests across all new modules with 15 test files covering different transport configurations and auto-configuration scenarios</li><li>Missing Tests: Migration compatibility tests to ensure smooth transition, Integration tests between different transport types</li></ul></div><div class='modal-section'><h4>Solution Fitness:</h4><p>This is a well-architected refactoring that significantly improves MCP server auto-configuration modularity. The restructuring introduces proper separation of concerns and supports multiple transport types (SSE, Streamable HTTP, Stateless), but requires minor documentation improvements.</p></div>
+                </div>
+                
+                <div class="commit-message-data">
+                    <div class="commit-message-text">Commit message not available for PR #4196</div>
+                </div>
+            </div>
+        </div>
+        
+                    </div>
+                </section>
+                
+    </div>
+    
+        <!-- Assessment Details Modal -->
+        <div id="assessment-modal" class="modal-overlay" style="display: none;">
+            <div class="modal-container">
+                <div class="modal-header">
+                    <h2 id="modal-pr-title">PR Assessment Details</h2>
+                    <button class="modal-close" onclick="closeAssessmentModal()">×</button>
+                </div>
+                <div class="modal-content">
+                    <div class="modal-assessment-layout">
+                        <div class="modal-top-row">
+                            <div class="modal-assessment-card modal-problem-card">
+                                <h3>🔍 Problem Analysis</h3>
+                                <div id="modal-problem-content">
+                                    <!-- Problem analysis content will be populated by JavaScript -->
+                                </div>
+                            </div>
+                            <div class="modal-assessment-card modal-backport-card">
+                                <h3>🔄 Backport Assessment</h3>
+                                <div id="modal-backport-content">
+                                    <!-- Backport content will be populated by JavaScript -->
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-middle-row">
+                            <div class="modal-assessment-card modal-concerns-card">
+                                <h3>⚠️ Technical Concerns</h3>
+                                <div id="modal-concerns-content">
+                                    <!-- Technical concerns content will be populated by JavaScript -->
+                                </div>
+                            </div>
+                            <div class="modal-assessment-card modal-solution-card">
+                                <h3>🏗️ Solution Quality</h3>
+                                <div id="modal-solution-content">
+                                    <!-- Solution quality content will be populated by JavaScript -->
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-bottom-row">
+                            <div class="modal-assessment-card modal-commit-card">
+                                <h3>📝 Final Commit Message</h3>
+                                <div id="modal-commit-content">
+                                    <!-- Commit message content will be populated by JavaScript -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Manual Merge Modal -->
+        <div id="manual-merge-modal" class="modal-overlay" style="display: none;">
+            <div class="modal-content backport-modal-content">
+                <div class="modal-header">
+                    <h2>🔀 Merge Automation & Commands</h2>
+                    <button class="modal-close" onclick="closeManualMergeModal()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="warning-section" style="margin-bottom: 20px;">
+                        <h3>📍 Branch Information</h3>
+                        <p>PR Branch: <code id="merge-branch-name"></code></p>
+                        <div id="merge-warning" style="display: none;">
+                            <p style="color: #d4851f; font-weight: bold;">⚠️ Make sure you're on the correct branch: <span id="merge-warning-branch"></span></p>
+                        </div>
+                    </div>
+                    
+                    <div class="automation-command-section">
+                        <h3>🚀 Quick Copy - Automation Command:</h3>
+                        <div class="command-box copyable" id="automation-command" onclick="copyAutomationCommand()">
+                            <pre id="automation-command-text"></pre>
+                        </div>
+                        <div class="copy-feedback" id="automation-copy-feedback" style="display: none;">
+                            ✅ Copied to clipboard!
+                        </div>
+                        <div class="automation-options">
+                            <h4>Command Options:</h4>
+                            <ul>
+                                <li><code>--auto</code> - Run without prompts</li>
+                                <li><code>--dry-run</code> - Preview commands without executing</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="manual-commands-section">
+                        <h3>📋 Manual Git Commands (Reference Only):</h3>
+                        <div class="command-reference" id="manual-commands">
+                            <pre id="manual-command-text"></pre>
+                        </div>
+                    </div>
+                    
+                    <div class="modal-actions">
+                        <button class="btn btn-secondary" onclick="closeManualMergeModal()">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+    
+        <script>
+        // Initialize test discovery data
+        window.testDiscoveryData = {};
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🌳 PR Orchard Dashboard loaded');
+            
+            // Initialize diff preview toggles
+            initializeDiffPreviews();
+            
+            // Add smooth scrolling to anchors
+            addSmoothScrolling();
+            
+            // Add card hover effects
+            addCardInteractions();
+            
+            // Tooltips removed - using expandable assessment cards
+            
+            console.log('✅ Dashboard initialization complete');
+        });
+        
+        function initializeDiffPreviews() {
+            // Handle diff preview toggle buttons
+            document.querySelectorAll('.show-diff-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    const card = this.closest('.pr-card');
+                    const preview = card.querySelector('.diff-preview');
+                    
+                    if (preview) {
+                        const isVisible = preview.style.display !== 'none';
+                        
+                        if (isVisible) {
+                            preview.style.display = 'none';
+                            this.innerHTML = '🔍 Show Diff Preview';
+                            this.style.background = 'var(--leaf-green)';
+                        } else {
+                            preview.style.display = 'block';
+                            this.innerHTML = '📋 Hide Diff Preview';
+                            this.style.background = 'var(--orchard-green)';
+                        }
+                        
+                        // Smooth scroll to show the preview
+                        if (!isVisible) {
+                            setTimeout(() => {
+                                preview.scrollIntoView({ 
+                                    behavior: 'smooth', 
+                                    block: 'nearest' 
+                                });
+                            }, 100);
+                        }
+                    }
+                });
+            });
+            
+            // Handle individual diff toggle buttons
+            document.querySelectorAll('.toggle-diff').forEach(button => {
+                button.addEventListener('click', function() {
+                    const preview = this.closest('.diff-preview');
+                    preview.style.display = 'none';
+                    
+                    const showBtn = preview.parentElement.querySelector('.show-diff-btn');
+                    if (showBtn) {
+                        showBtn.innerHTML = '🔍 Show Diff Preview';
+                        showBtn.style.background = 'var(--leaf-green)';
+                    }
+                });
+            });
+        }
+        
+        function addSmoothScrolling() {
+            // Add scroll-to-section functionality
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.style.opacity = '1';
+                        entry.target.style.transform = 'translateY(0)';
+                    }
+                });
+            }, {
+                threshold: 0.1,
+                rootMargin: '0px 0px -50px 0px'
+            });
+            
+            document.querySelectorAll('.orchard-section').forEach(section => {
+                section.style.opacity = '0';
+                section.style.transform = 'translateY(30px)';
+                section.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+                observer.observe(section);
+            });
+        }
+        
+        function addCardInteractions() {
+            // Add enhanced hover effects and interactions
+            document.querySelectorAll('.pr-card').forEach(card => {
+                const icon = card.querySelector('.pr-icon');
+                
+                card.addEventListener('mouseenter', function() {
+                    if (icon) {
+                        icon.style.transform = 'scale(1.1) rotate(5deg)';
+                        icon.style.transition = 'transform 0.3s ease';
+                    }
+                });
+                
+                card.addEventListener('mouseleave', function() {
+                    if (icon) {
+                        icon.style.transform = 'scale(1) rotate(0deg)';
+                    }
+                });
+                
+                // Add click-to-expand functionality for mobile
+                if (window.innerWidth <= 768) {
+                    card.addEventListener('click', function(e) {
+                        if (e.target.tagName !== 'A' && e.target.tagName !== 'BUTTON') {
+                            this.classList.toggle('expanded');
+                        }
+                    });
+                }
+            });
+        }
+        
+        // Add keyboard navigation
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                // Hide all open diff previews
+                document.querySelectorAll('.diff-preview').forEach(preview => {
+                    if (preview.style.display !== 'none') {
+                        preview.style.display = 'none';
+                        const showBtn = preview.parentElement.querySelector('.show-diff-btn');
+                        if (showBtn) {
+                            showBtn.innerHTML = '🔍 Show Diff Preview';
+                            showBtn.style.background = 'var(--leaf-green)';
+                        }
+                    }
+                });
+            }
+        });
+        
+        // PR Filtering functionality
+        function filterPRsByType(filterType) {
+            console.log(`🔍 Filtering PRs by type: ${filterType}`);
+            
+            // Update active stat card
+            document.querySelectorAll('.stat-card').forEach(card => {
+                card.classList.remove('active');
+            });
+            document.querySelector(`[data-filter="${filterType}"]`).classList.add('active');
+            
+            // Show/hide sections based on filter
+            const backportSection = document.querySelector('.backport-section');
+            const orchardSections = document.querySelectorAll('.orchard-section');
+            
+            if (filterType === 'all') {
+                // Show all sections
+                if (backportSection) backportSection.style.display = 'block';
+                orchardSections.forEach(section => section.style.display = 'block');
+            } else if (filterType === 'backport-ready') {
+                // Show only backport section
+                if (backportSection) backportSection.style.display = 'block';
+                orchardSections.forEach(section => section.style.display = 'none');
+            } else if (filterType === 'ready-harvest') {
+                // Show only ready-harvest section
+                if (backportSection) backportSection.style.display = 'none';
+                orchardSections.forEach(section => {
+                    if (section.classList.contains('ready-harvest')) {
+                        section.style.display = 'block';
+                    } else {
+                        section.style.display = 'none';
+                    }
+                });
+            } else if (filterType === 'low-risk') {
+                // Show sections and filter PR cards by risk level
+                if (backportSection) backportSection.style.display = 'none';
+                orchardSections.forEach(section => {
+                    section.style.display = 'block';
+                    // Hide PR cards that aren't low risk
+                    const prCards = section.querySelectorAll('.pr-card');
+                    prCards.forEach(card => {
+                        if (card.getAttribute('data-risk') === 'low') {
+                            card.style.display = 'block';
+                        } else {
+                            card.style.display = 'none';
+                        }
+                    });
+                });
+            }
+            
+            // Smooth scroll to first visible section
+            setTimeout(() => {
+                const firstVisibleSection = document.querySelector('.backport-section[style*="block"], .orchard-section[style*="block"]');
+                if (firstVisibleSection) {
+                    firstVisibleSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }, 100);
+        }
+        
+        // Initialize with 'all' filter active
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set 'Total PRs' as initially active
+            document.querySelector('[data-filter="all"]').classList.add('active');
+        });
+        
+        // Add performance monitoring
+        window.addEventListener('load', function() {
+            const loadTime = performance.now();
+            console.log(`🚀 Dashboard loaded in ${Math.round(loadTime)}ms`);
+            
+            // Add subtle fade-in effect after load
+            document.body.style.opacity = '0';
+            document.body.style.transition = 'opacity 0.5s ease';
+            setTimeout(() => {
+                document.body.style.opacity = '1';
+            }, 100);
+        });
+        
+        // Custom tooltip functionality
+        function initializeCustomTooltips() {
+            // Remove any existing tooltips first
+            document.querySelectorAll('.custom-tooltip').forEach(tooltip => tooltip.remove());
+            
+            // Find all elements with data-tooltip attribute
+            const tooltipElements = document.querySelectorAll('[data-tooltip]');
+            
+            if (tooltipElements.length === 0) {
+                return;
+            }
+            
+            tooltipElements.forEach(element => {
+                element.addEventListener('mouseenter', function(e) {
+                    showTooltip(e.target, e.target.getAttribute('data-tooltip'));
+                });
+                
+                element.addEventListener('mouseleave', function() {
+                    hideTooltip();
+                });
+                
+                // Handle keyboard accessibility
+                element.addEventListener('focus', function(e) {
+                    showTooltip(e.target, e.target.getAttribute('data-tooltip'));
+                });
+                
+                element.addEventListener('blur', function() {
+                    hideTooltip();
+                });
+            });
+        }
+
+        function showTooltip(element, content) {
+            if (!content) {
+                return;
+            }
+            
+            // Remove any existing tooltip
+            hideTooltip();
+            
+            // Create tooltip element
+            const tooltip = document.createElement('div');
+            tooltip.className = 'custom-tooltip';
+            tooltip.textContent = content;
+            
+            // Add to document
+            document.body.appendChild(tooltip);
+            
+            // Position tooltip
+            positionTooltip(element, tooltip);
+            
+            // Show with animation
+            requestAnimationFrame(() => {
+                tooltip.classList.add('show');
+            });
+        }
+
+        function hideTooltip() {
+            const existingTooltip = document.querySelector('.custom-tooltip');
+            if (existingTooltip) {
+                existingTooltip.classList.remove('show');
+                setTimeout(() => {
+                    if (existingTooltip.parentNode) {
+                        existingTooltip.parentNode.removeChild(existingTooltip);
+                    }
+                }, 200); // Match the CSS transition duration
+            }
+        }
+
+        function positionTooltip(element, tooltip) {
+            const elementRect = element.getBoundingClientRect();
+            const tooltipRect = tooltip.getBoundingClientRect();
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+            
+            // Default position: above the element, centered
+            let left = elementRect.left + (elementRect.width / 2) - (tooltipRect.width / 2);
+            let top = elementRect.top - tooltipRect.height - 10;
+            
+            // Adjust horizontal position if tooltip would go off-screen
+            if (left < 10) {
+                left = 10; // Left edge padding
+            } else if (left + tooltipRect.width > viewportWidth - 10) {
+                left = viewportWidth - tooltipRect.width - 10; // Right edge padding
+            }
+            
+            // If tooltip would go above viewport, position it below the element
+            if (top < 10) {
+                top = elementRect.bottom + 10;
+                tooltip.classList.add('tooltip-below');
+            } else {
+                tooltip.classList.remove('tooltip-below');
+            }
+            
+            // Final position
+            tooltip.style.left = left + 'px';
+            tooltip.style.top = top + 'px';
+        }
+        
+        // Toggle PR details expansion
+        function togglePRDetails(button) {
+            const card = button.closest('.pr-card');
+            const detailsSection = card.querySelector('.pr-details-expandable');
+            
+            if (detailsSection.style.display === 'none' || detailsSection.style.display === '') {
+                // Show details
+                detailsSection.style.display = 'block';
+                button.innerHTML = '📋 Hide Details';
+                button.style.background = 'var(--orchard-green)';
+                button.style.color = 'white';
+                
+                // Smooth scroll to show the expanded content
+                setTimeout(() => {
+                    detailsSection.scrollIntoView({ 
+                        behavior: 'smooth', 
+                        block: 'nearest'
+                    });
+                }, 100);
+            } else {
+                // Hide details
+                detailsSection.style.display = 'none';
+                button.innerHTML = '📋 Show Details';
+                button.style.background = 'var(--earth-tan)';
+                button.style.color = 'var(--orchard-green)';
+            }
+        }
+        
+        // Copy commit message functionality
+        function copyCommitMessage(prNumber) {
+            const commitContent = document.querySelector(`#commit-message-${prNumber}`);
+            if (!commitContent) {
+                console.error(`Commit message element not found for PR ${prNumber}`);
+                return;
+            }
+            
+            const text = commitContent.textContent.trim();
+            
+            // Use modern clipboard API if available
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(text).then(() => {
+                    showCopySuccess(prNumber);
+                }).catch(err => {
+                    console.error('Failed to copy commit message:', err);
+                    fallbackCopyTextToClipboard(text, prNumber);
+                });
+            } else {
+                // Fallback for older browsers
+                fallbackCopyTextToClipboard(text, prNumber);
+            }
+        }
+        
+        function fallbackCopyTextToClipboard(text, prNumber) {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            
+            // Avoid scrolling to bottom
+            textArea.style.top = "0";
+            textArea.style.left = "0";
+            textArea.style.position = "fixed";
+            textArea.style.opacity = "0";
+            
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            
+            try {
+                const successful = document.execCommand('copy');
+                if (successful) {
+                    showCopySuccess(prNumber);
+                } else {
+                    console.error('Fallback copy command failed');
+                }
+            } catch (err) {
+                console.error('Fallback copy failed:', err);
+            }
+            
+            document.body.removeChild(textArea);
+        }
+        
+        function showCopySuccess(prNumber) {
+            const button = document.querySelector(`button[onclick="copyCommitMessage(${prNumber})"]`);
+            if (button) {
+                const originalText = button.textContent;
+                button.textContent = 'Copied!';
+                button.style.background = '#10b981';
+                
+                setTimeout(() => {
+                    button.textContent = originalText;
+                    button.style.background = '#0969da';
+                }, 2000);
+            }
+        }
+        
+        // Modal functionality for assessment details
+        function openAssessmentModal(prNumber) {
+            const assessmentData = document.querySelector(`[data-pr="${prNumber}"]`);
+            if (!assessmentData) {
+                console.error(`Assessment data not found for PR ${prNumber}`);
+                return;
+            }
+            
+            // Get PR title from the main card
+            const prCard = document.querySelector(`[data-pr-number="${prNumber}"]`);
+            const prTitle = prCard ? prCard.querySelector('.pr-title a').textContent : `PR #${prNumber}`;
+            
+            // Update modal title
+            document.getElementById('modal-pr-title').textContent = prTitle;
+            
+            // Get assessment content from hidden data sections
+            const problemData = assessmentData.querySelector('.problem-analysis-data');
+            const backportData = assessmentData.querySelector('.backport-assessment-data');
+            const concernsData = assessmentData.querySelector('.technical-concerns-data');
+            const solutionData = assessmentData.querySelector('.solution-quality-data');
+            const commitData = assessmentData.querySelector('.commit-message-data');
+            
+            // Populate modal content
+            if (problemData) {
+                document.getElementById('modal-problem-content').innerHTML = problemData.innerHTML;
+            }
+            if (backportData) {
+                document.getElementById('modal-backport-content').innerHTML = backportData.innerHTML;
+            }
+            if (concernsData) {
+                document.getElementById('modal-concerns-content').innerHTML = concernsData.innerHTML;
+            }
+            if (solutionData) {
+                document.getElementById('modal-solution-content').innerHTML = solutionData.innerHTML;
+            }
+            if (commitData) {
+                const commitText = commitData.querySelector('.commit-message-text');
+                if (commitText) {
+                    document.getElementById('modal-commit-content').innerHTML = 
+                        `<div class="commit-message-text">${commitText.textContent}</div>`;
+                }
+            }
+            
+            // Show modal
+            const modal = document.getElementById('assessment-modal');
+            modal.style.display = 'flex';
+            document.body.style.overflow = 'hidden'; // Prevent background scrolling
+            
+            // Focus trap for accessibility
+            modal.focus();
+        }
+        
+        function closeAssessmentModal() {
+            const modal = document.getElementById('assessment-modal');
+            modal.style.display = 'none';
+            document.body.style.overflow = ''; // Restore scrolling
+        }
+        
+        // ESC key support for modal
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                const modal = document.getElementById('assessment-modal');
+                if (modal.style.display === 'flex') {
+                    closeAssessmentModal();
+                }
+            }
+        });
+        
+        // Click outside modal to close
+        document.addEventListener('click', function(e) {
+            const modal = document.getElementById('assessment-modal');
+            if (e.target === modal) {
+                closeAssessmentModal();
+            }
+        });
+        
+        
+        // === MANUAL MERGE MODAL FUNCTIONS ===
+        function openManualMergeModal(prNumber, actualBranch) {
+            const modal = document.getElementById('manual-merge-modal');
+            const branchName = actualBranch || `pr-${prNumber}-branch`;  // Use actual branch or fallback
+            
+            // Check if this PR is a backport candidate
+            const prData = window.prData && window.prData.find(pr => pr.number === prNumber);
+            const isBackportCandidate = prData && prData.backport_eligible === true;
+            
+            // Build automation command (for easy copy-paste)
+            const automationCommand = `python3 merge_pr.py ${prNumber} ${branchName}`;
+            
+            // Build manual commands sequence (for reference)
+            let manualCommands = [];
+            
+            // 1. Navigate to repository
+            manualCommands.push("# Navigate to Spring AI repository");
+            manualCommands.push("cd /home/mark/project-mgmt/spring-ai-project-mgmt/pr-review/spring-ai");
+            manualCommands.push("");
+            
+            // 2. Checkout PR branch
+            manualCommands.push("# Checkout PR branch");
+            manualCommands.push(`git checkout ${branchName}`);
+            manualCommands.push("");
+            
+            // 3. Update main branch without switching
+            manualCommands.push("# Update main branch without leaving current branch");
+            manualCommands.push("git fetch origin main:main");
+            manualCommands.push("");
+            
+            // 4. Rebase current branch on main
+            manualCommands.push("# Rebase PR branch on latest main");
+            manualCommands.push("git rebase main");
+            manualCommands.push("");
+            
+            // 5. Backport preparation (if approved)
+            if (isBackportCandidate) {
+                manualCommands.push("# ✅ APPROVED FOR BACKPORT - Add backport directive");
+                manualCommands.push(`python3 ../prepare_backport.py ${prNumber}`);
+                manualCommands.push("");
+            }
+            
+            // 6. Switch to main branch
+            manualCommands.push("# Switch to main branch");
+            manualCommands.push("git checkout main");
+            manualCommands.push("");
+            
+            // 7. Merge PR branch into main
+            manualCommands.push("# Merge PR branch (already rebased)");
+            manualCommands.push(`git merge ${branchName}`);
+            manualCommands.push("");
+            
+            // 8. Push to origin
+            manualCommands.push("# Push merged changes to origin");
+            manualCommands.push("git push origin main");
+            manualCommands.push("");
+            
+            // 9. Reminder to close issue
+            manualCommands.push("# 📝 REMINDER: Go to GitHub and close the associated issue(s)");
+            manualCommands.push(`# https://github.com/spring-projects/spring-ai/pull/${prNumber}`);
+            
+            const manualCommandText = manualCommands.join('\n');
+            
+            // Populate modal content
+            document.getElementById('merge-branch-name').textContent = branchName;
+            document.getElementById('automation-command-text').textContent = automationCommand;
+            document.getElementById('manual-command-text').textContent = manualCommandText;
+            document.getElementById('merge-warning-branch').textContent = branchName;
+            
+            // Show warning if not using placeholder branch name
+            const warningDiv = document.getElementById('merge-warning');
+            if (actualBranch && actualBranch !== `pr-${prNumber}-branch`) {
+                warningDiv.style.display = 'block';
+            } else {
+                warningDiv.style.display = 'none';
+            }
+            
+            // Show modal
+            modal.style.display = 'flex';
+            document.body.style.overflow = 'hidden'; // Prevent background scrolling
+        }
+        
+        function closeManualMergeModal() {
+            const modal = document.getElementById('manual-merge-modal');
+            modal.style.display = 'none';
+            document.body.style.overflow = ''; // Restore scrolling
+            
+            // Hide copy feedback
+            document.getElementById('automation-copy-feedback').style.display = 'none';
+        }
+        
+        function copyAutomationCommand() {
+            const commandText = document.getElementById('automation-command-text').textContent;
+            const feedback = document.getElementById('automation-copy-feedback');
+            
+            // Copy to clipboard
+            navigator.clipboard.writeText(commandText).then(function() {
+                // Show success feedback
+                feedback.style.display = 'block';
+                feedback.style.color = '#2d6e3b';
+                feedback.textContent = '✅ Copied to clipboard!';
+                
+                // Hide feedback after 2 seconds
+                setTimeout(function() {
+                    feedback.style.display = 'none';
+                }, 2000);
+            }).catch(function(err) {
+                // Show error feedback
+                feedback.style.display = 'block';
+                feedback.style.color = '#d32f2f';
+                feedback.textContent = '❌ Copy failed - please select and copy manually';
+                
+                // Hide feedback after 3 seconds
+                setTimeout(function() {
+                    feedback.style.display = 'none';
+                }, 3000);
+            });
+        }
+        
+        function copyCommand(command) {
+            navigator.clipboard.writeText(command).then(() => {
+                // Visual feedback could be added here
+            }).catch(err => {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = command;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+            });
+        }
+        
+        // Enhanced ESC key support for all modals
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                const assessmentModal = document.getElementById('assessment-modal');
+                const manualMergeModal = document.getElementById('manual-merge-modal');
+                
+                if (assessmentModal.style.display === 'flex') {
+                    closeAssessmentModal();
+                } else if (manualMergeModal.style.display === 'flex') {
+                    closeManualMergeModal();
+                }
+            }
+        });
+        
+        // Enhanced click outside modal to close for all modals
+        document.addEventListener('click', function(e) {
+            const assessmentModal = document.getElementById('assessment-modal');
+            const manualMergeModal = document.getElementById('manual-merge-modal');
+            
+            if (e.target === assessmentModal) {
+                closeAssessmentModal();
+            } else if (e.target === manualMergeModal) {
+                closeManualMergeModal();
+            }
+        });
+        </script>
+        
+</body>
+</html>
