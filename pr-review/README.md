@@ -1,8 +1,74 @@
-# Spring AI PR Review Automation
+# Spring AI PR Merge & Review Automation
 
-Comprehensive AI-powered automation for reviewing Spring AI project pull requests with intelligent conflict resolution, compilation error fixing, and detailed analysis reporting.
+Automated end-to-end PR merge pipeline for [Spring AI](https://github.com/spring-projects/spring-ai). Fetches a PR, rebases it onto main, resolves conflicts, fixes compilation errors, runs tests, and generates a comprehensive AI-powered analysis report -- in a single command.
 
-## 🚀 Quick Start - High Level Commands
+## How It Works
+
+The pipeline alternates between deterministic steps (free, instant) and LLM steps (reasoning, judgment). About half the steps are deterministic -- the LLM only fires when reasoning is actually needed.
+
+![PR merge pipeline -- green is deterministic, purple is LLM](images/pr-merge-pipeline.png)
+
+**Pipeline stages:**
+
+1. **Fetch PR & branch** -- clone/update Spring AI repo, check out PR branch
+2. **Compile check** -- pre-rebase compilation validation (fail-fast)
+3. **LLM fix errors** -- AI-powered compilation error resolution (if needed)
+4. **Rebase against main** -- rebase onto latest upstream
+5. **Resolve conflicts** -- AI-powered semantic conflict resolution (if needed)
+6. **Compile check** -- post-rebase compilation validation
+7. **Security review** -- risk and quality assessment
+8. **Squash & LLM commit msg** -- intelligent squashing with AI-generated commit message
+9. **Run tests** -- modular test discovery and execution
+10. **Analyze conversation** -- AI analysis of GitHub discussions and requirements
+11. **Assess risk** -- security, quality, and breaking change assessment
+12. **Evaluate solution** -- technical architecture and implementation analysis
+13. **Generate report** -- comprehensive markdown and HTML report
+
+## Batch Processing
+
+Run the pipeline across every open PR, rank by difficulty, and generate a dashboard. 16 PRs analyzed, risk-scored, and organized from low-hanging fruit to complex -- in a single batch run.
+
+![16 PRs analyzed and prioritized in one batch run](images/pr-orchard-dashboard.png)
+
+[View live dashboard (htmlpreview)](https://htmlpreview.github.io/?https://github.com/markpollack/spring-ai-project-mgmt/blob/main/reports/pr-review/pr_orchard_dashboard.html) | [Dashboard HTML source](../reports/pr-review/pr_orchard_dashboard.html)
+
+## Quick Start
+
+```bash
+cd pr-review
+
+# Single PR -- full pipeline
+python3 pr_workflow.py 3914
+
+# Batch -- analyze multiple PRs with dashboard
+python3 batch_pr_workflow.py 3920 3919 3921 3922
+
+# Report only (assumes PR already prepared)
+python3 pr_workflow.py --report-only 3914
+
+# Cleanup
+python3 pr_workflow.py --cleanup 3914
+```
+
+## Key Design Decisions
+
+- **Fail-fast compilation** -- two-stage compile check (pre-rebase and post-rebase) catches broken PRs in ~5 seconds before wasting time on downstream steps
+- **Human handoff for stubborn errors** -- AI makes one focused attempt at compilation fixes, then hands off with clear guidance and `--resume-after-compile` to continue
+- **Conservative AI usage** -- deterministic steps handle the scaffolding; LLM steps only fire for reasoning tasks (conflict resolution, analysis, commit messages)
+- **Sonnet model for cost control** -- all Claude Code calls explicitly use Sonnet to prevent accidental Opus usage; all components complete under 90 seconds
+- **File access boundaries** -- prompts restrict Claude Code to PR-specific files only (typically 5-7 files), preventing exploration of the full Spring AI codebase
+
+## Related
+
+- [Blog post: I Read My Agent's Diary](https://pollack.ai/posts/2026/03/i-read-my-agents-diary/) -- how this pipeline was built and measured
+- [Agent Journal](https://github.com/markpollack/agent-journal) -- behavioral instrumentation for agent runs
+- [AgentClient](https://github.com/spring-ai-community/agent-client) -- portable CLI wrapper used by this pipeline
+
+---
+
+# Detailed Usage
+
+## Quick Start - High Level Commands
 
 ### Single PR Review with HTML Report (Most Common)
 ```bash

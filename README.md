@@ -13,40 +13,25 @@ The repository provides four main subsystems for complete Spring AI project mana
 
 ## Architecture Overview
 
-### 1. PR Review System (`pr-review/`)
-AI-powered PR review automation with comprehensive analysis capabilities.
+### 1. PR Merge & Review System (`pr-review/`)
+End-to-end automated PR merge pipeline with AI-powered conflict resolution, compilation fixing, and comprehensive analysis reporting. Alternates between deterministic steps (free, instant) and LLM steps (reasoning, judgment).
 
-**Core Components:**
-- `pr_workflow.py` - Main workflow orchestrator
-  - **Main Function**: `PRWorkflow.run_complete_workflow()` - pr_workflow.py:282
-- `enhanced_report_generator.py` - AI-powered report generation
-  - **Main Function**: `EnhancedReportGenerator.generate_report()` - enhanced_report_generator.py:156
-- `ai_conversation_analyzer.py` - Conversation analysis
-  - **Main Function**: `AIConversationAnalyzer.analyze_conversation()` - ai_conversation_analyzer.py:89
-- `ai_risk_assessor.py` - Security and quality risk assessment
-  - **Main Function**: `AIRiskAssessor.assess_risks()` - ai_risk_assessor.py:112
-- `claude_code_wrapper.py` - Claude Code CLI integration utility
-  - **Main Function**: `ClaudeCodeWrapper.run_analysis()` - claude_code_wrapper.py:248
+**Pipeline:** Fetch PR → compile check → LLM fix errors → rebase against main → resolve conflicts → compile check → squash & LLM commit msg → run tests → AI analysis → generate report
 
 **Key Features:**
-- **AI-Powered Analysis**: Uses Claude Code integration for intelligent code review
-- **Token-Based File Selection**: Processes up to 80,000 tokens (~62,000 words) with 1 word = 1.3 tokens estimation
-- **Fail-Fast Approach**: Exits immediately if analysis fails (no fallback to placeholder data)
-- **Comprehensive Context**: Collects GitHub data, conversation analysis, and file changes
-- **Detailed Reports**: Generates markdown reports with risk assessment and recommendations
+- **13-stage pipeline** with fail-fast compilation checks (pre- and post-rebase)
+- **Batch processing** with dashboard -- 16 PRs analyzed, risk-scored, and prioritized in a single run ([sample dashboard](https://htmlpreview.github.io/?https://github.com/markpollack/spring-ai-project-mgmt/blob/main/reports/pr-review/pr_orchard_dashboard.html))
+- **Human handoff** for stubborn errors -- AI makes one attempt, then provides clear guidance
+- **Cost-controlled** -- Sonnet model, file access boundaries, all components under 90 seconds
 
 **Quick Start:**
 ```bash
 cd pr-review
-python3 pr_workflow.py 3914              # Complete PR analysis
-python3 pr_workflow.py --report-only 3914 # Generate enhanced report only
-python3 pr_workflow.py --cleanup 3914     # Clean up PR workspace
-
-# Batch processing multiple PRs
-python3 batch_pr_workflow.py 3920 3919 3921 3922
+python3 pr_workflow.py 3914                       # Full pipeline
+python3 batch_pr_workflow.py 3920 3919 3921 3922   # Batch with dashboard
 ```
 
-**Documentation**: [`pr-review/CLAUDE.md`](pr-review/CLAUDE.md)
+**Documentation**: [`pr-review/README.md`](pr-review/README.md)
 
 ### 2. GitHub Issues Collection (`scripts/`)
 JBang-based and Maven-based tools for collecting GitHub issues with advanced filtering.
