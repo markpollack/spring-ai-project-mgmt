@@ -4,10 +4,11 @@ This repository contains comprehensive tooling for managing the [Spring AI proje
 
 ## Overview
 
-The repository provides three main subsystems for complete Spring AI project management:
+The repository provides four main subsystems for complete Spring AI project management:
 
 - **PR Review System** - AI-powered pull request analysis and reporting
-- **GitHub Issues Collection** - Advanced issue filtering and data collection  
+- **GitHub Issues Collection** - Advanced issue filtering and data collection
+- **Issue Classification** - LLM-powered issue labeling (82.1% F1 score)
 - **Release Management** - Automation tools for Spring AI releases
 
 ## Architecture Overview
@@ -84,7 +85,21 @@ mvnd spring-boot:run -Dspring-boot.run.arguments="--repo spring-projects/spring-
 
 **Documentation**: [`scripts/README.md`](scripts/README.md)
 
-### 3. Release Management (`release/`)
+### 3. Issue Classification (`issue-analysis/`, `scripts/project/classification-engine/`)
+LLM-powered multi-label classification of GitHub issues, achieving **82.1% F1 score** on 111 held-out test issues from the Spring AI repository.
+
+**Key Results:**
+- 76.6% precision, 88.5% recall across 35+ technical labels
+- Top-performing labels: `vector store` (92.3% F1), `tool/function calling` (91.7% F1), `documentation` (90.9% F1)
+- Conservative strategy focusing on objective, content-based labels
+
+**Implementations:**
+- `issue-analysis/` - Python prototype (data collection, evaluation, prompt engineering)
+- `scripts/project/classification-engine/` - Java/Spring production implementation with Claude SDK integration
+
+**Documentation**: [`issue-analysis/README.md`](issue-analysis/README.md) | [Replication Guide](SPRING_ECOSYSTEM_CLASSIFICATION_GUIDE.md)
+
+### 4. Release Management (`release/`)
 Automation tools for managing Spring AI releases.
 
 **Components:**
