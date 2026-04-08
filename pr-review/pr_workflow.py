@@ -26,6 +26,7 @@ from claude_code_wrapper import ClaudeCodeWrapper
 from commit_message_generator import CommitMessageGenerator
 from test_discovery import PRTestDiscovery
 from workflow_execution_tracker import WorkflowExecutionTracker
+from github_rest_client import get_client as get_github_client
 
 
 @dataclass
@@ -273,16 +274,11 @@ class PRAnalyzer:
         return shutil.which("claude") is not None
     
     def check_gh_auth(self) -> bool:
-        """Check if GitHub CLI is authenticated"""
+        """Check if GitHub API is accessible via REST API"""
         try:
-            result = subprocess.run(
-                ["gh", "auth", "status"],
-                capture_output=True,
-                text=True,
-                check=True
-            )
-            return True
-        except subprocess.CalledProcessError:
+            client = get_github_client(self.config.spring_ai_repo)
+            return client.check_access()
+        except Exception:
             return False
     
     def generate_report(self, pr_number: str, dry_run: bool = False, force_fresh: bool = False, skip_backport: bool = False, modernized_branch: str = None) -> Optional[Path]:
@@ -715,8 +711,23 @@ class PRWorkflow:
                 Logger.info(f"🔄 Force checkout requested - will overwrite local branch {expected_branch}")
             
             Logger.info(f"📥 Checking out PR #{pr_number} from GitHub")
-            gh_cmd = ["gh", "pr", "checkout", pr_number]
-            if not self.run_command(gh_cmd, f"Checkout PR #{pr_number}", cwd=self.config.spring_ai_dir):
+            # Use git fetch + checkout instead of gh pr checkout (avoids SAML SSO issues)
+            client = get_github_client(self.config.spring_ai_repo)
+            pr_branch_info = client.get_pr_branch_info(pr_number)
+            pr_branch_name = pr_branch_info.get("headRefName", "")
+            if not pr_branch_name:
+                Logger.error(f"Could not determine branch name for PR #{pr_number}")
+                return False
+            Logger.info(f"🔀 PR branch: {pr_branch_name}")
+            # Delete existing local branch if force requested
+            if force and branch_exists_locally:
+                self.git.run_git(["branch", "-D", pr_branch_name], check=False, capture_output=True)
+            # Fetch the PR ref and create a local branch
+            fetch_cmd = ["git", "fetch", "origin", f"pull/{pr_number}/head:{pr_branch_name}"]
+            if not self.run_command(fetch_cmd, f"Fetch PR #{pr_number}", cwd=self.config.spring_ai_dir):
+                return False
+            checkout_cmd = ["git", "checkout", pr_branch_name]
+            if not self.run_command(checkout_cmd, f"Checkout branch {pr_branch_name}", cwd=self.config.spring_ai_dir):
                 return False
             
             # Store the branch mapping for future use
@@ -743,17 +754,18 @@ class PRWorkflow:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         log_file = self.config.logs_dir / f"java-formatter-{timestamp}.log"
         
-        # Use mvnd for fastest formatting
-        formatter_commands = [
-            (["mvnd", "spring-javaformat:apply"], "Apply formatter with mvnd")
-        ]
-        
+        # Use mvnd for fastest formatting, fall back to ./mvnw
+        if shutil.which("mvnd"):
+            formatter_commands = [
+                (["mvnd", "spring-javaformat:apply"], "Apply formatter with mvnd")
+            ]
+        else:
+            Logger.info("mvnd not found - using ./mvnw for formatting")
+            formatter_commands = [
+                (["./mvnw", "spring-javaformat:apply", "-DskipTests", "--batch-mode"], "Apply formatter with ./mvnw")
+            ]
+
         for cmd, description in formatter_commands:
-            if cmd[0] == "mvnd":
-                # Check if mvnd exists
-                if not shutil.which("mvnd"):
-                    Logger.error("mvnd not found - please install Maven Daemon for fastest formatting")
-                    return False
             
             Logger.info(f"Using {cmd[0]} for formatting (output logged to {log_file.name})...")
             if self.run_command(cmd, description, cwd=self.config.spring_ai_dir, 
@@ -2694,21 +2706,16 @@ File content with conflicts:"""
         current_branch = self.git.get_current_branch()
         
         try:
-            # Get the actual PR branch name from GitHub
-            result = subprocess.run([
-                "gh", "pr", "view", pr_number, "--repo", self.config.spring_ai_repo,
-                "--json", "headRefName"
-            ], cwd=self.config.spring_ai_dir, capture_output=True, text=True, check=True)
-            
-            pr_data = json.loads(result.stdout)
-            actual_pr_branch = pr_data.get("headRefName")
-            
+            # Get the actual PR branch name from GitHub REST API
+            client = get_github_client(self.config.spring_ai_repo)
+            pr_branch_info = client.get_pr_branch_info(pr_number)
+            actual_pr_branch = pr_branch_info.get("headRefName")
+
             if actual_pr_branch and current_branch != actual_pr_branch:
                 Logger.warn(f"Current branch is '{current_branch}', but PR #{pr_number} is from branch '{actual_pr_branch}'")
                 Logger.warn("You may be generating a report for the wrong PR or branch")
-                Logger.info(f"Consider running: gh pr checkout {pr_number}")
-                
-        except (subprocess.CalledProcessError, json.JSONDecodeError, KeyError) as e:
+
+        except Exception as e:
             Logger.warn(f"Could not validate PR branch from GitHub: {e}")
             Logger.info(f"Current branch: '{current_branch}' - ensure this matches PR #{pr_number}")
         
@@ -2836,17 +2843,12 @@ File content with conflicts:"""
     def _get_changed_files(self, pr_number: str) -> List[str]:
         """Get list of all changed files from the original PR (not post-rebase diff)"""
         try:
-            # Get original files from the PR using GitHub CLI
-            result = subprocess.run([
-                "gh", "pr", "view", pr_number, "--repo", self.config.spring_ai_repo,
-                "--json", "files", "--jq", ".files[].path"
-            ], cwd=self.config.spring_ai_dir, capture_output=True, text=True, check=True)
-            
-            changed_files = result.stdout.strip().split('\n')
-            # Filter out empty strings
+            # Get original files from the PR using GitHub REST API
+            client = get_github_client(self.config.spring_ai_repo)
+            changed_files = client.get_pr_file_paths(pr_number)
             return [file for file in changed_files if file]
-            
-        except subprocess.CalledProcessError as e:
+
+        except Exception as e:
             Logger.error(f"Failed to get original PR files: {e}")
             Logger.warn("Falling back to git diff method...")
             

@@ -54,23 +54,33 @@ class ClaudeCodeWrapper:
         
         # Generate unique session ID for this wrapper instance
         self.session_id = str(uuid.uuid4())
-        self._log_process_event("WRAPPER_INIT", details=f"session_id={self.session_id}")
+
+        # Detect if running inside a Claude Code session (nested invocation)
+        self._nested = os.environ.get('CLAUDECODE') is not None
+        self._claude_run_sh = os.path.expanduser('~/scripts/claude-run.sh')
+
+        self._log_process_event("WRAPPER_INIT", details=f"session_id={self.session_id}, nested={self._nested}")
     
+    def _wrap_cmd(self, cmd: list) -> list:
+        """Wrap command through claude-run.sh if in a nested Claude Code session."""
+        if self._nested and os.path.isfile(self._claude_run_sh):
+            return [self._claude_run_sh] + cmd
+        return cmd
+
     def is_available(self) -> bool:
         """Check if Claude Code is available"""
         try:
             # Prepare environment with our marker
             env = os.environ.copy()
             env[self.WRAPPER_MARKER_ENV] = self.session_id
-            
-            # Use 'claude' command directly and set working directory to avoid yoga.wasm issues
-            result = subprocess.run(['claude', '--version'], 
-                         capture_output=True, check=True, timeout=10,
-                         cwd='/home/mark/.nvm/versions/node/v22.15.0/lib/node_modules/@anthropic-ai/claude-code',
+
+            # Use claude-run.sh wrapper if inside a nested session
+            check_cmd = self._wrap_cmd(['claude', '--version'])
+            result = subprocess.run(check_cmd,
+                         capture_output=True, check=True, timeout=15,
                          env=env)
             return True
         except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired) as e:
-            # Debug: print the actual exception for troubleshooting
             print(f"DEBUG: Claude Code availability check failed: {type(e).__name__}: {e}")
             if hasattr(e, 'stdout') and e.stdout:
                 print(f"DEBUG: stdout: {e.stdout}")
@@ -78,20 +88,18 @@ class ClaudeCodeWrapper:
                 print(f"DEBUG: stderr: {e.stderr}")
             return False
         except Exception as e:
-            # Catch any other unexpected exceptions
             print(f"DEBUG: Unexpected exception in is_available(): {type(e).__name__}: {e}")
             return False
     
     def get_version(self) -> Optional[str]:
         """Get Claude Code version"""
         try:
-            # Prepare environment with our marker
             env = os.environ.copy()
             env[self.WRAPPER_MARKER_ENV] = self.session_id
-            
-            result = subprocess.run(['claude', '--version'], 
-                                  capture_output=True, text=True, check=True, timeout=10,
-                                  cwd='/home/mark/.nvm/versions/node/v22.15.0/lib/node_modules/@anthropic-ai/claude-code',
+
+            check_cmd = self._wrap_cmd(['claude', '--version'])
+            result = subprocess.run(check_cmd,
+                                  capture_output=True, text=True, check=True, timeout=15,
                                   env=env)
             return result.stdout.strip()
         except Exception:
@@ -327,14 +335,17 @@ class ClaudeCodeWrapper:
                         actual_cmd = strace_cmd
                     else:
                         actual_cmd = cmd
-                    
+
+                    # Wrap through claude-run.sh if nested in Claude Code session
+                    actual_cmd = self._wrap_cmd(actual_cmd)
+
                     # Use Popen for non-blocking execution with progress
                     process = subprocess.Popen(
                         actual_cmd,
                         stdout=subprocess.PIPE,
                         stderr=subprocess.PIPE,
                         text=True,
-                        cwd='/home/mark/.nvm/versions/node/v22.15.0/lib/node_modules/@anthropic-ai/claude-code',
+                        cwd=os.path.dirname(self.claude_binary_path) or '/tmp',
                         env=env,
                         bufsize=1  # Line buffered
                     )

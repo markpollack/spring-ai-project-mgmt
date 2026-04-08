@@ -14,6 +14,8 @@ import subprocess
 from pathlib import Path
 from typing import List, Optional, Set
 
+from github_rest_client import get_client as get_github_client
+
 class PRTestDiscovery:
     """Test discovery for PR review environments"""
 
@@ -251,28 +253,17 @@ class PRTestDiscovery:
             return False
 
     def _get_changed_files_from_github(self) -> List[str]:
-        """Get changed files from GitHub API as fallback when git diff fails"""
+        """Get changed files from GitHub REST API as fallback when git diff fails"""
         if not self.pr_number:
             return []
 
         try:
-            result = subprocess.run(
-                ["gh", "pr", "view", self.pr_number, "--repo", self.spring_ai_repo,
-                 "--json", "files", "--jq", ".files[].path"],
-                cwd=self.repo_root,
-                capture_output=True,
-                text=True,
-                check=True
-            )
-
-            files = [f.strip() for f in result.stdout.strip().split('\n') if f.strip()]
+            client = get_github_client(self.spring_ai_repo)
+            files = client.get_pr_file_paths(self.pr_number)
             if files:
                 print(f"[TEST-DISCOVERY] GitHub API returned {len(files)} changed files", file=sys.stderr)
             return files
 
-        except subprocess.CalledProcessError as e:
-            print(f"[TEST-DISCOVERY] GitHub API fallback failed: {e}", file=sys.stderr)
-            return []
         except Exception as e:
             print(f"[TEST-DISCOVERY] GitHub API error: {e}", file=sys.stderr)
             return []

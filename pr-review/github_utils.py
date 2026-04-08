@@ -23,6 +23,8 @@ from pathlib import Path
 from typing import Dict, Optional, Any
 from dataclasses import dataclass
 
+from github_rest_client import get_client as get_github_client
+
 # Add the current directory to Python path to import existing modules
 sys.path.insert(0, str(Path(__file__).parent))
 
@@ -99,17 +101,12 @@ class GitHubUtils:
             Logger.info(f"📋 Using cached branch: PR #{pr_number} → {branch_name}")
             return branch_name
         
-        # Fetch from GitHub API
+        # Fetch from GitHub REST API
         try:
             Logger.info(f"🔍 Fetching branch name for PR #{pr_number} from GitHub...")
-            
-            result = subprocess.run([
-                "gh", "pr", "view", pr_number,
-                "--repo", self.spring_ai_repo,
-                "--json", "headRefName,headRepository,baseRefName,headRepositoryOwner"
-            ], capture_output=True, text=True, check=True, timeout=30)
-            
-            pr_data = json.loads(result.stdout)
+
+            client = get_github_client(self.spring_ai_repo)
+            pr_data = client.get_pr_branch_info(pr_number)
             head_ref = pr_data.get("headRefName")
             head_repo = pr_data.get("headRepository", {})
             head_repo_owner = pr_data.get("headRepositoryOwner", {})
@@ -139,28 +136,18 @@ class GitHubUtils:
             self.store_pr_branch_mapping(pr_number, branch_name)
             return branch_name
                 
-        except subprocess.CalledProcessError as e:
-            Logger.error(f"GitHub CLI error getting PR #{pr_number} branch: {e}")
-            if e.stderr:
-                Logger.error(f"Error details: {e.stderr.strip()}")
-            return None
         except Exception as e:
             Logger.error(f"Error getting PR branch name: {e}")
             return None
     
     def get_pr_basic_info(self, pr_number: str) -> Optional[PRInfo]:
-        """Get basic PR information from GitHub API"""
+        """Get basic PR information from GitHub REST API"""
         try:
             Logger.info(f"🔍 Fetching PR #{pr_number} info from GitHub...")
-            
-            result = subprocess.run([
-                "gh", "pr", "view", pr_number,
-                "--repo", self.spring_ai_repo,
-                "--json", "number,title,author,headRefName,state,createdAt"
-            ], capture_output=True, text=True, check=True, timeout=30)
-            
-            pr_data = json.loads(result.stdout)
-            
+
+            client = get_github_client(self.spring_ai_repo)
+            pr_data = client.get_pr_basic_info(pr_number)
+
             pr_info = PRInfo(
                 number=str(pr_data.get("number", pr_number)),
                 title=pr_data.get("title", "Unknown"),
@@ -169,18 +156,15 @@ class GitHubUtils:
                 state=pr_data.get("state", "unknown"),
                 created_at=pr_data.get("createdAt", "")
             )
-            
+
             Logger.success(f"✅ Got PR info: {pr_info.title} by {pr_info.author}")
-            
+
             # Cache the branch name
             if pr_info.branch_name:
                 self.store_pr_branch_mapping(pr_number, pr_info.branch_name)
-            
+
             return pr_info
-            
-        except subprocess.CalledProcessError as e:
-            Logger.error(f"GitHub CLI error getting PR #{pr_number} info: {e}")
-            return None
+
         except Exception as e:
             Logger.error(f"Error getting PR info: {e}")
             return None

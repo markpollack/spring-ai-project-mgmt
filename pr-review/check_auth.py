@@ -14,6 +14,8 @@ import json
 from pathlib import Path
 from typing import Tuple, Optional
 
+from github_rest_client import get_client as get_github_client
+
 class Logger:
     @staticmethod
     def info(msg): print(f"\033[34m[INFO]\033[0m {msg}")
@@ -31,59 +33,31 @@ class AuthChecker:
     SPRING_AI_REPO = "spring-projects/spring-ai"
     
     def check_gh_auth(self) -> Tuple[bool, str]:
-        """Check if GitHub CLI is authenticated"""
+        """Check if GitHub API is accessible (via REST API, no gh CLI needed)"""
         try:
-            # Check auth status
-            result = subprocess.run(
-                ["gh", "auth", "status"],
-                capture_output=True,
-                text=True,
-                timeout=5
-            )
-            
-            if result.returncode == 0:
-                # Extract logged in user
-                for line in result.stdout.split('\n'):
-                    if 'Logged in to github.com as' in line:
-                        user = line.split('as')[-1].strip().split()[0]
-                        return True, f"Authenticated as {user}"
-                return True, "Authenticated"
+            client = get_github_client(self.SPRING_AI_REPO)
+            if client.check_access():
+                token_status = "with token" if client.token else "unauthenticated (60 req/hr)"
+                return True, f"GitHub REST API accessible ({token_status})"
             else:
-                return False, "Not authenticated with GitHub CLI"
-                
-        except subprocess.TimeoutExpired:
-            return False, "GitHub CLI auth check timed out"
-        except FileNotFoundError:
-            return False, "GitHub CLI (gh) not found. Please install it first."
+                return False, "Cannot access GitHub REST API"
         except Exception as e:
-            return False, f"Error checking GitHub CLI auth: {e}"
+            return False, f"Error checking GitHub API access: {e}"
     
     def check_gh_repo_access(self) -> Tuple[bool, str]:
-        """Check if we can access the Spring AI repository via gh"""
+        """Check if we can access the Spring AI repository via REST API"""
         try:
-            # Try to fetch repo info
-            result = subprocess.run(
-                ["gh", "repo", "view", self.SPRING_AI_REPO, "--json", "name"],
-                capture_output=True,
-                text=True,
-                timeout=10
-            )
-            
-            if result.returncode == 0:
-                return True, f"Can access {self.SPRING_AI_REPO}"
-            else:
-                error_msg = result.stderr.strip() if result.stderr else "Unknown error"
-                if "HTTP 404" in error_msg:
-                    return False, f"Repository {self.SPRING_AI_REPO} not found or no access"
-                elif "HTTP 401" in error_msg:
-                    return False, "Authentication required - run: gh auth login"
-                else:
-                    return False, f"Cannot access repository: {error_msg}"
-                    
-        except subprocess.TimeoutExpired:
-            return False, "Repository access check timed out - network issues?"
+            client = get_github_client(self.SPRING_AI_REPO)
+            repo = client.get_repo()
+            return True, f"Can access {self.SPRING_AI_REPO} ({repo.get('name', '')})"
         except Exception as e:
-            return False, f"Error checking repository access: {e}"
+            error_msg = str(e)
+            if "404" in error_msg:
+                return False, f"Repository {self.SPRING_AI_REPO} not found or no access"
+            elif "401" in error_msg:
+                return False, "Authentication required - set GITHUB_TOKEN env var"
+            else:
+                return False, f"Cannot access repository: {error_msg}"
     
     def check_git_remote_access(self, repo_dir: Optional[Path] = None) -> Tuple[bool, str]:
         """Check if git can fetch from the Spring AI repository"""
@@ -125,25 +99,15 @@ class AuthChecker:
             return False, f"Error checking git access: {e}"
     
     def check_pr_api_access(self) -> Tuple[bool, str]:
-        """Check if we can list PRs via the API"""
+        """Check if we can list PRs via the REST API"""
         try:
-            result = subprocess.run(
-                ["gh", "pr", "list", "--repo", self.SPRING_AI_REPO, "--limit", "1", "--json", "number"],
-                capture_output=True,
-                text=True,
-                timeout=10
-            )
-            
-            if result.returncode == 0:
+            client = get_github_client(self.SPRING_AI_REPO)
+            prs = client.list_prs(limit=1)
+            if isinstance(prs, list) and len(prs) > 0:
                 return True, "Can access PR API"
-            else:
-                error_msg = result.stderr.strip() if result.stderr else "Unknown error"
-                return False, f"Cannot access PR API: {error_msg}"
-                
-        except subprocess.TimeoutExpired:
-            return False, "PR API access check timed out"
+            return True, "PR API accessible (no open PRs found)"
         except Exception as e:
-            return False, f"Error checking PR API access: {e}"
+            return False, f"Cannot access PR API: {e}"
     
     def check_claude_code_installed(self) -> Tuple[bool, str]:
         """Check if Claude Code CLI is installed and accessible"""

@@ -20,6 +20,8 @@ from typing import Dict, List, Optional, Any, Tuple
 from dataclasses import dataclass, asdict
 import re
 
+from github_rest_client import get_client as get_github_client
+
 # Simple logger to avoid circular imports
 class Logger:
     @staticmethod
@@ -181,22 +183,17 @@ class PRContextCollector:
             return {}
     
     def _collect_pr_data(self, pr_number: str) -> PRData:
-        """Collect PR information from GitHub"""
-        # Get basic PR info
-        pr_info = self._gh_api_call([
-            "pr", "view", pr_number, "--json",
-            "number,title,body,state,isDraft,labels,assignees,reviewRequests,createdAt,updatedAt,author,url,baseRefName,headRefName,commits,changedFiles,additions,deletions"
-        ])
-        
-        # Get PR comments
-        pr_comments = self._gh_api_call([
-            "pr", "view", pr_number, "--json", "comments"
-        ]).get("comments", [])
-        
+        """Collect PR information from GitHub REST API"""
+        client = get_github_client(self.repository)
+
+        # Get comprehensive PR info via REST API
+        pr_info = client.get_pr_view_full(pr_number)
+
+        # Comments are included in the full view
+        pr_comments = pr_info.get("comments", [])
+
         # Get PR reviews
-        pr_reviews = self._gh_api_call([
-            "api", f"repos/{self.repository}/pulls/{pr_number}/reviews"
-        ])
+        pr_reviews = client.get_pr_reviews(pr_number)
         
         # Extract linked issues from PR body and comments
         linked_issues = self._extract_linked_issues(pr_info.get("body", ""))
@@ -234,12 +231,10 @@ class PRContextCollector:
         for issue_num in issue_numbers:
             try:
                 Logger.info(f"  📋 Collecting issue #{issue_num}")
-                
-                # Get issue info
-                issue_info = self._gh_api_call([
-                    "issue", "view", str(issue_num), "--json",
-                    "number,title,body,state,labels,assignees,createdAt,updatedAt,author,url,comments"
-                ])
+
+                # Get issue info via REST API
+                client = get_github_client(self.repository)
+                issue_info = client.get_issue_full(issue_num)
                 
                 # Get issue comments
                 issue_comments = issue_info.get("comments", [])
@@ -267,34 +262,23 @@ class PRContextCollector:
     def _collect_file_changes(self, pr_number: str) -> List[FileChange]:
         """Collect file change information with pagination support"""
         try:
+            client = get_github_client(self.repository)
+            files_data = client.get_pr_files(pr_number)
+
             file_changes = []
-            page = 1
-            per_page = 100  # Maximum allowed by GitHub API
-            
-            while True:
-                # Get PR file changes with pagination
-                files_data = self._gh_api_call([
-                    "api", f"repos/{self.repository}/pulls/{pr_number}/files",
-                    "--paginate"  # Use gh CLI's built-in pagination
-                ])
-                
-                # Process all files from paginated response
-                for file_info in files_data:
-                    file_changes.append(FileChange(
-                        filename=file_info.get("filename", ""),
-                        status=file_info.get("status", ""),
-                        additions=file_info.get("additions", 0),
-                        deletions=file_info.get("deletions", 0),
-                        changes=file_info.get("changes", 0),
-                        patch=file_info.get("patch", "")
-                    ))
-                
-                # With --paginate, gh CLI handles all pagination automatically
-                break
-            
+            for file_info in files_data:
+                file_changes.append(FileChange(
+                    filename=file_info.get("filename", ""),
+                    status=file_info.get("status", ""),
+                    additions=file_info.get("additions", 0),
+                    deletions=file_info.get("deletions", 0),
+                    changes=file_info.get("changes", 0),
+                    patch=file_info.get("patch", "")
+                ))
+
             Logger.info(f"📁 Collected {len(file_changes)} file changes")
             return file_changes
-            
+
         except Exception as e:
             Logger.warn(f"⚠️  Could not collect file changes: {e}")
             return []
@@ -302,10 +286,8 @@ class PRContextCollector:
     def _collect_commits_data(self, pr_number: str) -> List[CommitData]:
         """Collect commit information"""
         try:
-            # Get PR commits
-            commits_data = self._gh_api_call([
-                "api", f"repos/{self.repository}/pulls/{pr_number}/commits"
-            ])
+            client = get_github_client(self.repository)
+            commits_data = client.get_pr_commits(pr_number)
             
             commits = []
             for commit_info in commits_data:

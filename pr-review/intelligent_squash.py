@@ -27,6 +27,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 try:
     from conflict_analyzer import ConflictAnalyzer
     from pr_workflow import Logger
+    from github_rest_client import get_client as get_github_client
 except ImportError as e:
     print(f"Error importing required modules: {e}")
     print("Make sure conflict_analyzer.py and pr_workflow.py are in the same directory")
@@ -99,7 +100,7 @@ class IntelligentSquash:
         )
     
     def run_gh(self, cmd: List[str]) -> subprocess.CompletedProcess:
-        """Run GitHub CLI command"""
+        """Run GitHub CLI command (deprecated - kept for compatibility)"""
         return subprocess.run(
             ["gh"] + cmd,
             cwd=self.spring_ai_dir,
@@ -116,12 +117,8 @@ class IntelligentSquash:
         """
         Logger.info("📋 Fetching PR information from GitHub...")
 
-        result = self.run_gh([
-            "pr", "view", pr_number, "--repo", self.spring_ai_repo,
-            "--json", "baseRefOid,headRefOid,commits,title"
-        ])
-
-        pr_data = json.loads(result.stdout)
+        client = get_github_client(self.spring_ai_repo)
+        pr_data = client.get_pr_squash_info(pr_number)
         github_base_sha = pr_data["baseRefOid"]
         github_head_sha = pr_data["headRefOid"]
         commits = pr_data["commits"]
@@ -267,11 +264,8 @@ class IntelligentSquash:
 
             # Step 2: Get list of files actually changed by the PR (from GitHub API)
             Logger.info(f"📄 Getting PR changed files from GitHub API...")
-            pr_files_result = self.run_gh([
-                "pr", "view", pr_number, "--repo", self.spring_ai_repo,
-                "--json", "files", "--jq", ".files[].path"
-            ])
-            changed_files = [f.strip() for f in pr_files_result.stdout.strip().split('\n') if f.strip()]
+            client = get_github_client(self.spring_ai_repo)
+            changed_files = client.get_pr_file_paths(pr_number)
 
             if not changed_files:
                 Logger.warn("⚠️  No files changed - nothing to apply")
